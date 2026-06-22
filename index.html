@@ -594,8 +594,12 @@
               <span>5% off any 4 units</span>
             </label>
             <label>
+              <input type="checkbox" id="promo-ss5" onchange="calculatePromo()" />
+              <span>5% Subscribe &amp; Save</span>
+            </label>
+            <label>
               <input type="checkbox" id="promo-ss" onchange="calculatePromo()" />
-              <span>15% Subscribe & Save</span>
+              <span>15% Subscribe &amp; Save</span>
             </label>
           </div>
         </div>
@@ -732,6 +736,7 @@
     function calculatePromo() {
       const fullPrice = parseFloat(document.getElementById('promo-price').value);
       const promo5off4 = document.getElementById('promo-5off4').checked;
+      const promoSS5 = document.getElementById('promo-ss5').checked;
       const promoSS = document.getElementById('promo-ss').checked;
 
       if (!fullPrice || fullPrice <= 0) {
@@ -747,6 +752,11 @@
       if (promo5off4) {
         price = price * 0.95;
         breakdown.push(`<div>5% off any 4<span>-5%</span></div>`);
+      }
+
+      if (promoSS5) {
+        price = price * 0.95;
+        breakdown.push(`<div>5% Subscribe & Save<span>-5%</span></div>`);
       }
 
       if (promoSS) {
