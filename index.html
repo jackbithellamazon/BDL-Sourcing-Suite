@@ -1,786 +1,859 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lead Analyzer & Promo Calculator</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    :root {
-      --bg-primary: #ffffff;
-      --bg-secondary: #f8f9fa;
-      --bg-tertiary: #f0f2f5;
-      --text-primary: #1a1a1a;
-      --text-secondary: #666666;
-      --text-tertiary: #999999;
-      --border-color: #e0e0e0;
-      --blue: #2563eb;
-      --blue-dark: #1d4ed8;
-      --purple: #7c3aed;
-      --pink: #ec4899;
-      --cyan: #06b6d4;
-      --green: #10b981;
-      --yellow: #f59e0b;
-      --red: #ef4444;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg-primary: #1a1a1a;
-        --bg-secondary: #2d2d2d;
-        --bg-tertiary: #404040;
-        --text-primary: #ffffff;
-        --text-secondary: #b0b0b0;
-        --text-tertiary: #808080;
-        --border-color: #404040;
-      }
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      transition: background 0.3s ease;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      body {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      }
-    }
-
-    .container {
-      background: var(--bg-primary);
-      border-radius: 20px;
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-      max-width: 700px;
-      width: 100%;
-      padding: 40px;
-      transition: background 0.3s ease;
-    }
-
-    .header {
-      margin-bottom: 32px;
-      text-align: center;
-    }
-
-    .header h1 {
-      font-size: 36px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 12px;
-    }
-
-    .header p {
-      font-size: 16px;
-      color: var(--text-secondary);
-      font-weight: 400;
-    }
-
-    .tabs {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 32px;
-      border-bottom: 2px solid var(--border-color);
-    }
-
-    .tab-btn {
-      padding: 12px 24px;
-      background: transparent;
-      border: none;
-      border-bottom: 3px solid transparent;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      transition: all 0.3s ease;
-      margin-bottom: -2px;
-    }
-
-    .tab-btn.active {
-      color: #2563eb;
-      border-bottom-color: #2563eb;
-    }
-
-    .tab-btn:hover {
-      color: var(--text-primary);
-    }
-
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .form-section {
-      margin-bottom: 32px;
-    }
-
-    .input-group {
-      margin-bottom: 24px;
-    }
-
-    .input-group:last-child {
-      margin-bottom: 0;
-    }
-
-    .input-group label {
-      display: block;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-
-    .input-group input {
-      width: 100%;
-      padding: 14px 18px;
-      font-size: 16px;
-      border: 2px solid var(--border-color);
-      border-radius: 12px;
-      background: var(--bg-secondary);
-      color: var(--text-primary);
-      transition: all 0.3s ease;
-      font-family: inherit;
-    }
-
-    .input-group input:focus {
-      outline: none;
-      border-color: #2563eb;
-      background-color: var(--bg-primary);
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
-    }
-
-    .checkbox-group {
-      background: var(--bg-secondary);
-      border: 2px solid var(--border-color);
-      border-radius: 12px;
-      padding: 18px;
-      margin-bottom: 24px;
-      transition: all 0.3s ease;
-    }
-
-    .checkbox-group label {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--text-primary);
-      margin-bottom: 14px;
-    }
-
-    .checkbox-group label:last-child {
-      margin-bottom: 0;
-    }
-
-    .checkbox-group input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-      accent-color: #2563eb;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 16px 32px;
-      font-size: 16px;
-      font-weight: 700;
-      border: none;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-      color: white;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin-top: 8px;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
-    }
-
-    .btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 15px 35px rgba(37, 99, 235, 0.4);
-    }
-
-    .btn:active {
-      transform: translateY(-1px);
-    }
-
-    .results {
-      display: none;
-      animation: slideIn 0.4s ease;
-    }
-
-    .results.show {
-      display: block;
-    }
-
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-      margin-bottom: 36px;
-    }
-
-    .metric-card {
-      border-radius: 14px;
-      padding: 24px;
-      text-align: center;
-      border: 2px solid transparent;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .metric-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--card-color-1, #2563eb) 0%, var(--card-color-2, #7c3aed) 100%);
-    }
-
-    .metric-card.spm {
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
-      border-color: rgba(37, 99, 235, 0.2);
-      --card-color-1: #2563eb;
-      --card-color-2: #1d4ed8;
-    }
-
-    .metric-card.profit {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
-      border-color: rgba(16, 185, 129, 0.2);
-      --card-color-1: #10b981;
-      --card-color-2: #059669;
-    }
-
-    .metric-card.roi {
-      background: linear-gradient(135deg, rgba(244, 63, 94, 0.1) 0%, rgba(244, 63, 94, 0.05) 100%);
-      border-color: rgba(244, 63, 94, 0.2);
-      --card-color-1: #f43f5e;
-      --card-color-2: #e11d48;
-    }
-
-    .metric-card.tier {
-      background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
-      border-color: rgba(168, 85, 247, 0.2);
-      --card-color-1: #a855f7;
-      --card-color-2: #9333ea;
-    }
-
-    .metric-card:hover {
-      border-color: var(--card-color-1, #2563eb);
-      transform: translateY(-4px);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
-    }
-
-    .metric-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-    }
-
-    .metric-value {
-      font-size: 32px;
-      font-weight: 800;
-      color: var(--text-primary);
-    }
-
-    .score-box {
-      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-      border: 2px solid var(--border-color);
-      border-radius: 16px;
-      padding: 40px 28px;
-      text-align: center;
-      margin-bottom: 24px;
-      transition: all 0.3s ease;
-    }
-
-    .score-box:hover {
-      border-color: #2563eb;
-      box-shadow: 0 20px 40px rgba(37, 99, 235, 0.15);
-    }
-
-    .score-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      margin-bottom: 16px;
-    }
-
-    .score-number {
-      font-size: 72px;
-      font-weight: 900;
-      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 20px;
-      line-height: 1;
-    }
-
-    .score-bar {
-      width: 100%;
-      height: 8px;
-      background: var(--bg-tertiary);
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 24px;
-      border: 1px solid var(--border-color);
-    }
-
-    .score-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
-      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      border-radius: 4px;
-    }
-
-    .score-note {
-      font-size: 15px;
-      color: var(--text-secondary);
-      line-height: 1.7;
-      margin-top: 20px;
-      font-weight: 500;
-    }
-
-    .tier-badge {
-      display: inline-block;
-      padding: 10px 20px;
-      border-radius: 24px;
-      font-size: 12px;
-      font-weight: 700;
-      margin-bottom: 20px;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-
-    .tier-high {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: white;
-      box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
-    }
-
-    .tier-mid {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      color: white;
-      box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
-    }
-
-    .tier-low {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-      color: white;
-      box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
-    }
-
-    .promo-result {
-      background: var(--bg-secondary);
-      border: 2px solid var(--border-color);
-      border-radius: 14px;
-      padding: 24px;
-      margin-bottom: 20px;
-      transition: all 0.3s ease;
-    }
-
-    .promo-result:hover {
-      border-color: #2563eb;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
-    }
-
-    .promo-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-    }
-
-    .promo-value {
-      font-size: 36px;
-      font-weight: 800;
-      color: #10b981;
-      margin-bottom: 12px;
-    }
-
-    .promo-breakdown {
-      font-size: 13px;
-      color: var(--text-secondary);
-      line-height: 1.8;
-      background: var(--bg-tertiary);
-      padding: 14px;
-      border-radius: 8px;
-      margin-top: 14px;
-    }
-
-    .promo-breakdown div {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .promo-breakdown div:last-child {
-      margin-bottom: 0;
-      padding-top: 8px;
-      border-top: 1px solid var(--border-color);
-      margin-top: 8px;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-
-    .savings {
-      font-size: 14px;
-      color: #10b981;
-      font-weight: 700;
-      margin-top: 12px;
-    }
-
-    @media (max-width: 600px) {
-      .container {
-        padding: 24px;
-      }
-
-      .header h1 {
-        font-size: 28px;
-      }
-
-      .metrics-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-
-      .score-number {
-        font-size: 56px;
-      }
-
-      .btn {
-        padding: 14px 24px;
-        font-size: 15px;
-      }
-
-      .tabs {
-        gap: 8px;
-      }
-
-      .tab-btn {
-        padding: 10px 16px;
-        font-size: 12px;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sourcing Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#080b11; --ink2:#0b0e16; --surface:#10141d; --surface2:#151a26; --raise:#1a2030;
+    --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.12);
+    --text:#eef1f7; --muted:#868ea2; --faint:#565d6f;
+    --iris:#6e7bff; --iris-d:#5662ee; --iris2:#9a7bff;
+    --jade:#36d6a4; --jade-dim:rgba(54,214,164,.13);
+    --coral:#f76a83; --coral-dim:rgba(247,106,131,.12);
+    --amber:#fbbf24; --amber-dim:rgba(251,191,36,.13);
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --disp:'Bricolage Grotesque',var(--sans);
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --ease:cubic-bezier(.22,.7,.16,1);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{margin:0;font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--text);
+    letter-spacing:-.006em;
+    background:
+      radial-gradient(900px 440px at 8% -14%, rgba(110,123,255,.10), transparent 56%),
+      radial-gradient(760px 380px at 104% -8%, rgba(154,123,255,.07), transparent 52%),
+      var(--ink);
+    background-attachment:fixed;min-height:100vh}
+  *{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
+  *::-webkit-scrollbar{width:9px;height:9px}
+  *::-webkit-scrollbar-track{background:transparent}
+  *::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:20px;border:2px solid transparent;background-clip:padding-box}
+  *::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22);background-clip:padding-box}
+  ::selection{background:rgba(110,123,255,.35);color:#fff}
+  .wrap{max-width:1000px;margin:0 auto;padding:26px 22px 70px}
+
+  /* ---- top bar ---- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;
+    margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:13px;min-width:0}
+  .mark{width:40px;height:40px;border-radius:11px;flex:none;display:grid;place-items:center;
+    background:linear-gradient(150deg,var(--iris),var(--iris2));color:#fff;
+    box-shadow:0 8px 22px -10px rgba(110,123,255,.9),0 1px 0 rgba(255,255,255,.25) inset}
+  .mark svg{width:21px;height:21px}
+  .brand h1{font-family:var(--disp);font-weight:800;font-size:22px;letter-spacing:-.03em;
+    margin:0;line-height:1.05;white-space:nowrap}
+  .brand h1 .b{background:linear-gradient(96deg,var(--iris),var(--iris2));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand .tag{margin:2px 0 0;font-size:12.5px;color:var(--muted);line-height:1.3;
+    overflow:hidden;text-overflow:ellipsis}
+  .privacy{display:flex;align-items:center;gap:8px;flex:none;font-family:var(--mono);font-size:11px;
+    letter-spacing:.02em;color:var(--muted);background:var(--surface);border:1px solid var(--line);
+    padding:7px 13px;border-radius:30px}
+  .privacy .dot{width:7px;height:7px;border-radius:50%;background:var(--jade);
+    box-shadow:0 0 9px rgba(54,214,164,.9);animation:pulse 2.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+
+  /* ---- primary page switcher ---- */
+  .pagenav{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+  .pagebtn{display:flex;align-items:center;gap:13px;text-align:left;cursor:pointer;
+    padding:13px 16px;border-radius:14px;background:var(--surface);border:1px solid var(--line);
+    transition:border-color .2s,background .2s,box-shadow .2s;font-family:var(--sans)}
+  .pagebtn:hover{border-color:var(--line2)}
+  .pagebtn:focus-visible{outline:2px solid var(--iris);outline-offset:2px}
+  .pagebtn .pic{width:38px;height:38px;flex:none;border-radius:10px;display:grid;place-items:center;
+    background:var(--surface2);border:1px solid var(--line);color:var(--faint);
+    transition:background .2s,color .2s,border-color .2s,box-shadow .2s}
+  .pagebtn .pic svg{width:18px;height:18px}
+  .pagebtn .ptxt{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .pagebtn .pt{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:-.015em;
+    color:var(--muted);transition:color .2s;white-space:nowrap}
+  .pagebtn .ps{font-size:11.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .2s}
+  .pagebtn .go{margin-left:auto;flex:none;color:var(--faint);opacity:0;transform:translateX(-4px);
+    transition:opacity .2s,transform .2s}
+  .pagebtn .go svg{width:15px;height:15px;display:block}
+  .pagebtn.active{background:linear-gradient(180deg,rgba(110,123,255,.16),rgba(110,123,255,.05)),var(--surface);
+    border-color:rgba(110,123,255,.45);
+    box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 14px 30px -22px rgba(110,123,255,.9)}
+  .pagebtn.active .pic{background:linear-gradient(150deg,var(--iris),var(--iris2));color:#fff;
+    border-color:transparent;box-shadow:0 6px 16px -8px rgba(110,123,255,.9)}
+  .pagebtn.active .pt{color:#fff}
+  .pagebtn.active .ps{color:var(--muted)}
+  .pagebtn.active .go{opacity:1;transform:none;color:var(--iris)}
+
+  .page{display:none}
+  .page.active{display:block;animation:rise .38s var(--ease)}
+
+  /* ---- sub tabs ---- */
+  .tabs{display:flex;gap:5px;margin-bottom:16px;padding:5px;border-radius:14px;
+    background:var(--surface);border:1px solid var(--line);width:fit-content;max-width:100%;
+    overflow-x:auto;box-shadow:0 1px 0 rgba(255,255,255,.03) inset}
+  .tab{font-family:var(--sans);font-weight:600;font-size:13.5px;color:var(--muted);
+    background:none;border:none;cursor:pointer;padding:8px 17px;border-radius:9px;flex:none;
+    display:flex;align-items:center;gap:9px;transition:color .2s,background .2s,box-shadow .2s}
+  .tab .step{font-family:var(--mono);font-size:11px;font-weight:600;width:19px;height:19px;border-radius:6px;
+    display:grid;place-items:center;background:var(--surface2);color:var(--faint);transition:.2s}
+  .tab:hover{color:var(--text)}
+  .tab:focus-visible{outline:2px solid var(--iris);outline-offset:2px}
+  .tab.active{color:#fff;background:linear-gradient(180deg,rgba(110,123,255,.26),rgba(110,123,255,.1));
+    box-shadow:0 1px 0 rgba(255,255,255,.07) inset,0 5px 16px -11px rgba(110,123,255,.9)}
+  .tab.active .step{background:var(--iris);color:#0a0d14}
+
+  .panel{display:none}
+  .panel.active{display:block;animation:rise .38s var(--ease)}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.02),transparent 36%),var(--surface);
+    border:1px solid var(--line);border-radius:16px;padding:20px;
+    box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 26px 60px -40px rgba(0,0,0,.9)}
+  .intro{font-size:14px;color:var(--text);margin:0 0 16px;font-weight:500}
+  .intro .q{color:var(--muted);font-weight:400}
+
+  /* ---- settings ---- */
+  .settings{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;
+    padding:15px 17px;background:var(--surface2);border:1px solid var(--line);
+    border-radius:12px;margin-bottom:14px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  .field input,.field select{font-size:14px;color:var(--text);background:var(--ink);
+    border:1px solid var(--line2);border-radius:9px;padding:9px 12px;
+    transition:border .16s,box-shadow .16s}
+  .field input{font-family:var(--mono);width:92px;text-align:center;font-variant-numeric:tabular-nums}
+  .field select{font-family:var(--sans);font-weight:500;min-width:148px;cursor:pointer;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23868ea2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 11px center;padding-right:32px}
+  .field input:hover,.field select:hover{border-color:rgba(255,255,255,.2)}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--iris);box-shadow:0 0 0 3px rgba(110,123,255,.2)}
+  .field input::placeholder{color:var(--faint)}
+  .rule{font-size:12.5px;color:var(--muted);margin:0;flex:1 1 240px;align-self:center;min-width:220px;line-height:1.9}
+  .rule .grp{display:inline-flex;align-items:center;white-space:nowrap}
+  .rule .chip{font-family:var(--mono);font-size:11.5px;background:var(--ink);border:1px solid var(--line2);
+    padding:2px 8px;border-radius:6px;color:var(--text);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .rule .or{color:var(--iris);font-weight:600;font-family:var(--mono);font-size:11px;margin:0 6px}
+
+  /* ---- slim horizontal dropzone ---- */
+  .drop{position:relative;display:flex;align-items:center;gap:16px;text-align:left;
+    border:1.5px dashed var(--line2);border-radius:13px;padding:16px 20px;cursor:pointer;overflow:hidden;
+    background:linear-gradient(100deg,rgba(110,123,255,.06),transparent 60%);
+    transition:border-color .2s,background .2s}
+  .drop:hover{border-color:rgba(110,123,255,.6);background:linear-gradient(100deg,rgba(110,123,255,.12),transparent 60%)}
+  .drop.over{border-color:var(--iris);border-style:solid;background:rgba(110,123,255,.12)}
+  .drop .ic{width:42px;height:42px;flex:none;border-radius:11px;display:grid;place-items:center;
+    background:var(--surface2);border:1px solid var(--line);color:var(--iris);transition:transform .25s var(--ease)}
+  .drop.over .ic{transform:translateY(-2px)}
+  .drop .ic svg{width:20px;height:20px}
+  .drop .txt{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .drop .big{font-family:var(--disp);font-weight:700;font-size:15px;color:var(--text);letter-spacing:-.01em}
+  .drop .small{font-size:12px;color:var(--muted)}
+
+  input[type=file]{display:none}
+
+  .files{margin:13px 0 0;display:flex;flex-wrap:wrap;gap:7px}
+  .files .f{font-family:var(--mono);font-size:11.5px;color:var(--muted);background:var(--surface2);
+    border:1px solid var(--line);border-radius:8px;padding:5px 11px;display:flex;align-items:center;gap:8px;
+    animation:pop .3s var(--ease)}
+  .files .f::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--jade);box-shadow:0 0 7px rgba(54,214,164,.7)}
+
+  .warn{display:none;margin-top:14px;padding:13px 16px;border-radius:11px;
+    background:rgba(251,191,36,.09);border:1px solid rgba(251,191,36,.3);color:#ffe6a8;
+    font-size:13px;line-height:1.55;animation:pop .3s var(--ease)}
+  .warn.show{display:block}
+  .warn b{color:var(--amber)}
+
+  /* ---- empty state ---- */
+  .empty{display:flex;align-items:center;gap:14px;margin-top:16px;padding:18px 20px;
+    border:1.5px dashed var(--line);border-radius:13px;color:var(--faint);font-size:13px}
+  .empty .eic{width:36px;height:36px;flex:none;border-radius:10px;display:grid;place-items:center;
+    background:var(--surface2);border:1px solid var(--line);color:var(--faint)}
+  .empty .eic svg{width:17px;height:17px}
+  .empty b{color:var(--muted);font-weight:600}
+
+  /* ---- yield ---- */
+  .yield{margin:20px 0 2px;display:none}
+  .yield.show{display:block;animation:pop .35s var(--ease)}
+  .yield .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+  .yield .head{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .yield .head .pct{color:var(--jade);margin-left:8px}
+  .yield .total{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .bar{height:46px;border-radius:12px;overflow:hidden;display:flex;border:1px solid var(--line);
+    background:var(--ink);box-shadow:0 1px 0 rgba(255,255,255,.04) inset}
+  .bar .seg{display:flex;align-items:center;padding:0 16px;gap:10px;min-width:0;
+    transition:width .8s var(--ease);white-space:nowrap;overflow:hidden}
+  .bar .keep{background:linear-gradient(180deg,rgba(54,214,164,.32),rgba(54,214,164,.14));color:#baf3dd}
+  .bar .drop{background:linear-gradient(180deg,rgba(247,106,131,.27),rgba(247,106,131,.11));color:#ffccd4}
+  .bar .keep+.drop{border-left:1px solid rgba(255,255,255,.12)}
+  .bar .seg .n{font-family:var(--mono);font-weight:600;font-size:16px;color:#fff;font-variant-numeric:tabular-nums}
+  .bar .seg .l{font-size:11.5px;opacity:.82;font-weight:450}
+  .bar .seg.empty{padding:0}
+
+  /* ---- toolbar ---- */
+  .toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:20px}
+  .toolbar .spacer{flex:1 1 auto;min-width:14px;align-self:stretch;position:relative}
+  .toolbar .spacer::before{content:"";position:absolute;left:50%;top:9px;bottom:9px;width:1px;
+    background:var(--line);transform:translateX(-50%)}
+  .btn{font-family:var(--sans);font-weight:600;font-size:13.5px;height:40px;padding:0 17px;
+    border-radius:11px;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:8px;
+    transition:transform .09s,filter .16s,background .16s,border-color .16s,color .16s;white-space:nowrap;letter-spacing:-.01em}
+  .btn:active{transform:translateY(1px) scale(.99)}
+  .btn:focus-visible{outline:2px solid var(--iris);outline-offset:2px}
+  .btn.primary{background:linear-gradient(180deg,var(--iris),var(--iris-d));color:#fff;
+    box-shadow:0 8px 20px -10px rgba(110,123,255,.95),0 1px 0 rgba(255,255,255,.18) inset}
+  .btn.primary:hover{filter:brightness(1.09)}
+  .btn.primary.ok{background:linear-gradient(180deg,var(--jade),#22b888);box-shadow:0 8px 20px -10px rgba(54,214,164,.9)}
+  .btn.solid{background:var(--raise);color:var(--text);border-color:var(--line2)}
+  .btn.solid:hover{border-color:rgba(110,123,255,.55);background:#1e2536}
+  .btn.solid.ok{color:var(--jade);border-color:rgba(54,214,164,.5)}
+  .btn.ghost{background:transparent;color:var(--muted);border-color:var(--line)}
+  .btn.ghost:hover{color:var(--text);border-color:var(--line2);background:rgba(255,255,255,.02)}
+  .btn.ghost.danger:hover{color:var(--coral);border-color:rgba(247,106,131,.45)}
+  .btn svg{width:15px;height:15px;flex:none}
+
+  .out{width:100%;min-height:84px;margin-top:16px;background:var(--ink);color:var(--muted);
+    border:1px solid var(--line);border-radius:11px;padding:14px 15px;font-family:var(--mono);
+    font-size:12px;line-height:1.75;resize:vertical;display:none;letter-spacing:.01em}
+  .out:focus{outline:none;border-color:var(--line2)}
+  .out.show{display:block;animation:pop .3s var(--ease)}
+
+  /* ---- table ---- */
+  .tablewrap{display:none;margin-top:18px;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+  .tablewrap.show{display:block;animation:pop .35s var(--ease)}
+  .tablescroll{max-height:430px;overflow:auto}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  thead th{position:sticky;top:0;z-index:1;text-align:left;font-family:var(--mono);font-weight:500;
+    font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
+    padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--line)}
+  thead th.r{text-align:right}
+  tbody td{padding:10px 16px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr{transition:background .12s}
+  tbody tr:hover td{background:rgba(110,123,255,.05)}
+  td.asin{font-family:var(--mono);color:var(--text);font-size:12px;letter-spacing:.01em}
+  td.title{white-space:normal;max-width:380px;color:var(--muted);font-size:12px;line-height:1.45}
+  td.num{font-family:var(--mono);color:var(--text);text-align:right;font-variant-numeric:tabular-nums}
+  td.num .z{color:var(--faint)}
+  td.st{text-align:right}
+  .pill{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.09em;padding:4px 11px;border-radius:20px;display:inline-block;line-height:1}
+  .pill.keep{background:var(--jade-dim);color:var(--jade)}
+  .pill.drop{background:var(--coral-dim);color:var(--coral)}
+  .pill.mid{background:var(--amber-dim);color:var(--amber)}
+
+  /* ---- lead analyzer ---- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+  .stat{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+    display:flex;flex-direction:column;gap:7px;animation:pop .3s var(--ease)}
+  .stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .stat .v{font-family:var(--mono);font-size:19px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .scorebox{margin-top:12px;background:var(--ink);border:1px solid var(--line);border-radius:13px;
+    padding:20px;animation:pop .35s var(--ease)}
+  .scorebox .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+  .scorebox .head{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .scoreline{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .scorenum{font-family:var(--disp);font-weight:800;font-size:54px;line-height:1;letter-spacing:-.03em;
+    font-variant-numeric:tabular-nums;flex:none}
+  .scorenum .of{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--faint);letter-spacing:0}
+  .scorenum.hi{color:var(--jade)}.scorenum.md{color:var(--amber)}.scorenum.lo{color:var(--coral)}
+  .scoretrack{flex:1 1 200px;min-width:160px}
+  .scoretrack .track{height:10px;border-radius:6px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
+  .scoretrack .fill{height:100%;width:0;border-radius:6px;transition:width .8s var(--ease),background .3s}
+  .scoretrack .fill.hi{background:linear-gradient(90deg,#22b888,var(--jade))}
+  .scoretrack .fill.md{background:linear-gradient(90deg,#d99f14,var(--amber))}
+  .scoretrack .fill.lo{background:linear-gradient(90deg,#e04b66,var(--coral))}
+  .scoretrack .ticks{display:flex;justify-content:space-between;margin-top:7px;
+    font-family:var(--mono);font-size:9.5px;color:var(--faint);letter-spacing:.05em}
+  .verdict{margin-top:18px;padding:13px 16px;border-radius:11px;background:var(--surface2);
+    border:1px solid var(--line);font-size:13.5px;color:var(--text);line-height:1.6}
+  .verdict .dock{color:var(--amber)}
+
+  /* ---- promo calculator ---- */
+  .promogrid{display:grid;grid-template-columns:220px 1fr;gap:12px;margin-bottom:2px}
+  .pricebox{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:15px 17px;
+    display:flex;flex-direction:column;gap:10px}
+  .pricebox label{font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  .money{display:flex;align-items:center;background:var(--ink);border:1px solid var(--line2);
+    border-radius:11px;padding:4px 14px;transition:border .16s,box-shadow .16s}
+  .money:focus-within{border-color:var(--iris);box-shadow:0 0 0 3px rgba(110,123,255,.2)}
+  .money .cur{font-family:var(--mono);font-size:19px;color:var(--faint);flex:none;margin-right:4px}
+  .money input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--text);
+    font-family:var(--mono);font-size:23px;font-weight:600;padding:8px 0;font-variant-numeric:tabular-nums}
+  .money input::placeholder{color:var(--faint);font-weight:400}
+  .pricebox .sub{font-size:11.5px;color:var(--faint);line-height:1.5;margin:0}
+
+  .checksbox{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:12px 13px;
+    display:flex;flex-direction:column;gap:3px}
+  .checksbox .grouplab{font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;padding:3px 6px 8px}
+  .check{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;cursor:pointer;
+    border:1px solid transparent;transition:background .15s,border-color .15s;user-select:none}
+  .check:hover{background:rgba(110,123,255,.06)}
+  .check input{appearance:none;width:19px;height:19px;flex:none;margin:0;border-radius:6px;cursor:pointer;
+    background:var(--ink);border:1px solid var(--line2);display:grid;place-items:center;
+    transition:background .15s,border-color .15s}
+  .check input:checked{background:linear-gradient(180deg,var(--iris),var(--iris-d));border-color:var(--iris)}
+  .check input:checked::before{content:"";width:11px;height:11px;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center/contain no-repeat}
+  .check input:focus-visible{outline:2px solid var(--iris);outline-offset:2px}
+  .check .lab{font-size:13.5px;font-weight:500;color:var(--text)}
+  .check .off{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);
+    background:var(--ink);border:1px solid var(--line);padding:3px 9px;border-radius:6px;transition:color .15s,border-color .15s}
+  .check:has(input:checked){border-color:rgba(110,123,255,.35);background:rgba(110,123,255,.09)}
+  .check:has(input:checked) .off{color:var(--iris);border-color:rgba(110,123,255,.4)}
+
+  .promobox{margin-top:14px;background:var(--ink);border:1px solid var(--line);border-radius:13px;
+    padding:20px;display:none}
+  .promobox.show{display:block;animation:pop .35s var(--ease)}
+  .promobox .prow{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+  .promobox .head{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+  .finalprice{font-family:var(--disp);font-weight:800;font-size:46px;line-height:1;letter-spacing:-.03em;
+    color:var(--jade);font-variant-numeric:tabular-nums}
+  .saveline{font-family:var(--mono);font-size:11.5px;color:var(--jade);background:var(--jade-dim);
+    border:1px solid rgba(54,214,164,.3);padding:6px 12px;border-radius:20px;white-space:nowrap}
+  .saveline:empty{display:none}
+  .breakdown{background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:13px 16px}
+  .breakdown div{display:flex;justify-content:space-between;gap:16px;padding:5px 0;
+    font-size:13px;color:var(--muted)}
+  .breakdown div span{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--text)}
+  .breakdown div.minus span{color:var(--coral)}
+  .breakdown div.final{border-top:1px solid var(--line);margin-top:5px;padding-top:11px;
+    font-weight:600;color:var(--text)}
+  .breakdown div.final span{color:var(--jade);font-weight:600}
+
+  .hint{font-size:12px;color:var(--faint);margin:10px 0 0}
+  footer{margin-top:26px;text-align:center;font-size:11px;color:var(--faint);font-family:var(--mono);letter-spacing:.04em}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(12px);
+    background:var(--jade);color:#04241b;font-weight:600;font-size:13.5px;padding:11px 22px;border-radius:11px;
+    opacity:0;pointer-events:none;transition:.26s var(--ease);box-shadow:0 18px 40px -18px rgba(54,214,164,.8);
+    z-index:50;display:flex;align-items:center;gap:9px}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:var(--amber);color:#3a2c00;box-shadow:0 18px 40px -18px rgba(251,191,36,.8)}
+  .toast svg{width:15px;height:15px}
+
+  @media (max-width:640px){
+    .wrap{padding:20px 14px 70px}
+    .brand .tag{display:none}
+    .privacy{display:none}
+    .pagenav{grid-template-columns:1fr}
+    .pagebtn .ps{white-space:normal}
+    .settings{gap:14px}
+    .field{flex:1 1 120px}
+    .field input,.field select{width:100%}
+    .btn{flex:1 1 auto;justify-content:center}
+    .toolbar .spacer{display:none}
+    td.title{max-width:180px}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .scorenum{font-size:44px}
+    .promogrid{grid-template-columns:1fr}
+    .finalprice{font-size:38px}
+    .tabs{width:100%}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>Lead Tools</h1>
-      <p>Analyzer & Promo Calculator</p>
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18"/><path d="M7 12h10"/><path d="M11 19h2"/></svg></div>
+      <div>
+        <h1>Sourcing <span class="b">Suite</span></h1>
+        <p class="tag">Keepa exports on one side, lead maths on the other.</p>
+      </div>
     </div>
+    <div class="privacy"><span class="dot"></span>Runs locally · nothing uploaded</div>
+  </header>
 
+  <!-- primary page switcher -->
+  <nav class="pagenav" aria-label="Tool pages">
+    <button class="pagebtn active" data-page="page-keepa">
+      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span>
+      <span class="ptxt"><span class="pt">Keepa console</span><span class="ps">Combine exports · filter the viewer</span></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+    <button class="pagebtn" data-page="page-lead">
+      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+      <span class="ptxt"><span class="pt">Lead tools</span><span class="ps">Score a lead · price the promos</span></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+  </nav>
+
+  <!-- ======================================================= -->
+  <!-- PAGE 1 · KEEPA CONSOLE                                   -->
+  <!-- ======================================================= -->
+  <div class="page active" id="page-keepa">
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('analyzer', this)">Lead Analyzer</button>
-      <button class="tab-btn" onclick="switchTab('promo', this)">Promo Calculator</button>
+      <button class="tab active" data-tab="combine"><span class="step">1</span>Combine ASINs</button>
+      <button class="tab" data-tab="filter"><span class="step">2</span>Filter &amp; sort</button>
     </div>
 
-    <!-- TAB 1: LEAD ANALYZER -->
-    <div id="analyzer" class="tab-content active">
-      <div class="form-section">
-        <div class="input-group">
-          <label for="spm">Sales per month (SPM)</label>
-          <input type="number" id="spm" placeholder="e.g., 300" />
+    <!-- 1.1 combine -->
+    <section class="panel active" id="combine">
+      <div class="card">
+        <p class="intro">Drop every country's ASIN export. <span class="q">Merged, de-duplicated, handed back as one clean list — copy it or open it straight in Keepa.</span></p>
+
+        <div class="drop" id="dropC" tabindex="0" role="button" aria-label="Upload ASIN CSV files">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg></span>
+          <span class="txt"><span class="big">Drop CSV files here</span><span class="small">Or click to browse · ASIN-only or full exports · any number of files</span></span>
+        </div>
+        <input type="file" id="fileC" accept=".csv,text/csv" multiple>
+        <div class="files" id="filesC"></div>
+
+        <div class="yield" id="yieldC">
+          <div class="row"><span class="head">Unique vs duplicate<span class="pct" id="cPct"></span></span><span class="total" id="cTotalLbl">0 read</span></div>
+          <div class="bar">
+            <div class="seg keep" id="cKeepSeg" style="width:0"><span class="n" id="cUnique">0</span><span class="l">unique</span></div>
+            <div class="seg drop" id="cDropSeg" style="width:0"><span class="n" id="cDupes">0</span><span class="l">duplicates removed</span></div>
+          </div>
         </div>
 
-        <div class="input-group">
-          <label for="cost">Cost price (£)</label>
-          <input type="number" id="cost" step="0.01" placeholder="e.g., 5.00" />
+        <div class="settings" id="setC" style="display:none">
+          <div class="field">
+            <label>Keepa domain · for direct open</label>
+            <select id="domainC">
+              <option value="2">United Kingdom</option><option value="3">Germany</option>
+              <option value="4">France</option><option value="8">Italy</option>
+              <option value="9">Spain</option><option value="1">United States</option>
+            </select>
+          </div>
         </div>
 
-        <div class="input-group">
-          <label for="profit">Profit per unit (£)</label>
-          <input type="number" id="profit" step="0.01" placeholder="e.g., 10.50" />
+        <div class="toolbar" id="barC" style="display:none">
+          <button class="btn primary" id="copyC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="lab">Copy unique ASINs</span></button>
+          <button class="btn solid" id="openC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Open in Keepa</button>
+          <div class="spacer"></div>
+          <button class="btn ghost" id="dlC">Download .txt</button>
+          <button class="btn ghost danger" id="clearC">Clear</button>
         </div>
-
-        <div class="input-group">
-          <label for="roi">ROI (%)</label>
-          <input type="number" id="roi" step="0.1" placeholder="e.g., 25" />
-        </div>
-
-        <button class="btn" onclick="analyze()">Analyze Lead</button>
+        <textarea class="out" id="outC" placeholder="Combined unique ASINs appear here…" spellcheck="false"></textarea>
+        <p class="hint" id="hintC" style="display:none">Comma-separated and ready for Keepa Product Viewer.</p>
       </div>
+    </section>
 
-      <div class="results" id="results">
-        <div class="metrics-grid">
-          <div class="metric-card spm">
-            <div class="metric-label">SPM</div>
-            <div class="metric-value" id="spm-display">0</div>
+    <!-- 1.2 filter -->
+    <section class="panel" id="filter">
+      <div class="card">
+        <p class="intro">Drop the full Keepa Product Viewer export. <span class="q">Everything that doesn't sell gets sorted out automatically.</span></p>
+
+        <div class="settings">
+          <div class="field"><label>Keep if drops 30d ≥</label><input type="number" id="thDrops" value="10" min="0" inputmode="numeric"></div>
+          <div class="field"><label>…or if bought &gt;</label><input type="number" id="thBought" value="10" min="0" inputmode="numeric"></div>
+          <div class="field"><label>Min offer count ≥</label><input type="number" id="thOffers" value="0" min="0" inputmode="numeric"></div>
+          <div class="field"><label>Min buy box price ≥ £</label><input type="number" id="thBuyBox" value="0" min="0" step="0.01" inputmode="decimal"></div>
+          <div class="field"><label>Keepa domain</label>
+            <select id="domainF">
+              <option value="2">United Kingdom</option><option value="3">Germany</option>
+              <option value="4">France</option><option value="8">Italy</option>
+              <option value="9">Spain</option><option value="1">United States</option>
+            </select>
           </div>
-          <div class="metric-card profit">
-            <div class="metric-label">Profit/unit</div>
-            <div class="metric-value" id="profit-display">£0</div>
-          </div>
-          <div class="metric-card roi">
-            <div class="metric-label">ROI</div>
-            <div class="metric-value" id="roi-display">0%</div>
-          </div>
-          <div class="metric-card tier">
-            <div class="metric-label">Tier</div>
-            <div class="metric-value" id="tier-display">—</div>
+          <p class="rule" id="ruleText"></p>
+        </div>
+
+        <div class="drop" id="dropF" tabindex="0" role="button" aria-label="Upload Product Viewer CSV">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg></span>
+          <span class="txt"><span class="big">Drop the Product Viewer CSV here</span><span class="small">Re-sorts instantly when you change the thresholds above</span></span>
+        </div>
+        <input type="file" id="fileF" accept=".csv,text/csv">
+        <div class="files" id="filesF"></div>
+        <div class="warn" id="warnF"></div>
+
+        <div class="yield" id="yieldF">
+          <div class="row"><span class="head">Kept vs dropped<span class="pct" id="fPct"></span></span><span class="total" id="fTotalLbl">0 rows</span></div>
+          <div class="bar">
+            <div class="seg keep" id="fKeepSeg" style="width:0"><span class="n" id="fKept">0</span><span class="l">kept</span></div>
+            <div class="seg drop" id="fDropSeg" style="width:0"><span class="n" id="fDropped">0</span><span class="l">dropped</span></div>
           </div>
         </div>
 
-        <div class="score-box">
-          <div class="score-label">Lead Score</div>
-          <div class="tier-badge" id="tier-badge"></div>
-          <div class="score-number" id="score-value">0</div>
-          <div class="score-bar">
-            <div class="score-fill" id="score-fill" style="width: 0%"></div>
-          </div>
-          <div class="score-note" id="score-note"></div>
+        <div class="toolbar" id="barF" style="display:none">
+          <button class="btn primary" id="copyF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="lab">Copy kept ASINs</span></button>
+          <button class="btn solid" id="openKeepa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Open in Keepa</button>
+          <button class="btn solid" id="copyKeepa"><span class="lab">Copy Keepa link</span></button>
+          <div class="spacer"></div>
+          <button class="btn ghost" id="dlCsvF">Download filtered CSV</button>
+          <button class="btn ghost" id="toggleAll">Show all rows</button>
+          <button class="btn ghost danger" id="clearF">Clear</button>
         </div>
+        <textarea class="out" id="outF" spellcheck="false"></textarea>
+
+        <div class="tablewrap" id="tableWrap"><div class="tablescroll"><table id="tableF"></table></div></div>
       </div>
-    </div>
-
-    <!-- TAB 2: PROMO CALCULATOR -->
-    <div id="promo" class="tab-content">
-      <div class="form-section">
-        <div class="input-group">
-          <label for="promo-price">Full price (£)</label>
-          <input type="number" id="promo-price" step="0.01" placeholder="e.g., 10.99" oninput="calculatePromo()" />
-        </div>
-
-        <div>
-          <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px;">Available Promos</label>
-          <div class="checkbox-group">
-            <label>
-              <input type="checkbox" id="promo-5off4" onchange="calculatePromo()" />
-              <span>5% off any 4 units</span>
-            </label>
-            <label>
-              <input type="checkbox" id="promo-ss5" onchange="calculatePromo()" />
-              <span>5% Subscribe &amp; Save</span>
-            </label>
-            <label>
-              <input type="checkbox" id="promo-ss" onchange="calculatePromo()" />
-              <span>15% Subscribe &amp; Save</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div class="results" id="promo-results" style="display: none;">
-        <div class="promo-result">
-          <div class="promo-label">Final price per unit</div>
-          <div class="promo-value" id="promo-final">£0.00</div>
-          <div class="promo-breakdown" id="promo-breakdown"></div>
-          <div class="savings" id="promo-savings"></div>
-        </div>
-      </div>
-    </div>
+    </section>
   </div>
 
-  <script>
-    function switchTab(tab, btn) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById(tab).classList.add('active');
-      btn.classList.add('active');
-    }
+  <!-- ======================================================= -->
+  <!-- PAGE 2 · LEAD TOOLS                                      -->
+  <!-- ======================================================= -->
+  <div class="page" id="page-lead">
+    <div class="tabs">
+      <button class="tab active" data-tab="lead"><span class="step">1</span>Score lead</button>
+      <button class="tab" data-tab="promo"><span class="step">2</span>Promo price</button>
+    </div>
 
-    function analyze() {
-      const spm = parseFloat(document.getElementById('spm').value) || 0;
-      const cost = parseFloat(document.getElementById('cost').value) || 0;
-      const profit = parseFloat(document.getElementById('profit').value) || 0;
-      const roi = parseFloat(document.getElementById('roi').value) || 0;
+    <!-- 2.1 score lead -->
+    <section class="panel active" id="lead">
+      <div class="card">
+        <p class="intro">Punch in the numbers from a lead. <span class="q">Scored 1–10 against the buying rules — volume first, then margin, with an ROI check on top.</span></p>
 
-      if (!spm || !profit) {
-        alert('Please fill in SPM and Profit per unit');
-        return;
-      }
+        <div class="settings">
+          <div class="field"><label>Sales / month (SPM)</label><input type="number" id="laSpm" min="0" placeholder="300" inputmode="numeric"></div>
+          <div class="field"><label>Cost price £</label><input type="number" id="laCost" min="0" step="0.01" placeholder="5.00" inputmode="decimal"></div>
+          <div class="field"><label>Profit / unit £</label><input type="number" id="laProfit" min="0" step="0.01" placeholder="10.50" inputmode="decimal"></div>
+          <div class="field"><label>ROI %</label><input type="number" id="laRoi" step="0.1" placeholder="25" inputmode="decimal"></div>
+          <p class="rule">Scores live as you type. <span class="grp"><span class="chip">ROI &lt; 10%</span></span> docks two points off any buy.</p>
+        </div>
 
-      document.getElementById('spm-display').textContent = Math.round(spm).toLocaleString();
-      document.getElementById('profit-display').textContent = '£' + profit.toFixed(2);
-      document.getElementById('roi-display').textContent = Math.round(roi) + '%';
+        <div class="empty" id="emptyL">
+          <span class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+          <span>Enter <b>SPM</b> and <b>profit per unit</b> — the score, tier and verdict appear here instantly.</span>
+        </div>
 
-      let priceTier = '';
-      let tierClass = '';
-      if (profit >= 9) {
-        priceTier = 'High profit';
-        tierClass = 'tier-high';
-      } else if (profit >= 3) {
-        priceTier = 'Mid profit';
-        tierClass = 'tier-mid';
-      } else {
-        priceTier = 'Low profit';
-        tierClass = 'tier-low';
-      }
+        <div id="leadResults" style="display:none">
+          <div class="stats">
+            <div class="stat"><span class="k">SPM</span><span class="v" id="laSpmV">0</span></div>
+            <div class="stat"><span class="k">Profit / unit</span><span class="v" id="laProfitV">£0.00</span></div>
+            <div class="stat"><span class="k">ROI</span><span class="v" id="laRoiV">0%</span></div>
+            <div class="stat"><span class="k">Tier</span><span class="v" id="laTierV" style="font-family:var(--sans);font-size:15px;display:flex;align-items:center">—</span></div>
+          </div>
 
-      let score = 0;
-      let note = '';
+          <div class="scorebox">
+            <div class="row"><span class="head">Lead score</span><span class="pill" id="laTierPill">—</span></div>
+            <div class="scoreline">
+              <div class="scorenum" id="laScore">0<span class="of"> /10</span></div>
+              <div class="scoretrack">
+                <div class="track"><div class="fill" id="laFill"></div></div>
+                <div class="ticks"><span>1</span><span>pass</span><span>borderline</span><span>buy</span><span>10</span></div>
+              </div>
+            </div>
+            <div class="verdict" id="laNote"></div>
+          </div>
 
-      if (spm < 10) {
-        score = 1;
-        note = 'Below minimum volume.';
-      } else if (spm >= 300) {
-        if (profit >= 9) {
-          score = 10;
-          note = 'Absolute banger! Buy as many as possible.';
-        } else if (profit >= 3) {
-          score = 9;
-          note = 'Rare find. Fast SPM + mid profit. Buy as many as possible.';
-        } else {
-          score = 7;
-          note = 'Fast SPM but low profit. Still solid.';
-        }
-      } else if (spm >= 100) {
-        if (profit >= 9) {
-          score = 9;
-          note = 'Rare find. Strong volume + high profit. Buy as many as possible.';
-        } else if (profit >= 3) {
-          score = 8;
-          note = 'Strong buy. Good volume + mid profit.';
-        } else {
-          score = 6;
-          note = 'Decent volume but low profit.';
-        }
-      } else if (spm >= 50) {
-        if (profit >= 9) {
-          score = 8;
-          note = 'Good profit + decent volume. Strong buy.';
-        } else if (profit >= 3) {
-          score = 7;
-          note = 'Bread & butter mid-ticket. Solid buy.';
-        } else {
-          score = 5;
-          note = 'Borderline. Only if graphs look good.';
-        }
-      } else if (spm >= 30) {
-        if (profit >= 9) {
-          score = 8;
-          note = 'High profit + decent volume. Buy 7-15 units.';
-        } else if (profit >= 3) {
-          score = 6;
-          note = 'Will buy. Aim for 7-15 units depending on competition.';
-        } else {
-          score = 3;
-          note = 'Low priority. Pass.';
-        }
-      } else if (spm >= 10) {
-        if (profit >= 9) {
-          score = 7;
-          note = 'High profit! Borderline. Only if graphs look good.';
-        } else if (profit >= 3) {
-          score = 5;
-          note = 'Borderline. Only if graphs look good.';
-        } else {
-          score = 2;
-          note = 'Low priority. Pass.';
-        }
-      }
+          <div class="toolbar">
+            <div class="spacer" style="margin-left:auto"></div>
+            <button class="btn ghost danger" id="clearL">Clear</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      if (roi < 10 && score > 3) {
-        score = Math.max(score - 2, 3);
-        note += ' (ROI below 10% — docked 2 points)';
-      } else if (roi < 10) {
-        score = 1;
-        note = 'ROI below 10%. Pass.';
-      }
+    <!-- 2.2 promo price -->
+    <section class="panel" id="promo">
+      <div class="card">
+        <p class="intro">Stack the live promos on a listing. <span class="q">See the true per-unit price a buyer pays after every discount compounds.</span></p>
 
-      document.getElementById('tier-display').textContent = priceTier;
-      document.getElementById('tier-badge').textContent = priceTier;
-      document.getElementById('tier-badge').className = 'tier-badge ' + tierClass;
-      document.getElementById('score-value').textContent = score.toFixed(1);
-      document.getElementById('score-fill').style.width = (score / 10) * 100 + '%';
-      document.getElementById('score-note').textContent = note;
+        <div class="promogrid">
+          <div class="pricebox">
+            <label for="prPrice">Full price</label>
+            <div class="money"><span class="cur">£</span><input type="number" id="prPrice" min="0" step="0.01" placeholder="10.99" inputmode="decimal"></div>
+            <p class="sub">The listing price before any promos apply.</p>
+          </div>
+          <div class="checksbox">
+            <span class="grouplab">Available promos · tick what's live</span>
+            <label class="check"><input type="checkbox" id="pr5off4"><span class="lab">5% off any 4 units</span><span class="off">−5%</span></label>
+            <label class="check"><input type="checkbox" id="prSS5"><span class="lab">5% Subscribe &amp; Save</span><span class="off">−5%</span></label>
+            <label class="check"><input type="checkbox" id="prSS15"><span class="lab">15% Subscribe &amp; Save</span><span class="off">−15%</span></label>
+          </div>
+        </div>
 
-      document.getElementById('results').classList.add('show');
-    }
+        <div class="empty" id="emptyP">
+          <span class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span>
+          <span>Enter a <b>full price</b> and tick promos — the final per-unit price updates as you go.</span>
+        </div>
 
-    function calculatePromo() {
-      const fullPrice = parseFloat(document.getElementById('promo-price').value);
-      const promo5off4 = document.getElementById('promo-5off4').checked;
-      const promoSS5 = document.getElementById('promo-ss5').checked;
-      const promoSS = document.getElementById('promo-ss').checked;
+        <div class="promobox" id="promoBox">
+          <div class="prow">
+            <div>
+              <div class="head">Final price per unit</div>
+              <div class="finalprice" id="prFinal">£0.00</div>
+            </div>
+            <span class="saveline" id="prSave"></span>
+          </div>
+          <div class="breakdown" id="prBreakdown"></div>
+          <div class="toolbar">
+            <button class="btn primary" id="copyP"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="lab">Copy final price</span></button>
+            <div class="spacer"></div>
+            <button class="btn ghost danger" id="clearP">Clear</button>
+          </div>
+        </div>
+        <p class="hint">Discounts compound in order and the result rounds up to the nearest penny — matching how Amazon applies stacked promos.</p>
+      </div>
+    </section>
+  </div>
 
-      if (!fullPrice || fullPrice <= 0) {
-        document.getElementById('promo-results').style.display = 'none';
-        return;
-      }
+  <footer>No data leaves this page · each tab keeps its own state until you clear it</footer>
+</div>
 
-      let price = fullPrice;
-      let breakdown = [];
+<div class="toast" id="toast"></div>
 
-      breakdown.push(`<div>Full price<span>£${fullPrice.toFixed(2)}</span></div>`);
+<script>
+const $ = s => document.querySelector(s);
+const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+function toast(msg,err){const t=$('#toast');t.innerHTML=(err?'':CHECK)+'<span>'+msg+'</span>';
+  t.className='toast show'+(err?' err':'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',1600);}
+function flashOk(btn,word){const lab=btn.querySelector('.lab');if(!lab)return;
+  const prev=lab.textContent;btn.classList.add('ok');lab.textContent=word||'Copied';
+  clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.classList.remove('ok');lab.textContent=prev;},1400);}
+function copy(text,msg,btn,word){if(!text){toast('Nothing to copy',true);return;}
+  const ok=()=>{toast(msg);if(btn)flashOk(btn,word);};
+  navigator.clipboard.writeText(text).then(ok).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');ta.remove();ok();});}
+function download(name,text,type){const b=new Blob([text],{type:type||'text/plain'});
+  const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
+function countUp(el,to){const from=parseInt(el.textContent.replace(/\D/g,''))||0;
+  if(from===to){el.textContent=to.toLocaleString();return;}
+  const start=performance.now(),dur=560;
+  function step(now){const p=Math.min(1,(now-start)/dur);const e=1-Math.pow(1-p,3);
+    el.textContent=Math.round(from+(to-from)*e).toLocaleString();if(p<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);}
+function parseCSV(text){text=text.replace(/^\uFEFF/,'');const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}
+    else{if(c==='"')q=true;else if(c===','){row.push(cur);cur='';}
+      else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur='';}else if(c==='\r'){}else cur+=c;}}
+  if(cur!==''||row.length){row.push(cur);rows.push(row);}
+  return rows.filter(r=>r.length&&!(r.length===1&&r[0].trim()===''));}
+const asinRe=/^B[0-9A-Z]{9}$/;
+function findAsinCol(header,rows){let i=header.findIndex(h=>h.trim().toLowerCase()==='asin');if(i>=0)return i;
+  let best=-1,score=0;for(let c=0;c<header.length;c++){let s=0;
+    for(let r=0;r<rows.length;r++)if(asinRe.test((rows[r][c]||'').trim()))s++;
+    if(s>score){score=s;best=c;}}return score>0?best:-1;}
+function randomListId(){const c='abcdefghijklmnopqrstuvwxyz0123456789';let s='';
+  for(let i=0;i<64;i++)s+=c[Math.floor(Math.random()*c.length)];return s;}
+function keepaLink(asins,domain){if(!asins.length)return'';const o={};o[domain]=asins;
+  o.listId=randomListId();o.includeInaccessibleAsins=false;
+  return'https://keepa.com/#!viewer/'+encodeURIComponent(JSON.stringify(o));}
+function escapeHtml(s){return(''+s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function setBar(k,d,keep,drop){const tot=keep+drop||1;const kp=keep/tot*100;
+  k.style.width=kp+'%';d.style.width=(100-kp)+'%';k.classList.toggle('empty',keep===0);d.classList.toggle('empty',drop===0);}
+function dz(zone,cb){zone.addEventListener('click',()=>cb.click());
+  zone.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cb.click();}});
+  ['dragover','dragenter'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.add('over');}));
+  zone.addEventListener('dragleave',e=>{e.preventDefault();zone.classList.remove('over');});}
 
-      if (promo5off4) {
-        price = price * 0.95;
-        breakdown.push(`<div>5% off any 4<span>-5%</span></div>`);
-      }
+/* ============ KEEPA · COMBINE ============ */
+let combinedSet=new Map(),combinedCount=0,filesC=[];
+function renderC(){const uniq=[...combinedSet.keys()],has=uniq.length>0;
+  $('#yieldC').classList.toggle('show',has);$('#setC').style.display=has?'flex':'none';
+  $('#barC').style.display=has?'flex':'none';$('#outC').classList.toggle('show',has);
+  $('#hintC').style.display=has?'block':'none';
+  $('#cTotalLbl').textContent=combinedCount.toLocaleString()+' read';
+  const dupes=combinedCount-uniq.length;countUp($('#cUnique'),uniq.length);countUp($('#cDupes'),dupes);
+  $('#cPct').textContent=has?Math.round(uniq.length/combinedCount*100)+'% unique':'';
+  setBar($('#cKeepSeg'),$('#cDropSeg'),uniq.length,dupes);$('#outC').value=uniq.join(', ');
+  $('#filesC').innerHTML=filesC.map(f=>`<span class="f">${escapeHtml(f)}</span>`).join('');}
+function handleCFiles(list){const arr=[...list];if(!arr.length)return;let done=0;
+  arr.forEach(file=>{filesC.push(file.name);const r=new FileReader();
+    r.onload=e=>{const rows=parseCSV(e.target.result);
+      if(rows.length){const header=rows[0],body=rows.slice(1);
+        const headerIsAsin=asinRe.test((header[0]||'').trim());const all=headerIsAsin?rows:body;
+        let col=findAsinCol(header,body);if(col<0)col=0;
+        all.forEach(rw=>{const v=(rw[col]||rw[0]||'').trim();
+          if(asinRe.test(v)){combinedCount++;if(!combinedSet.has(v))combinedSet.set(v,true);}});}
+      if(++done===arr.length)renderC();};r.readAsText(file);});}
+dz($('#dropC'),$('#fileC'));
+$('#fileC').addEventListener('change',e=>handleCFiles(e.target.files));
+$('#dropC').addEventListener('drop',e=>{e.preventDefault();$('#dropC').classList.remove('over');handleCFiles(e.dataTransfer.files);});
+$('#copyC').addEventListener('click',e=>copy($('#outC').value,combinedSet.size+' ASINs copied',e.currentTarget,'Copied'));
+$('#openC').addEventListener('click',()=>{const a=[...combinedSet.keys()];
+  if(!a.length){toast('Nothing to open',true);return;}window.open(keepaLink(a,$('#domainC').value),'_blank');});
+$('#dlC').addEventListener('click',()=>download('unique-asins.txt',$('#outC').value));
 
-      if (promoSS5) {
-        price = price * 0.95;
-        breakdown.push(`<div>5% Subscribe & Save<span>-5%</span></div>`);
-      }
+/* ============ KEEPA · FILTER ============ */
+let viewerRows=[],viewerHeader=[],idxAsin=-1,idxDrops=-1,idxBought=-1,idxTitle=-1,idxOffers=-1,idxBuyBox=-1,showAll=false,keptAsins=[];
+function num(v){if(v==null)return 0;v=(''+v).trim().replace(/,/g,'').replace(/\+/g,'').replace(/£/g,'').replace(/€/g,'').replace(/\$/g,'');
+  if(v==='')return 0;const n=parseFloat(v);return isNaN(n)?0:n;}
+function findCol(names){for(const n of names){const i=viewerHeader.findIndex(h=>h.trim().toLowerCase()===n);if(i>=0)return i;}
+  for(const n of names){const i=viewerHeader.findIndex(h=>h.trim().toLowerCase().includes(n));if(i>=0)return i;}return -1;}
+function updateRuleText(){
+  const thD=num($('#thDrops').value),thB=num($('#thBought').value),thO=num($('#thOffers').value),thBB=num($('#thBuyBox').value);
+  const chip=v=>`<span class="chip">${v}</span>`,or=`<span class="or">OR</span>`,and=`<span class="or" style="color:var(--jade)">AND</span>`;
+  let salesPart=`<span class="grp">Keep when ${chip('drops ≥ '+thD)} ${or} ${chip('bought > '+thB)}</span>`;
+  let parts=[salesPart];
+  if(thO>0) parts.push(`${chip('offers ≥ '+thO)}`);
+  if(thBB>0) parts.push(`${chip('buy box ≥ £'+thBB.toFixed(2))}`);
+  const joined=parts.length===1?parts[0]:parts[0]+' '+parts.slice(1).map(p=>`${and} ${p}`).join(' ');
+  const noteCols=[];
+  if(thO>0&&idxOffers<0)noteCols.push('offer count');
+  if(thBB>0&&idxBuyBox<0)noteCols.push('buy box price');
+  const note=noteCols.length?' <span style="color:var(--amber)">⚠ '+noteCols.join(' & ')+' column not found in CSV — filter ignored</span>':'';
+  $('#ruleText').innerHTML=joined+'.'+note;}
+function rowPassesFilter(r,thD,thB,thO,thBB){
+  const d=num(r[idxDrops]),b=num(r[idxBought]);
+  const salesOk=d>=thD||b>thB;
+  const offersOk=thO===0||idxOffers<0||num(r[idxOffers])>=thO;
+  const buyBoxOk=thBB===0||idxBuyBox<0||num(r[idxBuyBox])>=thBB;
+  return salesOk&&offersOk&&buyBoxOk;}
+function runFilter(){if(!viewerRows.length)return;
+  const thD=num($('#thDrops').value),thB=num($('#thBought').value),thO=num($('#thOffers').value),thBB=num($('#thBuyBox').value);
+  updateRuleText();
+  if(idxDrops<0||idxBought<0||idxAsin<0){const miss=[];
+    if(idxAsin<0)miss.push('ASIN');if(idxDrops<0)miss.push('Sales Rank: Drops last 30 days');
+    if(idxBought<0)miss.push('Monthly Sales Trends: Bought in past month');
+    $('#warnF').innerHTML='<b>This doesn\'t look like a Product Viewer export.</b> Missing column'+(miss.length>1?'s':'')+': '+miss.join(', ')+'. This tab needs the full export with all columns — a plain ASIN list belongs in Combine ASINs.';
+    $('#warnF').classList.add('show');$('#yieldF').classList.remove('show');$('#barF').style.display='none';$('#tableWrap').classList.remove('show');return;}
+  $('#warnF').classList.remove('show');let kept=[],dropped=[];
+  viewerRows.forEach(r=>{
+    const d=num(r[idxDrops]),b=num(r[idxBought]);
+    const offers=idxOffers>=0?num(r[idxOffers]):null;
+    const buyBox=idxBuyBox>=0?num(r[idxBuyBox]):null;
+    const keep=rowPassesFilter(r,thD,thB,thO,thBB);
+    (keep?kept:dropped).push({asin:(r[idxAsin]||'').trim(),title:idxTitle>=0?(r[idxTitle]||''):'',drops:d,bought:b,offers,buyBox,keep});});
+  $('#yieldF').classList.add('show');$('#barF').style.display='flex';
+  $('#fTotalLbl').textContent=viewerRows.length.toLocaleString()+' rows';
+  countUp($('#fKept'),kept.length);countUp($('#fDropped'),dropped.length);
+  $('#fPct').textContent=Math.round(kept.length/viewerRows.length*100)+'% kept';
+  setBar($('#fKeepSeg'),$('#fDropSeg'),kept.length,dropped.length);
+  keptAsins=kept.map(k=>k.asin);$('#outF').value=keptAsins.join(', ');
+  const listArr=showAll?[...kept,...dropped]:kept;
+  const showOfferCol=idxOffers>=0,showBbCol=idxBuyBox>=0;
+  let h='<thead><tr><th>ASIN</th><th>Title</th><th class="r">Drops 30d</th><th class="r">Bought</th>'+(showOfferCol?'<th class="r">Offers</th>':'')+(showBbCol?'<th class="r">Buy Box</th>':'')+'<th class="r">Status</th></tr></thead><tbody>';
+  listArr.slice(0,1000).forEach(k=>{h+=`<tr><td class="asin">${k.asin}</td><td class="title">${escapeHtml(k.title)}</td>`+
+    `<td class="num">${k.drops?k.drops.toLocaleString():'<span class=z>0</span>'}</td>`+
+    `<td class="num">${k.bought?k.bought.toLocaleString():'<span class=z>—</span>'}</td>`+
+    (showOfferCol?`<td class="num">${k.offers?k.offers.toLocaleString():'<span class=z>0</span>'}</td>`:'')+
+    (showBbCol?`<td class="num">${k.buyBox!=null&&k.buyBox>0?'£'+k.buyBox.toFixed(2):'<span class=z>—</span>'}</td>`:'')+
+    `<td class="st"><span class="pill ${k.keep?'keep':'drop'}">${k.keep?'KEEP':'DROP'}</span></td></tr>`;});
+  h+='</tbody>';$('#tableF').innerHTML=h;$('#tableWrap').classList.add('show');
+  $('#toggleAll').textContent=showAll?'Show kept only':'Show all rows';
+  if(listArr.length>1000)toast('Showing first 1,000 rows');}
+function handleFFile(file){$('#filesF').innerHTML=`<span class="f">${escapeHtml(file.name)}</span>`;
+  const r=new FileReader();r.onload=e=>{const rows=parseCSV(e.target.result);
+    if(rows.length<2){toast('No data rows found',true);return;}
+    viewerHeader=rows[0];viewerRows=rows.slice(1);idxAsin=findCol(['asin']);
+    idxDrops=findCol(['sales rank: drops last 30 days','drops last 30 days','drops']);
+    idxBought=findCol(['monthly sales trends: bought in past month','bought in past month','bought']);
+    idxTitle=findCol(['title']);
+    idxOffers=findCol(['offer count','new offer count','total offer count','offers','# sellers','sellers']);
+    idxBuyBox=findCol(['buy box: current','current buy box price','buy box price','buybox','buy box']);
+    updateRuleText();runFilter();};r.readAsText(file);}
+dz($('#dropF'),$('#fileF'));
+$('#fileF').addEventListener('change',e=>{if(e.target.files[0])handleFFile(e.target.files[0]);});
+$('#dropF').addEventListener('drop',e=>{e.preventDefault();$('#dropF').classList.remove('over');if(e.dataTransfer.files[0])handleFFile(e.dataTransfer.files[0]);});
+['#thDrops','#thBought','#thOffers','#thBuyBox'].forEach(id=>$(id).addEventListener('input',runFilter));
+$('#copyF').addEventListener('click',e=>copy($('#outF').value,$('#fKept').textContent+' ASINs copied',e.currentTarget,'Copied'));
+$('#openKeepa').addEventListener('click',()=>{if(!keptAsins.length){toast('No ASINs to open',true);return;}window.open(keepaLink(keptAsins,$('#domainF').value),'_blank');});
+$('#copyKeepa').addEventListener('click',e=>{if(!keptAsins.length){toast('No ASINs',true);return;}copy(keepaLink(keptAsins,$('#domainF').value),'Keepa link copied',e.currentTarget,'Link copied');});
+$('#toggleAll').addEventListener('click',()=>{showAll=!showAll;runFilter();});
+$('#dlCsvF').addEventListener('click',()=>{if(idxDrops<0||idxBought<0){toast('No valid export loaded',true);return;}
+  const thD=num($('#thDrops').value),thB=num($('#thBought').value),thO=num($('#thOffers').value),thBB=num($('#thBuyBox').value);
+  const keptRaw=viewerRows.filter(r=>rowPassesFilter(r,thD,thB,thO,thBB));
+  const esc=v=>{v=v==null?'':''+v;return/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const out=[viewerHeader,...keptRaw].map(r=>r.map(esc).join(',')).join('\r\n');download('keepa-filtered.csv',out,'text/csv');});
 
-      if (promoSS) {
-        price = price * 0.85;
-        breakdown.push(`<div>15% Subscribe & Save<span>-15%</span></div>`);
-      }
+/* ============ LEAD · SCORE ============ */
+function analyzeLead(){
+  const spm=parseFloat($('#laSpm').value)||0,profit=parseFloat($('#laProfit').value)||0;
+  const roi=parseFloat($('#laRoi').value)||0;
 
-      price = Math.ceil(price * 100) / 100;
+  if(!spm||!profit){$('#leadResults').style.display='none';$('#emptyL').style.display='flex';return;}
+  $('#emptyL').style.display='none';
 
-      breakdown.push(`<div style="font-weight: 700; color: var(--text-primary);">Final price<span>£${price.toFixed(2)}</span></div>`);
+  /* tier by profit per unit */
+  let tier,tierClass;
+  if(profit>=9){tier='High profit';tierClass='keep';}
+  else if(profit>=3){tier='Mid profit';tierClass='mid';}
+  else{tier='Low profit';tierClass='drop';}
 
-      document.getElementById('promo-final').textContent = '£' + price.toFixed(2);
-      document.getElementById('promo-breakdown').innerHTML = breakdown.join('');
-      document.getElementById('promo-savings').textContent = '';
-      document.getElementById('promo-results').style.display = 'block';
-    }
+  /* score matrix: volume first, then margin */
+  let score=0,note='';
+  if(spm<10){score=1;note='Below minimum volume.';}
+  else if(spm>=300){
+    if(profit>=9){score=10;note='Absolute banger! Buy as many as possible.';}
+    else if(profit>=3){score=9;note='Rare find. Fast SPM + mid profit. Buy as many as possible.';}
+    else{score=7;note='Fast SPM but low profit. Still solid.';}}
+  else if(spm>=100){
+    if(profit>=9){score=9;note='Rare find. Strong volume + high profit. Buy as many as possible.';}
+    else if(profit>=3){score=8;note='Strong buy. Good volume + mid profit.';}
+    else{score=6;note='Decent volume but low profit.';}}
+  else if(spm>=50){
+    if(profit>=9){score=8;note='Good profit + decent volume. Strong buy.';}
+    else if(profit>=3){score=7;note='Bread & butter mid-ticket. Solid buy.';}
+    else{score=5;note='Borderline. Only if graphs look good.';}}
+  else if(spm>=30){
+    if(profit>=9){score=8;note='High profit + decent volume. Buy 7-15 units.';}
+    else if(profit>=3){score=6;note='Will buy. Aim for 7-15 units depending on competition.';}
+    else{score=3;note='Low priority. Pass.';}}
+  else if(spm>=10){
+    if(profit>=9){score=7;note='High profit! Borderline. Only if graphs look good.';}
+    else if(profit>=3){score=5;note='Borderline. Only if graphs look good.';}
+    else{score=2;note='Low priority. Pass.';}}
 
-    document.getElementById('roi').addEventListener('keypress', e => {
-      if (e.key === 'Enter') analyze();
-    });
+  /* ROI check */
+  let dock='';
+  if(roi<10&&score>3){score=Math.max(score-2,3);dock=' <span class="dock">(ROI below 10% — docked 2 points)</span>';}
+  else if(roi<10){score=1;note='ROI below 10%. Pass.';}
 
-    document.getElementById('promo-price').addEventListener('keypress', e => {
-      if (e.key === 'Enter') calculatePromo();
-    });
-  </script>
+  /* render */
+  $('#laSpmV').textContent=Math.round(spm).toLocaleString();
+  $('#laProfitV').textContent='£'+profit.toFixed(2);
+  $('#laRoiV').textContent=Math.round(roi)+'%';
+  const pill=$('#laTierPill');pill.textContent=tier.toUpperCase();pill.className='pill '+tierClass;
+  $('#laTierV').innerHTML='<span class="pill '+tierClass+'">'+tier.toUpperCase()+'</span>';
+  const band=score>=8?'hi':score>=5?'md':'lo';
+  const sn=$('#laScore');sn.className='scorenum '+band;
+  sn.innerHTML=score.toFixed(1)+'<span class="of"> /10</span>';
+  const fill=$('#laFill');fill.className='fill '+band;fill.style.width=(score/10*100)+'%';
+  $('#laNote').innerHTML=escapeHtml(note)+dock;
+  $('#leadResults').style.display='block';}
+['#laSpm','#laCost','#laProfit','#laRoi'].forEach(id=>$(id).addEventListener('input',analyzeLead));
+function clearLead(){['#laSpm','#laCost','#laProfit','#laRoi'].forEach(id=>$(id).value='');
+  $('#leadResults').style.display='none';$('#emptyL').style.display='flex';}
+$('#clearL').addEventListener('click',clearLead);
+
+/* ============ LEAD · PROMO ============ */
+function calcPromo(){
+  const fullPrice=parseFloat($('#prPrice').value);
+  const p5off4=$('#pr5off4').checked,pSS5=$('#prSS5').checked,pSS15=$('#prSS15').checked;
+  if(!fullPrice||fullPrice<=0){$('#promoBox').classList.remove('show');$('#emptyP').style.display='flex';return;}
+  $('#emptyP').style.display='none';
+  let price=fullPrice;const rows=[];
+  rows.push(`<div>Full price<span>£${fullPrice.toFixed(2)}</span></div>`);
+  if(p5off4){price*=0.95;rows.push(`<div class="minus">5% off any 4<span>−5%</span></div>`);}
+  if(pSS5){price*=0.95;rows.push(`<div class="minus">5% Subscribe &amp; Save<span>−5%</span></div>`);}
+  if(pSS15){price*=0.85;rows.push(`<div class="minus">15% Subscribe &amp; Save<span>−15%</span></div>`);}
+  price=Math.ceil(price*100)/100;
+  rows.push(`<div class="final">Final price<span>£${price.toFixed(2)}</span></div>`);
+  $('#prFinal').textContent='£'+price.toFixed(2);
+  const saved=fullPrice-price;
+  $('#prSave').textContent=saved>0.004?('saves £'+saved.toFixed(2)+' · '+Math.round(saved/fullPrice*100)+'% off'):'';
+  $('#prBreakdown').innerHTML=rows.join('');
+  $('#promoBox').classList.add('show');}
+['#prPrice','#pr5off4','#prSS5','#prSS15'].forEach(id=>$(id).addEventListener('input',calcPromo));
+$('#copyP').addEventListener('click',e=>{const v=$('#prFinal').textContent;
+  if(!$('#promoBox').classList.contains('show')){toast('Nothing to copy',true);return;}
+  copy(v,'Final price copied',e.currentTarget,'Copied');});
+function clearPromo(){$('#prPrice').value='';['#pr5off4','#prSS5','#prSS15'].forEach(id=>$(id).checked=false);
+  $('#promoBox').classList.remove('show');$('#emptyP').style.display='flex';}
+$('#clearP').addEventListener('click',clearPromo);
+
+/* ============ navigation ============ */
+function clearCombine(){combinedSet=new Map();combinedCount=0;filesC=[];$('#fileC').value='';renderC();}
+function clearFilter(){viewerRows=[];keptAsins=[];showAll=false;$('#fileF').value='';
+  $('#yieldF').classList.remove('show');$('#barF').style.display='none';$('#tableWrap').classList.remove('show');
+  $('#warnF').classList.remove('show');$('#filesF').innerHTML='';$('#outF').classList.remove('show');$('#outF').value='';}
+$('#clearC').addEventListener('click',clearCombine);$('#clearF').addEventListener('click',clearFilter);
+updateRuleText();
+
+/* page switcher */
+document.querySelectorAll('.pagebtn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.pagebtn').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');$('#'+b.dataset.page).classList.add('active');}));
+
+/* sub tabs — scoped to their own page */
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  const page=t.closest('.page');
+  page.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  page.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');$('#'+t.dataset.tab).classList.add('active');}));
+</script>
 </body>
 </html>
