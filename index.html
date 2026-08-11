@@ -528,6 +528,7 @@
           <div class="field"><label>…or if bought &gt;</label><input type="number" id="thBought" value="10" min="0" inputmode="numeric"></div>
           <div class="field"><label>Min offer count ≥</label><input type="number" id="thOffers" value="0" min="0" inputmode="numeric"></div>
           <div class="field"><label>Min buy box price ≥ £</label><input type="number" id="thBuyBox" value="0" min="0" step="0.01" inputmode="decimal"></div>
+          <div class="field"><label>Min Amazon 90d drop ≥ %</label><input type="text" id="thAmazon90Drop" value="" placeholder="Off · e.g. +20 or -10" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Minimum Amazon 90 day drop percent; accepts positive or negative values"></div>
           <div class="field"><label>Keepa domain</label>
             <select id="domainF">
               <option value="2">United Kingdom</option><option value="3">Germany</option>
@@ -749,32 +750,39 @@ $('#openC').addEventListener('click',()=>{const a=[...combinedSet.keys()];
 $('#dlC').addEventListener('click',()=>download('unique-asins.txt',$('#outC').value));
 
 /* ============ KEEPA · FILTER ============ */
-let viewerRows=[],viewerHeader=[],idxAsin=-1,idxDrops=-1,idxBought=-1,idxTitle=-1,idxOffers=-1,idxBuyBox=-1,showAll=false,keptAsins=[];
+let viewerRows=[],viewerHeader=[],idxAsin=-1,idxDrops=-1,idxBought=-1,idxTitle=-1,idxOffers=-1,idxBuyBox=-1,idxAmazon90Drop=-1,showAll=false,keptAsins=[];
 function num(v){if(v==null)return 0;v=(''+v).trim().replace(/,/g,'').replace(/\+/g,'').replace(/£/g,'').replace(/€/g,'').replace(/\$/g,'');
   if(v==='')return 0;const n=parseFloat(v);return isNaN(n)?0:n;}
 function findCol(names){for(const n of names){const i=viewerHeader.findIndex(h=>h.trim().toLowerCase()===n);if(i>=0)return i;}
   for(const n of names){const i=viewerHeader.findIndex(h=>h.trim().toLowerCase().includes(n));if(i>=0)return i;}return -1;}
 function updateRuleText(){
   const thD=num($('#thDrops').value),thB=num($('#thBought').value),thO=num($('#thOffers').value),thBB=num($('#thBuyBox').value);
+  const amazon90Active=$('#thAmazon90Drop').value.trim()!=='';
+  const thAmazon90=num($('#thAmazon90Drop').value);
   const chip=v=>`<span class="chip">${v}</span>`,or=`<span class="or">OR</span>`,and=`<span class="or" style="color:var(--jade)">AND</span>`;
   let salesPart=`<span class="grp">Keep when ${chip('drops ≥ '+thD)} ${or} ${chip('bought > '+thB)}</span>`;
   let parts=[salesPart];
   if(thO>0) parts.push(`${chip('offers ≥ '+thO)}`);
   if(thBB>0) parts.push(`${chip('buy box ≥ £'+thBB.toFixed(2))}`);
+  if(amazon90Active) parts.push(`${chip('Amazon 90d drop ≥ '+thAmazon90+'%')}`);
   const joined=parts.length===1?parts[0]:parts[0]+' '+parts.slice(1).map(p=>`${and} ${p}`).join(' ');
   const noteCols=[];
   if(thO>0&&idxOffers<0)noteCols.push('offer count');
   if(thBB>0&&idxBuyBox<0)noteCols.push('buy box price');
+  if(amazon90Active&&idxAmazon90Drop<0)noteCols.push('Amazon 90 days drop %');
   const note=noteCols.length?' <span style="color:var(--amber)">⚠ '+noteCols.join(' & ')+' column not found in CSV — filter ignored</span>':'';
   $('#ruleText').innerHTML=joined+'.'+note;}
-function rowPassesFilter(r,thD,thB,thO,thBB){
+function rowPassesFilter(r,thD,thB,thO,thBB,amazon90Active,thAmazon90){
   const d=num(r[idxDrops]),b=num(r[idxBought]);
   const salesOk=d>=thD||b>thB;
   const offersOk=thO===0||idxOffers<0||num(r[idxOffers])>=thO;
   const buyBoxOk=thBB===0||idxBuyBox<0||num(r[idxBuyBox])>=thBB;
-  return salesOk&&offersOk&&buyBoxOk;}
+  const amazon90Ok=!amazon90Active||idxAmazon90Drop<0||num(r[idxAmazon90Drop])>=thAmazon90;
+  return salesOk&&offersOk&&buyBoxOk&&amazon90Ok;}
 function runFilter(){if(!viewerRows.length)return;
   const thD=num($('#thDrops').value),thB=num($('#thBought').value),thO=num($('#thOffers').value),thBB=num($('#thBuyBox').value);
+  const amazon90Active=$('#thAmazon90Drop').value.trim()!=='';
+  const thAmazon90=num($('#thAmazon90Drop').value);
   updateRuleText();
   if(idxDrops<0||idxBought<0||idxAsin<0){const miss=[];
     if(idxAsin<0)miss.push('ASIN');if(idxDrops<0)miss.push('Sales Rank: Drops last 30 days');
@@ -786,8 +794,9 @@ function runFilter(){if(!viewerRows.length)return;
     const d=num(r[idxDrops]),b=num(r[idxBought]);
     const offers=idxOffers>=0?num(r[idxOffers]):null;
     const buyBox=idxBuyBox>=0?num(r[idxBuyBox]):null;
-    const keep=rowPassesFilter(r,thD,thB,thO,thBB);
-    (keep?kept:dropped).push({asin:(r[idxAsin]||'').trim(),title:idxTitle>=0?(r[idxTitle]||''):'',drops:d,bought:b,offers,buyBox,keep});});
+    const amazon90Drop=idxAmazon90Drop>=0?num(r[idxAmazon90Drop]):null;
+    const keep=rowPassesFilter(r,thD,thB,thO,thBB,amazon90Active,thAmazon90);
+    (keep?kept:dropped).push({asin:(r[idxAsin]||'').trim(),title:idxTitle>=0?(r[idxTitle]||''):'',drops:d,bought:b,offers,buyBox,amazon90Drop,keep});});
   $('#yieldF').classList.add('show');$('#barF').style.display='flex';
   $('#fTotalLbl').textContent=viewerRows.length.toLocaleString()+' rows';
   countUp($('#fKept'),kept.length);countUp($('#fDropped'),dropped.length);
@@ -795,13 +804,14 @@ function runFilter(){if(!viewerRows.length)return;
   setBar($('#fKeepSeg'),$('#fDropSeg'),kept.length,dropped.length);
   keptAsins=kept.map(k=>k.asin);$('#outF').value=keptAsins.join(', ');
   const listArr=showAll?[...kept,...dropped]:kept;
-  const showOfferCol=idxOffers>=0,showBbCol=idxBuyBox>=0;
-  let h='<thead><tr><th>ASIN</th><th>Title</th><th class="r">Drops 30d</th><th class="r">Bought</th>'+(showOfferCol?'<th class="r">Offers</th>':'')+(showBbCol?'<th class="r">Buy Box</th>':'')+'<th class="r">Status</th></tr></thead><tbody>';
+  const showOfferCol=idxOffers>=0,showBbCol=idxBuyBox>=0,showAmazon90Col=idxAmazon90Drop>=0;
+  let h='<thead><tr><th>ASIN</th><th>Title</th><th class="r">Drops 30d</th><th class="r">Bought</th>'+(showOfferCol?'<th class="r">Offers</th>':'')+(showBbCol?'<th class="r">Buy Box</th>':'')+(showAmazon90Col?'<th class="r">Amazon drop 90d</th>':'')+'<th class="r">Status</th></tr></thead><tbody>';
   listArr.slice(0,1000).forEach(k=>{h+=`<tr><td class="asin">${k.asin}</td><td class="title">${escapeHtml(k.title)}</td>`+
     `<td class="num">${k.drops?k.drops.toLocaleString():'<span class=z>0</span>'}</td>`+
     `<td class="num">${k.bought?k.bought.toLocaleString():'<span class=z>—</span>'}</td>`+
     (showOfferCol?`<td class="num">${k.offers?k.offers.toLocaleString():'<span class=z>0</span>'}</td>`:'')+
     (showBbCol?`<td class="num">${k.buyBox!=null&&k.buyBox>0?'£'+k.buyBox.toFixed(2):'<span class=z>—</span>'}</td>`:'')+
+    (showAmazon90Col?`<td class="num">${k.amazon90Drop!=null?k.amazon90Drop.toLocaleString()+'%':'<span class=z>—</span>'}</td>`:'')+
     `<td class="st"><span class="pill ${k.keep?'keep':'drop'}">${k.keep?'KEEP':'DROP'}</span></td></tr>`;});
   h+='</tbody>';$('#tableF').innerHTML=h;$('#tableWrap').classList.add('show');
   $('#toggleAll').textContent=showAll?'Show kept only':'Show all rows';
@@ -815,18 +825,21 @@ function handleFFile(file){$('#filesF').innerHTML=`<span class="f">${escapeHtml(
     idxTitle=findCol(['title']);
     idxOffers=findCol(['offer count','new offer count','total offer count','offers','# sellers','sellers']);
     idxBuyBox=findCol(['buy box: current','current buy box price','buy box price','buybox','buy box']);
+    idxAmazon90Drop=findCol(['amazon: 90 days drop %','amazon 90 days drop %','amazon: 90 day drop %','amazon 90d drop %']);
     updateRuleText();runFilter();};r.readAsText(file);}
 dz($('#dropF'),$('#fileF'));
 $('#fileF').addEventListener('change',e=>{if(e.target.files[0])handleFFile(e.target.files[0]);});
 $('#dropF').addEventListener('drop',e=>{e.preventDefault();$('#dropF').classList.remove('over');if(e.dataTransfer.files[0])handleFFile(e.dataTransfer.files[0]);});
-['#thDrops','#thBought','#thOffers','#thBuyBox'].forEach(id=>$(id).addEventListener('input',runFilter));
+['#thDrops','#thBought','#thOffers','#thBuyBox','#thAmazon90Drop'].forEach(id=>$(id).addEventListener('input',runFilter));
 $('#copyF').addEventListener('click',e=>copy($('#outF').value,$('#fKept').textContent+' ASINs copied',e.currentTarget,'Copied'));
 $('#openKeepa').addEventListener('click',()=>{if(!keptAsins.length){toast('No ASINs to open',true);return;}window.open(keepaLink(keptAsins,$('#domainF').value),'_blank');});
 $('#copyKeepa').addEventListener('click',e=>{if(!keptAsins.length){toast('No ASINs',true);return;}copy(keepaLink(keptAsins,$('#domainF').value),'Keepa link copied',e.currentTarget,'Link copied');});
 $('#toggleAll').addEventListener('click',()=>{showAll=!showAll;runFilter();});
 $('#dlCsvF').addEventListener('click',()=>{if(idxDrops<0||idxBought<0){toast('No valid export loaded',true);return;}
   const thD=num($('#thDrops').value),thB=num($('#thBought').value),thO=num($('#thOffers').value),thBB=num($('#thBuyBox').value);
-  const keptRaw=viewerRows.filter(r=>rowPassesFilter(r,thD,thB,thO,thBB));
+  const amazon90Active=$('#thAmazon90Drop').value.trim()!=='';
+  const thAmazon90=num($('#thAmazon90Drop').value);
+  const keptRaw=viewerRows.filter(r=>rowPassesFilter(r,thD,thB,thO,thBB,amazon90Active,thAmazon90));
   const esc=v=>{v=v==null?'':''+v;return/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
   const out=[viewerHeader,...keptRaw].map(r=>r.map(esc).join(',')).join('\r\n');download('keepa-filtered.csv',out,'text/csv');});
 
