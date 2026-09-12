@@ -1,6 +1,8 @@
 /* BDL Sourcing — Brands page */
 .pagebtn[data-page="page-brands"]{--page-a:var(--iris);--page-b:var(--iris2);--page-soft:rgba(110,123,255,.13);--page-glow:0 14px 30px -22px rgba(110,123,255,.9)}
 .wrap{max-width:1280px}
+.pagenav{grid-template-columns:1fr 1fr 1fr}
+@media (max-width:760px){.pagenav{grid-template-columns:1fr}}
 .card+.card{margin-top:16px}
 .cardhead{display:flex;align-items:center;gap:12px;margin:0 0 14px;flex-wrap:wrap}
 .cardhead h2{font-family:var(--disp);font-weight:800;font-size:19px;margin:0;line-height:1.1}

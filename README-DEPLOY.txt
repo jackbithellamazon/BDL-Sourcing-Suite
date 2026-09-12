@@ -9,4 +9,4 @@ Rules: js/rule1.js is FROZEN (9 Sep 2026). js/rule2.js is the Mera filter. Do no
 Checks: open the page, add ?checks to the URL, and the known-answer tests run against the fixtures
         (fixtures are kept locally in bdl-sourcing-harness/fixtures, not in the repo).
 
-Build: v1.0 · 2026-09-12 · b1
+Build: v1.0 · 2026-09-12 · b2 — Keepa console page restored (Lead tools · Keepa console · Brands)

@@ -21,6 +21,10 @@ function countUp(el,to){const from=parseInt(el.textContent.replace(/\D/g,''))||0
     el.textContent=Math.round(from+(to-from)*e).toLocaleString();if(p<1)requestAnimationFrame(step);}
   requestAnimationFrame(step);}
 const asinRe=/^B[0-9A-Z]{9}$/;
+function findAsinCol(header,rows){let i=header.findIndex(h=>h.trim().toLowerCase()==='asin');if(i>=0)return i;
+  let best=-1,score=0;for(let c=0;c<header.length;c++){let s=0;
+    for(let r=0;r<rows.length;r++)if(asinRe.test((rows[r][c]||'').trim()))s++;
+    if(s>score){score=s;best=c;}}return score>0?best:-1;}
 function randomListId(){const c='abcdefghijklmnopqrstuvwxyz0123456789';let s='';
   for(let i=0;i<64;i++)s+=c[Math.floor(Math.random()*c.length)];return s;}
 /* Opens Keepa's Product Viewer with the ASINs already loaded — this is what replaces the paste step. */

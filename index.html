@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/brands.css">
+<link rel="stylesheet" href="css/base.css?v=b2">
+<link rel="stylesheet" href="css/brands.css?v=b2">
 </head>
 <body>
 <div class="wrap">
@@ -33,22 +33,130 @@
   </header>
 
   <nav class="pagenav" aria-label="Tool pages">
-    <button class="pagebtn active" data-page="page-brands">
-      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span>
-      <span class="ptxt"><span class="pt">Brands</span><span class="ps">Pick a source · drop the exports · get the leads</span></span>
-      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
-    </button>
-    <button class="pagebtn" data-page="page-lead">
+    <button class="pagebtn active" data-page="page-lead">
       <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
       <span class="ptxt"><span class="pt">Lead tools</span><span class="ps">Score a lead · price the promos</span></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+    <button class="pagebtn" data-page="page-keepa">
+      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z"/></svg></span>
+      <span class="ptxt"><span class="pt">Keepa console</span><span class="ps">Combine ASINs · filter the viewer</span></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+    <button class="pagebtn" data-page="page-brands">
+      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span>
+      <span class="ptxt"><span class="pt">Brands</span><span class="ps">Pick a source · drop the exports · get the leads</span></span>
       <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
     </button>
   </nav>
 
   <!-- ======================================================= -->
+  <!-- PAGE 2 · KEEPA CONSOLE (unchanged)                       -->
+  <!-- ======================================================= -->
+  <div class="page" id="page-keepa">
+    <div class="tabs">
+      <button class="tab active" data-tab="combine"><span class="step">1</span>Combine ASINs</button>
+      <button class="tab" data-tab="filter"><span class="step">2</span>Filter &amp; sort</button>
+    </div>
+    <section class="panel active" id="combine">
+      <div class="card">
+        <p class="intro">Drop every country's ASIN export. <span class="q">Merged, de-duplicated, handed back as one clean list — copy it or open it straight in Keepa.</span></p>
+
+        <div class="drop" id="dropC" tabindex="0" role="button" aria-label="Upload ASIN CSV files">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg></span>
+          <span class="txt"><span class="big">Drop CSV files here</span><span class="small">Or click to browse · ASIN-only or full exports · any number of files</span></span>
+        </div>
+        <input type="file" id="fileC" accept=".csv,text/csv" multiple>
+        <div class="files" id="filesC"></div>
+
+        <div class="yield" id="yieldC">
+          <div class="row"><span class="head">Unique vs duplicate<span class="pct" id="cPct"></span></span><span class="total" id="cTotalLbl">0 read</span></div>
+          <div class="bar">
+            <div class="seg keep" id="cKeepSeg" style="width:0"><span class="n" id="cUnique">0</span><span class="l">unique</span></div>
+            <div class="seg drop" id="cDropSeg" style="width:0"><span class="n" id="cDupes">0</span><span class="l">duplicates removed</span></div>
+          </div>
+        </div>
+
+        <div class="settings" id="setC" style="display:none">
+          <div class="field">
+            <label>Keepa domain · for direct open</label>
+            <select id="domainC">
+              <option value="2">United Kingdom</option><option value="3">Germany</option>
+              <option value="4">France</option><option value="8">Italy</option>
+              <option value="9">Spain</option><option value="1">United States</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toolbar" id="barC" style="display:none">
+          <button class="btn primary" id="copyC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="lab">Copy unique ASINs</span></button>
+          <button class="btn solid" id="openC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Open in Keepa</button>
+          <div class="spacer"></div>
+          <button class="btn ghost" id="dlC">Download .txt</button>
+          <button class="btn ghost danger" id="clearC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>Clear</button>
+        </div>
+        <textarea class="out" id="outC" placeholder="Combined unique ASINs appear here…" spellcheck="false"></textarea>
+        <p class="hint" id="hintC" style="display:none">Comma-separated and ready for Keepa Product Viewer.</p>
+      </div>
+    </section>
+
+    <!-- 1.2 filter -->
+    <section class="panel" id="filter">
+      <div class="card">
+        <p class="intro">Drop the full Keepa Product Viewer export. <span class="q">Everything that doesn't sell gets sorted out automatically.</span></p>
+
+        <div class="settings">
+          <div class="field"><label>Keep if drops 30d ≥</label><input type="number" id="thDrops" value="10" min="0" inputmode="numeric"></div>
+          <div class="field"><label>…or if bought &gt;</label><input type="number" id="thBought" value="10" min="0" inputmode="numeric"></div>
+          <div class="field"><label>Min offer count ≥</label><input type="number" id="thOffers" value="0" min="0" inputmode="numeric"></div>
+          <div class="field"><label>Min buy box price ≥ £</label><input type="number" id="thBuyBox" value="0" min="0" step="0.01" inputmode="decimal"></div>
+          <div class="field"><label>Min Amazon 90d drop ≥ %</label><input type="text" id="thAmazon90Drop" value="" placeholder="Off · e.g. +20 or -10" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Minimum Amazon 90 day drop percent; accepts positive or negative values"></div>
+          <div class="field"><label>Keepa domain</label>
+            <select id="domainF">
+              <option value="2">United Kingdom</option><option value="3">Germany</option>
+              <option value="4">France</option><option value="8">Italy</option>
+              <option value="9">Spain</option><option value="1">United States</option>
+            </select>
+          </div>
+          <p class="rule" id="ruleText"></p>
+        </div>
+
+        <div class="drop" id="dropF" tabindex="0" role="button" aria-label="Upload Product Viewer CSV">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg></span>
+          <span class="txt"><span class="big">Drop the Product Viewer CSV here</span><span class="small">Re-sorts instantly when you change the thresholds above</span></span>
+        </div>
+        <input type="file" id="fileF" accept=".csv,text/csv">
+        <div class="files" id="filesF"></div>
+        <div class="warn" id="warnF"></div>
+
+        <div class="yield" id="yieldF">
+          <div class="row"><span class="head">Kept vs dropped<span class="pct" id="fPct"></span></span><span class="total" id="fTotalLbl">0 rows</span></div>
+          <div class="bar">
+            <div class="seg keep" id="fKeepSeg" style="width:0"><span class="n" id="fKept">0</span><span class="l">kept</span></div>
+            <div class="seg drop" id="fDropSeg" style="width:0"><span class="n" id="fDropped">0</span><span class="l">dropped</span></div>
+          </div>
+        </div>
+
+        <div class="toolbar" id="barF" style="display:none">
+          <button class="btn primary" id="copyF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="lab">Copy kept ASINs</span></button>
+          <button class="btn solid" id="openKeepa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Open in Keepa</button>
+          <button class="btn solid" id="copyKeepa"><span class="lab">Copy Keepa link</span></button>
+          <div class="spacer"></div>
+          <button class="btn ghost" id="dlCsvF">Download filtered CSV</button>
+          <button class="btn ghost" id="toggleAll">Show all rows</button>
+          <button class="btn ghost danger" id="clearF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>Clear</button>
+        </div>
+        <textarea class="out" id="outF" spellcheck="false"></textarea>
+
+        <div class="tablewrap" id="tableWrap"><div class="tablescroll"><table id="tableF"></table></div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======================================================= -->
   <!-- PAGE 1 · BRANDS                                          -->
   <!-- ======================================================= -->
-  <div class="page active" id="page-brands">
+  <div class="page" id="page-brands">
 
     <div class="card">
       <div class="cardhead"><h2>Brands</h2><span class="sub">what we run · where we buy · how often. Click one to run it.</span>
@@ -172,7 +280,7 @@
   <!-- ======================================================= -->
   <!-- PAGE 2 · LEAD TOOLS (unchanged)                          -->
   <!-- ======================================================= -->
-  <div class="page" id="page-lead">
+  <div class="page active" id="page-lead">
     <div class="tabs">
       <button class="tab active" data-tab="lead"><span class="step">1</span>Score lead</button>
       <button class="tab" data-tab="promo"><span class="step">2</span>Promo price</button>
@@ -257,14 +365,15 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js"></script>
-<script src="js/parse.js"></script>
-<script src="js/rule1.js"></script>
-<script src="js/rule2.js"></script>
-<script src="js/export.js"></script>
-<script src="js/sources.js"></script>
-<script src="js/leadtools.js"></script>
-<script src="js/brands.js"></script>
-<script src="js/boot.js"></script>
+<script src="js/core.js?v=b2"></script>
+<script src="js/parse.js?v=b2"></script>
+<script src="js/rule1.js?v=b2"></script>
+<script src="js/rule2.js?v=b2"></script>
+<script src="js/export.js?v=b2"></script>
+<script src="js/sources.js?v=b2"></script>
+<script src="js/leadtools.js?v=b2"></script>
+<script src="js/keepaconsole.js?v=b2"></script>
+<script src="js/brands.js?v=b2"></script>
+<script src="js/boot.js?v=b2"></script>
 </body>
 </html>
