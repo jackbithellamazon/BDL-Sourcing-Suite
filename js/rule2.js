@@ -29,11 +29,11 @@ function r2score(p,roi,spm){if(p<=0||roi<=0)return 1;
   const v=100*Math.pow(Math.pow(r2sat(p*spm,R2.SAT.money),R2.POW.money)*Math.pow(r2sat(roi,R2.SAT.roi),R2.POW.roi)*Math.pow(r2sat(p,R2.SAT.profit),R2.POW.profit),R2.POW.all);
   return Math.max(1,Math.min(100,Math.round(v)));}
 function r2fees(sale,ref,fba){const r=sale*ref;return r+fba+R2.PREP_MISC+(r+fba)*R2.DST;}
-function r2prof(sale,cost,ref,fba){const V=1+R2.VAT;const p=sale/V-cost/V-r2fees(sale,ref,fba);
+function r2prof(sale,cost,ref,fba,vat){const V=1+(vat==null?R2.VAT:vat);const p=sale/V-cost/V-r2fees(sale,ref,fba);
   return[Math.round(p*100)/100,cost?Math.round(1000*p/cost)/10:0];}
 /* what % off Amazon's price gets this to the target ROI */
-function r2needed(sale,amz,ref,fba,t){t=t==null?R2.TARGET_ROI:t;let lo=0,hi=0.95;
-  for(let i=0;i<50;i++){const m=(lo+hi)/2;if(r2prof(sale,amz*(1-m),ref,fba)[1]<t)lo=m;else hi=m;}return hi*100;}
+function r2needed(sale,amz,ref,fba,t,vat){t=t==null?R2.TARGET_ROI:t;let lo=0,hi=0.95;
+  for(let i=0;i<50;i++){const m=(lo+hi)/2;if(r2prof(sale,amz*(1-m),ref,fba,vat)[1]<t)lo=m;else hi=m;}return hi*100;}
 /* brand rate = the brand's own channel from the Settings discount list (sale rate when full-price-only), falling back to the built-in map */
 function r2brate(b,cost){if(typeof discForBrand==='function'){const e=discForBrand(b);if(e){const p=discRate(e,cost||100);return p>0?Math.round(p*10)/10:(e.business?null:0);}}
   const bl=(b||'').toLowerCase().trim();for(const k of Object.keys(R2.BRAND)){if(bl===k||bl.startsWith(k+' '))return R2.BRAND[k];}return null;}
@@ -60,9 +60,11 @@ function r2sell(r){
   return{sell:Math.round(s*100)/100,why,conf};}
 
 /* rows = array of {Header:value} from ONE UK Product Finder export.
-   facts = {ASIN:{pm:['Currys',...], sell:123}} — what the VAs have confirmed (optional).
+   facts = {ASIN:{pm:['Currys',...], sell:123, vat:0}} — what the VAs have confirmed (optional).
+   opts = {vatFor:(row,fact)=>{rate,why,src}} — Rule 4 hook (b10). Without it every row is 20% VAT, as before.
+   Rule 3 (Suz's grocery / S&S / Business filters) is this same maths — the input method never changes the rule.
    Returns {out:[qualifying, sorted by score], all:[every priced row], st:{...}} */
-function rule2Compute(rows,facts){facts=facts||{};
+function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
   const all=[],st={rows:rows.length,priced:0,demand:0,sell:0,kept:0};
   for(const r of rows){
     const a=(r.ASIN||'').trim();if(!a)continue;
@@ -71,6 +73,7 @@ function rule2Compute(rows,facts){facts=facts||{};
     const spm=bought?bought:drops;if(spm<R2.MIN_SPM)continue;st.demand++;
     const S=r2sell(r);const fact=facts[a]||{};
     const sell=fact.sell||S.sell;if(!sell)continue;st.sell++;
+    const vt=opts.vatFor?opts.vatFor(r,fact):{rate:R2.VAT,why:'',src:'default'};const vat=vt.rate;
     const ref=(kNum(r['Referral Fee %'])||R2.DEF_REF)/100,fba=kNum(r['FBA Pick&Pack Fee'])||R2.DEF_FBA;
     const brand=(r.Brand||'').trim();let eff=amz;const ap=[];
     const bd=kNum(r['Business Discount: Percentage']);if(bd){eff*=(1-bd/100);ap.push(`Business ${Math.round(bd)}%`);}
@@ -78,14 +81,14 @@ function rule2Compute(rows,facts){facts=facts||{};
     const ca=kNum(r['One Time Coupon: Absolute']);if(ca){eff-=ca;ap.push(`coupon £${ca.toFixed(2)}`);}
     if(r2hasSS(r)){eff*=(1-R2.SS_UK);ap.push(`S&S ${R2.SS_UK*100}%`);}
     eff=Math.round(eff*100)/100;
-    const [p,roi]=r2prof(sell,eff,ref,fba),br=r2brate(brand,amz),nd=r2needed(sell,eff,ref,fba);const bEntry=(typeof discForBrand==='function')?discForBrand(brand):null;
+    const [p,roi]=r2prof(sell,eff,ref,fba,vat),br=r2brate(brand,amz),nd=r2needed(sell,eff,ref,fba,null,vat);const bEntry=(typeof discForBrand==='function')?discForBrand(brand):null;
     const kept=nd<=Math.max(R2.DEFAULT_ALLOW,br||R2.DEFAULT_ALLOW);
     const score=r2score(p,roi,Math.round(spm));
     /* what an extra retailer discount would do — brand direct, and the best generic price-matcher */
     const pot=[];
-    if(br){const c=Math.round(amz*(1-br/100)*100)/100;const [pp,pr]=r2prof(sell,c,ref,fba);pot.push({who:(bEntry?bEntry.name:brand.split(' ')[0]+' direct'),pct:br,cost:c,p:pp,roi:pr,score:r2score(pp,pr,Math.round(spm)),confirmed:(fact.pm||[]).some(x=>/direct|brand/i.test(x))});}
+    if(br){const c=Math.round(amz*(1-br/100)*100)/100;const [pp,pr]=r2prof(sell,c,ref,fba,vat);pot.push({who:(bEntry?bEntry.name:brand.split(' ')[0]+' direct'),pct:br,cost:c,p:pp,roi:pr,score:r2score(pp,pr,Math.round(spm)),confirmed:(fact.pm||[]).some(x=>/direct|brand/i.test(x))});}
     const matchers=(typeof discMatchers==='function')?discMatchers().map(e=>[e.name,discRate(e,amz)]).filter(x=>x[1]>0):R2.RETAIL;
-    matchers.forEach(([who,pct])=>{const c=Math.round(amz*(1-pct/100)*100)/100;const [pp,pr]=r2prof(sell,c,ref,fba);pot.push({who,pct:Math.round(pct*10)/10,cost:c,p:pp,roi:pr,score:r2score(pp,pr,Math.round(spm)),confirmed:(fact.pm||[]).includes(who)});});
+    matchers.forEach(([who,pct])=>{const c=Math.round(amz*(1-pct/100)*100)/100;const [pp,pr]=r2prof(sell,c,ref,fba,vat);pot.push({who,pct:Math.round(pct*10)/10,cost:c,p:pp,roi:pr,score:r2score(pp,pr,Math.round(spm)),confirmed:(fact.pm||[]).includes(who)});});
     const best=pot.reduce((m,x)=>x.score>m.score?x:m,{score:score,who:'',roi,p});
     /* history + risk signals */
     const f90=kNum(r['New, 3rd Party FBA: 90 days avg.']),fbm90=kNum(r['New, 3rd Party FBM: 90 days avg.']),bb90=kNum(r['Buy Box: 90 days avg.']);
@@ -114,6 +117,7 @@ function rule2Compute(rows,facts){facts=facts||{};
     if(S.why.startsWith('3P holds'))chips.push(['3P HOLDS BUY BOX','info']);
     if(fact.sell)chips.push(['SELL SET BY VA','good']);
     if(!bought)chips.push(['DEMAND FROM DROPS','warn']);
+    if(vat===0)chips.push([vt.src==='va'?'0% VAT · SET BY VA':vt.src==='source'?'0% VAT · FILTER':'0% VAT · CHECK',vt.src==='warn'?'warn':vt.src==='va'||vt.src==='source'?'good':'warn']);else if(vt.src==='va')chips.push(['20% VAT · SET BY VA','info']);else if(vt.src==='rule')chips.push(['20% VAT · APPLIANCE','info']);
     const o={ASIN:a,Product:r.Title||'',Brand:brand,Score:score,'Potential score':best.score,'Potential via':best.who?`${best.who} ${best.pct}%`:'',
       'Buy at £':amz,'After discount £':eff,'Discount applied':ap.join('; '),'Sell for £':sell,'Sell from':fact.sell?'VA':S.why,'Sell confidence':fact.sell?'set':S.conf,
       'Buy Box 90d £':bb90,'Buy Box 180d £':kNum(r['Buy Box: 180 days avg.']),'FBA 90d £':f90,'FBM 90d £':fbm90,'Buy Box high £':kNum(r['Buy Box: Highest']),
@@ -121,7 +125,7 @@ function rule2Compute(rows,facts){facts=facts||{};
       '£ per month':Math.round(p*spm),'Needs % off':Math.round(nd*10)/10,'Brand discount %':br==null?'':br,
       'Check OA?':(br||nd>0)?'yes':'','FBA resale proven?':f90?'yes':'no','No 3P history?':no3P?'yes':'no','Limited time deal?':ltd?'yes':'no',
       'Amazon 90d drop %':kNum(r['Amazon: 90 days drop %'])||0,'Offers':kNum(r['New Offer Count: Current'])||0,'FBA offers':fbaN,'FBM offers':fbmN,
-      'Reviews':reviews,'Age days':age==null?'':age,'Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||'',
+      'Reviews':reviews,'Age days':age==null?'':age,'VAT %':Math.round(vat*100),'VAT from':vt.src==='va'?'VA':vt.src==='source'?'filter':vt.src==='rule'?'Rule 4':'default','Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||'',
       Keepa:`https://keepa.com/#!product/2-${a}`,'Buy link':`https://www.amazon.co.uk/dp/${a}`,'UK sell link':`https://www.amazon.co.uk/dp/${a}`,
       SAS:`https://sas.selleramp.com/sas/lookup?search_term=${a}&sas_cost_price=${eff.toFixed(2)}&sas_sale_price=${sell.toFixed(2)}`,
       kept,chips,pot,STATUS:'',Changed:'','Last seen':''};

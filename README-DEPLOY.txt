@@ -4,9 +4,18 @@ BDL Sourcing — how to update the live app
 3. Commit. GitHub Pages serves it within a minute. Same URL.
 Rollback: upload the previous dated folder the same way.
 
-TEST MODE: everything stays in this browser's localStorage. Nothing is uploaded anywhere.
-Rules: js/rule1.js is FROZEN (9 Sep 2026). js/rule2.js is the Mera filter. Do not edit either by hand.
+SHARED STORAGE (b10): saves in the browser first, then row-by-row to the shared BDL Supabase project (src_ tables).
+  One-time setup: run ~/Downloads/2026-09-13-BDL-SOURCING-SUPABASE.sql in the project's SQL editor. Until that is done the
+  header pill says "Shared storage not set up" and every change queues in the browser, then sends itself once the tables exist.
+Rules: js/rule1.js is FROZEN (9 Sep 2026). js/rule2.js is Rule 2 AND Rule 3 (same maths). js/rule4.js is VAT. js/queue.js is
+  the new/better compare. Do not edit rule1 by hand.
 Checks: open the page, add ?checks to the URL, and the known-answer tests run against the fixtures
         (fixtures are kept locally in bdl-sourcing-harness/fixtures, not in the repo).
 
-Build: v1.0 · 2026-09-12 · b6 — list split into Saved filters / Brands, owner column + who last ran it, Edit button on every row
+Build: v1.1 · 2026-09-13 · b10 — shared storage (Supabase src_ tables, local-first outbox), who-am-I dropdown, per-source in-progress lock,
+  To-review queue (new + better since last verdict, 2p counts), ASIN blacklist with reason, brand blacklist with Jack approval,
+  Rule 4 VAT (tea/coffee 0%, VA override chip, editable words), Rule 3 = Suz grocery/S&S/Business (same maths as Rule 2),
+  Suz's three filters seeded (EU one parked, tea & coffee waiting for its link), per-source FLOORS (the customisable Filter & Sort,
+  saved on the source, applied before the queue), brand + title stored with every lead, Settings regrouped with shared / this-browser tags,
+  Track-at-£ note, Keepa 'low was' on WORSE rows. Checks: 41.
+Previous: v1.0 · 2026-09-13 · b9 — Jack's real Keepa Finder links seeded for 15 sources; Corsair/Elgato, Ninja/Shark, SanDisk/Seagate/WD merged; Bialetti + Repken seller watch added; UK-only brand runs work off one Finder export

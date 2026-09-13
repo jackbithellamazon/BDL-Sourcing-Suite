@@ -39,6 +39,37 @@ window.SourcingChecks=(function(){
       ok('R2 Mera 12 Sep · Vax sell £ (Jack: £180)',vx?vx['Sell for £']:null,EXPECT.mera12.vaxSell);
       ok('R2 Mera 12 Sep · Vax score / potential',vx?[vx.Score,vx['Potential score']]:null,EXPECT.mera12.vaxScore);
       ok('R2 Mera 12 Sep · NO 3P HISTORY count',M2.all.filter(o=>o['No 3P history?']==='yes').length,EXPECT.mera12.no3p);
+      /* Rule 2 as the app runs it in b10: Rule 4 VAT hook on, no VA facts. Locks what a Mera run actually produces. */
+      const M4=rule2Compute((await csv('mera-2026-09-12b.csv')).rows,{},{vatFor});
+      ok('R2 Mera 12 Sep · with Rule 4 hook',[M4.out.length,M4.all.filter(o=>o['VAT %']===0).length],EXPECT.mera12.withVat);
+      /* Rule 4 — VAT */
+      const vr=t=>vatFor({Title:t},null).rate;
+      ok('R4 · Lavazza coffee beans = 0%',vr('Lavazza Qualita Rossa Coffee Beans 1kg'),0);
+      ok('R4 · coffee MACHINE = 20%',vr("De'Longhi Magnifica Bean to Cup Coffee Machine"),0.2);
+      ok('R4 · Yorkshire Tea = 0%',vr('Yorkshire Tea 240 Tea Bags'),0);
+      ok('R4 · AirPods not pods = 20%',vr('Apple AirPods Pro 2'),0.2);
+      ok('R4 · tea tree oil = 20%',vr('Tea Tree Oil 100ml'),0.2);
+      ok('R4 · VA fact wins',vatFor({Title:'Some Coffee'},{vat:20,who:'Mera'}).rate,0.2);
+      ok('R4 · VA sets 0 on anything',vatFor({Title:'Baby food pouch'},{vat:0}).rate,0);
+      /* queue — the "better since" compare, Jack 13 Sep: 2p counts */
+      const S=(buy,profit,roi,disc)=>({buy,sell:200,profit,roi,spm:40,disc:disc||''});
+      ok('queue · 2p cheaper = BETTER',compareState(S(148.98,20.02,13.4),S(149,20,13.4)).status,'BETTER');
+      ok('queue · 5p more profit = BETTER',compareState(S(149,20.05,13.5),S(149,20,13.4)).status,'BETTER');
+      ok('queue · ROI 11→12 = BETTER',compareState(S(149,18,12),S(149,16.5,11)).status,'BETTER');
+      ok('queue · business price appears = BETTER',compareState(S(149,20,13.4,'Business 9%'),S(149,20,13.4)).status,'BETTER');
+      ok('queue · 2p dearer = WORSE',compareState(S(149.02,19.98,13.4),S(149,20,13.4)).status,'WORSE');
+      ok('queue · same = UNCHANGED',compareState(S(149,20,13.4),S(149,20,13.4)).status,'UNCHANGED');
+      ok('queue · no baseline = NEW',compareState(S(149,20,13.4),null).status,'NEW');
+      ok('queue · cheaper but sell fell 10% = WORSE',compareState(S(148,15,10),S(149,20,13.4)).status,'WORSE');
+      const q=[{ASIN:'A','After discount £':100,'Sell for £':150,'Profit £':10,'ROI %':10,'Sells /mo':30,Score:40,'Discount applied':''},{ASIN:'B','After discount £':100,'Sell for £':150,'Profit £':10,'ROI %':10,'Sells /mo':30,Score:40,'Discount applied':''},{ASIN:'C','After discount £':100,'Sell for £':150,'Profit £':10,'ROI %':10,'Sells /mo':30,Score:40,'Discount applied':''}];
+      const gone=applyQueue(q,2,{B:{state:{buy:100,sell:150,profit:10,roi:10,spm:30},stamp:'2026-09-12_0700'},C:{state:{buy:100,sell:150,profit:10,roi:10,spm:30},stamp:'2026-09-12_0700'},Z:{state:{buy:50,sell:80,profit:5,roi:9,spm:10},stamp:'2026-09-12_0700'}},{B:{v:'No',state:{buy:100,sell:150,profit:10,roi:10,spm:30}},C:{v:'No',state:{buy:101,sell:150,profit:9.5,roi:9.4,spm:30}}});
+      ok('queue · new, judged-unchanged, judged-but-better, gone',[q[0].QUEUE,q[1].QUEUE,q[2].QUEUE,gone.length],['new','','better',1]);
+      /* floors — the per-source Filter & Sort */
+      const fo={ASIN:'F','Sells /mo':120,'ROI %':14,'Profit £':22,'Sell for £':180,'After discount £':140,Score:55,'Potential score':60,Offers:4};
+      ok('floors · none set passes',failsFloor(fo,null,2),'');
+      ok('floors · sales 5000 fails',!!failsFloor(fo,{minSpm:5000},2),true);
+      ok('floors · ROI 10 passes, score 70 fails',[failsFloor(fo,{minRoi:10},2),!!failsFloor(fo,{minScore:70},2)],['',true]);
+      ok('floors · rule 1 ignores score',failsFloor({SPM:30,'ROI %':12,'Profit £':5,'Sell £ used':40,'Landed £':30},{minScore:70},1),'');
       /* pure maths */
       /* referral 15.00 + FBA 3.50 + prep 0.60 + misc 0.40 + 2% DST on (15+3.5) = 0.37 */
       ok('fees · £100 sale, 15%, £3.50 FBA',Math.round(brFees(100,0.15,3.50,0.5,'')*100)/100,19.87);
@@ -60,6 +91,6 @@ window.SourcingChecks=(function(){
     logitech:{demand:241,leads:88,first:'B07MTXLFXV'},
     asus:{demand:114,leads:50,mb:[80.04,89.3]},
     mera:{rows:525,leads:366,lenovo:[69,37.67,31.4],siemens:[77,107.12,30.7,100]},
-    mera12:{leads:390,first:'B0GTWMRV87',vaxSell:176.64,vaxScore:[65,77],no3p:139},
+    mera12:{leads:390,first:'B0GTWMRV87',vaxSell:176.64,vaxScore:[65,77],no3p:139,withVat:[390,0]},
     score1:75,score2:66};
   return{run,results:R};})();

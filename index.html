@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b6">
-<link rel="stylesheet" href="css/brands.css?v=b6">
+<link rel="stylesheet" href="css/base.css?v=b10">
+<link rel="stylesheet" href="css/brands.css?v=b10">
 </head>
 <body>
 <div class="wrap">
@@ -28,7 +28,8 @@
         <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.99 13.02A8 8 0 1 1 10.98 3.01 6.5 6.5 0 1 0 20.99 13.02Z"/></svg>
         <span class="theme-label" id="themeLabel">Dark</span>
       </button>
-      <div class="testmode">TEST MODE · saves in this browser only</div>
+      <select class="whosel" id="whoSel" title="Who am I — goes on every verdict, run and blacklist entry"><option value="">Who am I?</option><option>Jack</option><option>Mera</option><option>Suz</option></select>
+      <div class="cloudpill" id="cloudPill" title=""><i></i>…</div>
     </div>
   </header>
 
@@ -249,16 +250,18 @@
 
     <div id="viewList">
       <div class="card">
-        <div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><h2>Brands / Filters</h2><span class="sub">every saved Keepa search we run · greyed = not switched on yet</span>
+        <div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><h2>Brands / Filters</h2><span class="sub">every saved Keepa search we run · greyed = not switched on yet · <b>In progress</b> = someone is on it right now</span>
           <div class="right"><button class="btn primary sm" id="addBrand" type="button"><span class="lab">+ Add brand / filter</span></button></div></div>
         <div class="kpis" id="bKpis"></div>
+        <div class="approvals" id="approvals" hidden></div>
         <div class="tb">
           <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="lq" placeholder="Search brands…" autocomplete="off"></div>
           <select id="lMarket"><option value="ALL">All markets</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
-          <select id="lRule"><option value="ALL">All rules</option><option value="1">Rule 1 · brands</option><option value="2">Rule 2 · filters</option></select>
-          <div class="seg" id="lSeg"><button class="on" data-seg="due" type="button">Due</button><button data-seg="all" type="button">All</button><button data-seg="paused" type="button">Paused</button></div>
+          <select id="lOwner"><option value="ALL">All owners</option><option>Jack</option><option>Mera</option><option>Suz</option><option>VAs</option></select>
+          <select id="lRule"><option value="ALL">All rules</option><option value="1">Rule 1 · buy UK/EU, sell UK</option><option value="2">Rule 2 · high-ticket</option><option value="3">Rule 3 · grocery / S&amp;S / Business</option></select>
+          <div class="seg" id="lSeg"><button data-seg="due" type="button">Due</button><button data-seg="mine" type="button">Mine</button><button class="on" data-seg="all" type="button">All</button><button data-seg="paused" type="button">Paused</button></div>
         </div>
-        <table class="btbl" id="brandTbl"></table>
+        <div class="tblwrap"><table class="btbl" id="brandTbl"></table></div>
       </div>
 
       <div class="card">
@@ -281,6 +284,7 @@
           </div>
         </div>
 
+        <div class="guide" id="guide"></div>
         <div class="twocol">
           <div class="stepcard">
             <div class="stephead"><span class="n">1</span><div><p class="sh" id="step1Title">Drop the exports</p><p class="ss" id="step1Sub"></p></div></div>
@@ -309,7 +313,10 @@
         </div>
         <div class="rulesbox" id="rulesBox">
           <div><b>Rule 1 · brands</b> demand 10+ bought or 10+ rank drops in 30 days · sell = Buy Box 90d +8%, capped at FBA 90d · buy = cheapest Amazon UK/DE/FR/IT/ES landed (UK less S&amp;S 15%, EU less S&amp;S 5% + 1% card + shared postage) · SellerAmp fees to the penny · floor 0% ROI, −15% when Amazon owns the Buy Box and FBA sits 25%+ above · slow sellers under 50/mo need ROI 15% or £5 · EU plug, mains appliances from EU, blacklist off the sheet. FROZEN 9 Sep 2026.</div>
-          <div><b>Rule 2 · Mera filter</b> Amazon selling it · demand 10+ · sell = FBA 90d, else Buy Box 90d · buy = Amazon now less Business / coupon / S&amp;S 15% · keep if the % off needed to reach 5% ROI is within what the brand's own store gives (10% default) · score /100 weights £/month first, then ROI, then profit per unit.</div>
+          <div><b>Rule 2 · Mera high-ticket</b> Amazon selling it · demand 10+ · sell = Buy Box today when a 3P holds it under Amazon, else the 90/180d Buy Box +25% (+5% with no 3P history) capped at the 3P 90d average and the Buy Box high · buy = Amazon now less Business / coupon / S&amp;S 15% · keep if the % off needed to reach 5% ROI is within what the brand's own store gives (10% default) · score /100 weights £/month first, then ROI, then profit per unit.</div>
+          <div><b>Rule 3 · Suz grocery / S&amp;S / Business</b> the same maths as Rule 2 — the input never changes the rule — with Rule 4 on top.</div>
+          <div><b>Rule 4 · VAT</b> tea and coffee are 0% VAT on both sides (the product, never the machine). A VA can set 0% or 20% on the row; that beats the keyword rule, which beats the 20% default. Keyword lists are in Settings.</div>
+          <div><b>Queue</b> a lead shows until someone gives it a verdict, then only comes back when it is <i>more profitable</i> than it was when judged — 2p counts. Blacklisted never shows.</div>
           <div><b>Flags, never rules</b> the graph reading stays with the human. A No needs a reason — that's what the system learns from.</div>
         </div>
 
@@ -324,17 +331,29 @@
             <div class="spacer"></div>
             <button class="btn ghost" id="dlCsv" type="button">CSV</button>
             <button class="btn ghost" id="dlDropped" type="button">Dropped list</button>
+            <button class="btn ghost" id="seenAll" type="button" hidden title="Baseline: mark every lead without a verdict as SEEN — from the next run only NEW and BETTER show as to-review">Mark all as seen</button>
           </div>
 
           <div class="leadhead" id="leadTop">
-            <h3 id="leadCount">Leads</h3><span class="sub">tick rows to open a set in Keepa · Y/N/M saves as you click</span>
+            <h3 id="leadCount">Leads</h3><span class="sub">To review = new, or better than when it was last judged · Y/N/M saves as you click · ⃠ = never show again</span>
             <div class="right">
               <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fQ" placeholder="ASIN, title, brand…" autocomplete="off"></div>
-              <select id="fStatus"><option value="ALL">All statuses</option><option>NEW</option><option>BETTER</option><option>WORSE</option><option>UNCHANGED</option></select>
+              <select id="fStatus"><option value="REVIEW">To review</option><option value="ALL">Everything</option><option>NEW</option><option>BETTER</option><option>WORSE</option><option>UNCHANGED</option></select>
+              <select id="fSort"><option value="default">Sort · score</option><option value="gain">Sort · biggest improvement</option><option value="profit">Sort · profit</option><option value="roi">Sort · ROI</option><option value="month">Sort · £ / month</option></select>
               <select id="fMarket"><option value="ALL">Buy from · all</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
-              <input class="num" id="fRoi" type="number" placeholder="ROI ≥" inputmode="decimal" title="Minimum ROI %">
-              <input class="num" id="fScore" type="number" placeholder="Score ≥" inputmode="numeric" title="Minimum score" hidden>
               <label class="chk"><input type="checkbox" id="fHideNo">hide No</label>
+            </div>
+          </div>
+          <div class="floors" id="floorRow">
+            <div class="fhead"><span class="ft">Floors</span><span class="fs" id="floorSaved"></span><button class="linkbtn" id="floorClear" type="button" hidden>Clear floors</button></div>
+            <div class="fin">
+              <label>Sales / month ≥<input id="fl_minSpm" type="number" inputmode="numeric" placeholder="any"></label>
+              <label>ROI % ≥<input id="fl_minRoi" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Profit £ ≥<input id="fl_minProfit" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Sell £ ≥<input id="fl_minSell" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Buy £ ≤<input id="fl_maxBuy" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Score ≥<input id="fl_minScore" type="number" inputmode="numeric" placeholder="any"></label>
+              <label>Offers ≥<input id="fl_minOffers" type="number" inputmode="numeric" placeholder="any"></label>
             </div>
           </div>
           <div class="leadwrap"><div class="tablescroll"><table class="ltbl" id="leads"></table></div><div class="pager" id="pager"></div></div>
@@ -350,19 +369,25 @@
   <!-- ======================================================= -->
   <div class="page" id="page-settings">
     <div class="card">
-      <div class="cardhead"><span class="ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span><h2>Settings</h2><span class="sub">test mode — everything here lives in this browser</span></div>
+      <div class="cardhead"><span class="ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span><h2>Settings</h2><span class="sub">what the system knows and who is using it · <span class="scope shared">shared</span> = everyone sees the same thing · <span class="scope local">this browser</span> = only you</span></div>
+
+      <div class="ssec"><h3>You</h3><p>Who is clicking, and whether this browser is talking to the shared database.</p></div>
       <div class="sgrid">
-        <div class="sbox"><h3>Who am I</h3><p class="ssub">Goes on every verdict and run you make, so the week's results say who said what.</p>
-          <div class="row"><input class="txt" id="meIn" placeholder="Jack / Mera / Suz" autocomplete="off"></div></div>
-        <div class="sbox"><h3>£ per € <span class="fxchip off" id="fxChip">fetching…</span></h3><p class="ssub">Exchange rate for EU buys (Rule 1). Live from the ECB, rounded up, refreshed every 6 hours.</p>
+        <div class="sbox"><h3>Who am I <span class="scope local">this browser</span></h3><p class="ssub">Your name goes on every lead you mark, every run you do and every blacklist entry. Nothing can be marked until it is set.</p>
+          <div class="row"><select class="sel" id="meIn"><option value="">— pick your name —</option><option>Jack</option><option>Mera</option><option>Suz</option></select></div></div>
+        <div class="sbox"><h3>Shared storage <span class="scope shared">shared</span></h3><p class="ssub" id="cloudInfo">…</p>
+          <div class="row"><button class="btn solid sm" id="cloudPullBtn" type="button">Refresh from shared</button><button class="btn ghost sm" id="cloudSendBtn" type="button">Send queued changes</button></div>
+          <p class="hint">Every click saves in this browser first, then goes to the shared database. Lose the connection and it queues, then sends itself. Nothing is lost on a refresh.</p></div>
+      </div>
+
+      <div class="ssec"><h3>Numbers the rules use</h3><p>Change these and the next run uses them — for everyone.</p></div>
+      <div class="sgrid">
+        <div class="sbox"><h3>£ per € <span class="fxchip off" id="fxChip">fetching…</span> <span class="scope local">this browser</span></h3><p class="ssub">Used to turn an EU buy price into pounds (Rule 1). Comes from the ECB every 6 hours, rounded up so the maths errs on the safe side. Type over it if you want a different rate.</p>
           <div class="row"><div class="fxrow"><input type="number" id="fxIn" step="0.0001" min="0.5" max="1.5" inputmode="decimal" value="0.8600"><button class="fxbtn" id="fxRefresh" type="button" title="Fetch today's ECB rate">↻</button></div></div></div>
-        <div class="sbox"><h3>Reasons for a No</h3><p class="ssub">What a VA picks from when they say No. These are what the rules learn from later.</p>
+        <div class="sbox"><h3>Reasons for a No <span class="scope shared">shared</span></h3><p class="ssub">What a VA picks from when a lead is a No. Keep them short. The rules are refined from these after the trial.</p>
           <div class="chips" id="reasonChips"></div>
           <div class="row" style="margin-top:10px"><input class="txt" id="reasonIn" placeholder="add a reason…" autocomplete="off"><button class="btn solid sm" id="reasonAdd" type="button">Add</button></div></div>
-        <div class="sbox"><h3>Your data</h3><p class="ssub" id="dataInfo"></p>
-          <div class="row"><button class="btn solid sm" id="dataExport" type="button">Backup to file</button><label class="btn ghost sm" style="cursor:pointer">Restore from file<input type="file" id="dataImport" accept=".json" hidden></label><button class="btn ghost danger sm" id="dataReset" type="button">Reset brand list</button></div>
-          <p class="hint">Backup = every source, run, verdict in this browser. Use it to move your week between machines.</p></div>
-        <div class="sbox wide"><h3>Discounts · brand stores &amp; retailers</h3><p class="ssub">What each brand's own store or an OA retailer gives on top of an Amazon price-match. Rule 2 reads this list live: brand rows drive the "→ score with X%" potential, retailer rows drive "if Currys price-matches". Full-price-only codes count 0 on a price-matched (sale) item unless a sale rate is set.</p>
+        <div class="sbox wide"><h3>Discounts · brand stores &amp; retailers <span class="scope shared">shared</span></h3><p class="ssub">What a brand's own store, or a retailer that price-matches Amazon, gives on top. The high-ticket rule uses this to show "→ score with Currys 5%" and to decide how much discount a brand can realistically give. <b>Full price only</b> means the code does not work on a sale item unless a sale rate is set.</p>
           <div class="disctb"><table class="dtbl" id="discTbl"></table></div>
           <div class="row" style="margin-top:10px">
             <input class="txt" id="dName" placeholder="Name (brand or retailer)" autocomplete="off" style="min-width:180px">
@@ -375,24 +400,45 @@
             <button class="btn primary sm" id="dAdd" type="button"><span class="lab">Add</span></button>
             <button class="btn ghost sm" id="dReset" type="button">Reset to the 6 Sep list</button>
           </div></div>
-        <div class="sbox"><h3>ASIN blacklist <span class="ro">read-only this week</span></h3><p class="ssub">Never shown. Grows into the restricted / IP / EU-plug list after the week.</p><div class="kvlist" id="blacklist"></div></div>
+        <div class="sbox wide"><h3>Rule 4 · what counts as 0% VAT <span class="scope shared">shared</span></h3><p class="ssub">Tea and coffee are 0% VAT. A lead is worked at 0% when its title or category contains a word from the first list and none from the second, so <i>coffee beans</i> is 0% and <i>coffee machine</i> is 20%. Whole words, comma-separated. A VA's own 0% / 20% click on a lead always wins over these lists.</p>
+          <div class="vatgrid"><div><label class="ssub">0% VAT when it says…</label><textarea id="vatZero" spellcheck="false"></textarea></div><div><label class="ssub">…but 20% if it also says</label><textarea id="vatNot" spellcheck="false"></textarea></div></div>
+          <div class="row" style="margin-top:8px"><button class="btn solid sm" id="vatSave" type="button">Save</button><button class="btn ghost sm" id="vatReset" type="button">Reset to defaults</button></div></div>
+      </div>
+
+      <div class="ssec"><h3>Blacklists</h3><p>Central. Applied to every run of every filter and brand, after the Keepa export is read — so nothing has to change inside Keepa.</p></div>
+      <div class="sgrid">
+        <div class="sbox wide"><h3>ASIN blacklist <span class="scope shared">shared</span></h3><p class="ssub">These products never show again, on any run. Added with the ⃠ button on a lead — a reason is required. Anyone can remove one here; the removal carries your name.</p>
+          <div class="disctb"><table class="dtbl" id="blTbl"></table></div></div>
+        <div class="sbox wide"><h3>Brand blacklist <span class="scope jack">Jack approves</span></h3><p class="ssub">Whole brands we cannot sell, such as HP. A VA requests it with a reason; it shows as <b>pending</b> until Jack approves. Once approved every product of that brand is dropped from every run. Pending brands keep showing with a PENDING chip so nothing is lost while Jack decides.</p>
+          <div class="disctb"><table class="dtbl" id="bbTbl"></table></div>
+          <div class="row" style="margin-top:10px"><input class="txt" id="bbName" placeholder="Brand as Keepa spells it" autocomplete="off" style="min-width:200px"><input class="txt" id="bbReason" placeholder="why we cannot sell it" autocomplete="off" style="min-width:240px"><button class="btn primary sm" id="bbAdd" type="button"><span class="lab">Request</span></button></div></div>
+      </div>
+
+      <div class="ssec"><h3>This browser</h3><p>Housekeeping for the copy kept on this machine. The shared database is not touched by any of these.</p></div>
+      <div class="sgrid">
+        <div class="sbox wide"><h3>Local copy <span class="scope local">this browser</span></h3><p class="ssub" id="dataInfo"></p>
+          <div class="row"><button class="btn solid sm" id="dataExport" type="button">Backup to file</button><label class="btn ghost sm" style="cursor:pointer">Restore from file<input type="file" id="dataImport" accept=".json" hidden></label><button class="btn ghost danger sm" id="dataReset" type="button">Reset brand list to the seed</button></div>
+          <p class="hint">Backup = everything this browser holds, as one file. Restore replaces this browser's copy only.</p></div>
       </div>
     </div>
   </div>
 
-  <footer>TEST MODE · runs, history and verdicts live in this browser's storage · nothing is uploaded</footer>
+  <footer>Shared storage · runs, verdicts, blacklists and the compare baseline go to the BDL Supabase project · saves in this browser first, never loses a click</footer>
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b6"></script>
-<script src="js/parse.js?v=b6"></script>
-<script src="js/rule1.js?v=b6"></script>
-<script src="js/rule2.js?v=b6"></script>
-<script src="js/export.js?v=b6"></script>
-<script src="js/sources.js?v=b6"></script>
-<script src="js/leadtools.js?v=b6"></script>
-<script src="js/keepaconsole.js?v=b6"></script>
-<script src="js/brands.js?v=b6"></script>
-<script src="js/boot.js?v=b6"></script>
+<script src="js/core.js?v=b10"></script>
+<script src="js/parse.js?v=b10"></script>
+<script src="js/rule1.js?v=b10"></script>
+<script src="js/rule2.js?v=b10"></script>
+<script src="js/export.js?v=b10"></script>
+<script src="js/rule4.js?v=b10"></script>
+<script src="js/queue.js?v=b10"></script>
+<script src="js/sources.js?v=b10"></script>
+<script src="js/cloud.js?v=b10"></script>
+<script src="js/leadtools.js?v=b10"></script>
+<script src="js/keepaconsole.js?v=b10"></script>
+<script src="js/brands.js?v=b10"></script>
+<script src="js/boot.js?v=b10"></script>
 </body>
 </html>
