@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b2">
-<link rel="stylesheet" href="css/brands.css?v=b2">
+<link rel="stylesheet" href="css/base.css?v=b6">
+<link rel="stylesheet" href="css/brands.css?v=b6">
 </head>
 <body>
 <div class="wrap">
@@ -45,10 +45,99 @@
     </button>
     <button class="pagebtn" data-page="page-brands">
       <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span>
-      <span class="ptxt"><span class="pt">Brands</span><span class="ps">Pick a source · drop the exports · get the leads</span></span>
+      <span class="ptxt"><span class="pt">Brands / Filters</span><span class="ps">Saved searches · run what is due · mark the leads</span></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+    <button class="pagebtn" data-page="page-settings">
+      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
+      <span class="ptxt"><span class="pt">Settings</span><span class="ps">Who you are · rates · what the rules know</span></span>
       <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
     </button>
   </nav>
+
+  <!-- ======================================================= -->
+  <!-- PAGE 1 · LEAD TOOLS (unchanged)                          -->
+  <!-- ======================================================= -->
+  <div class="page active" id="page-lead">
+    <div class="tabs">
+      <button class="tab active" data-tab="lead"><span class="step">1</span>Score lead</button>
+      <button class="tab" data-tab="promo"><span class="step">2</span>Promo price</button>
+    </div>
+    <section class="panel active" id="lead">
+      <div class="card">
+        <p class="intro">Punch in the numbers from a lead. <span class="q">Scored 1–10 against the buying rules — volume first, then margin, with an ROI check on top.</span></p>
+        <div class="settings">
+          <div class="field"><label>Sales / month (SPM)</label><input type="number" id="laSpm" min="0" placeholder="300" inputmode="numeric"></div>
+          <div class="field"><label>Cost price £</label><input type="number" id="laCost" min="0" step="0.01" placeholder="5.00" inputmode="decimal"></div>
+          <div class="field"><label>Profit / unit £</label><input type="number" id="laProfit" min="0" step="0.01" placeholder="10.50" inputmode="decimal"></div>
+          <div class="field"><label>ROI %</label><input type="number" id="laRoi" step="0.1" placeholder="25" inputmode="decimal"></div>
+          <p class="rule">Scores live as you type. <span class="grp"><span class="chip">ROI &lt; 10%</span></span> docks two points off any buy.</p>
+        </div>
+        <div class="empty" id="emptyL">
+          <span class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+          <span>Enter <b>SPM</b> and <b>profit per unit</b> — the score, tier and verdict appear here instantly.</span>
+        </div>
+        <div id="leadResults" style="display:none">
+          <div class="stats">
+            <div class="stat"><span class="k">SPM</span><span class="v" id="laSpmV">0</span></div>
+            <div class="stat"><span class="k">Profit / unit</span><span class="v" id="laProfitV">£0.00</span></div>
+            <div class="stat"><span class="k">ROI</span><span class="v" id="laRoiV">0%</span></div>
+            <div class="stat"><span class="k">Tier</span><span class="v" id="laTierV" style="font-family:var(--sans);font-size:15px;display:flex;align-items:center">—</span></div>
+          </div>
+          <div class="scorebox">
+            <div class="row"><span class="head">Lead score</span><span class="pill" id="laTierPill">—</span></div>
+            <div class="scoreline">
+              <div class="scorenum" id="laScore">0<span class="of"> /10</span></div>
+              <div class="scoretrack">
+                <div class="track"><div class="fill" id="laFill"></div></div>
+                <div class="ticks"><span>1</span><span>pass</span><span>borderline</span><span>buy</span><span>10</span></div>
+              </div>
+            </div>
+            <div class="verdict" id="laNote"></div>
+          </div>
+          <div class="toolbar">
+            <div class="spacer" style="margin-left:auto"></div>
+            <button class="btn ghost danger" id="clearL" type="button">Clear</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="panel" id="promo">
+      <div class="card">
+        <p class="intro">Stack the live promos on a listing. <span class="q">See the true per-unit price a buyer pays after every discount compounds.</span></p>
+        <div class="promogrid">
+          <div class="pricebox">
+            <label for="prPrice">Full price</label>
+            <div class="money"><span class="cur">£</span><input type="number" id="prPrice" min="0" step="0.01" placeholder="10.99" inputmode="decimal"></div>
+            <p class="sub">The listing price before any promos apply.</p>
+          </div>
+          <div class="checksbox">
+            <span class="grouplab">Available promos · tick what's live</span>
+            <label class="check"><input type="checkbox" id="pr5off4"><span class="lab">5% off any 4 units</span><span class="off">−5%</span></label>
+            <label class="check"><input type="checkbox" id="prSS5"><span class="lab">5% Subscribe &amp; Save</span><span class="off">−5%</span></label>
+            <label class="check"><input type="checkbox" id="prSS15"><span class="lab">15% Subscribe &amp; Save</span><span class="off">−15%</span></label>
+          </div>
+        </div>
+        <div class="empty" id="emptyP">
+          <span class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span>
+          <span>Enter a <b>full price</b> and tick promos — the final per-unit price updates as you go.</span>
+        </div>
+        <div class="promobox" id="promoBox">
+          <div class="prow">
+            <div><div class="head">Final price per unit</div><div class="finalprice" id="prFinal">£0.00</div></div>
+            <span class="saveline" id="prSave"></span>
+          </div>
+          <div class="breakdown" id="prBreakdown"></div>
+          <div class="toolbar">
+            <button class="btn primary" id="copyP" type="button"><span class="lab">Copy final price</span></button>
+            <div class="spacer"></div>
+            <button class="btn ghost danger" id="clearP" type="button">Clear</button>
+          </div>
+        </div>
+        <p class="hint">Discounts compound in order and the result rounds up to the nearest penny — matching how Amazon applies stacked promos.</p>
+      </div>
+    </section>
+  </div>
 
   <!-- ======================================================= -->
   <!-- PAGE 2 · KEEPA CONSOLE (unchanged)                       -->
@@ -154,226 +243,156 @@
   </div>
 
   <!-- ======================================================= -->
-  <!-- PAGE 1 · BRANDS                                          -->
+  <!-- PAGE 3 · BRANDS                                          -->
   <!-- ======================================================= -->
   <div class="page" id="page-brands">
 
-    <div class="card">
-      <div class="cardhead"><h2>Brands</h2><span class="sub">what we run · where we buy · how often. Click one to run it.</span>
-        <div class="right"><button class="btn ghost sm" id="addOpen" type="button">+ Ad-hoc brand</button></div></div>
-      <div class="srclist" id="srcList"></div>
-      <div class="addsrc" id="addSrc" hidden>
-        <div class="field"><label>Brand</label><input type="text" id="addName" class="wide" placeholder="Corsair" autocomplete="off" spellcheck="false"></div>
-        <div class="mks"><label><input type="checkbox" value="UK" checked>UK</label><label><input type="checkbox" value="DE">DE</label><label><input type="checkbox" value="FR">FR</label><label><input type="checkbox" value="IT">IT</label><label><input type="checkbox" value="ES">ES</label></div>
-        <div class="field"><label>Cadence</label><select id="addCad"><option value="adhoc">one-off</option><option value="daily">daily</option><option value="2 days">every 2 days</option><option value="3 days">every 3 days</option><option value="weekly">weekly</option></select></div>
-        <div class="field"><label>Note</label><input type="text" id="addNote" class="wide" placeholder="optional" autocomplete="off"></div>
-        <button class="btn primary" id="addGo" type="button"><span class="lab">Add</span></button>
+    <div id="viewList">
+      <div class="card">
+        <div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><h2>Brands / Filters</h2><span class="sub">every saved Keepa search we run · greyed = not switched on yet</span>
+          <div class="right"><button class="btn primary sm" id="addBrand" type="button"><span class="lab">+ Add brand / filter</span></button></div></div>
+        <div class="kpis" id="bKpis"></div>
+        <div class="tb">
+          <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="lq" placeholder="Search brands…" autocomplete="off"></div>
+          <select id="lMarket"><option value="ALL">All markets</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
+          <select id="lRule"><option value="ALL">All rules</option><option value="1">Rule 1 · brands</option><option value="2">Rule 2 · filters</option></select>
+          <div class="seg" id="lSeg"><button class="on" data-seg="due" type="button">Due</button><button data-seg="all" type="button">All</button><button data-seg="paused" type="button">Paused</button></div>
+        </div>
+        <table class="btbl" id="brandTbl"></table>
+      </div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Runs</h2><span class="sub">every export processed · leads it produced · what got marked. This is the 7-day test.</span>
+          <div class="right"><button class="btn ghost sm" id="logExport" type="button">Export log + verdicts</button></div></div>
+        <div id="runLog"></div>
       </div>
     </div>
 
-    <div class="card" id="runCard" hidden>
-      <div class="cardhead"><h2 id="runName">—</h2><span class="runmeta" id="runMeta"></span>
-        <div class="right">
-          <div class="field" id="fxField"><label>£ per € <span class="fxchip off" id="fxChip">fetching…</span></label>
-            <div class="fxrow"><input type="number" id="fxIn" step="0.0001" min="0.5" max="1.5" inputmode="decimal" value="0.8600"><button class="fxbtn" id="fxRefresh" type="button" title="Fetch today's ECB rate">↻</button></div></div>
-          <button class="btn ghost sm" id="removeSrc" type="button">Remove from list</button>
-          <button class="btn ghost danger sm" id="clearRun" type="button">Clear files</button>
-        </div></div>
+    <div id="viewRun" hidden>
+      <div class="card">
+        <div class="runhead">
+          <button class="back" id="backBtn" type="button" aria-label="Back to brands"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></button>
+          <span id="runAvatar"></span>
+          <div><h2><span id="runName">—</span><span id="runMk"></span></h2><div class="meta" id="runMeta"></div></div>
+          <div class="right">
+            <button class="btn ghost sm" id="runHist" type="button">History</button>
+            <button class="btn ghost sm" id="runEdit" type="button">Edit</button>
+            <button class="btn ghost danger sm" id="clearRun" type="button">Clear files</button>
+          </div>
+        </div>
 
-      <div class="steps">
-        <div class="step" id="stepFinders">
-          <span class="n">1</span>
-          <div>
-            <p class="sh">Drop the Product Finder exports</p>
-            <p class="ss" id="dropFindersSmall"></p>
-            <div class="slots six">
-              <div class="slot" id="slot-UK"><span class="sk">UK</span><span class="sn">Amazon UK buy list</span><span class="sv">optional</span></div>
-              <div class="slot" id="slot-DE"><span class="sk">DE</span><span class="sn">Amazon Germany</span><span class="sv">optional</span></div>
-              <div class="slot" id="slot-FR"><span class="sk">FR</span><span class="sn">Amazon France</span><span class="sv">optional</span></div>
-              <div class="slot" id="slot-IT"><span class="sk">IT</span><span class="sn">Amazon Italy</span><span class="sv">optional</span></div>
-              <div class="slot" id="slot-ES"><span class="sk">ES</span><span class="sn">Amazon Spain</span><span class="sv">optional</span></div>
-              <div class="slot" id="slot-viewer"><span class="sk">Viewer</span><span class="sn">UK Product Viewer</span><span class="sv">required</span></div>
+        <div class="twocol">
+          <div class="stepcard">
+            <div class="stephead"><span class="n">1</span><div><p class="sh" id="step1Title">Drop the exports</p><p class="ss" id="step1Sub"></p></div></div>
+            <div class="keeparow" id="keepaRow"></div>
+            <div class="dropz" id="dropAny" tabindex="0" role="button" aria-label="Upload Keepa exports">
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg></span>
+              <span class="big">Drag &amp; drop the Keepa exports here</span>
+              <span class="small">or click to browse · any order, all at once · the tool works out which is which</span>
             </div>
+            <input type="file" id="fileIn" accept=".csv,text/csv" multiple>
+            <div class="filechips" id="fileChips"></div>
             <div class="asinbar" id="asinBar" hidden>
               <span class="am" id="asinMsg"></span>
-              <button class="btn solid sm" id="asinCopy" type="button"><span class="lab">Copy <span id="asinN">0</span> ASINs</span></button>
-              <button class="btn primary sm" id="asinOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Open UK Product Viewer with them loaded</button>
-              <span hidden id="asinMiss"></span>
+              <button class="btn solid xs" id="asinCopy" type="button"><span class="lab">Copy <span id="asinN">0</span> ASINs</span></button>
+              <button class="btn primary xs" id="asinOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Open UK Product Viewer with them loaded</button>
             </div>
+            <div class="warn" id="warnRun"></div>
+            <p class="sincenote" id="sinceNote" hidden><b>Tracking since / Listed since</b> aren't in this export — tick them in Keepa's column picker and product age comes for free.</p>
+          </div>
+          <div class="stepcard">
+            <div class="stephead"><span class="n">2</span><div><p class="sh">Run summary</p><p class="ss">Key numbers from this export</p></div>
+              <div class="right"><button class="linkbtn" id="rulesToggle" type="button">Show the rules</button></div></div>
+            <div class="emptysum" id="sumEmpty">Drop the exports and the numbers appear here.</div>
+            <div class="sumgrid" id="sumGrid"></div>
           </div>
         </div>
-        <div class="step" id="stepViewer">
-          <span class="n">2</span>
-          <div>
-            <p class="sh">Drop the UK Product Viewer export</p>
-            <p class="ss">All columns. This is the sell side — the leads appear the moment it lands.</p>
-          </div>
-        </div>
-        <div class="step" id="stepOne" hidden>
-          <span class="n">1</span>
-          <div>
-            <p class="sh">Drop this morning's Product Finder export</p>
-            <p class="ss">UK only, all columns. One file.</p>
-            <div class="slots"><div class="slot" id="slot-one"><span class="sk">Export</span><span class="sn">UK Product Finder</span><span class="sv">required</span></div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="drop" id="dropAny" tabindex="0" role="button" aria-label="Upload Keepa exports" style="margin-top:14px">
-        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg></span>
-        <span class="txt"><span class="big">Drop the exports here</span><span class="small">Any order, all at once — the tool works out which is which from the columns</span></span>
-      </div>
-      <input type="file" id="fileIn" accept=".csv,text/csv" multiple>
-      <div class="warn" id="warnRun"></div>
-      <p class="sincenote" id="sinceNote" hidden><b>Tracking since / Listed since</b> aren't in this export — tick them in Keepa's column picker and product age comes for free.</p>
-
-      <div class="empty" id="emptyRun">
-        <span class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z"/></svg></span>
-        <span>The funnel, status counts and the leads appear here as soon as the sell-side file lands.</span>
-      </div>
-
-      <div id="results" hidden>
-        <div class="funnel" id="funnel"></div>
-        <div class="stats" id="stats"></div>
-        <div class="statusrow" id="statusRow"></div>
-        <div class="warn feewarn" id="feeWarn"></div>
-        <div class="reasons-wrap">
-          <div class="row"><span class="head">Why things fell off</span><span class="total" id="dropLbl">0 dropped</span></div>
-          <div class="reasons" id="reasons"></div>
-        </div>
-
-        <div class="toolbar">
-          <button class="btn primary" id="dlSheet" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="lab">Download review sheet</span></button>
-          <button class="btn solid" id="openKept" type="button">Open leads in Keepa</button>
-          <button class="btn solid" id="copyKept" type="button"><span class="lab">Copy lead ASINs</span></button>
-          <div class="spacer"></div>
-          <button class="btn ghost" id="dlCsv" type="button">CSV</button>
-          <button class="btn ghost" id="dlDropped" type="button">Dropped list</button>
-        </div>
-        <p class="hint">Every run is logged below and today's list becomes the baseline for tomorrow's NEW · BETTER · WORSE · GONE. <button class="linkbtn" id="forget" type="button">Forget this source's history</button> <button class="linkbtn" id="rulesToggle" type="button">Show the rules</button></p>
         <div class="rulesbox" id="rulesBox">
           <div><b>Rule 1 · brands</b> demand 10+ bought or 10+ rank drops in 30 days · sell = Buy Box 90d +8%, capped at FBA 90d · buy = cheapest Amazon UK/DE/FR/IT/ES landed (UK less S&amp;S 15%, EU less S&amp;S 5% + 1% card + shared postage) · SellerAmp fees to the penny · floor 0% ROI, −15% when Amazon owns the Buy Box and FBA sits 25%+ above · slow sellers under 50/mo need ROI 15% or £5 · EU plug, mains appliances from EU, blacklist off the sheet. FROZEN 9 Sep 2026.</div>
           <div><b>Rule 2 · Mera filter</b> Amazon selling it · demand 10+ · sell = FBA 90d, else Buy Box 90d · buy = Amazon now less Business / coupon / S&amp;S 15% · keep if the % off needed to reach 5% ROI is within what the brand's own store gives (10% default) · score /100 weights £/month first, then ROI, then profit per unit.</div>
           <div><b>Flags, never rules</b> the graph reading stays with the human. A No needs a reason — that's what the system learns from.</div>
         </div>
 
-        <div class="filters">
-          <div class="field"><label>Status</label><select id="fStatus"><option value="ALL">All</option><option>NEW</option><option>BETTER</option><option>WORSE</option><option>UNCHANGED</option></select></div>
-          <div class="field" id="fMarket"><label>Buy from</label><select><option value="ALL">All</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select></div>
-          <div class="field" id="fRoiWrap"><label>Min ROI %</label><input type="number" id="fRoi" placeholder="any" inputmode="decimal"></div>
-          <div class="field" id="fScoreWrap" hidden><label>Min score</label><input type="number" id="fScore" placeholder="any" inputmode="numeric"></div>
-          <div class="field"><label>Find</label><input type="text" id="fQ" class="q" placeholder="ASIN, title, brand…" autocomplete="off"></div>
-          <label class="chk"><input type="checkbox" id="fHideNo">hide No</label>
-          <span class="cnt" id="tblCount"></span>
+        <div id="results" hidden>
+          <div class="statusrow" id="statusRow"></div>
+          <div class="fell" id="fell"></div>
+          <div class="warn feewarn" id="feeWarn"></div>
+          <div class="toolbar">
+            <button class="btn primary" id="dlSheet" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="lab">Download review sheet</span></button>
+            <button class="btn solid" id="openSel" type="button">Open this page in Keepa</button>
+            <button class="btn solid" id="copyKept" type="button"><span class="lab">Copy lead ASINs</span></button>
+            <div class="spacer"></div>
+            <button class="btn ghost" id="dlCsv" type="button">CSV</button>
+            <button class="btn ghost" id="dlDropped" type="button">Dropped list</button>
+          </div>
+
+          <div class="leadhead" id="leadTop">
+            <h3 id="leadCount">Leads</h3><span class="sub">tick rows to open a set in Keepa · Y/N/M saves as you click</span>
+            <div class="right">
+              <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fQ" placeholder="ASIN, title, brand…" autocomplete="off"></div>
+              <select id="fStatus"><option value="ALL">All statuses</option><option>NEW</option><option>BETTER</option><option>WORSE</option><option>UNCHANGED</option></select>
+              <select id="fMarket"><option value="ALL">Buy from · all</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
+              <input class="num" id="fRoi" type="number" placeholder="ROI ≥" inputmode="decimal" title="Minimum ROI %">
+              <input class="num" id="fScore" type="number" placeholder="Score ≥" inputmode="numeric" title="Minimum score" hidden>
+              <label class="chk"><input type="checkbox" id="fHideNo">hide No</label>
+            </div>
+          </div>
+          <div class="leadwrap"><div class="tablescroll"><table class="ltbl" id="leads"></table></div><div class="pager" id="pager"></div></div>
         </div>
-        <div class="tablewrap show leads"><div class="tablescroll"><table id="leads"></table></div></div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="cardhead"><h2>Runs</h2><span class="sub">every export processed · leads it produced · what got marked. This is the 7-day test.</span>
-        <div class="right"><button class="btn ghost sm" id="logExport" type="button">Export log + verdicts</button></div></div>
-      <div id="runLog"></div>
-    </div>
+    <div class="drawer" id="drawer"><div class="veil"></div><div class="pane" id="drawerBody"></div></div>
   </div>
 
   <!-- ======================================================= -->
-  <!-- PAGE 2 · LEAD TOOLS (unchanged)                          -->
+  <!-- PAGE 4 · SETTINGS                                        -->
   <!-- ======================================================= -->
-  <div class="page active" id="page-lead">
-    <div class="tabs">
-      <button class="tab active" data-tab="lead"><span class="step">1</span>Score lead</button>
-      <button class="tab" data-tab="promo"><span class="step">2</span>Promo price</button>
+  <div class="page" id="page-settings">
+    <div class="card">
+      <div class="cardhead"><span class="ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span><h2>Settings</h2><span class="sub">test mode — everything here lives in this browser</span></div>
+      <div class="sgrid">
+        <div class="sbox"><h3>Who am I</h3><p class="ssub">Goes on every verdict and run you make, so the week's results say who said what.</p>
+          <div class="row"><input class="txt" id="meIn" placeholder="Jack / Mera / Suz" autocomplete="off"></div></div>
+        <div class="sbox"><h3>£ per € <span class="fxchip off" id="fxChip">fetching…</span></h3><p class="ssub">Exchange rate for EU buys (Rule 1). Live from the ECB, rounded up, refreshed every 6 hours.</p>
+          <div class="row"><div class="fxrow"><input type="number" id="fxIn" step="0.0001" min="0.5" max="1.5" inputmode="decimal" value="0.8600"><button class="fxbtn" id="fxRefresh" type="button" title="Fetch today's ECB rate">↻</button></div></div></div>
+        <div class="sbox"><h3>Reasons for a No</h3><p class="ssub">What a VA picks from when they say No. These are what the rules learn from later.</p>
+          <div class="chips" id="reasonChips"></div>
+          <div class="row" style="margin-top:10px"><input class="txt" id="reasonIn" placeholder="add a reason…" autocomplete="off"><button class="btn solid sm" id="reasonAdd" type="button">Add</button></div></div>
+        <div class="sbox"><h3>Your data</h3><p class="ssub" id="dataInfo"></p>
+          <div class="row"><button class="btn solid sm" id="dataExport" type="button">Backup to file</button><label class="btn ghost sm" style="cursor:pointer">Restore from file<input type="file" id="dataImport" accept=".json" hidden></label><button class="btn ghost danger sm" id="dataReset" type="button">Reset brand list</button></div>
+          <p class="hint">Backup = every source, run, verdict in this browser. Use it to move your week between machines.</p></div>
+        <div class="sbox wide"><h3>Discounts · brand stores &amp; retailers</h3><p class="ssub">What each brand's own store or an OA retailer gives on top of an Amazon price-match. Rule 2 reads this list live: brand rows drive the "→ score with X%" potential, retailer rows drive "if Currys price-matches". Full-price-only codes count 0 on a price-matched (sale) item unless a sale rate is set.</p>
+          <div class="disctb"><table class="dtbl" id="discTbl"></table></div>
+          <div class="row" style="margin-top:10px">
+            <input class="txt" id="dName" placeholder="Name (brand or retailer)" autocomplete="off" style="min-width:180px">
+            <select id="dType" class="sel"><option value="brand">brand store</option><option value="retailer">retailer</option></select>
+            <input class="txt num" id="dPct" type="number" step="0.5" placeholder="%" style="min-width:70px;width:70px">
+            <label class="chk"><input type="checkbox" id="dFull">full-price only</label>
+            <input class="txt num" id="dSale" type="number" step="0.5" placeholder="sale %" style="min-width:80px;width:80px">
+            <input class="txt num" id="dMin" type="number" placeholder="min £" style="min-width:80px;width:80px">
+            <input class="txt" id="dNote" placeholder="note" autocomplete="off" style="min-width:160px">
+            <button class="btn primary sm" id="dAdd" type="button"><span class="lab">Add</span></button>
+            <button class="btn ghost sm" id="dReset" type="button">Reset to the 6 Sep list</button>
+          </div></div>
+        <div class="sbox"><h3>ASIN blacklist <span class="ro">read-only this week</span></h3><p class="ssub">Never shown. Grows into the restricted / IP / EU-plug list after the week.</p><div class="kvlist" id="blacklist"></div></div>
+      </div>
     </div>
-    <section class="panel active" id="lead">
-      <div class="card">
-        <p class="intro">Punch in the numbers from a lead. <span class="q">Scored 1–10 against the buying rules — volume first, then margin, with an ROI check on top.</span></p>
-        <div class="settings">
-          <div class="field"><label>Sales / month (SPM)</label><input type="number" id="laSpm" min="0" placeholder="300" inputmode="numeric"></div>
-          <div class="field"><label>Cost price £</label><input type="number" id="laCost" min="0" step="0.01" placeholder="5.00" inputmode="decimal"></div>
-          <div class="field"><label>Profit / unit £</label><input type="number" id="laProfit" min="0" step="0.01" placeholder="10.50" inputmode="decimal"></div>
-          <div class="field"><label>ROI %</label><input type="number" id="laRoi" step="0.1" placeholder="25" inputmode="decimal"></div>
-          <p class="rule">Scores live as you type. <span class="grp"><span class="chip">ROI &lt; 10%</span></span> docks two points off any buy.</p>
-        </div>
-        <div class="empty" id="emptyL">
-          <span class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
-          <span>Enter <b>SPM</b> and <b>profit per unit</b> — the score, tier and verdict appear here instantly.</span>
-        </div>
-        <div id="leadResults" style="display:none">
-          <div class="stats">
-            <div class="stat"><span class="k">SPM</span><span class="v" id="laSpmV">0</span></div>
-            <div class="stat"><span class="k">Profit / unit</span><span class="v" id="laProfitV">£0.00</span></div>
-            <div class="stat"><span class="k">ROI</span><span class="v" id="laRoiV">0%</span></div>
-            <div class="stat"><span class="k">Tier</span><span class="v" id="laTierV" style="font-family:var(--sans);font-size:15px;display:flex;align-items:center">—</span></div>
-          </div>
-          <div class="scorebox">
-            <div class="row"><span class="head">Lead score</span><span class="pill" id="laTierPill">—</span></div>
-            <div class="scoreline">
-              <div class="scorenum" id="laScore">0<span class="of"> /10</span></div>
-              <div class="scoretrack">
-                <div class="track"><div class="fill" id="laFill"></div></div>
-                <div class="ticks"><span>1</span><span>pass</span><span>borderline</span><span>buy</span><span>10</span></div>
-              </div>
-            </div>
-            <div class="verdict" id="laNote"></div>
-          </div>
-          <div class="toolbar">
-            <div class="spacer" style="margin-left:auto"></div>
-            <button class="btn ghost danger" id="clearL" type="button">Clear</button>
-          </div>
-        </div>
-      </div>
-    </section>
-    <section class="panel" id="promo">
-      <div class="card">
-        <p class="intro">Stack the live promos on a listing. <span class="q">See the true per-unit price a buyer pays after every discount compounds.</span></p>
-        <div class="promogrid">
-          <div class="pricebox">
-            <label for="prPrice">Full price</label>
-            <div class="money"><span class="cur">£</span><input type="number" id="prPrice" min="0" step="0.01" placeholder="10.99" inputmode="decimal"></div>
-            <p class="sub">The listing price before any promos apply.</p>
-          </div>
-          <div class="checksbox">
-            <span class="grouplab">Available promos · tick what's live</span>
-            <label class="check"><input type="checkbox" id="pr5off4"><span class="lab">5% off any 4 units</span><span class="off">−5%</span></label>
-            <label class="check"><input type="checkbox" id="prSS5"><span class="lab">5% Subscribe &amp; Save</span><span class="off">−5%</span></label>
-            <label class="check"><input type="checkbox" id="prSS15"><span class="lab">15% Subscribe &amp; Save</span><span class="off">−15%</span></label>
-          </div>
-        </div>
-        <div class="empty" id="emptyP">
-          <span class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span>
-          <span>Enter a <b>full price</b> and tick promos — the final per-unit price updates as you go.</span>
-        </div>
-        <div class="promobox" id="promoBox">
-          <div class="prow">
-            <div><div class="head">Final price per unit</div><div class="finalprice" id="prFinal">£0.00</div></div>
-            <span class="saveline" id="prSave"></span>
-          </div>
-          <div class="breakdown" id="prBreakdown"></div>
-          <div class="toolbar">
-            <button class="btn primary" id="copyP" type="button"><span class="lab">Copy final price</span></button>
-            <div class="spacer"></div>
-            <button class="btn ghost danger" id="clearP" type="button">Clear</button>
-          </div>
-        </div>
-        <p class="hint">Discounts compound in order and the result rounds up to the nearest penny — matching how Amazon applies stacked promos.</p>
-      </div>
-    </section>
   </div>
 
   <footer>TEST MODE · runs, history and verdicts live in this browser's storage · nothing is uploaded</footer>
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b2"></script>
-<script src="js/parse.js?v=b2"></script>
-<script src="js/rule1.js?v=b2"></script>
-<script src="js/rule2.js?v=b2"></script>
-<script src="js/export.js?v=b2"></script>
-<script src="js/sources.js?v=b2"></script>
-<script src="js/leadtools.js?v=b2"></script>
-<script src="js/keepaconsole.js?v=b2"></script>
-<script src="js/brands.js?v=b2"></script>
-<script src="js/boot.js?v=b2"></script>
+<script src="js/core.js?v=b6"></script>
+<script src="js/parse.js?v=b6"></script>
+<script src="js/rule1.js?v=b6"></script>
+<script src="js/rule2.js?v=b6"></script>
+<script src="js/export.js?v=b6"></script>
+<script src="js/sources.js?v=b6"></script>
+<script src="js/leadtools.js?v=b6"></script>
+<script src="js/keepaconsole.js?v=b6"></script>
+<script src="js/brands.js?v=b6"></script>
+<script src="js/boot.js?v=b6"></script>
 </body>
 </html>
