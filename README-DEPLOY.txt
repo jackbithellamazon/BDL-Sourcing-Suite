@@ -12,7 +12,20 @@ Rules: js/rule1.js is FROZEN (9 Sep 2026). js/rule2.js is Rule 2 AND Rule 3 (sam
 Checks: open the page, add ?checks to the URL, and the known-answer tests run against the fixtures
         (fixtures are kept locally in bdl-sourcing-harness/fixtures, not in the repo).
 
-Build: v1.1 · 2026-09-14 · b15 — UK-buy Rule 1 leads carry an 'OA · Currys 5% → £x · y% ROI' chip (best price-matcher from the discount
+Build: v1.1 · 2026-09-14 · b18 — under-£60 sell model refitted on 13 of Jack's grocery calls (higher Buy Box 90/180d average, no uplift,
+  capped at the FBA 90d average; all calls within ±9%): S&S 137 leads, Business 10, Mera unchanged.
+  Round two of Jack's calls: Logitech within 2% of the frozen Rule 1 (no change); high-ticket: only FBA history proves a plateau now
+  (FBM-only rows get +5%, not +25%) — Galaxy Book4 Pro £2,207 → £1,788; Mera 12 Sep 390 → 376, 11 Sep unchanged.
+  Also b18: Rule 3 folded into Rule 2 (Jack: behaviours belong to the product, not the filter): the under-£50 sell
+  model, S&S / Business / coupon buy adjustments and Rule 4 VAT all apply per row on every UK filter. Sources on rule 3 migrate to 2.
+Previous: v1.1 · 2026-09-14 · b17 — RULE 3 SELL CHANGE (Jack's grocery calls): under £50 the sell price is the lower Buy Box 90/180-day average
+  with no plateau uplift, capped at the Amazon 90-day average; £50+ keeps Mera's model. S&S 596 → 103 leads, Business 16 → 8. Rule 2 untouched.
+  Never-sell categories (alcohol, fashion, shoes — editable in Settings, shared) drop leads on every rule. HP + Oral-B in the brand blacklist (live).
+Previous: v1.1 · 2026-09-14 · b16 — run summary card now carries the story, the status pills and a detail block (why things dropped, leads by
+  market or score band, ROI bands) so there is no dead space; flag links tick green once that country's export is in; every row has Buy <market>
+  and Sell UK links; floors save quietly (no toast, re-log 2.5 s after typing stops, 0 = unset); 'Open all N in Keepa' when the view is ≤250;
+  list: on-it tag under the status, 'manual export' instead of a token count, hover highlight.
+Previous: v1.1 · 2026-09-14 · b15 — UK-buy Rule 1 leads carry an 'OA · Currys 5% → £x · y% ROI' chip (best price-matcher from the discount
   list, all of them on hover) plus the Currys/Argos/JL/Brand-direct confirm toggles; tables use Inter instead of the monospace (Jack: 'font is a bit
   shit'); links as a 2×2 grid; sales floor placeholder shows the rule's own 10/month.
 Previous: v1.1 · 2026-09-14 · b14 — leads table redesign: ASIN sits under the title (both rules fit the card without scrolling at 1440),

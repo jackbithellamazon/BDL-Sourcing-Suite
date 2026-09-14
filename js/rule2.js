@@ -12,7 +12,7 @@
    ============================================================================ */
 const R2={
   VAT:0.20, TARGET_ROI:5.0, MIN_SPM:10, PREP_MISC:1.00, DST:0.02, DEF_REF:15, DEF_FBA:3.50, SS_UK:0.15,
-  SELL_UPLIFT:1.25, SELL_UPLIFT_NO3P:1.05, LONE_FBA_GAP:1.30, LONE_FBA_OFFERS:2, YOUNG_DAYS:90, THIN_REVIEWS:25,
+  SELL_UPLIFT:1.25, SELL_UPLIFT_NO3P:1.05, LOW_TICKET:60, LONE_FBA_GAP:1.30, LONE_FBA_OFFERS:2, YOUNG_DAYS:90, THIN_REVIEWS:25,
   /* score = 100 * ( sat(profit*spm,6000)^0.50 * sat(roi,9)^0.24 * sat(profit,18)^0.26 )^0.8 */
   SAT:{money:6000,roi:9,profit:18},POW:{money:0.50,roi:0.24,profit:0.26,all:0.8},
   /* what each brand's own store / OA channel usually gives on top — keep if the needed % off <= max(10, this) */
@@ -47,14 +47,28 @@ function r2sell(r){
   const f90=kNum(r['New, 3rd Party FBA: 90 days avg.']),fbm90=kNum(r['New, 3rd Party FBM: 90 days avg.']),hi=kNum(r['Buy Box: Highest']);
   const third=[f90,fbm90].filter(x=>x);
   if(bbc&&amz&&bbc<amz-0.5)return{sell:bbc,why:'3P holds the Buy Box today',conf:'high'};
-  /* with 3P history the higher of the 90/180-day Buy Box averages carries the plateau; without it, the 90-day
-     average alone is closest to Jack's calls (the 180-day one drags in the launch price on new listings) */
-  const base=third.length?Math.max(bb90||0,bb180||0):(bb90||bb180||0);
+  /* Under £60 (14 Sep 2026, fitted on 13 of Jack's grocery calls): Amazon IS the market on consumables, so no plateau uplift.
+     Sell = the HIGHER of the Buy Box 90/180-day averages (Sharpie £8.75: the 180d carries the normal price when Amazon has just
+     dipped), capped at the 3P FBA 90-day average when there is one (Nicorette £9.82, Grenade £12.00) and at the Buy Box high.
+     Not capped at Amazon's own average — that dragged Sharpie to £7.01. Shark £25.22, Febreze £18.29, Starbucks £32.48, MacuShield
+     £13.12, Solgar £9.89 all land within his calls. £60 = Mera's floor, so her rows never come through here; YSL at £50 does. */
+  if((bb90||bb180||amz||0)<R2.LOW_TICKET){const base=[bb90,bb180].filter(x=>x);
+    if(!base.length){const s=third.length?Math.min(...third):null;return{sell:s,why:s?'3P 90d average (no Buy Box history)':'',conf:'low'};}
+    let s=Math.max(...base),why=`Buy Box ${base.length===2?'90/180d':'90d'} average · no uplift (under £${R2.LOW_TICKET})`,conf='medium';
+    if(f90&&f90<s){s=f90;why='capped at the FBA 90d average';}
+    if(hi&&hi<s){s=hi;why='capped at the Buy Box high';}
+    return{sell:Math.round(s*100)/100,why,conf};}
+  /* with FBA history the higher of the 90/180-day Buy Box averages carries the plateau; without it, the 90-day
+     average alone is closest to Jack's calls (the 180-day one drags in the launch price on new listings).
+     14 Sep: FBM-only history does NOT count — one FBM seller at £2,499 on the Galaxy Book4 Pro made it "traded" and gave
+     £2,207 against Jack's £1,700–1,800 max. Only FBA sellers prove a plateau. */
+  const proven=!!f90;
+  const base=proven?Math.max(bb90||0,bb180||0):(bb90||bb180||0);
   if(!base){const s=third.length?Math.max(...third):null;return{sell:s,why:s?'3P 90d average (no Buy Box history)':'',conf:'low'};}
-  /* the +25% plateau effect only shows up where third parties have traded it; brand-new Amazon-only listings
-     sit at the Buy Box average (S26+ 1.01x, S26 Ultra 0.97x, A37 0.97x on Jack's 12 Sep calls) */
-  const up=third.length?R2.SELL_UPLIFT:R2.SELL_UPLIFT_NO3P;
-  let s=base*up,why=`Buy Box ${bb180&&bb180>(bb90||0)?'180d':'90d'} +${Math.round((up-1)*100)}%`,conf=third.length?'medium':'low';
+  /* the +25% plateau effect only shows up where FBA sellers have traded it; brand-new Amazon-only listings
+     sit at the Buy Box average (S26+ 1.01x, S26 Ultra 0.97x, A37 0.97x on Jack's 12 Sep calls; S26 Ultra 512GB £1,299.99 minimum, 14 Sep) */
+  const up=proven?R2.SELL_UPLIFT:R2.SELL_UPLIFT_NO3P;
+  let s=base*up,why=`Buy Box ${proven&&bb180&&bb180>(bb90||0)?'180d':'90d'} +${Math.round((up-1)*100)}%`,conf=proven?'medium':'low';
   if(third.length&&Math.max(...third)<s){s=Math.max(...third);why='capped at the 3P 90d average';conf='high';}
   if(hi&&hi<s){s=hi;why='capped at the Buy Box high';}
   return{sell:Math.round(s*100)/100,why,conf};}
@@ -62,7 +76,8 @@ function r2sell(r){
 /* rows = array of {Header:value} from ONE UK Product Finder export.
    facts = {ASIN:{pm:['Currys',...], sell:123, vat:0}} — what the VAs have confirmed (optional).
    opts = {vatFor:(row,fact)=>{rate,why,src}} — Rule 4 hook (b10). Without it every row is 20% VAT, as before.
-   Rule 3 (Suz's grocery / S&S / Business filters) is this same maths — the input method never changes the rule.
+   Every UK filter (Mera's high-ticket, Suz's S&S / Business / tea & coffee) runs this same maths — the filter never changes the rule;
+   the row does: price band picks the sell model, Rule 4 picks the VAT, S&S / Business / coupons adjust the buy price when Keepa shows them.
    Returns {out:[qualifying, sorted by score], all:[every priced row], st:{...}} */
 function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
   const all=[],st={rows:rows.length,priced:0,demand:0,sell:0,kept:0};
@@ -125,7 +140,7 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
       '£ per month':Math.round(p*spm),'Needs % off':Math.round(nd*10)/10,'Brand discount %':br==null?'':br,
       'Check OA?':(br||nd>0)?'yes':'','FBA resale proven?':f90?'yes':'no','No 3P history?':no3P?'yes':'no','Limited time deal?':ltd?'yes':'no',
       'Amazon 90d drop %':kNum(r['Amazon: 90 days drop %'])||0,'Offers':kNum(r['New Offer Count: Current'])||0,'FBA offers':fbaN,'FBM offers':fbmN,
-      'Reviews':reviews,'Age days':age==null?'':age,'VAT %':Math.round(vat*100),'VAT from':vt.src==='va'?'VA':vt.src==='source'?'filter':vt.src==='rule'?'Rule 4':'default','Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||'',
+      'Reviews':reviews,'Category':[r['Categories: Root'],r['Categories: Sub']].filter(Boolean).join(' › '),'Age days':age==null?'':age,'VAT %':Math.round(vat*100),'VAT from':vt.src==='va'?'VA':vt.src==='source'?'filter':vt.src==='rule'?'Rule 4':'default','Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||'',
       Keepa:`https://keepa.com/#!product/2-${a}`,'Buy link':`https://www.amazon.co.uk/dp/${a}`,'UK sell link':`https://www.amazon.co.uk/dp/${a}`,
       SAS:`https://sas.selleramp.com/sas/lookup?search_term=${a}&sas_cost_price=${eff.toFixed(2)}&sas_sale_price=${sell.toFixed(2)}`,
       kept,chips,pot,STATUS:'',Changed:'','Last seen':''};

@@ -694,3 +694,41 @@
 .ltbl td.flagc .ch{white-space:normal;line-height:1.3}
 .pms-r1 .pm{padding:1px 5px;font-size:10px}
 .ltbl td.prod .s>span.asinl::before{content:none;margin:0}
+
+/* ===== b16 · summary detail, flag ticks, smoother floors ===== */
+.twocol{align-items:start}
+.keeparow a .tick{display:none;color:var(--jade);font-weight:700;margin-left:2px}
+.keeparow a.done{border-color:rgba(54,214,164,.5);background:var(--jade-dim);color:var(--jade)}
+.keeparow a.done .tick{display:inline}
+.keeparow a.done svg{display:none}
+.statusrow.instory{margin:10px 0 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.statusrow.instory .vs{flex-basis:100%;margin-bottom:2px}
+.sumdetail{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.sumdetail .dcol{padding:10px 12px;border-radius:11px;background:var(--ink);border:1px solid var(--line)}
+.sumdetail .dh{font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px}
+.sumdetail .dr{display:grid;grid-template-columns:minmax(0,1fr) 70px 42px;gap:8px;align-items:center;font-size:12px;color:var(--muted);padding:3px 0}
+.sumdetail .dk{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sumdetail .db{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden}
+.sumdetail .db span{display:block;height:100%;background:var(--iris)}
+.sumdetail .db span.d{background:var(--coral)}
+.sumdetail .db span.g{background:var(--jade)}.sumdetail .db span.i{background:var(--iris)}.sumdetail .db span.a{background:var(--amber)}.sumdetail .db span.f{background:var(--faint)}
+.sumdetail .db span.m-uk{background:var(--jade)}.sumdetail .db span.m-de{background:var(--amber)}.sumdetail .db span.m-fr{background:#5aa9ff}.sumdetail .db span.m-it{background:#4ade80}.sumdetail .db span.m-es{background:#fb923c}
+.sumdetail .dv{text-align:right;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.floors .fs.flash{color:var(--jade)}
+.floors .fs{transition:color .3s}
+.btn.seen{border-color:rgba(54,214,164,.45);color:var(--jade)}
+.toolbar{margin-top:14px}
+@media (max-width:1000px){.sumdetail{grid-template-columns:1fr}}
+
+/* list polish */
+.btbl td.stc .inprog{display:flex;margin-top:5px;white-space:nowrap}
+.btbl td.stc{max-width:170px}
+.btbl tbody tr[data-key]:hover td{background:var(--raise)}
+.btbl td .bname{font-size:14px}
+.btbl td.lastc .l1{font-size:13px;color:var(--text)}
+.btbl td.lastc .who{color:var(--iris);font-weight:600}
+.btbl td.nextc .nx{font-size:13px;font-weight:600}
+.btbl td.nextc .nx.now{color:var(--jade)}
+.btbl td.nextc .l2{color:var(--faint)}
+.btbl .grp .gl{font-size:12px;letter-spacing:.08em}
+.vatgrid.one{grid-template-columns:1fr}

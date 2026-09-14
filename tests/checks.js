@@ -39,11 +39,14 @@ window.SourcingChecks=(function(){
       ok('R2 Mera 12 Sep · Vax sell £ (Jack: £180)',vx?vx['Sell for £']:null,EXPECT.mera12.vaxSell);
       ok('R2 Mera 12 Sep · Vax score / potential',vx?[vx.Score,vx['Potential score']]:null,EXPECT.mera12.vaxScore);
       ok('R2 Mera 12 Sep · NO 3P HISTORY count',M2.all.filter(o=>o['No 3P history?']==='yes').length,EXPECT.mera12.no3p);
+      const bk=M2.all.find(o=>o.ASIN==='B0CS6N4VF7'),ph=M2.all.find(o=>o.ASIN==='B0G53Q4DPN');
+      ok('R2 Mera 12 Sep · Galaxy Book4 Pro: FBM-only history gets no plateau (Jack £1,700–1,800)',bk?[bk['Sell for £'],bk['Sell from']]:null,EXPECT.mera12.book4);
+      ok('R2 Mera 12 Sep · S26 Ultra 512GB no history +5% (Jack £1,299.99 minimum)',ph?ph['Sell for £']:null,EXPECT.mera12.phone);
       /* Rule 2 as the app runs it in b10: Rule 4 VAT hook on, no VA facts. Locks what a Mera run actually produces. */
       const M4=rule2Compute((await csv('mera-2026-09-12b.csv')).rows,{},{vatFor});
       ok('R2 Mera 12 Sep · with Rule 4 hook',[M4.out.length,M4.all.filter(o=>o['VAT %']===0).length],EXPECT.mera12.withVat);
-      /* Rule 3 — Suz's grocery / S&S / Business filters, 13 Sep 2026 exports (same maths as Rule 2, Rule 4 on top) */
-      const SN=rule2Compute((await csv('suz-sns-2026-09-13.csv')).rows,{},{vatFor,rule:3});
+      /* Suz's grocery / S&S / Business filters, 13 Sep 2026 exports — Rule 2 with the under-£60 sell model, Rule 4 on top */
+      const SN=rule2Compute((await csv('suz-sns-2026-09-13.csv')).rows,{},{vatFor});
       ok('R3 Suz S&S 13 Sep · rows / qualifying',[SN.st.rows,SN.out.length],EXPECT.sns.counts);
       ok('R3 Suz S&S · first lead',SN.out[0]&&SN.out[0].ASIN,EXPECT.sns.first);
       ok('R3 Suz S&S · zero-rated (Rule 4) all / kept',[SN.all.filter(o=>o['VAT %']===0).length,SN.out.filter(o=>o['VAT %']===0).length],EXPECT.sns.vat0);
@@ -51,11 +54,18 @@ window.SourcingChecks=(function(){
       ok('R3 Suz S&S · Ecover B0D1HBH6FN (Business 12% + S&S 15%)',ec?[ec.Score,ec['After discount £'],ec['Sell for £'],ec['ROI %'],ec['VAT %']]:null,EXPECT.sns.ecover);
       const pp=SN.all.find(o=>o.ASIN==='B08ZPSYKLP');
       ok('R3 Suz S&S · Pro Plus caffeine = 20% not coffee',pp?pp['VAT %']:null,20);
-      const BZ=rule2Compute((await csv('suz-business-2026-09-13.csv')).rows,{},{vatFor,rule:3});
+      const sb=SN.all.find(o=>o.ASIN==='B0D32138JW'),sk=SN.all.find(o=>o.ASIN==='B0FNX6YLCJ'),fb=SN.all.find(o=>o.ASIN==='B07L5BS94K');
+      ok('R2 Suz S&S · under-£60 sell = higher Buy Box average, no uplift (Starbucks / Shark / Febreze)',[sb&&sb['Sell for £'],sk&&sk['Sell for £'],fb&&fb['Sell for £']],[EXPECT.sns.starbucks,EXPECT.sns.shark,EXPECT.sns.febreze]);
+      const BZ=rule2Compute((await csv('suz-business-2026-09-13.csv')).rows,{},{vatFor});
       ok('R3 Suz Business 13 Sep · rows / qualifying',[BZ.st.rows,BZ.out.length],EXPECT.biz.counts);
       ok('R3 Suz Business · first lead',BZ.out[0]&&BZ.out[0].ASIN,EXPECT.biz.first);
       const lg=BZ.all.find(o=>o.ASIN==='B0FQWKWKLV');
       ok('R3 Suz Business · LG monitor B0FQWKWKLV (Business 5% = the 12-unit price)',lg?[lg.Score,lg['After discount £'],lg['Sell for £'],lg['ROI %']]:null,EXPECT.biz.lg);
+      /* never-sell categories */
+      ok('cat · Fashion root blocked',catBlockReason('Fashion › Women | Nike Air Max Trainers'),'fashion');
+      ok('cat · wine blocked',catBlockReason('Grocery › Wine | Oxford Landing Sauvignon Blanc 75cl'),'wine');
+      ok('cat · coffee not blocked',catBlockReason('Grocery › Coffee | Lavazza beans'),'');
+      ok('cat · spirit level not blocked',catBlockReason('DIY | Stanley Spirit Level 60cm'),'');
       /* Rule 4 — VAT */
       const vr=t=>vatFor({Title:t},null).rate;
       ok('R4 · Lavazza coffee beans = 0%',vr('Lavazza Qualita Rossa Coffee Beans 1kg'),0);
@@ -104,14 +114,17 @@ window.SourcingChecks=(function(){
   /* Expected values — produced by build b1 on 12 Sep 2026 from the frozen rules, then LOCKED.
      Logitech 9 Sep: 415 rows → 241 demand → 88 leads.  ASUS 11 Sep: 375 → 114 → 50 (floor 0% / −15% wide-gap).
      Mera 11 Sep under Rule 2 v2 + the Settings discount list (Acer full-price-only → 5% on sale): 525 rows → 366 qualify; Siemens sells at £596 (was £698 under v1's lone-FBA hole).
-     Mera 12 Sep (extra columns): 390 qualify, Vax £176.64 vs Jack's £180, 139 with no 3P history. */
+     Mera 12 Sep (extra columns): 376 qualify (390 before the FBM-only fix), Vax £176.64 vs Jack's £180, 139 with no 3P history. */
   const EXPECT=window.SOURCING_EXPECT||{
     logitech:{demand:241,leads:88,first:'B07MTXLFXV'},
     asus:{demand:114,leads:50,mb:[80.04,89.3]},
     mera:{rows:525,leads:366,lenovo:[69,37.67,31.4],siemens:[77,107.12,30.7,100]},
-    mera12:{leads:390,first:'B0GTWMRV87',vaxSell:176.64,vaxScore:[65,77],no3p:139,withVat:[390,0]},
-    /* Suz 13 Sep: S&S 2,520 rows → 596 qualify (66 zero-rated, 36 of them kept); Business 179 → 16. Ecover £9.05 after 12% + 15%, sells £24.83. */
-    sns:{counts:[2520,596],first:'B00T7L20EC',vat0:[66,36],ecover:[52,9.05,24.83,57.2,20]},
-    biz:{counts:[179,16],first:'B0CVXQRN2K',lg:[54,403.73,522.97,13.4]},
+    /* 14 Sep: FBM-only history no longer proves a plateau (Galaxy Book4 Pro: Jack £1,700–1,800 max, was £2,207) → 12 Sep 390 → 376. */
+    mera12:{leads:376,first:'B0GTWMRV87',vaxSell:176.64,vaxScore:[65,77],no3p:139,withVat:[376,0],book4:[1788.23,'Buy Box 90d +5%'],phone:1393.96},
+    /* Suz 13 Sep (b18 under-£60 sell): S&S 2,520 rows → 137 qualify (66 zero-rated, 8 kept); Business 179 → 10. Ecover £9.05 after 12% + 15%, sells £19.86 (Buy Box 90d avg, no uplift). */
+    /* 14 Sep b18: under £60 the sell is the HIGHER Buy Box 90/180d average, no uplift, capped at the FBA 90d average — fitted on 13 of
+       Jack's grocery calls (all within ±9%). S&S 2,520 → 137, Business 179 → 10; Mera unchanged (her floor is £60). */
+    sns:{counts:[2520,137],first:'B0GV4KVQKK',vat0:[66,8],ecover:[30,9.05,19.86,18.7,20],starbucks:32.48,shark:25.22,febreze:18.29},
+    biz:{counts:[179,10],first:'B0CVXQRN2K',lg:[54,403.73,522.97,13.4]},
     score1:75,score2:66};
   return{run,results:R};})();

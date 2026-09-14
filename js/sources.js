@@ -15,10 +15,10 @@ LINKS['suz-eu']='https://keepa.com/#!finder/%7B%22f%22%3A%7B%22brand%22%3A%7B%22
 const SRC_SEED=[
   {key:'mera-highticket',name:'Mera high-ticket',type:'filter',rule:2,markets:['UK'],cadence:'daily',note:'£60+ Buy Box · Amazon down 9%+ · 10+ drops',owner:'Mera',link:MERA_LINK,status:'active'},
   {key:'mera-150plus',name:'Mera high-ticket £150+',type:'filter',rule:2,markets:['UK'],cadence:'daily',note:'Buy Box £150–£2,000 · Amazon down 8%+ · 10+ drops · 2+ offers · ≤15 kg · big brands and apparel excluded',owner:'Mera',link:LINKS['mera-150'],status:'active'},
-  {key:'suz-sns-uk',name:'Suz · Subscribe & Save UK',type:'filter',rule:3,markets:['UK'],cadence:'daily',note:'S&S on the listing · Amazon down 1%+ · 50+ bought/mo · Buy Box £6+ · Rule 3 = Rule 2 maths + Rule 4 VAT',owner:'Suz',link:LINKS['suz-sns'],status:'active'},
-  {key:'suz-business-uk',name:'Suz · Business discount UK',type:'filter',rule:3,markets:['UK'],cadence:'daily',note:'Business discount on Keepa (it misses some — open the listing on the Business account; S&S stacks on top) · Buy Box £6+',owner:'Suz',link:LINKS['suz-business'],status:'active'},
+  {key:'suz-sns-uk',name:'Suz · Subscribe & Save UK',type:'filter',rule:2,markets:['UK'],cadence:'daily',note:'S&S on the listing · Amazon down 1%+ · 50+ bought/mo · Buy Box £6+ · Rule 2 (under £50: Buy Box average, no uplift) + Rule 4 VAT',owner:'Suz',link:LINKS['suz-sns'],status:'active'},
+  {key:'suz-business-uk',name:'Suz · Business discount UK',type:'filter',rule:2,markets:['UK'],cadence:'daily',note:'Business discount on Keepa (it misses some — open the listing on the Business account; S&S stacks on top) · Buy Box £6+',owner:'Suz',link:LINKS['suz-business'],status:'active'},
   {key:'suz-eu-drops',name:'Suz · EU drops (all markets)',type:'filter',rule:1,markets:['DE','FR','IT','ES'],cadence:'daily',note:'PARKED (Jack, 13 Sep) until the core workflow is proven — too broad as it stands. EU only, no demand floor by design: the UK Viewer stage decides what sells here.',owner:'Suz',link:LINKS['suz-eu'],status:'paused'},
-  {key:'suz-tea-coffee',name:'Suz · tea & coffee UK',type:'filter',rule:3,markets:['UK'],cadence:'daily',note:'Grocery tea & coffee categories · Amazon down 10%+ · Buy Box down 10%+ · 50+ bought/mo · £6+ · every row 0% VAT (Rule 4) · Clipper excluded',owner:'Suz',link:LINKS['suz-tea-coffee'],status:'active',vat0:true},
+  {key:'suz-tea-coffee',name:'Suz · tea & coffee UK',type:'filter',rule:2,markets:['UK'],cadence:'daily',note:'Grocery tea & coffee categories · Amazon down 10%+ · Buy Box down 10%+ · 50+ bought/mo · £6+ · every row 0% VAT (Rule 4) · Clipper excluded',owner:'Suz',link:LINKS['suz-tea-coffee'],status:'active',vat0:true},
   {key:'acer',name:'Acer',type:'brand',rule:1,markets:['UK'],cadence:'2 days',note:'massive brand for us',status:'testing',link:LINKS.acer},
   {key:'asus',name:'ASUS',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'2 days',note:'major recurring brand',status:'testing',link:LINKS.asus},
   {key:'bls',name:'BLS',type:'brand',rule:1,markets:['UK'],cadence:'weekly'},
@@ -44,7 +44,7 @@ const SRC_SEED=[
   {key:'repken',name:'Repken · seller watch',type:'filter',rule:1,markets:['UK'],cadence:'weekly',note:'what seller A142PBK7GX1DM8 sells that Amazon has dropped 8%+ · Buy Box £8+',owner:'VAs',status:'testing',link:LINKS.repken}
 ];
 const SRC_RETIRED=['corsair','elgato','shark','sandisk'];
-const SEED_V=11;   /* bump when a seed row's status/note must overwrite what browsers already hold */
+const SEED_V=12;   /* bump when a seed row's status/note must overwrite what browsers already hold */
 /* ---- FLOORS (b10): the customisable Filter & Sort, one set per source, shared. Applied after the rule, before the queue.
    Jack 13 Sep: "I might decide I only want Logitech doing 5,000+ sales per month" — that lives on the source, in one place. ---- */
 const FLOORS=[['minSpm','Sales / month ≥','both'],['minRoi','ROI % ≥','both'],['minProfit','Profit £ ≥','both'],['minSell','Sell £ ≥','both'],['maxBuy','Buy £ ≤','both'],['minScore','Score ≥','r2'],['minOffers','Offers ≥','r2']];
@@ -60,6 +60,14 @@ function failsFloor(o,f,rule){if(!f)return'';const n=leadNums(o,rule);const has=
   if(has('minScore')&&n.score!=null&&n.score<+f.minScore)return`score ${n.score} < ${f.minScore}`;
   if(has('minOffers')&&n.offers!=null&&n.offers<+f.minOffers)return`${n.offers} offers < ${f.minOffers}`;return'';}
 function floorsLabel(f){if(!f)return'';return FLOORS.filter(([k])=>f[k]!=null&&f[k]!=='').map(([k,l])=>l.replace('≥','≥ ').replace('≤','≤ ')+(+f[k]).toLocaleString()).join(' · ');}
+/* ---- never-sell categories (b17, Jack 14 Sep: alcohol full stop, fashion, shoes). Shared list; matched against the category
+   tree and the title, whole words. A hit drops the lead on every rule, like the ASIN and brand blacklists. ---- */
+const CAT_KEY='bdl-sourcing-catblock';
+const CAT_DEFAULT=['alcohol','alcoholic','wine','wines','beer','beers','lager','ale','cider','spirits','gin','vodka','whisky','whiskey','bourbon','rum','tequila','liqueur','prosecco','champagne','sake','brandy','cognac','clothing','fashion','apparel','shoes','shoe','footwear','trainers','sneakers','sandals','heels','dress','dresses','jeans','t-shirt','t-shirts','hoodie','hoodies','jacket','jackets','lingerie','underwear'];
+function catWords(){const v=lsGet(CAT_KEY,null);return Array.isArray(v)&&v.length?v:CAT_DEFAULT.slice();}
+function catSave(list){lsSet(CAT_KEY,list);cloudQueue('src_settings','upsert',[settingRow('catBlock',list)]);}
+/* the word that blocks this text, or '' */
+function catBlockReason(text){text=(text||'').toLowerCase();for(const w of catWords()){if(r4has(text,[w]))return w;}return'';}
 const CADENCE_DAYS={daily:1,'2 days':2,'3 days':3,weekly:7,adhoc:0};
 const CADENCE_LABEL={daily:'Daily','2 days':'Every 2 days','3 days':'Every 3 days',weekly:'Weekly',adhoc:'One-off'};
 const MARKETS=['UK','DE','FR','IT','ES'];
@@ -72,7 +80,7 @@ function srcAll(){let v=lsGet(SRC_KEY,null);if(!v||!v.length){v=SRC_SEED.map(s=>
   SRC_SEED.forEach(s=>{if(!have[s.key]){v.push(Object.assign({},s));changed=true;}
     else{['link','brands','status'].forEach(f=>{if(s[f]&&have[s.key][f]==null){have[s.key][f]=s[f];changed=true;}});}});
   /* b4: status replaces the old paused flag; anything unlabelled is paused (greyed) until Jack switches it on */
-  v.forEach(x=>{if(!x.status){x.status='paused';changed=true;}x.paused=x.status==='paused';if(!x.owner){const seed=SRC_SEED.find(z=>z.key===x.key);x.owner=(seed&&seed.owner)||'VAs';changed=true;}
+  v.forEach(x=>{if(x.rule===3){x.rule=2;changed=true;}if(!x.status){x.status='paused';changed=true;}x.paused=x.status==='paused';if(!x.owner){const seed=SRC_SEED.find(z=>z.key===x.key);x.owner=(seed&&seed.owner)||'VAs';changed=true;}
     const sd=SRC_SEED.find(z=>z.key===x.key);if(sd&&sd.link&&x.link!==sd.link&&(!x.link||x.link.includes('A142PBK7GX1DM8')||x.key==='tefal')){x.link=sd.link;changed=true;}if(sd&&!sd.link&&x.key==='corsair-elgato'&&x.link){x.link='';changed=true;}if(sd&&sd.brands&&!(x.brands&&x.brands.length)){x.brands=sd.brands;changed=true;}if(sd&&sd.rule&&x.rule!==sd.rule&&x.key.startsWith('suz-')){x.rule=sd.rule;changed=true;}if(sd&&x.key.startsWith('suz-')&&(x.seedV||0)<SEED_V){x.name=sd.name;x.note=sd.note;x.status=sd.status;x.paused=sd.status==='paused';if(sd.link)x.link=sd.link;if(sd.vat0!=null)x.vat0=sd.vat0;x.seedV=SEED_V;changed=true;}if(sd&&sd.status==='testing'&&x.status==='paused'&&!runLast(x.key)){x.status='testing';x.paused=false;changed=true;}});
   if(changed){lsSet(SRC_KEY,v);if(typeof cloudQueue==='function'&&typeof cloud!=='undefined'&&cloud.pulled)cloudQueue('src_sources','upsert',v.map(srcRow));}return v;}
 function srcGet(key){return srcAll().find(s=>s.key===key)||null;}

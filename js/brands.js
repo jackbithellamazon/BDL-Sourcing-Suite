@@ -9,7 +9,7 @@ const files={viewer:null,UK:null,DE:null,FR:null,IT:null,ES:null,one:null};
 const view={status:'REVIEW',market:'ALL',q:'',hideNo:false,sort:'default',page:1,per:50,sel:new Set()};
 const PAGEN=()=>view.per>0?view.per:1e9;
 const lview={q:'',market:'ALL',rule:'ALL',owner:'ALL',seg:'all'};
-const RULE_LABEL={1:'buy UK/EU · sell UK',2:'high-ticket',3:'grocery · S&S / Business'};
+const RULE_LABEL={1:'buy UK/EU · sell UK',2:'UK Amazon-to-Amazon'};
 const ICONS={
   run:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
   ext:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>',
@@ -66,7 +66,7 @@ function renderList(){renderKpis();renderApprovals();const q=lview.q.toLowerCase
       <td class="stc"><span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span>${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
       <td class="cadc">${CADENCE_LABEL[s.cadence]||s.cadence}</td>
       <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` <span class="who">${escapeHtml(last.who)}</span>`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}</td>
-      <td class="nextc"><span class="nx ${d.due?'now':''}">${nextTxt}</span><span class="l2" title="Keepa API cost if this ran automatically — a manual export costs 0">~${tok.toLocaleString()} tokens</span></td>
+      <td class="nextc"><span class="nx ${d.due?'now':''}">${nextTxt}</span><span class="l2" title="Run by export today = 0 Keepa tokens. If this ran through the API by itself it would cost about ${tok.toLocaleString()} tokens.">manual export</span></td>
       <td class="actc"><div class="acts">${finderLink(s)?`<a class="ib" href="${finderLink(s)}" target="_blank" rel="noopener" title="${s.link?'Open the saved Keepa filter':'Open the generated Keepa filter (edit to paste your own)'}">${ICONS.ext}</a>`:`<span class="ib nolink" title="No Keepa link saved yet — Edit and paste it">?</span>`}<button class="btn run xs" data-act="run" ${s.status==='paused'?'disabled':''} title="${lk&&!mine?'Someone else has it open — you can still join':''}">${ICONS.run}${lk&&!mine?'Join':'Run'}</button><button class="ib" data-act="edit" title="Edit">${ICONS.edit}</button>
         <div class="menu"><button class="ib" data-act="menu" aria-label="More">⋮</button>
           <div class="pop"><button data-act="history">${ICONS.hist}History</button><button data-act="pause">${s.status==='paused'?ICONS.play:ICONS.pause}${s.status==='paused'?'Set active':'Pause'}</button>${lk?`<button data-act="unlock">${ICONS.eye}Clear "on it"</button>`:''}<button data-act="delete" class="danger">${ICONS.trash}Delete</button></div></div></div></td></tr>`;};
@@ -104,8 +104,7 @@ function openEdit(s){const isNew=!s;s=s||{key:'',name:'',type:'brand',rule:1,mar
       <div class="field"><label>Rule</label>
         <div class="rcards" id="eRuleCards">
           <label class="rcard"><input type="radio" name="eRule" value="1"${s.rule===1?' checked':''}><b>Rule 1</b><span>Buy UK or EU, sell UK. Finder export per market, then the UK Product Viewer.</span></label>
-          <label class="rcard"><input type="radio" name="eRule" value="2"${s.rule===2?' checked':''}><b>Rule 2</b><span>UK Amazon-to-Amazon. One UK Finder export. High-ticket scoring.</span></label>
-          <label class="rcard"><input type="radio" name="eRule" value="3"${s.rule===3?' checked':''}><b>Rule 3</b><span>Same as Rule 2 for grocery, S&amp;S and Business filters. Rule 4 VAT on top.</span></label>
+          <label class="rcard"><input type="radio" name="eRule" value="2"${s.rule!==1?' checked':''}><b>Rule 2</b><span>UK Amazon-to-Amazon. One UK Finder export. Sell price by price band, S&amp;S / Business / coupons off the buy price, Rule 4 VAT — all decided per product, not per filter.</span></label>
         </div></div>
     </div>
     <div class="fsec" id="secMarkets"><div class="fst">Where it buys</div>
@@ -197,15 +196,20 @@ function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runN
   $('#step1Sub').textContent=r1?`Finder export for each of ${s.markets.join(' · ')}, then the UK Product Viewer. Any order.`:'UK Product Finder, all columns. One file.';
   const link=finderLink(s);
   if(!link){$('#keepaRow').innerHTML=`<span class="nolinkmsg">No Keepa link saved for this yet — <button type="button" class="linkbtn" id="keepaEdit">Edit</button> and paste the Finder link. Exports can still be dropped below.</span>`;$('#keepaEdit').addEventListener('click',()=>openEdit(cur));return;}
-  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1?s.markets.map(m=>`<a href="${link}" target="_blank" rel="noopener" title="Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export">${FLAG[m]} ${m}${ICONS.ext}</a>`).join('')+`<span class="mkhint">Same filter for all ${s.markets.length}. Keepa cannot take the marketplace from a link — after it opens, switch the flag top-right of Keepa to that country, run, export. One file per country.</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);}
+  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1?s.markets.map(m=>`<a href="${link}" data-mk="${m}" target="_blank" rel="noopener" title="Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export">${FLAG[m]} ${m}<span class="tick">✓</span>${ICONS.ext}</a>`).join('')+`<span class="mkhint">Same filter for all ${s.markets.length}. Keepa cannot take the marketplace from a link — after it opens, switch the flag top-right of Keepa to that country, run, export. One file per country.</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);}
 /* floors: the inputs ARE this source's floors — saved as you type, shared, applied to every run of it */
 function paintFloors(){if(!cur)return;const f=cur.filters||{};const r1=cur.rule===1;
   FLOORS.forEach(([k,l,scope])=>{const el=$('#fl_'+k);if(!el)return;el.parentElement.hidden=(scope==='r2'&&r1);if(document.activeElement!==el)el.value=f[k]==null?'':f[k];});
   const lab=floorsLabel(f);$('#floorSaved').innerHTML=lab?`<b>${escapeHtml(cur.name)}:</b> ${escapeHtml(lab)} · saved for everyone`:`Your own limits for ${escapeHtml(cur.name)}, like Filter &amp; sort on the Keepa console. The rule already keeps only products with 10+ bought or 10+ rank drops a month; type a number to go stricter — saved for everyone who runs this.`;
   $('#floorClear').hidden=!lab;}
-let floorT=null;
-function onFloorInput(){if(!cur)return;clearTimeout(floorT);floorT=setTimeout(()=>{const f={};FLOORS.forEach(([k])=>{const el=$('#fl_'+k);if(!el)return;const v=el.value.trim();if(v!==''&&!isNaN(+v))f[k]=+v;});
-  if(Object.keys(f).length)cur.filters=f;else delete cur.filters;srcSave(cur);paintFloors();lastSig='';run();toast('Floors saved for '+cur.name);},650);}
+let floorT=null,relogT=null;
+function onFloorInput(){if(!cur)return;clearTimeout(floorT);floorT=setTimeout(()=>{const f={};FLOORS.forEach(([k])=>{const el=$('#fl_'+k);if(!el)return;const v=el.value.trim();if(v!==''&&!isNaN(+v)&&+v>0)f[k]=+v;});
+  const same=JSON.stringify(f)===JSON.stringify(cur.filters||{});if(same)return;
+  if(Object.keys(f).length)cur.filters=f;else delete cur.filters;srcSave(cur);paintFloors();
+  const fs=$('#floorSaved');fs.classList.add('flash');setTimeout(()=>fs.classList.remove('flash'),900);
+  run();   /* re-run keeps the same sig, so nothing is re-logged on every keystroke… */
+  clearTimeout(relogT);relogT=setTimeout(()=>{lastSig='';run();},2500);   /* …the run row + baseline catch up once typing stops */
+  },900);}
 /* the step strip: exactly what to do next, with ticks as it happens */
 function renderGuide(){const g=$('#guide');if(!g||!cur)return;const r1=cur.rule===1;
   const have=MARKETS.filter(m=>files[m]).length,want=r1?cur.markets.filter(m=>m!=='UK'||!files.viewer).length:0;const anyFinder=MARKETS.some(m=>files[m]);
@@ -255,6 +259,7 @@ function paintSlots(){if(!cur)return;const r1=cur.rule===1;
     h+=chip('viewer','Viewer',files.viewer,'UK Product Viewer · required');}
   else h+=chip('one','Export',files.one,'UK Product Finder · required');
   $('#fileChips').innerHTML=h;
+  document.querySelectorAll('#keepaRow a[data-mk]').forEach(a=>a.classList.toggle('done',!!files[a.dataset.mk]));
   /* the ASIN hand-off: every ASIN the Finders found, minus the ones the Viewer already covers */
   const merged=new Set();MARKETS.forEach(k=>{if(files[k])files[k].asins.forEach(a=>merged.add(a));});
   const covered=new Set(files.viewer?files.viewer.asins:[]);const missing=[...merged].filter(a=>!covered.has(a));
@@ -302,7 +307,8 @@ function run(){if(!cur)return;
   /* the central blacklists: an ASIN, or an approved brand, never shows — on any rule, any run, whatever Keepa filter found it */
   const B=blAll(),bl=[];R.out=R.out.filter(o=>{const b=B[o.ASIN];const bb=bbStatusFor(o.Brand||(cur.type==='brand'?cur.name:''));
     if(b){bl.push([o.ASIN,o.Title||o.Product||'','BLACKLISTED · '+b.reason+(b.note?' — '+b.note:'')+(b.who?' · '+b.who:'')]);return false;}
-    if(bb==='approved'){bl.push([o.ASIN,o.Title||o.Product||'','BRAND BLACKLISTED · '+(o.Brand||cur.name)]);return false;}return true;});
+    if(bb==='approved'){bl.push([o.ASIN,o.Title||o.Product||'','BRAND BLACKLISTED · '+(o.Brand||cur.name)]);return false;}
+    const cw=catBlockReason((o.Category||'')+' | '+(o.Title||o.Product||''));if(cw){bl.push([o.ASIN,o.Title||o.Product||'','NEVER-SELL CATEGORY · '+cw]);return false;}return true;});
   R.blacklisted=bl;R.dropped=bl.concat(R.dropped||[]);if(bl.length)R.reasons['Blacklisted']=bl.length;
   /* this source's own floors — the customisable Filter & Sort, saved on the source so it is the same for everyone */
   const fl=[];R.out=R.out.filter(o=>{const why=failsFloor(o,cur.filters,R.rule);if(why){fl.push([o.ASIN,o.Title||o.Product||'','Below the floors set for '+cur.name+': '+why]);return false;}return true;});
@@ -352,6 +358,14 @@ function paintStory(){const R=result;if(!R||!cur)return;const st=R.st,out=R.out;
   const carried=out.filter(o=>o.QUEUE==='new'&&o.STATUS!=='NEW').length;
   const story3=carried>=10?`<p class="s3">${n(carried)} of today's "need a look" were on the last run too and nobody has marked them. If they have already been looked at, press <b>Mark all as seen</b> once — from the next run only new and more-profitable leads come back.</p>`:'';
   $('#story').innerHTML=`<p>${story}</p><p class="s2">${story2}</p>${story3}`;$('#story').hidden=false;
+  /* detail: why things dropped, and what is left */
+  const rs=Object.entries(R.reasons).sort((a,b)=>b[1]-a[1]);const totIn=(st.viewer||st.rows)||1;
+  const bar=(k,v,tot,cls)=>`<div class="dr"><span class="dk">${escapeHtml(k)}</span><span class="db"><span class="${cls||''}" style="width:${Math.max(2,Math.round(v/tot*100))}%"></span></span><span class="dv">${(+v).toLocaleString()}</span></div>`;
+  let left='';
+  if(cur.rule===1){const cnt=k=>out.filter(o=>o['Buy market']===k).length;left=['UK','DE','FR','IT','ES'].filter(k=>cnt(k)).map(k=>bar(`Buy from ${k}`,cnt(k),out.length||1,'m-'+k.toLowerCase())).join('');}
+  else{const b=[['Score 70+',o=>o.Score>=70,'g'],['Score 50–69',o=>o.Score>=50&&o.Score<70,'i'],['Score 30–49',o=>o.Score>=30&&o.Score<50,'a'],['Under 30',o=>o.Score<30,'f']];left=b.map(([k,f,c])=>bar(k,out.filter(f).length,out.length||1,c)).join('');}
+  const roi=[['ROI 20%+',o=>o['ROI %']>=20,'g'],['ROI 10–20%',o=>o['ROI %']>=10&&o['ROI %']<20,'i'],['ROI under 10%',o=>o['ROI %']<10,'a']].map(([k,f,c])=>bar(k,out.filter(f).length,out.length||1,c)).join('');
+  $('#sumDetail').innerHTML=`<div class="dcol"><div class="dh">Why ${R.dropped.length.toLocaleString()} were dropped</div>${rs.length?rs.map(([k,v])=>bar(k,v,totIn,'d')).join(''):'<div class="dr"><span class="dk">nothing dropped</span></div>'}</div><div class="dcol"><div class="dh">The ${out.length} leads</div>${left}${roi}</div>`;
   $('#statusRow').innerHTML=(R.prevStamp?`<span class="vs">vs ${escapeHtml(R.prevStamp.slice(0,10))}</span>`:`<span class="vs">first run for ${escapeHtml(cur.name)} — everything is NEW</span>`)+
     [['TO REVIEW',rev,'rev'],['NEW',c.NEW,'new'],['BETTER',c.BETTER,'better'],['WORSE',c.WORSE,'worse'],['UNCHANGED',c.UNCHANGED,'same'],['GONE',R.gone.length,'gone'],['BLACKLISTED',R.blacklisted.length,'bl']].map(([l,n,k])=>`<span class="spill ${k}${n?'':' zero'}"><b>${n}</b>${l}</span>`).join('');
 }
@@ -367,7 +381,8 @@ function visible(){const q=view.q.toLowerCase();const list=result.out.filter(o=>
   else if(view.sort==='roi')list.sort((a,b)=>b['ROI %']-a['ROI %']);
   else if(view.sort==='month')list.sort((a,b)=>(b['£ per month']||b['Profit £']*b.SPM)-(a['£ per month']||a['Profit £']*a.SPM));
   return list;}
-function acts(o){return`<div class="rowacts"><a href="${o.Keepa}" target="_blank" rel="noopener" title="Keepa graph — the Track tab is on this page">Keepa</a><a href="${o.SAS}" target="_blank" rel="noopener" title="SellerAmp">SAS</a><a href="${o['Buy link']}" target="_blank" rel="noopener" title="Buy page">Buy${cur.rule===1&&o['Buy market']!=='UK'?' '+o['Buy market']:''}</a>${cur.rule===1&&o['Buy market']!=='UK'?`<a href="${o['UK sell link']}" target="_blank" rel="noopener">UK</a>`:''}</div>`;}
+function acts(o){const mk=cur.rule===1?(o['Buy market']||'UK'):'UK';
+  return`<div class="rowacts"><a href="${o.Keepa}" target="_blank" rel="noopener" title="Keepa graph — the Track tab is on this page">Keepa</a><a href="${o.SAS}" target="_blank" rel="noopener" title="SellerAmp">SAS</a><a href="${o['Buy link']}" target="_blank" rel="noopener" title="Where we would buy it">Buy ${mk}</a><a href="${o['UK sell link']||o['Buy link']}" target="_blank" rel="noopener" title="The UK listing we would sell on">Sell UK</a></div>`;}
 function verdCell(o){const v=verdGet(o.ASIN)||{};const b=x=>`<button type="button" class="vb ${x[0]}${v.v===x?' on':''}" data-v="${x}" data-asin="${o.ASIN}" title="${x}">${x[0]}</button>`;
   const chips=v.v==='No'?`<div class="vreasons">${noReasons().map(r=>`<button type="button" class="vr${v.reason===r?' on':''}" data-r="${r}" data-asin="${o.ASIN}">${escapeHtml(r)}</button>`).join('')}</div>`:'';
   const note=v.v&&v.v!=='Seen'?`<input class="vnote" data-asin="${o.ASIN}" placeholder="note…" value="${escapeHtml(v.note||'')}">`:'';
@@ -428,7 +443,7 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
   let pg='';const win=[...new Set([1,2,view.page-1,view.page,view.page+1,pages-1,pages].filter(p=>p>=1&&p<=pages))].sort((a,b)=>a-b);
   let last=0;win.forEach(p=>{if(p-last>1)pg+='<span style="padding:0 4px;color:var(--faint)">…</span>';pg+=`<button data-pg="${p}" class="${p===view.page?'on':''}">${p}</button>`;last=p;});
   $('#pager').innerHTML=`<span>Showing ${from}–${to} of ${all.length}${view.sel.size?` · <b>${view.sel.size} selected</b>`:''}</span><div class="pg"><button data-pg="${view.page-1}" ${view.page<=1?'disabled':''}>‹</button>${pg}<button data-pg="${view.page+1}" ${view.page>=pages?'disabled':''}>›</button></div>`;
-  $('#openSel').textContent=view.sel.size?`Open ${view.sel.size} ticked in Keepa`:`Open these ${rows.length} in Keepa`;}
+  $('#openSel').textContent=view.sel.size?`Open ${view.sel.size} ticked in Keepa`:all.length<=OPEN_ALL_MAX?`Open all ${all.length} in Keepa`:`Open ${rows.length} on this page in Keepa`;}
 function bandOf(sc){return sc>=70?'hi':sc>=50?'md':sc>=30?'lo':'weak';}
 function leadOf(a){return result?result.out.find(o=>o.ASIN===a):null;}
 function markAllSeen(){if(!result||!needMe())return;const list=result.out.filter(o=>!verdGet(o.ASIN));if(!list.length){toast('Everything already has a verdict');return;}
@@ -462,8 +477,9 @@ function dlSheet(){if(!result||!result.out.length){toast('Nothing on the sheet y
   const hdr=cur.rule===1?R1_HDR:R2_HDR;downloadBlob(base()+'-REVIEW.xlsx',buildXlsx(hdr,withVerdicts(result.out),cur.name+' Rule '+cur.rule));toast(result.out.length+' leads on the sheet');}
 function dlCsv(){if(!result||!result.out.length){toast('Nothing on the sheet yet',true);return;}download(base()+'-REVIEW.csv',rowsToCsv(cur.rule===1?R1_HDR:R2_HDR,withVerdicts(result.out)),'text/csv');}
 function dlDropped(){if(!result){toast('Run something first',true);return;}download(base()+'-DROPPED.csv',droppedCsv(result),'text/csv');}
+const OPEN_ALL_MAX=250;
 function openInKeepa(){if(!result){toast('Nothing to open',true);return;}
-  const list=view.sel.size?[...view.sel]:visible().slice((view.page-1)*PAGEN(),view.page*PAGEN()).map(o=>o.ASIN);
+  const all=visible();const list=view.sel.size?[...view.sel]:(all.length<=OPEN_ALL_MAX?all:all.slice((view.page-1)*PAGEN(),view.page*PAGEN())).map(o=>o.ASIN);
   if(!list.length){toast('Nothing to open',true);return;}window.open(keepaLink(list,'2'),'_blank');}
 
 /* ============ runs log (the 7-day count) ============ */
@@ -493,6 +509,7 @@ function renderSettings(){whoPaint();paintFx();
   $('#reasonChips').innerHTML=noReasons().map(r=>`<span class="c">${escapeHtml(r)}<button data-rr="${escapeHtml(r)}" title="Remove">×</button></span>`).join('');
   renderDiscounts();renderBlacklists();
   const w=vat0Words();if(document.activeElement!==$('#vatZero'))$('#vatZero').value=w.zero.join(', ');if(document.activeElement!==$('#vatNot'))$('#vatNot').value=w.not.join(', ');
+  if(document.activeElement!==$('#catWords'))$('#catWords').value=catWords().join(', ');
   paintCloud();
   const sz=Object.keys(localStorage).filter(k=>k.startsWith('bdl-sourcing')).reduce((s,k)=>s+(localStorage.getItem(k)||'').length,0);
   $('#dataInfo').textContent=`${srcAll().length} sources · ${runsAll().length} runs · ${Object.keys(verdAll()).length} verdicts · ${Object.keys(blAll()).length} blacklisted · ${(sz/1024).toFixed(0)} KB in this browser`;}
@@ -525,6 +542,8 @@ function settingsInit(){
     const x=e.target.closest('button[data-bbx]');if(!x)return;if(!confirm('Remove the '+x.dataset.bbx+' request / block?'))return;bbRemove(x.dataset.bbx);renderBlacklists();renderList();if(result)run();});
   $('#bbAdd').addEventListener('click',()=>{if(!needMe())return;const b=$('#bbName').value.trim(),w=$('#bbReason').value.trim();if(!b||!w){toast('Brand and reason both needed',true);return;}bbRequest(b,w,isJack());$('#bbName').value='';$('#bbReason').value='';renderBlacklists();renderList();toast(isJack()?b+' blacklisted':'Sent to Jack');});
   $('#vatSave').addEventListener('click',()=>{const sp=v=>v.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);const w={zero:sp($('#vatZero').value),not:sp($('#vatNot').value)};if(!w.zero.length){toast('Need at least one zero-rated word',true);return;}vat0Save(w);toast('Rule 4 words saved for everyone');if(result)run();});
+  $('#catSave').addEventListener('click',()=>{const list=$('#catWords').value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);if(!list.length){toast('Need at least one word',true);return;}catSave(list);toast('Never-sell categories saved for everyone');if(result)run();});
+  $('#catReset').addEventListener('click',()=>{catSave(CAT_DEFAULT.slice());renderSettings();toast('Category list reset');if(result)run();});
   $('#vatReset').addEventListener('click',()=>{vat0Save({zero:R4.ZERO.slice(),not:R4.NOT.slice()});renderSettings();toast('Rule 4 words reset');if(result)run();});
   $('#cloudPullBtn').addEventListener('click',async()=>{if(!cloudEnabled()){toast('Cloud is off in the sandbox',true);return;}toast('Refreshing…');const ok=await cloudPull();onCloudPulled(ok);toast(ok?'Up to date with the shared project':'Could not refresh — '+cloud.err,!ok);});
   $('#cloudSendBtn').addEventListener('click',()=>{if(!outbox().length){toast('Nothing queued');return;}cloudFlush();toast('Sending '+outbox().length+'…');});
@@ -567,7 +586,7 @@ function brandsInit(){renderList();renderLog();
   $('#fPer').addEventListener('change',e=>{view.per=parseInt(e.target.value);view.page=1;renderTable();});
   $('#fMarket').addEventListener('change',e=>{view.market=e.target.value;view.page=1;renderTable();});
   $('#floorRow').addEventListener('input',onFloorInput);
-  $('#floorClear').addEventListener('click',()=>{if(!cur)return;delete cur.filters;srcSave(cur);paintFloors();lastSig='';run();toast('Floors cleared for '+cur.name);});
+  $('#floorClear').addEventListener('click',()=>{if(!cur)return;delete cur.filters;srcSave(cur);paintFloors();lastSig='';run();});
   $('#fQ').addEventListener('input',e=>{view.q=e.target.value;view.page=1;renderTable();});
   $('#fHideNo').addEventListener('change',e=>{view.hideNo=e.target.checked;view.page=1;renderTable();});
   $('#logExport').addEventListener('click',exportLog);

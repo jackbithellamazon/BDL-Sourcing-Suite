@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b15">
-<link rel="stylesheet" href="css/brands.css?v=b15">
+<link rel="stylesheet" href="css/base.css?v=b18">
+<link rel="stylesheet" href="css/brands.css?v=b18">
 </head>
 <body>
 <div class="wrap">
@@ -258,7 +258,7 @@
           <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="lq" placeholder="Search brands…" autocomplete="off"></div>
           <select id="lMarket"><option value="ALL">All markets</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
           <select id="lOwner"><option value="ALL">All owners</option><option>Jack</option><option>Mera</option><option>Suz</option><option>VAs</option></select>
-          <select id="lRule"><option value="ALL">All rules</option><option value="1">Rule 1 · buy UK/EU, sell UK</option><option value="2">Rule 2 · high-ticket</option><option value="3">Rule 3 · grocery / S&amp;S / Business</option></select>
+          <select id="lRule"><option value="ALL">All rules</option><option value="1">Rule 1 · buy UK/EU, sell UK</option><option value="2">Rule 2 · UK Amazon-to-Amazon</option></select>
           <div class="seg" id="lSeg"><button data-seg="due" type="button">Due</button><button data-seg="mine" type="button">Mine</button><button class="on" data-seg="all" type="button">All</button><button data-seg="paused" type="button">Paused</button></div>
         </div>
         <div class="tblwrap"><table class="btbl" id="brandTbl"></table></div>
@@ -310,29 +310,29 @@
             <div class="emptysum" id="sumEmpty">Drop the exports and the numbers appear here.</div>
             <div class="sumgrid" id="sumGrid"></div>
             <div class="story" id="story" hidden></div>
+            <div class="statusrow instory" id="statusRow"></div>
+            <div class="sumdetail" id="sumDetail"></div>
+            <div class="fell" id="fell" hidden></div>
           </div>
         </div>
         <div class="rulesbox" id="rulesBox">
           <div><b>Rule 1 · brands</b> demand 10+ bought or 10+ rank drops in 30 days · sell = Buy Box 90d +8%, capped at FBA 90d · buy = cheapest Amazon UK/DE/FR/IT/ES landed (UK less S&amp;S 15%, EU less S&amp;S 5% + 1% card + shared postage) · SellerAmp fees to the penny · floor 0% ROI, −15% when Amazon owns the Buy Box and FBA sits 25%+ above · slow sellers under 50/mo need ROI 15% or £5 · EU plug, mains appliances from EU, blacklist off the sheet. FROZEN 9 Sep 2026.</div>
-          <div><b>Rule 2 · Mera high-ticket</b> Amazon selling it · demand 10+ · sell = Buy Box today when a 3P holds it under Amazon, else the 90/180d Buy Box +25% (+5% with no 3P history) capped at the 3P 90d average and the Buy Box high · buy = Amazon now less Business / coupon / S&amp;S 15% · keep if the % off needed to reach 5% ROI is within what the brand's own store gives (10% default) · score /100 weights £/month first, then ROI, then profit per unit.</div>
-          <div><b>Rule 3 · Suz grocery / S&amp;S / Business</b> the same maths as Rule 2 — the input never changes the rule — with Rule 4 on top.</div>
+          <div><b>Rule 2 · UK Amazon-to-Amazon</b> Amazon selling it · demand 10+ · buy = Amazon now less Business / coupon / S&amp;S 15% when Keepa shows them · sell: <b>£50+</b> = Buy Box today when a 3P holds it under Amazon, else the 90/180d Buy Box +25% (+5% with no 3P history) capped at the 3P 90d average and the Buy Box high; <b>under £50</b> = the lower Buy Box 90/180d average, no uplift, never above Amazon's 90d average · keep if the % off needed to reach 5% ROI is within what the brand's own store gives (10% default) · score /100 weights £/month first, then ROI, then profit per unit. Every UK filter runs this — Mera's, Suz's, the next one.</div>
           <div><b>Rule 4 · VAT</b> tea and coffee are 0% VAT on both sides (the product, never the machine). A VA can set 0% or 20% on the row; that beats the keyword rule, which beats the 20% default. Keyword lists are in Settings.</div>
           <div><b>Queue</b> a lead shows until someone gives it a verdict, then only comes back when it is <i>more profitable</i> than it was when judged — 2p counts. Blacklisted never shows.</div>
           <div><b>Flags, never rules</b> the graph reading stays with the human. A No needs a reason — that's what the system learns from.</div>
         </div>
 
         <div id="results" hidden>
-          <div class="statusrow" id="statusRow"></div>
-          <div class="fell" id="fell"></div>
           <div class="warn feewarn" id="feeWarn"></div>
           <div class="toolbar">
             <button class="btn primary" id="dlSheet" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="lab">Download review sheet</span></button>
-            <button class="btn solid" id="openSel" type="button">Open this page in Keepa</button>
+            <button class="btn solid" id="openSel" type="button">Open in Keepa</button>
             <button class="btn solid" id="copyKept" type="button"><span class="lab">Copy lead ASINs</span></button>
             <div class="spacer"></div>
+            <button class="btn solid seen" id="seenAll" type="button" hidden title="Baseline: mark every lead without a verdict as SEEN — from the next run only NEW and BETTER show as to-review">Mark all as seen</button>
             <button class="btn ghost" id="dlCsv" type="button">CSV</button>
             <button class="btn ghost" id="dlDropped" type="button">Dropped list</button>
-            <button class="btn ghost" id="seenAll" type="button" hidden title="Baseline: mark every lead without a verdict as SEEN — from the next run only NEW and BETTER show as to-review">Mark all as seen</button>
           </div>
 
           <div class="leadhead" id="leadTop">
@@ -411,6 +411,9 @@
       <div class="sgrid">
         <div class="sbox wide"><h3>ASIN blacklist <span class="scope shared">shared</span></h3><p class="ssub">These products never show again, on any run. Added with the ⃠ button on a lead — a reason is required. Anyone can remove one here; the removal carries your name.</p>
           <div class="disctb"><table class="dtbl" id="blTbl"></table></div></div>
+        <div class="sbox wide"><h3>Never-sell categories <span class="scope shared">shared</span></h3><p class="ssub">Things we cannot sell whatever the brand: alcohol, fashion, shoes. A lead is dropped on every run when its category or title contains one of these words. Whole words, comma-separated.</p>
+          <div class="vatgrid one"><div><textarea id="catWords" spellcheck="false"></textarea></div></div>
+          <div class="row" style="margin-top:8px"><button class="btn solid sm" id="catSave" type="button">Save</button><button class="btn ghost sm" id="catReset" type="button">Reset to defaults</button></div></div>
         <div class="sbox wide"><h3>Brand blacklist <span class="scope jack">Jack approves</span></h3><p class="ssub">Whole brands we cannot sell, such as HP. A VA requests it with a reason; it shows as <b>pending</b> until Jack approves. Once approved every product of that brand is dropped from every run. Pending brands keep showing with a PENDING chip so nothing is lost while Jack decides.</p>
           <div class="disctb"><table class="dtbl" id="bbTbl"></table></div>
           <div class="row" style="margin-top:10px"><input class="txt" id="bbName" placeholder="Brand as Keepa spells it" autocomplete="off" style="min-width:200px"><input class="txt" id="bbReason" placeholder="why we cannot sell it" autocomplete="off" style="min-width:240px"><button class="btn primary sm" id="bbAdd" type="button"><span class="lab">Request</span></button></div></div>
@@ -429,18 +432,18 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b15"></script>
-<script src="js/parse.js?v=b15"></script>
-<script src="js/rule1.js?v=b15"></script>
-<script src="js/rule2.js?v=b15"></script>
-<script src="js/export.js?v=b15"></script>
-<script src="js/rule4.js?v=b15"></script>
-<script src="js/queue.js?v=b15"></script>
-<script src="js/sources.js?v=b15"></script>
-<script src="js/cloud.js?v=b15"></script>
-<script src="js/leadtools.js?v=b15"></script>
-<script src="js/keepaconsole.js?v=b15"></script>
-<script src="js/brands.js?v=b15"></script>
-<script src="js/boot.js?v=b15"></script>
+<script src="js/core.js?v=b18"></script>
+<script src="js/parse.js?v=b18"></script>
+<script src="js/rule1.js?v=b18"></script>
+<script src="js/rule2.js?v=b18"></script>
+<script src="js/export.js?v=b18"></script>
+<script src="js/rule4.js?v=b18"></script>
+<script src="js/queue.js?v=b18"></script>
+<script src="js/sources.js?v=b18"></script>
+<script src="js/cloud.js?v=b18"></script>
+<script src="js/leadtools.js?v=b18"></script>
+<script src="js/keepaconsole.js?v=b18"></script>
+<script src="js/brands.js?v=b18"></script>
+<script src="js/boot.js?v=b18"></script>
 </body>
 </html>
