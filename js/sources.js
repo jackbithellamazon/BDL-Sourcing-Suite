@@ -84,7 +84,11 @@ function srcRemove(key){lsSet(SRC_KEY,srcAll().filter(s=>s.key!==key));cloudQueu
 /* in-progress lock: shows on the list so two people do not review the same run. Expires after 4 hours. */
 const LOCK_H=4;
 function lockFresh(s){return!!(s&&s.inProgress&&s.inProgress.at&&Date.now()-new Date(s.inProgress.at).getTime()<LOCK_H*3600e3);}
-function srcLock(s){s.inProgress={who:me()||'someone',at:nowIso()};srcSave(s);}
+/* this browser's own id, so its own lock is never reported as "someone else" even with no name picked */
+function lockId(){let v=lsGet('bdl-sourcing-lockid','');if(!v){v=Math.random().toString(36).slice(2,10);lsSet('bdl-sourcing-lockid',v);}return v;}
+function ownLock(s){return!!(s&&s.inProgress&&(s.inProgress.id===lockId()||(me()&&s.inProgress.who===me())));}
+function otherLock(s){return lockFresh(s)&&!ownLock(s)?s.inProgress:null;}
+function srcLock(s){s.inProgress={who:me()||'someone (no name picked)',at:nowIso(),id:lockId()};srcSave(s);}
 function srcUnlock(s,direct){if(!s||!s.inProgress)return;delete s.inProgress;srcSave(s,direct);}
 function srcKeyFor(name){return name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
 /* sorted: filters first, then brands A-Z */

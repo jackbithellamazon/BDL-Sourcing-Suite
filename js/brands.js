@@ -3,11 +3,11 @@
    This file only moves data between the page and those. */
 const SLOTS=['viewer','UK','DE','FR','IT','ES'];
 const FX_KEY='bdl-sourcing-fx';
-const PAGE=50;
 let cur=null,result=null,fx={rate:BR.FX_FALLBACK,src:'fallback'},lastSig='',blPick=null;
 const touched=new Set();   /* rows judged this sitting stay visible in "To review" so the reason chips can be picked */
 const files={viewer:null,UK:null,DE:null,FR:null,IT:null,ES:null,one:null};
-const view={status:'REVIEW',market:'ALL',q:'',hideNo:false,sort:'default',page:1,sel:new Set()};
+const view={status:'REVIEW',market:'ALL',q:'',hideNo:false,sort:'default',page:1,per:50,sel:new Set()};
+const PAGEN=()=>view.per>0?view.per:1e9;
 const lview={q:'',market:'ALL',rule:'ALL',owner:'ALL',seg:'all'};
 const RULE_LABEL={1:'buy UK/EU · sell UK',2:'high-ticket',3:'grocery · S&S / Business'};
 const ICONS={
@@ -50,24 +50,24 @@ function renderList(){renderKpis();renderApprovals();const q=lview.q.toLowerCase
   const rows=srcSorted().filter(s=>{
     if(lview.seg==='due'&&!dueState(s).due)return false;
     if(lview.seg==='paused'&&s.status!=='paused')return false;
-    if(lview.seg==='mine'&&!(me()&&(s.owner===me()||(s.inProgress&&lockFresh(s)&&s.inProgress.who===me()))))return false;
+    if(lview.seg==='mine'&&!(me()&&s.owner===me())&&!(lockFresh(s)&&ownLock(s)))return false;
     if(lview.market!=='ALL'&&!s.markets.includes(lview.market))return false;
     if(lview.rule!=='ALL'&&String(s.rule)!==lview.rule)return false;
     if(lview.owner!=='ALL'&&(s.owner||'VAs')!==lview.owner)return false;
     if(q&&!((s.name+' '+(s.note||'')).toLowerCase().includes(q)))return false;return true;});
   const tb=$('#brandTbl');
   if(!rows.length){tb.innerHTML=`<tbody><tr><td colspan="8" style="text-align:center;color:var(--faint);padding:22px">${lview.seg==='due'?'Nothing due — everything has been run inside its cadence.':lview.seg==='mine'?(me()?'Nothing is yours yet — Jack sets the owner in Edit.':'Pick who you are (top right) to see your list.'):'Nothing here.'}</td></tr></tbody>`;return;}
-  const rowHtml=s=>{const d=dueState(s),last=runLast(s.key),nx=nextRun(s),tok=tokenEstimate(s),lk=lockFresh(s)?s.inProgress:null,tr=toReviewCount(last);
+  const rowHtml=s=>{const d=dueState(s),last=runLast(s.key),nx=nextRun(s),tok=tokenEstimate(s),lk=lockFresh(s)?s.inProgress:null,mine=lk&&ownLock(s),tr=toReviewCount(last);
     const nextTxt=d.due?'Due now':nx?fmtWhen(nx.toISOString()).replace(' 07:00',''):(s.status==='paused'?'Paused':'—');
     return`<tr class="${s.status==='paused'?'paused':''}" data-key="${s.key}">
       <td class="namec"><div class="brandcell">${avatar(s)}<div class="ntext"><div class="nline"><span class="bname">${escapeHtml(s.name)}</span><span class="rl" title="${RULE_LABEL[s.rule]||''}">Rule ${s.rule}</span></div><span class="note" title="${escapeHtml(s.note||'')}">${escapeHtml(s.note||(s.type==='filter'?'Saved Keepa filter':'Brand run · UK sell side'))}</span></div></div></td>
       <td class="ownc">${escapeHtml(s.owner||'VAs')}</td>
       <td><div class="flags" title="${s.markets.join(' · ')}">${s.markets.map(m=>`<span class="f">${FLAG[m]}</span>`).join('')}</div></td>
-      <td class="stc"><span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span>${lk?`<div class="inprog" title="${escapeHtml(lk.who)} opened this ${fmtWhen(lk.at)} and is working through it"><i></i>${escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
+      <td class="stc"><span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span>${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
       <td class="cadc">${CADENCE_LABEL[s.cadence]||s.cadence}</td>
       <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` <span class="who">${escapeHtml(last.who)}</span>`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}</td>
       <td class="nextc"><span class="nx ${d.due?'now':''}">${nextTxt}</span><span class="l2" title="Keepa API cost if this ran automatically — a manual export costs 0">~${tok.toLocaleString()} tokens</span></td>
-      <td class="actc"><div class="acts">${finderLink(s)?`<a class="ib" href="${finderLink(s)}" target="_blank" rel="noopener" title="${s.link?'Open the saved Keepa filter':'Open the generated Keepa filter (edit to paste your own)'}">${ICONS.ext}</a>`:`<span class="ib nolink" title="No Keepa link saved yet — Edit and paste it">?</span>`}<button class="btn run xs" data-act="run" ${s.status==='paused'?'disabled':''} title="${lk&&lk.who!==me()?'Someone else has it open — you can still join':''}">${ICONS.run}${lk&&lk.who!==me()?'Join':'Run'}</button><button class="ib" data-act="edit" title="Edit">${ICONS.edit}</button>
+      <td class="actc"><div class="acts">${finderLink(s)?`<a class="ib" href="${finderLink(s)}" target="_blank" rel="noopener" title="${s.link?'Open the saved Keepa filter':'Open the generated Keepa filter (edit to paste your own)'}">${ICONS.ext}</a>`:`<span class="ib nolink" title="No Keepa link saved yet — Edit and paste it">?</span>`}<button class="btn run xs" data-act="run" ${s.status==='paused'?'disabled':''} title="${lk&&!mine?'Someone else has it open — you can still join':''}">${ICONS.run}${lk&&!mine?'Join':'Run'}</button><button class="ib" data-act="edit" title="Edit">${ICONS.edit}</button>
         <div class="menu"><button class="ib" data-act="menu" aria-label="More">⋮</button>
           <div class="pop"><button data-act="history">${ICONS.hist}History</button><button data-act="pause">${s.status==='paused'?ICONS.play:ICONS.pause}${s.status==='paused'?'Set active':'Pause'}</button>${lk?`<button data-act="unlock">${ICONS.eye}Clear "on it"</button>`:''}<button data-act="delete" class="danger">${ICONS.trash}Delete</button></div></div></div></td></tr>`;};
   const head=`<thead><tr><th>Name</th><th>Owner</th><th>Buy from</th><th>Status</th><th>Cadence</th><th>Last run</th><th>Next run</th><th></th></tr></thead>`;
@@ -182,14 +182,15 @@ function openBrandBlacklist(brand,fromAsin){if(!needMe())return;
 /* ============ run view ============ */
 async function openRun(key){const s=srcGet(key);if(!s)return;
   if(cur&&cur.key!==key){srcUnlock(cur);clearRun();}cur=s;touched.clear();blPick=null;
-  if(!(lockFresh(s)&&s.inProgress.who===me()))srcLock(cur);
+  if(!(lockFresh(s)&&ownLock(s)))srcLock(cur);
+  if(!me()){toast('Pick who you are (top right) so this run carries your name',true);const w=$('#whoSel');if(w){w.classList.add('shake');setTimeout(()=>w.classList.remove('shake'),600);}}
   $('#viewList').hidden=true;$('#viewRun').hidden=false;paintRunHead();paintSlots();paintFloors();renderGuide();
   $('#sumEmpty').textContent='Loading the shared compare baseline…';
   await cloudPullLeads(key);run();window.scrollTo({top:0,behavior:'smooth'});}
-function backToList(){if(cur&&cur.inProgress&&cur.inProgress.who===me())srcUnlock(cur);$('#viewRun').hidden=true;$('#viewList').hidden=false;renderList();}
+function backToList(){if(cur&&ownLock(cur))srcUnlock(cur);$('#viewRun').hidden=true;$('#viewList').hidden=false;renderList();}
 function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runName').textContent=s.name;
   $('#runMk').innerHTML=s.markets.map(m=>`<i class="mk ${m==='UK'?'uk':''}">${m}</i>`).join(' ');
-  const lk=lockFresh(s)&&s.inProgress.who!==me()?` · <span class="lock">${escapeHtml(s.inProgress.who)} is also on this (since ${new Date(s.inProgress.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})})</span>`:'';
+  const ol=otherLock(s);const lk=ol?` · <span class="lock">${escapeHtml(ol.who)} is also on this (since ${new Date(ol.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})})</span>`:'';
   $('#runMeta').innerHTML=`${escapeHtml(s.owner||'VAs')} · Rule ${s.rule} · ${RULE_LABEL[s.rule]||''} · ${STATUS_LABEL[s.status]||''} · ${CADENCE_LABEL[s.cadence]||s.cadence} · ~${tokenEstimate(s).toLocaleString()} Keepa tokens if automated, 0 by export`+(s.note?' · '+escapeHtml(s.note):'')+lk;
   const r1=s.rule===1;
   $('#step1Title').textContent=r1?'Drop the Product Finder exports':"Drop this morning's export";
@@ -323,14 +324,12 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
   const rev=out.filter(o=>o.QUEUE).length;let tiles;
   if(cur.rule===1){const cnt=k=>out.filter(o=>o['Buy market']===k).length,euN=out.length-cnt('UK');
     tiles=sumTile(st.viewer,'in the Viewer')+sumTile(st.demand,'sell 10+/month in the UK')+sumTile(st.buy,'Amazon selling it')+sumTile(out.length,'leads','lead')
-      +sumTile(rev,'to review',rev?'cool':'')+sumTile(out.filter(o=>o['ROI %']>=10).length,'ROI 10%+')+sumTile(cnt('UK'),'buy from UK')+sumTile(euN,euN?'buy from EU · '+['DE','FR','IT','ES'].map(k=>cnt(k)?k+' '+cnt(k):'').filter(Boolean).join(' '):'buy from EU','warm');}
+      +sumTile(rev,'to review today',rev?'cool':'')+sumTile(out.filter(o=>o['ROI %']>=10).length,'ROI 10%+')+sumTile(cnt('UK'),'buy from UK')+sumTile(euN,euN?'buy from EU · '+['DE','FR','IT','ES'].map(k=>cnt(k)?k+' '+cnt(k):'').filter(Boolean).join(' '):'buy from EU','warm');}
   else{const m=out.reduce((s,o)=>s+o['£ per month'],0);
     tiles=sumTile(st.rows,'in the export')+sumTile(st.priced,'Amazon selling it')+sumTile(st.demand,'sell 10+/month')+sumTile(out.length,'leads','lead')
-      +sumTile(rev,'to review',rev?'cool':'')+sumTile(out.filter(o=>o.Score>=60).length,'score 60+')+sumTile(out.filter(o=>o.Score>=40&&o.Score<60).length,'score 40–59','warm')+sumTile('£'+Math.round(m).toLocaleString(),'£ / month on the list');}
+      +sumTile(rev,'to review today',rev?'cool':'')+sumTile(out.filter(o=>o.Score>=60).length,'score 60+')+sumTile(out.filter(o=>o.Score>=40&&o.Score<60).length,'score 40–59','warm')+sumTile('£'+Math.round(m).toLocaleString(),'£ / month on the list');}
   $('#sumGrid').innerHTML=tiles;
-  const c={NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};out.forEach(o=>c[o.STATUS]++);
-  $('#statusRow').innerHTML=(R.prevStamp?`<span class="vs">vs ${escapeHtml(R.prevStamp.slice(0,10))}</span>`:`<span class="vs">first run for ${escapeHtml(cur.name)} — everything is NEW</span>`)+
-    [['TO REVIEW',rev,'rev'],['NEW',c.NEW,'new'],['BETTER',c.BETTER,'better'],['WORSE',c.WORSE,'worse'],['UNCHANGED',c.UNCHANGED,'same'],['GONE',R.gone.length,'gone'],['BLACKLISTED',R.blacklisted.length,'bl']].map(([l,n,k])=>`<span class="spill ${k}${n?'':' zero'}"><b>${n}</b>${l}</span>`).join('');
+  paintStory();
   const rs=Object.entries(R.reasons).sort((a,b)=>b[1]-a[1]);
   $('#fell').innerHTML=`<span class="fl">Filtered out</span><span class="fr">${rs.length?rs.map(([k,n])=>`${escapeHtml(k)} ${n}`).join(' · '):'nothing'}</span><span class="fbar"><span style="width:${Math.min(100,R.dropped.length/((st.viewer||st.rows)||1)*100)}%"></span></span><span class="fn">${R.dropped.length} dropped</span>`;
   const est=cur.rule===1?out.filter(o=>(o['Fees from']||'').startsWith('ESTIMATED')).length:0;
@@ -338,6 +337,23 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
   $('#fMarket').hidden=cur.rule!==1;
   const unseen=out.filter(o=>!verdGet(o.ASIN)).length;const sb=$('#seenAll');sb.hidden=!unseen;sb.textContent=`Mark all ${unseen} as seen`;
   renderTable();}
+/* the summary in words + the status pills — repainted after every verdict so the numbers never lie */
+function paintStory(){const R=result;if(!R||!cur)return;const st=R.st,out=R.out;const rev=out.filter(o=>o.QUEUE).length;
+  const c={NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};out.forEach(o=>c[o.STATUS]++);
+  const judged=out.length-rev;const V=verdAll();const yes=out.filter(o=>(V[o.ASIN]||{}).v==='Yes').length,no=out.filter(o=>(V[o.ASIN]||{}).v==='No').length;
+  const n=v=>`<b>${(+v).toLocaleString()}</b>`;
+  const story=cur.rule===1
+    ?`${n(st.viewer)} products in the Viewer → ${n(st.demand)} sell 10+ a month in the UK → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`
+    :`${n(st.rows)} products in the export → ${n(st.priced)} sold by Amazon → ${n(st.demand)} sell 10+ a month → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`;
+  const story2=R.prevStamp
+    ?`Against ${escapeHtml(R.prevStamp.slice(0,10))}: ${n(c.NEW)} new, ${n(c.BETTER)} more profitable, ${n(c.WORSE)} worse, ${n(c.UNCHANGED)} the same, ${n(R.gone.length)} gone. ${n(judged)} already have a verdict and have not improved since${yes||no?` (${n(yes)} Yes · ${n(no)} No)`:''}. ${n(R.dropped.length)} dropped by the rule${R.blacklisted.length?`, ${n(R.blacklisted.length)} blacklisted`:''}.`
+    :`First run for ${escapeHtml(cur.name)}, so everything counts as new. ${n(R.dropped.length)} dropped by the rule${R.blacklisted.length?`, ${n(R.blacklisted.length)} blacklisted`:''}.`;
+  const carried=out.filter(o=>o.QUEUE==='new'&&o.STATUS!=='NEW').length;
+  const story3=carried>=10?`<p class="s3">${n(carried)} of today's "need a look" were on the last run too and nobody has marked them. If they have already been looked at, press <b>Mark all as seen</b> once — from the next run only new and more-profitable leads come back.</p>`:'';
+  $('#story').innerHTML=`<p>${story}</p><p class="s2">${story2}</p>${story3}`;
+  $('#statusRow').innerHTML=(R.prevStamp?`<span class="vs">vs ${escapeHtml(R.prevStamp.slice(0,10))}</span>`:`<span class="vs">first run for ${escapeHtml(cur.name)} — everything is NEW</span>`)+
+    [['TO REVIEW',rev,'rev'],['NEW',c.NEW,'new'],['BETTER',c.BETTER,'better'],['WORSE',c.WORSE,'worse'],['UNCHANGED',c.UNCHANGED,'same'],['GONE',R.gone.length,'gone'],['BLACKLISTED',R.blacklisted.length,'bl']].map(([l,n,k])=>`<span class="spill ${k}${n?'':' zero'}"><b>${n}</b>${l}</span>`).join('');
+}
 function visible(){const q=view.q.toLowerCase();const list=result.out.filter(o=>{
   if(view.status==='REVIEW'){if(!o.QUEUE&&!touched.has(o.ASIN))return false;}
   else if(view.status!=='ALL'&&o.STATUS!==view.status)return false;
@@ -350,8 +366,7 @@ function visible(){const q=view.q.toLowerCase();const list=result.out.filter(o=>
   else if(view.sort==='roi')list.sort((a,b)=>b['ROI %']-a['ROI %']);
   else if(view.sort==='month')list.sort((a,b)=>(b['£ per month']||b['Profit £']*b.SPM)-(a['£ per month']||a['Profit £']*a.SPM));
   return list;}
-function acts(o){const f=factGet(o.ASIN);const tr=f.track?`<button type="button" class="on" data-track="${o.ASIN}" title="On the Keepa tracker at £${f.track.target} (${escapeHtml(f.track.who||'')}) — click to change">TRACK £${f.track.target}</button>`:`<button type="button" data-track="${o.ASIN}" title="Set a target buy price and open Keepa to track it">Track</button>`;
-  return`<div class="rowacts"><a href="${o.Keepa}" target="_blank" rel="noopener" title="Keepa graph">Keepa</a><a href="${o.SAS}" target="_blank" rel="noopener" title="SellerAmp">SAS</a><a href="${o['Buy link']}" target="_blank" rel="noopener" title="Buy page">Buy${cur.rule===1&&o['Buy market']!=='UK'?' '+o['Buy market']:''}</a>${cur.rule===1&&o['Buy market']!=='UK'?`<a href="${o['UK sell link']}" target="_blank" rel="noopener">UK</a>`:''}${tr}</div>`;}
+function acts(o){return`<div class="rowacts"><a href="${o.Keepa}" target="_blank" rel="noopener" title="Keepa graph — the Track tab is on this page">Keepa</a><a href="${o.SAS}" target="_blank" rel="noopener" title="SellerAmp">SAS</a><a href="${o['Buy link']}" target="_blank" rel="noopener" title="Buy page">Buy${cur.rule===1&&o['Buy market']!=='UK'?' '+o['Buy market']:''}</a>${cur.rule===1&&o['Buy market']!=='UK'?`<a href="${o['UK sell link']}" target="_blank" rel="noopener">UK</a>`:''}</div>`;}
 function verdCell(o){const v=verdGet(o.ASIN)||{};const b=x=>`<button type="button" class="vb ${x[0]}${v.v===x?' on':''}" data-v="${x}" data-asin="${o.ASIN}" title="${x}">${x[0]}</button>`;
   const chips=v.v==='No'?`<div class="vreasons">${noReasons().map(r=>`<button type="button" class="vr${v.reason===r?' on':''}" data-r="${r}" data-asin="${o.ASIN}">${escapeHtml(r)}</button>`).join('')}</div>`:'';
   const note=v.v&&v.v!=='Seen'?`<input class="vnote" data-asin="${o.ASIN}" placeholder="note…" value="${escapeHtml(v.note||'')}">`:'';
@@ -362,18 +377,18 @@ function statusCell(o){const sp=`<span class="spill ${({NEW:'new',BETTER:'better
   const first=(o.Changed||'').split('; ')[0]||'';
   const chg=o.Changed?`<span class="chg" title="${escapeHtml(o.Changed)}">${escapeHtml(first)}${o.Changed.includes('; ')?' …':''}</span>`:'';
   const since=o.QUEUE==='better'?`<span class="chg since" title="${escapeHtml(o.sinceVerdict)}">↑ since ${escapeHtml(o.verdict.v==='Seen'?'seen':o.verdict.v)}${o.verdict.who?' · '+escapeHtml(o.verdict.who):''}</span>`:'';
-  const low=o.low?`<span class="chg" title="Lowest buy we saw, and when — set a Keepa track at it">low £${o.low.buy.toFixed(2)} · ${escapeHtml(o.low.stamp.slice(5,10).replace('-','/'))}</span>`:'';
+  const low=o.low?`<span class="chg" title="Lowest buy we saw, and when — set a Keepa track at it">low was £${o.low.buy.toFixed(2)} on ${escapeHtml(o.low.stamp.slice(8,10))}/${escapeHtml(o.low.stamp.slice(5,7))}</span>`:'';
   return sp+chg+since+low;}
-function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.length/PAGE));if(view.page>pages)view.page=pages;
-  const rows=all.slice((view.page-1)*PAGE,view.page*PAGE);
+function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.length/PAGEN()));if(view.page>pages)view.page=pages;
+  const rows=all.slice((view.page-1)*PAGEN(),view.page*PAGEN());
   $('#leadCount').textContent=(view.status==='REVIEW'?'To review':'Leads')+(all.length===result.out.length?` (${all.length})`:` (${all.length} of ${result.out.length})`);
   const asin=o=>`<td class="asin">${o.ASIN}<button type="button" data-copy="${o.ASIN}" title="Copy ASIN">${ICONS.copy}</button></td>`;
   const sel=o=>`<td class="sel"><input type="checkbox" data-sel="${o.ASIN}"${view.sel.has(o.ASIN)?' checked':''}></td>`;
   const pend=b=>bbStatusFor(b)==='pending'?`<i class="ch pend" title="Brand blacklist requested — waiting for Jack">BRAND BLACKLIST PENDING</i>`:'';
   let h;
-  if(!all.length){$('#leads').innerHTML=`<tbody><tr><td style="text-align:center;color:var(--faint);padding:26px">${view.status==='REVIEW'?'Nothing to review — every lead on this run has a verdict and none has got better since. Switch to <b>Everything</b> to see them all.':'Nothing matches.'}</td></tr></tbody>`;$('#pager').innerHTML='';$('#openSel').textContent='Open this page in Keepa';return;}
+  if(!all.length){$('#leads').innerHTML=`<tbody><tr><td style="text-align:center;color:var(--faint);padding:26px">${view.status==='REVIEW'?'Nothing to review — every lead on this run has a verdict and none has got better since. Switch to <b>Everything</b> to see them all.':'Nothing matches.'}</td></tr></tbody>`;$('#pager').innerHTML='';$('#openSel').textContent='Open in Keepa';return;}
   if(cur.rule===1){h=`<thead><tr><th></th><th>#</th><th>Status</th><th>ASIN</th><th>Product</th><th>Verdict</th><th>Links</th><th class="r">Buy · landed £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">/mo</th><th>Flags</th></tr></thead><tbody>`;
-    rows.forEach((o,i)=>{h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''}">${sel(o)}<td class="idx">${(view.page-1)*PAGE+i+1}</td><td>${statusCell(o)}</td>${asin(o)}
+    rows.forEach((o,i)=>{h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td>${statusCell(o)}</td>${asin(o)}
       <td class="prod"><span class="t" title="${escapeHtml(o.Title)}">${escapeHtml(o.Title)}</span><span class="s">${escapeHtml(o['Sell used'])}${o['LTD badge']?' · <b>LTD</b>':''}</span>${pend(cur.name)}</td>
       <td class="vcell">${verdCell(o)}</td><td class="linkc">${acts(o)}</td>
       <td class="num r buyc"><i class="mk ${o['Buy market']==='UK'?'uk':''}">${o['Buy market']}</i> <b>${gbp(o['Landed £'])}</b>${o['Discount applied']?`<span class="sub">${escapeHtml(o['Discount applied'])}</span>`:''}</td>
@@ -388,19 +403,19 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
       h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}">${sel(o)}<td class="idx">${o['#']}</td>
       <td><span class="score ${band}">${o.Score}</span>${pot?`<span class="potl" title="Potential score with ${escapeHtml(o['Potential via'])}">→ ${pot}</span>`:''}</td>
       <td>${statusCell(o)}</td>${asin(o)}
-      <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d tracked':''}</span><span class="chips">${(o.chips||[]).filter(([t])=>!/VAT/.test(t)).map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 4 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
+      <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d tracked':''}</span><span class="chips">${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 4 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
       <td class="vcell">${verdCell(o)}</td><td class="linkc">${acts(o)}</td>
       <td class="num r buyc"><b>${gbp(o['After discount £'])}</b><span class="sub">${o['Discount applied']?'Amazon '+gbp(o['Buy at £'])+' · '+escapeHtml(o['Discount applied']):o['Amazon 90d drop %']+'% under 90d avg'}</span></td>
-      <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(alt)}">${escapeHtml(o['Sell from'])}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your sell £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit"></td>
+      <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(alt)}">${escapeHtml(o['Sell from'])}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit"></td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}">${gbp(o['Profit £'])}</td><td class="num r ${o['ROI %']>=10?'pos':o['ROI %']>=0?'':'neg'}">${pct(o['ROI %'])}</td>
       <td class="num r">${o['Sells /mo']}<span class="sub">/mo · £${o['£ per month'].toLocaleString()}</span></td>
       <td class="pmc"><div class="pms">${PM_OPTIONS.map(x=>`<button type="button" class="pm${(fact.pm||[]).includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}">${x}</button>`).join('')}</div>${(o.pot||[]).length?(()=>{const b=o.pot.reduce((m,x)=>x.roi>m.roi?x:m,o.pot[0]);return`<span class="sub" title="${escapeHtml(o.pot.map(x=>`${x.who} ${x.pct}% → ${pct(x.roi)} ROI`).join(' · '))}">best: ${escapeHtml(b.who)} ${b.pct}% → ${pct(b.roi)} ROI</span>`;})():''}</td></tr>`;});}
   $('#leads').innerHTML=h+'</tbody>';
-  const from=all.length?(view.page-1)*PAGE+1:0,to=Math.min(all.length,view.page*PAGE);
+  const from=all.length?(view.page-1)*PAGEN()+1:0,to=Math.min(all.length,view.page*PAGEN());
   let pg='';const win=[...new Set([1,2,view.page-1,view.page,view.page+1,pages-1,pages].filter(p=>p>=1&&p<=pages))].sort((a,b)=>a-b);
   let last=0;win.forEach(p=>{if(p-last>1)pg+='<span style="padding:0 4px;color:var(--faint)">…</span>';pg+=`<button data-pg="${p}" class="${p===view.page?'on':''}">${p}</button>`;last=p;});
   $('#pager').innerHTML=`<span>Showing ${from}–${to} of ${all.length}${view.sel.size?` · <b>${view.sel.size} selected</b>`:''}</span><div class="pg"><button data-pg="${view.page-1}" ${view.page<=1?'disabled':''}>‹</button>${pg}<button data-pg="${view.page+1}" ${view.page>=pages?'disabled':''}>›</button></div>`;
-  $('#openSel').textContent=view.sel.size?`Open ${view.sel.size} selected in Keepa`:`Open this page in Keepa`;}
+  $('#openSel').textContent=view.sel.size?`Open ${view.sel.size} ticked in Keepa`:`Open these ${rows.length} in Keepa`;}
 function bandOf(sc){return sc>=70?'hi':sc>=50?'md':sc>=30?'lo':'weak';}
 function leadOf(a){return result?result.out.find(o=>o.ASIN===a):null;}
 function markAllSeen(){if(!result||!needMe())return;const list=result.out.filter(o=>!verdGet(o.ASIN));if(!list.length){toast('Everything already has a verdict');return;}
@@ -421,7 +436,7 @@ function onTableClick(e){const cp=e.target.closest('button[data-copy]');if(cp){c
     if(v.v===b.dataset.v){verdSet(a,null);if(o){o.verdict=null;o.QUEUE='new';o.sinceVerdict='';}}
     else{verdSet(a,{v:b.dataset.v,reason:b.dataset.v==='No'?v.reason||'':'',note:v.note||'',source:cur.key,state:o?o.state:null});if(o){o.verdict=verdGet(a);o.QUEUE='';o.sinceVerdict='';}}}
   else if(b.dataset.r){const v=verdGet(a)||{};verdSet(a,Object.assign(v,{reason:v.reason===b.dataset.r?'':b.dataset.r}));}
-  renderTable();renderLog();}
+  renderTable();paintStory();renderLog();}
 function onTableChange(e){const s=e.target.dataset&&e.target.dataset.sel;if(s){if(e.target.checked)view.sel.add(s);else view.sel.delete(s);renderTable();}}
 function onTableInput(e){const i=e.target;
   if(i.classList.contains('ysell')){clearTimeout(i._t);i._t=setTimeout(()=>{const v=parseFloat(i.value);factSet(i.dataset.asin,{sell:v>0?v:null});touched.add(i.dataset.asin);run();},700);return;}
@@ -435,7 +450,7 @@ function dlSheet(){if(!result||!result.out.length){toast('Nothing on the sheet y
 function dlCsv(){if(!result||!result.out.length){toast('Nothing on the sheet yet',true);return;}download(base()+'-REVIEW.csv',rowsToCsv(cur.rule===1?R1_HDR:R2_HDR,withVerdicts(result.out)),'text/csv');}
 function dlDropped(){if(!result){toast('Run something first',true);return;}download(base()+'-DROPPED.csv',droppedCsv(result),'text/csv');}
 function openInKeepa(){if(!result){toast('Nothing to open',true);return;}
-  const list=view.sel.size?[...view.sel]:visible().slice((view.page-1)*PAGE,view.page*PAGE).map(o=>o.ASIN);
+  const list=view.sel.size?[...view.sel]:visible().slice((view.page-1)*PAGEN(),view.page*PAGEN()).map(o=>o.ASIN);
   if(!list.length){toast('Nothing to open',true);return;}window.open(keepaLink(list,'2'),'_blank');}
 
 /* ============ runs log (the 7-day count) ============ */
@@ -536,6 +551,7 @@ function brandsInit(){renderList();renderLog();
   $('#pager').addEventListener('click',e=>{const b=e.target.closest('button[data-pg]');if(!b||b.disabled)return;view.page=parseInt(b.dataset.pg);touched.clear();renderTable();$('#leadTop').scrollIntoView({behavior:'smooth',block:'start'});});
   $('#fStatus').addEventListener('change',e=>{view.status=e.target.value;view.page=1;touched.clear();renderTable();});
   $('#fSort').addEventListener('change',e=>{view.sort=e.target.value;view.page=1;renderTable();});
+  $('#fPer').addEventListener('change',e=>{view.per=parseInt(e.target.value);view.page=1;renderTable();});
   $('#fMarket').addEventListener('change',e=>{view.market=e.target.value;view.page=1;renderTable();});
   $('#floorRow').addEventListener('input',onFloorInput);
   $('#floorClear').addEventListener('click',()=>{if(!cur)return;delete cur.filters;srcSave(cur);paintFloors();lastSig='';run();toast('Floors cleared for '+cur.name);});
@@ -545,5 +561,5 @@ function brandsInit(){renderList();renderLog();
   $('#rulesToggle').addEventListener('click',()=>{const o=$('#rulesBox');const open=o.classList.toggle('show');$('#rulesToggle').textContent=open?'Hide the rules':'Show the rules';});
   /* what other people change while the list is open: locks, runs, verdict counts */
   setInterval(()=>{if(!cloudEnabled()||!cloud.tables||!$('#page-brands').classList.contains('active')||$('#viewList').hidden)return;cloudPullLight().then(ok=>{if(ok){renderList();renderLog();}});},90000);
-  window.addEventListener('beforeunload',()=>{if(cur&&cur.inProgress&&cur.inProgress.who===me())srcUnlock(cur,true);});
+  window.addEventListener('beforeunload',()=>{if(cur&&ownLock(cur))srcUnlock(cur,true);});
   settingsInit();renderSettings();loadFx();}

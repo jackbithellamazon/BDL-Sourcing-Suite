@@ -12,7 +12,12 @@ Rules: js/rule1.js is FROZEN (9 Sep 2026). js/rule2.js is Rule 2 AND Rule 3 (sam
 Checks: open the page, add ?checks to the URL, and the known-answer tests run against the fixtures
         (fixtures are kept locally in bdl-sourcing-harness/fixtures, not in the repo).
 
-Build: v1.1 · 2026-09-13 · b10 — shared storage (Supabase src_ tables, local-first outbox), who-am-I dropdown, per-source in-progress lock,
+Build: v1.1 · 2026-09-14 · b12 — leads per page (50/100/200/all) with 'Open these N in Keepa' saying how many it opens; the run
+  summary points at 'Mark all as seen' when unreviewed leads are carried over from the last run.
+Previous: v1.1 · 2026-09-14 · b11 — readability + density pass on the leads table (brighter greys, bigger secondary text, tighter rows,
+  chips capped at 4 + '+n'), Track button removed (Keepa's page has the Track tab), links next to the verdict, run summary told as a
+  sentence (export → leads → to review today, and what changed vs last time), own lock never shown as 'someone else'.
+Previous: v1.1 · 2026-09-13 · b10 — shared storage (Supabase src_ tables, local-first outbox), who-am-I dropdown, per-source in-progress lock,
   To-review queue (new + better since last verdict, 2p counts), ASIN blacklist with reason, brand blacklist with Jack approval,
   Rule 4 VAT (tea/coffee 0%, VA override chip, editable words), Rule 3 = Suz grocery/S&S/Business (same maths as Rule 2),
   Suz's three filters seeded (EU one parked, tea & coffee waiting for its link), per-source FLOORS (the customisable Filter & Sort,

@@ -570,3 +570,66 @@
 .form .field .rcard span,.form .field .scard span{font-size:11.5px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0}
 .form .field .rcard input,.form .field .scard input{position:absolute!important;left:12px;top:12px;width:15px;height:15px;margin:0}
 .form .field .scard{padding-left:34px}
+
+/* ===== b11 · readability + density (Jack, 14 Sep: "can't read grey at all", "loads of dead space") ===== */
+:root{--muted:#a6aec2;--faint:#7e8798}
+[data-theme="light"]{--muted:#46566e;--faint:#5d6b82}
+.ltbl thead th{font-size:11px;color:var(--muted);padding:9px 10px}
+.ltbl td{padding:9px 10px;vertical-align:middle}
+.ltbl td.idx{font-size:12px;color:var(--muted)}
+.ltbl td.asin{font-size:12.5px}
+.ltbl td.prod{max-width:360px}
+.ltbl td.prod .t{font-size:13.5px;line-height:1.3}
+.ltbl td.prod .s{font-size:12px;color:var(--muted);margin-top:1px}
+.ltbl td.num{font-size:13.5px}
+.ltbl td.num b{font-size:14px}
+.ltbl td.num .sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+.chg{font-size:11.5px;color:var(--muted);max-width:140px;margin-top:3px}
+.chg.since{color:var(--iris)}
+.ch{font-size:10.5px;padding:2px 6px}
+.ch.more{color:var(--muted);border-style:dashed;cursor:help}
+.chips{gap:3px;margin-top:4px}
+.score{width:38px;height:38px;font-size:16px}
+.spill{font-size:10.5px}
+.rowacts{gap:4px;justify-content:flex-start;flex-wrap:nowrap}
+.rowacts a{height:24px;padding:0 7px;font-size:10.5px}
+.ltbl td.linkc{min-width:0;max-width:none;white-space:nowrap}
+.ysell{width:84px;height:24px;font-size:11px;margin-top:3px}
+.ltbl td.sellc .sub{max-width:112px}
+.vb{width:26px;height:26px}
+.verd{gap:3px}
+.vreasons{margin-top:4px}
+.vr{font-size:11.5px}
+.leadhead .sub{font-size:12.5px;color:var(--muted)}
+.floors{padding:10px 14px}
+.floors .fs{font-size:12.5px}
+.floors .fin label{font-size:11.5px;color:var(--muted);font-family:var(--sans);letter-spacing:0;font-weight:600}
+.floors .fin input{width:104px;height:30px}
+.story{margin:0 0 10px;padding:12px 16px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);font-size:13.5px;line-height:1.6;color:var(--muted)}
+.story p{margin:0}
+.story p.s2{margin-top:4px;font-size:12.5px}
+.story b{color:var(--text);font-family:var(--mono);font-size:13px;padding:0 1px}
+.statusrow .vs{font-size:12px;color:var(--muted)}
+.sum .sl{font-size:11.5px;color:var(--muted)}
+.fell .fr,.fell .fn{font-size:12.5px}
+.gs .gt{font-size:12.5px}.gs .gd{font-size:11.5px;color:var(--muted)}
+.runhead .meta{font-size:13px}
+.btbl .note{font-size:12.5px;color:var(--muted)}
+.btbl .l2,.btbl .nextc .l2{font-size:11.5px;color:var(--muted)}
+.kpi .kl{font-size:11.5px;color:var(--muted)}
+.cardhead .sub{font-size:13px;color:var(--muted)}
+.pagebtn .ps{color:var(--muted)}
+.story p.s3{margin-top:6px;font-size:12.5px;color:var(--amber)}
+.story p.s3 b{color:var(--amber);font-family:var(--sans);font-size:12.5px}
+.ltbl td.prod{max-width:290px;min-width:220px}
+.chg{max-width:112px}
+.ltbl td.buyc .sub{max-width:118px}
+.ltbl td.pmc{min-width:140px;max-width:180px}
+.ysell{width:80px}
+/* a No row stays readable; the FX box matches the other inputs */
+.ltbl tbody tr.No td{opacity:.72}
+.ltbl tbody tr.No td.vcell{opacity:1}
+.fxrow input{height:36px;font-family:var(--mono);font-size:13px;color:var(--text);background:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:0 10px;width:110px}
+.fxrow input:focus{outline:none;border-color:var(--iris)}
+.fxbtn{height:36px;width:36px;border-radius:9px;border:1px solid var(--line2);background:var(--ink);color:var(--muted);cursor:pointer}
+.fxbtn:hover{color:var(--text);border-color:var(--iris)}
