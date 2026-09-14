@@ -18,4 +18,8 @@ Build: v1.1 · 2026-09-13 · b10 — shared storage (Supabase src_ tables, local
   Suz's three filters seeded (EU one parked, tea & coffee waiting for its link), per-source FLOORS (the customisable Filter & Sort,
   saved on the source, applied before the queue), brand + title stored with every lead, Settings regrouped with shared / this-browser tags,
   Track-at-£ note, Keepa 'low was' on WORSE rows. Checks: 41.
+  Rule 3 locked on Suz's 13 Sep exports (S&S 2,520 → 596 · Business 179 → 16); Rule 4 word lists widened (syrups, perfumes, cosmetics, supplements = 20%). Checks: 54.
+  Edit drawer redesigned 13 Sep 22:10: sections (What it is / Where it buys / Who and when / Keepa / Notes), rule + status as pick-one cards,
+  owner + cadence one-tap, market chips, link field shows saved vs generated with Open, brand-only and filter-only fields hide, Delete in the footer.
+  LIVE-TESTED 13 Sep 21:30 with two browsers against the real src_ tables (seed rows are in; test rows removed).
 Previous: v1.0 · 2026-09-13 · b9 — Jack's real Keepa Finder links seeded for 15 sources; Corsair/Elgato, Ninja/Shark, SanDisk/Seagate/WD merged; Bialetti + Repken seller watch added; UK-only brand runs work off one Finder export

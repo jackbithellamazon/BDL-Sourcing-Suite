@@ -95,32 +95,70 @@ function onApprovalClick(e){const b=e.target.closest('button[data-dec]');if(!b)r
 function openDrawer(html){$('#drawerBody').innerHTML=html;$('#drawer').classList.add('open');}
 function closeDrawer(){$('#drawer').classList.remove('open');}
 function openEdit(s){const isNew=!s;s=s||{key:'',name:'',type:'brand',rule:1,markets:['UK'],cadence:'2 days',note:'',brands:[],link:'',status:'testing',owner:me()||'VAs'};
-  openDrawer(`<h3>${isNew?'Add brand / filter':'Edit '+escapeHtml(s.name)}</h3><p class="dsub">${isNew?'A brand or saved Keepa filter we want to keep running.':'Changes apply to the next run, for everyone. History is untouched.'}</p>
+  const seg=(id,opts,val)=>`<div class="segf" id="${id}">${opts.map(([v,l,sub])=>`<button type="button" data-v="${v}" class="${v===val?'on':''}">${l}${sub?`<span>${sub}</span>`:''}</button>`).join('')}</div>`;
+  openDrawer(`<div class="dhead">${isNew?'<span class="avatar" style="background:var(--iris)">+</span>':avatar(s)}<div><h3>${isNew?'Add a brand or filter':escapeHtml(s.name)}</h3><p class="dsub">${isNew?'Something we want to keep running. Saved for everyone.':'Changes apply to the next run, for everyone. History is untouched.'}</p></div></div>
   <div class="form">
-    <div class="field"><label>Name</label><input class="full" id="eName" value="${escapeHtml(s.name)}" placeholder="Corsair" autocomplete="off"></div>
-    <div class="field"><label>Type</label><select class="full" id="eType"><option value="brand"${s.type==='brand'?' selected':''}>Brand</option><option value="filter"${s.type==='filter'?' selected':''}>Saved Keepa filter</option></select></div>
-    <div class="field"><label>Rule</label><select class="full" id="eRule"><option value="1"${s.rule===1?' selected':''}>Rule 1 · buy UK/EU, sell UK (Finder per market + UK Viewer)</option><option value="2"${s.rule===2?' selected':''}>Rule 2 · high-ticket UK (one Finder export)</option><option value="3"${s.rule===3?' selected':''}>Rule 3 · grocery / S&amp;S / Business UK (one Finder export, Rule 4 VAT)</option></select><p class="hintline">Rule 1 needs the UK Product Viewer stage; Rules 2 and 3 take one UK export and are the same maths.</p></div>
-    <div class="field"><label>Buy from</label><div class="mks">${MARKETS.map(m=>`<label><input type="checkbox" value="${m}"${s.markets.includes(m)?' checked':''}>${FLAG[m]} ${m}</label>`).join('')}</div></div>
-    <div class="field"><label>Owner — whose search this is</label><select class="full" id="eOwner">${['Jack','Mera','Suz','VAs'].map(u=>`<option${(s.owner||'VAs')===u?' selected':''}>${u}</option>`).join('')}</select></div>
-    <div class="field"><label>Cadence</label><select class="full" id="eCad">${Object.keys(CADENCE_LABEL).map(c=>`<option value="${c}"${s.cadence===c?' selected':''}>${CADENCE_LABEL[c]}</option>`).join('')}</select></div>
-    <div class="field"><label>Brand names as Keepa spells them</label><input class="full" id="eBrands" value="${escapeHtml((s.brands||[]).join(', '))}" placeholder="Logitech, Logitech G, Logitech for Creators"><p class="hintline">Keepa's brand filter is exact. Leave blank to use the name. Filters can leave this empty.</p></div>
-    <div class="field"><label>Keepa filter link</label><input class="full" id="eLink" value="${escapeHtml(s.link||'')}" placeholder="paste a keepa.com/#!finder/… link, or leave blank to generate one"><p class="hintline">One link runs on every marketplace — switch the locale in Keepa, run, export.</p></div>
-    <div class="field"><label class="chk"><input type="checkbox" id="eVat0"${s.vat0?' checked':''}> Every product on this filter is 0% VAT (tea &amp; coffee)</label><p class="hintline">Rule 4 then works every row at 0% without needing the keyword lists. A VA's 20% click on a row still wins.</p></div>
-    <div class="field"><label>Note</label><textarea id="eNote">${escapeHtml(s.note||'')}</textarea></div>
-    ${!isNew?`<p class="hintline">Floors (${floorsLabel(s.filters)||'none'}) are set on the run screen and saved with this source.</p>`:''}
-    <div class="field"><label>Status</label><select class="full" id="eStatus"><option value="active"${s.status==='active'?' selected':''}>Active — runs on its cadence</option><option value="testing"${s.status==='testing'?' selected':''}>Testing — we're trying it</option><option value="paused"${s.status==='paused'?' selected':''}>Paused — greyed out, not due</option></select></div>
+    <div class="fsec"><div class="fst">What it is</div>
+      <div class="field"><label>Name</label><input class="full" id="eName" value="${escapeHtml(s.name)}" placeholder="e.g. Corsair, or Suz · Subscribe & Save UK" autocomplete="off"></div>
+      <div class="field"><label>Type</label>${seg('eTypeSeg',[['brand','Brand','a brand we watch'],['filter','Saved Keepa filter','a search Jack built']],s.type)}<input type="hidden" id="eType" value="${s.type}"></div>
+      <div class="field"><label>Rule</label>
+        <div class="rcards" id="eRuleCards">
+          <label class="rcard"><input type="radio" name="eRule" value="1"${s.rule===1?' checked':''}><b>Rule 1</b><span>Buy UK or EU, sell UK. Finder export per market, then the UK Product Viewer.</span></label>
+          <label class="rcard"><input type="radio" name="eRule" value="2"${s.rule===2?' checked':''}><b>Rule 2</b><span>UK Amazon-to-Amazon. One UK Finder export. High-ticket scoring.</span></label>
+          <label class="rcard"><input type="radio" name="eRule" value="3"${s.rule===3?' checked':''}><b>Rule 3</b><span>Same as Rule 2 for grocery, S&amp;S and Business filters. Rule 4 VAT on top.</span></label>
+        </div></div>
+    </div>
+    <div class="fsec" id="secMarkets"><div class="fst">Where it buys</div>
+      <div class="field"><div class="mks">${MARKETS.map(m=>`<label class="mk-chip"><input type="checkbox" value="${m}"${s.markets.includes(m)?' checked':''}><span>${FLAG[m]} ${m}</span></label>`).join('')}</div><p class="hintline">We always sell in the UK. Tick every marketplace the Finder should be run on.</p></div>
+    </div>
+    <div class="fsec"><div class="fst">Who and when</div>
+      <div class="field"><label>Owner</label>${seg('eOwnerSeg',[['Jack','Jack'],['Mera','Mera'],['Suz','Suz'],['VAs','VAs']],s.owner||'VAs')}<input type="hidden" id="eOwner" value="${escapeHtml(s.owner||'VAs')}"></div>
+      <div class="field"><label>How often</label>${seg('eCadSeg',Object.keys(CADENCE_LABEL).map(c=>[c,CADENCE_LABEL[c]]),s.cadence)}<input type="hidden" id="eCad" value="${s.cadence}"></div>
+      <div class="field"><label>Status</label>
+        <div class="scards">
+          <label class="scard active"><input type="radio" name="eStatus" value="active"${s.status==='active'?' checked':''}><i></i><b>Active</b><span>runs on its cadence, shows as due</span></label>
+          <label class="scard testing"><input type="radio" name="eStatus" value="testing"${s.status==='testing'?' checked':''}><i></i><b>Testing</b><span>we are trying it out</span></label>
+          <label class="scard paused"><input type="radio" name="eStatus" value="paused"${s.status==='paused'?' checked':''}><i></i><b>Paused</b><span>greyed out, never due</span></label>
+        </div></div>
+    </div>
+    <div class="fsec"><div class="fst">Keepa</div>
+      <div class="field"><label>Filter link</label>
+        <div class="linkrow"><input class="full" id="eLink" value="${escapeHtml(s.link||'')}" placeholder="paste a keepa.com/#!finder/… link" autocomplete="off"><a class="btn ghost sm" id="eLinkOpen" href="${escapeHtml(finderLink(s)||'#')}" target="_blank" rel="noopener">Open ${ICONS.ext}</a></div>
+        <p class="hintline" id="eLinkState"></p></div>
+      <div class="field" id="fBrands"><label>Brand names as Keepa spells them</label><input class="full" id="eBrands" value="${escapeHtml((s.brands||[]).join(', '))}" placeholder="Logitech, Logitech G, Logitech for Creators"><p class="hintline">Keepa's brand filter is exact. Leave blank to use the name.</p></div>
+      <div class="field" id="fVat"><label class="chk"><input type="checkbox" id="eVat0"${s.vat0?' checked':''}> Everything on this filter is 0% VAT (tea &amp; coffee)</label><p class="hintline">Every row is worked at 0% unless it reads like a machine. A VA's 20% click on a row still wins.</p></div>
+    </div>
+    <div class="fsec"><div class="fst">Notes</div>
+      <div class="field"><textarea id="eNote" placeholder="anything the VA should know before running it">${escapeHtml(s.note||'')}</textarea></div>
+      ${!isNew?`<p class="hintline">Floors: ${escapeHtml(floorsLabel(s.filters)||'none set')}. Set them on the run screen.</p>`:''}
+    </div>
   </div>
-  <div class="dfoot"><button class="btn ghost" id="dCancel">Cancel</button><button class="btn primary" id="dSave"><span class="lab">${isNew?'Add':'Save'}</span></button></div>`);
+  <div class="dfoot">${!isNew?`<button class="btn ghost danger" id="dDelete">Delete</button>`:''}<span class="spacer"></span><button class="btn ghost" id="dCancel">Cancel</button><button class="btn primary" id="dSave"><span class="lab">${isNew?'Add':'Save changes'}</span></button></div>`);
+  const rule=()=>parseInt((document.querySelector('input[name=eRule]:checked')||{}).value||'1');
+  const paint=()=>{const type=$('#eType').value,r=rule();
+    $('#secMarkets').hidden=r!==1;$('#fBrands').hidden=type!=='brand';$('#fVat').hidden=type!=='filter';
+    if(r!==1){document.querySelectorAll('#drawerBody .mks input').forEach(c=>{c.checked=c.value==='UK';});}
+    const link=$('#eLink').value.trim();const st=$('#eLinkState');const open=$('#eLinkOpen');
+    if(link){st.textContent='Saved link — this exact filter opens for whoever runs it. One link works on every marketplace: switch the locale in Keepa.';st.className='hintline ok';open.href=link;open.hidden=false;}
+    else if(type==='brand'){st.textContent='No link saved — a brand + Amazon-down-9% filter is generated from the name. Paste your own to replace it.';st.className='hintline warn';open.href=finderLink({name:$('#eName').value||s.name,brands:$('#eBrands').value.split(',').map(x=>x.trim()).filter(Boolean)});open.hidden=false;}
+    else{st.textContent='No link saved yet — paste the Finder link, otherwise the run screen has nothing to open.';st.className='hintline warn';open.hidden=true;}};
+  document.querySelectorAll('#drawerBody .segf').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('button[data-v]');if(!b)return;g.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    const hid=$('#'+g.id.replace('Seg',''));hid.value=b.dataset.v;
+    if(g.id==='eTypeSeg'){const r=rule();if(b.dataset.v==='brand')document.querySelector('input[name=eRule][value="1"]').checked=true;else if(r===1)document.querySelector('input[name=eRule][value="2"]').checked=true;}
+    paint();}));
+  document.querySelectorAll('input[name=eRule]').forEach(r=>r.addEventListener('change',paint));
+  $('#eLink').addEventListener('input',paint);$('#eBrands').addEventListener('input',paint);
   $('#dCancel').addEventListener('click',closeDrawer);
-  $('#eType').addEventListener('change',e=>{if(e.target.value==='brand')$('#eRule').value='1';else if($('#eRule').value==='1')$('#eRule').value='2';});
-  $('#dSave').addEventListener('click',()=>{const name=$('#eName').value.trim();if(!name){toast('Name needed',true);return;}
-    const markets=[...document.querySelectorAll('#drawerBody .mks input[type=checkbox][value]:checked')].map(c=>c.value);if(!markets.length){toast('Tick at least one marketplace',true);return;}
-    const type=$('#eType').value,rule=parseInt($('#eRule').value);const key=isNew?srcKeyFor(name):s.key;if(isNew&&srcGet(key)){toast(name+' is already in the list',true);return;}
-    if(rule!==1&&markets.some(m=>m!=='UK')){toast('Rules 2 and 3 are UK only — untick the EU markets or pick Rule 1',true);return;}
-    const out=Object.assign({},s,{key,name,type,rule,markets,cadence:$('#eCad').value,owner:$('#eOwner').value,note:$('#eNote').value.trim(),status:$('#eStatus').value,paused:$('#eStatus').value==='paused',
-      brands:$('#eBrands').value.split(',').map(x=>x.trim()).filter(Boolean),link:$('#eLink').value.trim(),vat0:$('#eVat0').checked});
-    srcSave(out);closeDrawer();renderList();toast(isNew?name+' added':'Saved');if(cur&&cur.key===key){cur=out;paintRunHead();renderGuide();}});
-  setTimeout(()=>$('#eName').focus(),50);}
+  if(!isNew)$('#dDelete').addEventListener('click',()=>{if(!confirm('Delete '+s.name+' from the list for everyone? Its run history is kept.'))return;srcRemove(s.key);closeDrawer();if(cur&&cur.key===s.key){cur=null;backToList();}renderList();toast(s.name+' deleted');});
+  $('#dSave').addEventListener('click',()=>{const name=$('#eName').value.trim();if(!name){toast('Name needed',true);$('#eName').focus();return;}
+    const type=$('#eType').value,r=rule();
+    const markets=r===1?[...document.querySelectorAll('#drawerBody .mks input[type=checkbox][value]:checked')].map(c=>c.value):['UK'];if(!markets.length){toast('Tick at least one marketplace',true);return;}
+    const key=isNew?srcKeyFor(name):s.key;if(isNew&&srcGet(key)){toast(name+' is already in the list',true);return;}
+    const status=(document.querySelector('input[name=eStatus]:checked')||{}).value||'testing';
+    const out=Object.assign({},s,{key,name,type,rule:r,markets,cadence:$('#eCad').value,owner:$('#eOwner').value||'VAs',note:$('#eNote').value.trim(),status,paused:status==='paused',
+      brands:type==='brand'?$('#eBrands').value.split(',').map(x=>x.trim()).filter(Boolean):[],link:$('#eLink').value.trim(),vat0:type==='filter'&&$('#eVat0').checked});
+    srcSave(out);closeDrawer();renderList();toast(isNew?name+' added — everyone sees it':'Saved for everyone');if(cur&&cur.key===key){cur=out;paintRunHead();paintFloors();renderGuide();}});
+  paint();setTimeout(()=>$('#eName').focus(),50);}
 function openHistory(s){const runs=runsFor(s.key).slice().reverse(),V=verdAll();
   openDrawer(`<h3>${escapeHtml(s.name)} · history</h3><p class="dsub">${runs.length} run${runs.length===1?'':'s'} · shared</p>
     <div class="hist">${runs.length?runs.map(r=>{let y=0,n=0,m=0;(r.asins||[]).forEach(a=>{const v=V[a];if(!v)return;if(v.v==='Yes')y++;else if(v.v==='No')n++;else if(v.v==='Maybe')m++;});
@@ -268,7 +306,7 @@ function run(){if(!cur)return;
   const fl=[];R.out=R.out.filter(o=>{const why=failsFloor(o,cur.filters,R.rule);if(why){fl.push([o.ASIN,o.Title||o.Product||'','Below the floors set for '+cur.name+': '+why]);return false;}return true;});
   if(fl.length){R.dropped=fl.concat(R.dropped);R.reasons['Below the floors set for '+cur.name]=fl.length;}R.floored=fl.length;
   if(R.rule!==1)R.out.forEach((o,i)=>o['#']=i+1);
-  R.gone=applyQueue(R.out,R.rule,prevMap,verdAll());
+  R.gone=applyQueue(R.out,R.rule,prevMap,verdAll()).filter(([a])=>!B[a]);   /* a blacklisted ASIN is not 'gone', it is banned */
   const stamps=Object.values(prevMap).map(p=>p.stamp).filter(Boolean).sort();R.prevStamp=stamps.length?stamps[stamps.length-1]:null;
   result=R;
   const s=sig();if(s!==lastSig){lastSig=s;view.page=1;view.sel.clear();logRun();}

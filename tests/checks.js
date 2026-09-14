@@ -42,6 +42,20 @@ window.SourcingChecks=(function(){
       /* Rule 2 as the app runs it in b10: Rule 4 VAT hook on, no VA facts. Locks what a Mera run actually produces. */
       const M4=rule2Compute((await csv('mera-2026-09-12b.csv')).rows,{},{vatFor});
       ok('R2 Mera 12 Sep · with Rule 4 hook',[M4.out.length,M4.all.filter(o=>o['VAT %']===0).length],EXPECT.mera12.withVat);
+      /* Rule 3 — Suz's grocery / S&S / Business filters, 13 Sep 2026 exports (same maths as Rule 2, Rule 4 on top) */
+      const SN=rule2Compute((await csv('suz-sns-2026-09-13.csv')).rows,{},{vatFor,rule:3});
+      ok('R3 Suz S&S 13 Sep · rows / qualifying',[SN.st.rows,SN.out.length],EXPECT.sns.counts);
+      ok('R3 Suz S&S · first lead',SN.out[0]&&SN.out[0].ASIN,EXPECT.sns.first);
+      ok('R3 Suz S&S · zero-rated (Rule 4) all / kept',[SN.all.filter(o=>o['VAT %']===0).length,SN.out.filter(o=>o['VAT %']===0).length],EXPECT.sns.vat0);
+      const ec=SN.all.find(o=>o.ASIN==='B0D1HBH6FN');
+      ok('R3 Suz S&S · Ecover B0D1HBH6FN (Business 12% + S&S 15%)',ec?[ec.Score,ec['After discount £'],ec['Sell for £'],ec['ROI %'],ec['VAT %']]:null,EXPECT.sns.ecover);
+      const pp=SN.all.find(o=>o.ASIN==='B08ZPSYKLP');
+      ok('R3 Suz S&S · Pro Plus caffeine = 20% not coffee',pp?pp['VAT %']:null,20);
+      const BZ=rule2Compute((await csv('suz-business-2026-09-13.csv')).rows,{},{vatFor,rule:3});
+      ok('R3 Suz Business 13 Sep · rows / qualifying',[BZ.st.rows,BZ.out.length],EXPECT.biz.counts);
+      ok('R3 Suz Business · first lead',BZ.out[0]&&BZ.out[0].ASIN,EXPECT.biz.first);
+      const lg=BZ.all.find(o=>o.ASIN==='B0FQWKWKLV');
+      ok('R3 Suz Business · LG monitor B0FQWKWKLV (Business 5% = the 12-unit price)',lg?[lg.Score,lg['After discount £'],lg['Sell for £'],lg['ROI %']]:null,EXPECT.biz.lg);
       /* Rule 4 — VAT */
       const vr=t=>vatFor({Title:t},null).rate;
       ok('R4 · Lavazza coffee beans = 0%',vr('Lavazza Qualita Rossa Coffee Beans 1kg'),0);
@@ -49,6 +63,10 @@ window.SourcingChecks=(function(){
       ok('R4 · Yorkshire Tea = 0%',vr('Yorkshire Tea 240 Tea Bags'),0);
       ok('R4 · AirPods not pods = 20%',vr('Apple AirPods Pro 2'),0.2);
       ok('R4 · tea tree oil = 20%',vr('Tea Tree Oil 100ml'),0.2);
+      ok('R4 · coffee syrup = 20%',vr('1883 Maison Routin Premium Banana Syrup for Coffee'),0.2);
+      ok('R4 · Green Tea perfume = 20%',vr('Elizabeth Arden Green Tea Citron Freesia EDT 100ml'),0.2);
+      ok('R4 · coffee capsules = 0%',vr('Lavazza A Modo Mio Coffee Capsules x36'),0);
+      ok('R4 · hot chocolate = 0%',vr('Options Belgian Hot Chocolate Drink'),0);
       ok('R4 · VA fact wins',vatFor({Title:'Some Coffee'},{vat:20,who:'Mera'}).rate,0.2);
       ok('R4 · VA sets 0 on anything',vatFor({Title:'Baby food pouch'},{vat:0}).rate,0);
       /* queue — the "better since" compare, Jack 13 Sep: 2p counts */
@@ -92,5 +110,8 @@ window.SourcingChecks=(function(){
     asus:{demand:114,leads:50,mb:[80.04,89.3]},
     mera:{rows:525,leads:366,lenovo:[69,37.67,31.4],siemens:[77,107.12,30.7,100]},
     mera12:{leads:390,first:'B0GTWMRV87',vaxSell:176.64,vaxScore:[65,77],no3p:139,withVat:[390,0]},
+    /* Suz 13 Sep: S&S 2,520 rows → 596 qualify (66 zero-rated, 36 of them kept); Business 179 → 16. Ecover £9.05 after 12% + 15%, sells £24.83. */
+    sns:{counts:[2520,596],first:'B00T7L20EC',vat0:[66,36],ecover:[52,9.05,24.83,57.2,20]},
+    biz:{counts:[179,16],first:'B0CVXQRN2K',lg:[54,403.73,522.97,13.4]},
     score1:75,score2:66};
   return{run,results:R};})();

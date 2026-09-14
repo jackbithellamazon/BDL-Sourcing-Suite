@@ -10,8 +10,10 @@ const VAT0_KEY='bdl-sourcing-vat0';
 const R4={
   STANDARD:0.20,
   /* whole words — 'pods' alone would catch AirPods, so capsules/pods only count next to a coffee word */
-  ZERO:['coffee','tea','teabags','teabag','espresso','matcha','earl grey','english breakfast','nespresso','dolce gusto','tassimo','decaf','ristretto','lungo'],
-  NOT:['machine','maker','brewer','grinder','kettle','mug','cup','flask','filter','descal','frother','cafeti','tumbler','teapot','infuser','towel','tree oil','light','holder','storage','canister','jar','caddy','spoon','press','tamper','scale','cleaner','tablet','tablets','set of','gift set','warmer','milk jug']};
+  ZERO:['coffee','tea','teabags','teabag','espresso','matcha','earl grey','english breakfast','nespresso','dolce gusto','tassimo','decaf','ristretto','lungo','cocoa','hot chocolate','drinking chocolate'],
+  /* the drink is zero-rated; anything made FROM it or NAMED after it is not: machines, syrups, perfumes, cosmetics, supplements */
+  NOT:['machine','maker','brewer','grinder','kettle','mug','cup','flask','filter','descal','frother','cafeti','tumbler','teapot','infuser','towel','tree oil','light','holder','storage','canister','jar','caddy','spoon','press','tamper','scale','cleaner','tablet','tablets','set of','gift set','warmer','milk jug',
+    'syrup','edt','edp','eau de','perfume','fragrance','parfum','cologne','shampoo','conditioner','candle','soap','body wash','lotion','cream','scrub','serum','mask','diffuser','scented','supplement','caffeine','vitamin','protein','energy drink','liqueur','wine','beer','spirit','biscuit','biscuits','cake','sweets','chocolate bar','makeup','make-up','lip','lipstick','gloss','nail','mascara','eyeshadow','foundation','blush','hair','skin','toner','moisturis','cleanser']};
 function vat0Words(){const v=lsGet(VAT0_KEY,null);return v&&v.zero&&v.not?v:{zero:R4.ZERO.slice(),not:R4.NOT.slice()};}
 function r4has(text,words){return words.some(w=>{w=w.trim().toLowerCase();if(!w)return false;return new RegExp('(^|[^a-z])'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^a-z]|$)').test(text);});}
 /* row = a Keepa export row (Title, Categories…); fact = what a VA has stored for the ASIN ({vat:0|20}).
