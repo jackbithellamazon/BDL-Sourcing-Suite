@@ -32,20 +32,42 @@ const closeMenus=()=>document.querySelectorAll('.menu.open').forEach(m=>m.classL
 /* ============ identity ============ */
 function whoPaint(){['#whoSel','#meIn'].forEach(id=>{const el=$(id);if(el&&el.value!==me())el.value=me();});}
 function whoSet(v){lsSet(ME_KEY,v);whoPaint();renderList();if(result)renderTable();toast(v?'You are '+v+' — everything you mark carries your name':'No name set — nothing can be marked until you pick one',!v);}
-function needMe(){if(me())return true;toast('Pick who you are first (top right)',true);const s=$('#whoSel');if(s){s.focus();s.classList.add('shake');setTimeout(()=>s.classList.remove('shake'),600);}return false;}
+/* b24 (14 Sep: Jack clicked Y/N/M all afternoon with no name picked — every click was refused by a toast he never saw and the
+   work was lost). The question is now a gate you cannot miss: it opens on first visit and on any marking click, and the click
+   that hit it is replayed once a name is picked. */
+let whoPending=null;
+function needMe(target){if(me())return true;whoPending=target||null;whoGate(true);return false;}
+function whoGate(show){let g=$('#whoGate');if(!g){g=document.createElement('div');g.id='whoGate';g.className='whogate';
+    g.innerHTML=`<div class="wg"><div class="wgt">Who are you?</div><div class="wgs">Every verdict, price and run carries your name so the others can see who judged what. Nothing you mark is saved until you pick.</div><div class="wgb">${USERS.map(u=>`<button type="button" data-who="${u}">${u}</button>`).join('')}</div></div>`;
+    g.addEventListener('click',e=>{const b=e.target.closest('button[data-who]');if(!b)return;whoSet(b.dataset.who);whoGate(false);const t=whoPending;whoPending=null;if(t)onTableClick({target:t});});
+    document.body.appendChild(g);}
+  g.classList.toggle('open',!!show);}
 
 /* ============ list view ============ */
 function weekAgo(){return Date.now()-7*864e5;}
 function toReviewCount(run){if(!run)return 0;const V=verdAll(),B=blAll();return(run.asins||[]).filter(a=>!V[a]&&!B[a]).length;}
-function renderKpis(){const all=srcAll(),runs=runsAll(),V=verdAll();
-  const due=all.filter(s=>dueState(s).due).length;
+function renderKpis(){const all=srcAll(),runs=runsAll(),V=verdAll(),LA=leadAll();
+  /* b23 (Jack, 14 Sep: "better kpi's like what has actually happened… love data and analysis") — every tile is a count
+     from this week's run records, lead states and verdicts; nothing is estimated */
+  const due=all.filter(s=>dueState(s).due).length,active=all.filter(s=>s.status==='active').length,testing=all.filter(s=>s.status==='testing').length;
   const wk=runs.filter(r=>new Date(r.at).getTime()>=weekAgo());
-  const leads=wk.reduce((s,r)=>s+r.leads,0);
-  const asins=new Set();wk.forEach(r=>(r.asins||[]).forEach(a=>asins.add(a)));
+  const rowsIn=wk.reduce((s,r)=>s+(r.rowsIn||0),0),leadsSum=wk.reduce((s,r)=>s+(r.leads||0),0),newN=wk.reduce((s,r)=>s+(r.new||0),0),betterN=wk.reduce((s,r)=>s+(r.better||0),0);
+  const cut=Math.max(0,rowsIn-leadsSum),saved=rowsIn?Math.round(cut/rowsIn*100):0;
+  const seen=new Set(),asins=new Set();let hot=0,warm=0;
+  wk.forEach(r=>{const m=LA[r.source]||{};(r.asins||[]).forEach(a=>{asins.add(a);const k=r.source+'|'+a;if(seen.has(k))return;seen.add(k);const sc=(m[a]&&m[a].state&&+m[a].state.score)||0;if(sc>=75)hot++;else if(sc>=50)warm++;});});
   let checked=0;asins.forEach(a=>{if(V[a])checked++;});
-  const tr=all.filter(s=>s.status!=='paused').reduce((n,s)=>n+toReviewCount(runLast(s.key)),0);
-  const k=(v,l,cls,ic)=>`<div class="kpi"><span class="ki ${cls||''}">${ic}</span><div><div class="kv">${v}</div><div class="kl">${l}</div></div></div>`;
-  $('#bKpis').innerHTML=k(all.filter(s=>s.status!=='paused').length,'Active + testing','',ICONS.cal)+k(due,'Due today',due?'amber':'jade',ICONS.run)+k(tr.toLocaleString(),'To review',tr?'iris':'jade',ICONS.eye)+k(wk.length,'Runs this week','',ICONS.hist)+k(leads.toLocaleString(),'Leads this week','jade',ICONS.play)+k(asins.size?Math.round(checked/asins.size*100)+'%':'—','Checked this week',asins.size&&checked/asins.size<.5?'coral':'jade',ICONS.edit);}
+  const wv=Object.values(V).filter(x=>x.at&&new Date(x.at).getTime()>=weekAgo());const yes=wv.filter(x=>x.v==='Yes').length,no=wv.filter(x=>x.v==='No').length,maybe=wv.filter(x=>x.v==='Maybe').length;
+  const live=all.filter(s=>s.status!=='paused');const tr=live.reduce((n,s)=>n+toReviewCount(runLast(s.key)),0),trSrc=live.filter(s=>toReviewCount(runLast(s.key))>0).length;
+  const k=(v,l,sub,cls,ic)=>`<div class="kpi"><span class="ki ${cls||''}">${ic}</span><div><div class="kv">${v}</div><div class="kl">${l}</div>${sub?`<div class="ks">${sub}</div>`:''}</div></div>`;
+  $('#bKpis').innerHTML=`<div class="kcap">This week · what actually happened</div>`
+    +k(rowsIn.toLocaleString(),'ASINs put through the rules',`${wk.length} run${wk.length===1?'':'s'}`,'',ICONS.hist)
+    +k(cut.toLocaleString(),'Cut by the rules',rowsIn?`${saved}% of the work saved`:'','jade',ICONS.eye)
+    +k(seen.size.toLocaleString(),'Leads found',`${newN.toLocaleString()} new · ${betterN.toLocaleString()} better`,'iris',ICONS.play)
+    +k(hot.toLocaleString(),'Bangers · score 75+',`${warm.toLocaleString()} scored 50–74`,hot?'jade':'',ICONS.run)
+    +k(yes.toLocaleString(),'Approved · Yes',`${no} No · ${maybe} Maybe`,yes?'jade':'',ICONS.edit)
+    +k(asins.size?Math.round(checked/asins.size*100)+'%':'—','Checked',asins.size?`${checked.toLocaleString()} of ${asins.size.toLocaleString()} leads judged`:'no leads yet',asins.size&&checked/asins.size<.5?'coral':'jade',ICONS.eye)
+    +k(tr.toLocaleString(),'To review now',trSrc?`across ${trSrc} filter${trSrc===1?'':'s'}`:'','iris',ICONS.eye)
+    +k(due,'Due today',`${active} active · ${testing} testing`,due?'amber':'jade',ICONS.cal);}
 function renderList(){renderKpis();renderApprovals();const q=lview.q.toLowerCase();
   const rows=srcSorted().filter(s=>{
     if(lview.seg==='due'&&!dueState(s).due)return false;
@@ -180,7 +202,7 @@ function openBrandBlacklist(brand,fromAsin){if(!needMe())return;
 
 /* ============ run view ============ */
 async function openRun(key){const s=srcGet(key);if(!s)return;
-  if(cur&&cur.key!==key){srcUnlock(cur);clearRun();}cur=s;touched.clear();blPick=null;
+  if(cur&&cur.key!==key){srcUnlock(cur);clearRun();view.q='';view.page=1;const fq=$('#fQ');if(fq)fq.value='';}cur=s;touched.clear();blPick=null;
   if(!(lockFresh(s)&&ownLock(s)))srcLock(cur);
   if(!me()){toast('Pick who you are (top right) so this run carries your name',true);const w=$('#whoSel');if(w){w.classList.add('shake');setTimeout(()=>w.classList.remove('shake'),600);}}
   $('#viewList').hidden=true;$('#viewRun').hidden=false;paintRunHead();paintSlots();paintFloors();renderGuide();
@@ -192,11 +214,12 @@ function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runN
   const ol=otherLock(s);const lk=ol?` · <span class="lock">${escapeHtml(ol.who)} is also on this (since ${new Date(ol.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})})</span>`:'';
   $('#runMeta').innerHTML=`${escapeHtml(s.owner||'VAs')} · Rule ${s.rule} · ${RULE_LABEL[s.rule]||''} · ${STATUS_LABEL[s.status]||''} · ${CADENCE_LABEL[s.cadence]||s.cadence} · ~${tokenEstimate(s).toLocaleString()} Keepa tokens if automated, 0 by export`+(s.note?' · '+escapeHtml(s.note):'')+lk;
   const r1=s.rule===1;
-  $('#step1Title').textContent=r1?'Drop the Product Finder exports':"Drop this morning's export";
-  $('#step1Sub').textContent=r1?`Finder export for each of ${s.markets.join(' · ')}, then the UK Product Viewer. Any order.`:'UK Product Finder, all columns. One file.';
+  const uk1=r1&&s.markets.every(m=>m==='UK');
+  $('#step1Title').textContent=r1&&!uk1?'Drop the Product Finder exports':"Drop this morning's export";
+  $('#step1Sub').textContent=r1&&!uk1?`Finder export for each of ${s.markets.join(' · ')}, then the UK Product Viewer. Any order.`:uk1?'UK Product Finder, all columns. One file — it carries the UK sell side too, so no Viewer is needed.':'UK Product Finder, all columns. One file.';
   const link=finderLink(s);
   if(!link){$('#keepaRow').innerHTML=`<span class="nolinkmsg">No Keepa link saved for this yet — <button type="button" class="linkbtn" id="keepaEdit">Edit</button> and paste the Finder link. Exports can still be dropped below.</span>`;$('#keepaEdit').addEventListener('click',()=>openEdit(cur));return;}
-  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1?s.markets.map(m=>`<a href="${link}" data-mk="${m}" target="_blank" rel="noopener" title="Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export">${FLAG[m]} ${m}<span class="tick">✓</span>${ICONS.ext}</a>`).join('')+`<span class="mkhint">Same filter for all ${s.markets.length}. Keepa cannot take the marketplace from a link — after it opens, switch the flag top-right of Keepa to that country, run, export. One file per country.</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);}
+  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1&&!uk1?s.markets.map(m=>`<a href="${link}" data-mk="${m}" target="_blank" rel="noopener" title="Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export">${FLAG[m]} ${m}<span class="tick">✓</span>${ICONS.ext}</a>`).join('')+`<span class="mkhint">Same filter for all ${s.markets.length}. Keepa cannot take the marketplace from a link — after it opens, switch the flag top-right of Keepa to that country, run, export. One file per country.</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);}
 /* floors: the inputs ARE this source's floors — saved as you type, shared, applied to every run of it */
 function paintFloors(){if(!cur)return;const f=cur.filters||{};const r1=cur.rule===1;
   FLOORS.forEach(([k,l,scope])=>{const el=$('#fl_'+k);if(!el)return;el.parentElement.hidden=(scope==='r2'&&r1);if(document.activeElement!==el)el.value=f[k]==null?'':f[k];});
@@ -216,7 +239,12 @@ function renderGuide(){const g=$('#guide');if(!g||!cur)return;const r1=cur.rule=
   const bar=$('#asinBar'),merged=(bar&&bar._all)?bar._all.length:0;
   const rev=result?result.out.filter(o=>o.QUEUE).length:0;
   let steps;
-  if(r1)steps=[
+  if(r1&&ukOnly())steps=[
+    ['Open the Keepa filter',FLAG.UK+' UK',!!files.viewer],
+    ['Export CSV — all columns','one file · it has the sell side too',!!files.viewer],
+    ['Drop it here','leads appear',!!result],
+    ['Review what needs a look',result?`${rev} to review`:'',!!result&&rev===0]];
+  else if(r1)steps=[
     ['Open the Keepa filter for each market',`${cur.markets.map(m=>FLAG[m]).join(' ')} · switch Keepa's locale, run it`,anyFinder],
     ['Export CSV from each',`all columns · ${cur.markets.length} file${cur.markets.length===1?'':'s'}`,anyFinder],
     ['Drop them here',`${have} of ${cur.markets.length} in`,have>=cur.markets.length&&have>0],
@@ -231,6 +259,7 @@ function renderGuide(){const g=$('#guide');if(!g||!cur)return;const r1=cur.rule=
     ['Review what needs a look',result?`${rev} to review`:'',!!result&&rev===0]];
   let next=steps.findIndex(s=>!s[2]);
   g.innerHTML=steps.map((s,i)=>`<div class="gs ${s[2]?'done':i===next?'now':''}"><span class="gn">${s[2]?'✓':i+1}</span><div><div class="gt">${escapeHtml(s[0])}</div>${s[1]?`<div class="gd">${escapeHtml(s[1])}</div>`:''}</div></div>`).join('');}
+function ukOnly(){return!!(cur&&cur.rule===1&&cur.markets.every(m=>m==='UK'));}
 function sig(){return SLOTS.map(k=>files[k]?files[k].name+':'+files[k].rows.length:'').join('|')+'|'+(files.one?files.one.name+':'+files.one.rows.length:'');}
 async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return;const notes=[];
   for(const file of arr){let d;try{d=describeExport(parseCSV(await readFileText(file)));}catch(e){d=null;}
@@ -239,6 +268,7 @@ async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return
     if(!d.full&&!d.hasFees){notes.push(file.name+': not a full-column export — needs Title and the demand columns at minimum');continue;}
     if(cur.rule!==1){if(d.domain&&d.domain!=='UK')notes.push(file.name+': this is a '+d.domain+' export — Rule '+cur.rule+' is UK only');files.one=f;continue;}
     if(d.domain&&d.domain!=='UK'){files[d.domain]=f;continue;}
+    if(ukOnly()){files.viewer=f;files.UK=null;continue;}   /* UK-only brand: the one UK export is buy side and sell side */
     /* UK: Keepa names the file — ProductViewer is the sell side, ProductFinder is the UK buy list.
        Unnamed files fall back to: the biggest UK file with the fee columns is the sell side. */
     const nm=file.name.toLowerCase(),v=files.viewer;
@@ -254,7 +284,8 @@ function removeFile(k){files[k]=null;paintSlots();run();}
 function paintSlots(){if(!cur)return;const r1=cur.rule===1;
   const chip=(k,label,f,need)=>`<div class="fchip ${f?'ok':''}"><span class="dot"></span><span class="k">${label}</span><span class="n">${f?escapeHtml(f.name):need}</span><span class="r">${f?f.rows.length.toLocaleString()+' rows':''}</span>${f?`<button class="x" data-rm="${k}" title="Remove">×</button>`:''}</div>`;
   let h='';
-  if(r1){cur.markets.forEach(m=>{h+=chip(m,FLAG[m]+' '+m,files[m],'Finder export · expected');});
+  if(r1&&ukOnly()){h+=chip('viewer','🇬🇧 UK',files.viewer,'UK Product Finder export · required (no Viewer needed)');}
+  else if(r1){cur.markets.forEach(m=>{h+=chip(m,FLAG[m]+' '+m,files[m],'Finder export · expected');});
     MARKETS.filter(m=>!cur.markets.includes(m)&&files[m]).forEach(m=>{h+=chip(m,FLAG[m]+' '+m,files[m],'');});
     h+=chip('viewer','Viewer',files.viewer,'UK Product Viewer · required');}
   else h+=chip('one','Export',files.one,'UK Product Finder · required');
@@ -263,7 +294,7 @@ function paintSlots(){if(!cur)return;const r1=cur.rule===1;
   /* the ASIN hand-off: every ASIN the Finders found, minus the ones the Viewer already covers */
   const merged=new Set();MARKETS.forEach(k=>{if(files[k])files[k].asins.forEach(a=>merged.add(a));});
   const covered=new Set(files.viewer?files.viewer.asins:[]);const missing=[...merged].filter(a=>!covered.has(a));
-  const bar=$('#asinBar');bar.hidden=!r1;bar.classList.toggle('idle',!merged.size);$('#asinCopy').disabled=!merged.size;$('#asinOpen').disabled=!merged.size;
+  const bar=$('#asinBar');bar.hidden=!r1||ukOnly();bar.classList.toggle('idle',!merged.size);$('#asinCopy').disabled=!merged.size;$('#asinOpen').disabled=!merged.size;
   if(r1&&!merged.size){bar.classList.remove('done');$('#asinMsg').innerHTML=`<b>Step 4 happens here.</b> Drop the Finder exports above and this becomes one button that opens the UK Product Viewer with every ASIN merged and de-duplicated — no copying, no Keepa console.`;$('#asinN').textContent='0';bar._all=[];}
   if(r1&&merged.size){bar.classList.toggle('done',!missing.length);
     $('#asinMsg').innerHTML=!missing.length?`all ${merged.size.toLocaleString()} ASINs covered by the Viewer`
@@ -296,7 +327,7 @@ function run(){if(!cur)return;
     $('#sumEmpty').textContent=cur.rule===1?(MARKETS.some(m=>files[m])?'Finder exports in — drop the UK Product Viewer export and the leads appear here.':'Drop the exports and the numbers appear here.'):'Drop the export and the numbers appear here.';renderGuide();return;}
   const prevMap=baselineOf(leadMap(cur.key));
   let R;
-  if(cur.rule===1){R=rule1Compute(files,cur.name,rate(),null);R.rule=1;R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;});}
+  if(cur.rule===1){R=rule1Compute(files,cur.name,rate(),null);R.rule=1;R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;o.Score=r2score(o['Profit £'],o['ROI %'],o.SPM,(o['Sell £ used']||0)<R2.LOW_TICKET);});}
   else{/* a tea & coffee filter: every row is 0% unless it reads like an appliance (machine, grinder…) or a VA has set it */
     const vf=cur.vat0?((row,fact)=>{if(fact&&fact.vat!=null&&fact.vat!=='')return vatFor(row,fact);
       const text=((row.Title||'')+' | '+(row['Categories: Sub']||'')).toLowerCase();if(r4has(text,vat0Words().not))return{rate:R4.STANDARD,why:'20% — reads like an appliance, not the drink',src:'rule'};
@@ -340,7 +371,14 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
   const rs=Object.entries(R.reasons).sort((a,b)=>b[1]-a[1]);
   $('#fell').innerHTML=`<span class="fl">Filtered out</span><span class="fr">${rs.length?rs.map(([k,n])=>`${escapeHtml(k)} ${n}`).join(' · '):'nothing'}</span><span class="fbar"><span style="width:${Math.min(100,R.dropped.length/((st.viewer||st.rows)||1)*100)}%"></span></span><span class="fn">${R.dropped.length} dropped</span>`;
   const est=cur.rule===1?out.filter(o=>(o['Fees from']||'').startsWith('ESTIMATED')).length:0;
-  const fw=$('#feeWarn');if(est){fw.innerHTML='<b>'+est+' of '+out.length+' leads have estimated fees.</b> Tick <em>Referral Fee %</em> and <em>FBA Pick&amp;Pack Fee</em> on the export and the maths becomes exact.';fw.classList.add('show');}else{fw.classList.remove('show');}
+  const fw=$('#feeWarn');const msgs=[];
+  /* b23: what Jack knows about this brand's channel (the note on its discount row) — once per run, not on every row */
+  let bn=$('#brandNote');if(!bn){bn=document.createElement('div');bn.id='brandNote';bn.className='brandnote';fw.parentNode.insertBefore(bn,fw);}
+  const be=cur.rule===1?discForBrand((cur.brands&&cur.brands[0])||cur.name):null;
+  if(be&&be.note){bn.innerHTML=`<b>${escapeHtml(be.name)}</b> · ${escapeHtml(be.note)}`;bn.hidden=false;}else bn.hidden=true;
+  if(est)msgs.push('<b>'+est+' of '+out.length+' leads have estimated fees.</b> Tick <em>Referral Fee %</em> and <em>FBA Pick&amp;Pack Fee</em> on the export and the maths becomes exact.');
+  if(R.rule===1&&R.st&&R.st.bbHiCol===false)msgs.push('<b>This export has no <em>Buy Box: Highest</em> column</b>, so sell prices could not be capped at the most the listing has ever sold for. Tick it on the Keepa export next time.');
+  if(msgs.length){fw.innerHTML=msgs.join('<br>');fw.classList.add('show');}else{fw.classList.remove('show');}
   $('#fMarket').hidden=cur.rule!==1;
   const unseen=out.filter(o=>!verdGet(o.ASIN)).length;const sb=$('#seenAll');sb.hidden=!unseen;sb.textContent=`Mark all ${unseen} as seen`;
   renderTable();}
@@ -360,7 +398,9 @@ function paintStory(){const R=result;if(!R||!cur)return;const st=R.st,out=R.out;
   $('#story').innerHTML=`<p>${story}</p><p class="s2">${story2}</p>${story3}`;$('#story').hidden=false;
   /* detail: why things dropped, and what is left */
   const rs=Object.entries(R.reasons).sort((a,b)=>b[1]-a[1]);const totIn=(st.viewer||st.rows)||1;
-  const bar=(k,v,tot,cls)=>`<div class="dr"><span class="dk">${escapeHtml(k)}</span><span class="db"><span class="${cls||''}" style="width:${Math.max(2,Math.round(v/tot*100))}%"></span></span><span class="dv">${(+v).toLocaleString()}</span></div>`;
+  const KEYS={'Not enough demand':'demand:','No sell price':'no sell price','Amazon not selling':'amazon not selling','EU plug in title':'eu plug','Appliance from EU':'mains appliance','ROI under breakeven':'roi ','Slow seller, thin margin':'slow seller','Wide-gap, still under -15%':'wide-gap','Needs more discount than the brand gives':'needs ','Blacklisted':'blacklisted'};
+  const who=k=>{const key=(KEYS[k]||k.split(' ').slice(0,3).join(' ')).toLowerCase();const hits=(R.dropped||[]).filter(d=>(d[2]||'').toLowerCase().includes(key)).slice(0,12);return hits.length?hits.map(d=>d[0]+' — '+(d[1]||'').slice(0,40)).join('\n')+((R.dropped||[]).filter(d=>(d[2]||'').toLowerCase().includes(key)).length>12?'\n…full list in the Dropped list download':''):'';};
+  const bar=(k,v,tot,cls)=>`<div class="dr" title="${escapeHtml(who(k))}"><span class="dk">${escapeHtml(k)}</span><span class="db"><span class="${cls||''}" style="width:${Math.max(2,Math.round(v/tot*100))}%"></span></span><span class="dv">${(+v).toLocaleString()}</span></div>`;
   let left='';
   if(cur.rule===1){const cnt=k=>out.filter(o=>o['Buy market']===k).length;left=['UK','DE','FR','IT','ES'].filter(k=>cnt(k)).map(k=>bar(`Buy from ${k}`,cnt(k),out.length||1,'m-'+k.toLowerCase())).join('');}
   else{const b=[['Score 70+',o=>o.Score>=70,'g'],['Score 50–69',o=>o.Score>=50&&o.Score<70,'i'],['Score 30–49',o=>o.Score>=30&&o.Score<50,'a'],['Under 30',o=>o.Score<30,'f']];left=b.map(([k,f,c])=>bar(k,out.filter(f).length,out.length||1,c)).join('');}
@@ -375,14 +415,15 @@ function visible(){const q=view.q.toLowerCase();const list=result.out.filter(o=>
   if(cur.rule===1&&view.market!=='ALL'&&o['Buy market']!==view.market)return false;
   if(view.hideNo){const v=verdGet(o.ASIN);if(v&&v.v==='No')return false;}
   if(q&&!((o.ASIN+' '+(o.Title||o.Product||'')+' '+(o.Brand||'')).toLowerCase().includes(q)))return false;return true;});
-  const sc=o=>cur.rule===1?o['Profit £']:o.Score;
+  const sc=o=>o.Score||0;
+  if(view.sort==='default'&&cur.rule===1)list.sort((a,b)=>sc(b)-sc(a)||b['Profit £']-a['Profit £']);
   if(view.sort==='gain')list.sort((a,b)=>(b.gain||0)-(a.gain||0)||sc(b)-sc(a));
   else if(view.sort==='profit')list.sort((a,b)=>b['Profit £']-a['Profit £']);
   else if(view.sort==='roi')list.sort((a,b)=>b['ROI %']-a['ROI %']);
   else if(view.sort==='month')list.sort((a,b)=>(b['£ per month']||b['Profit £']*b.SPM)-(a['£ per month']||a['Profit £']*a.SPM));
   return list;}
 function acts(o){const mk=cur.rule===1?(o['Buy market']||'UK'):'UK';
-  return`<div class="rowacts"><a href="${o.Keepa}" target="_blank" rel="noopener" title="Keepa graph — the Track tab is on this page">Keepa</a><a href="${o.SAS}" target="_blank" rel="noopener" title="SellerAmp">SAS</a><a href="${o['Buy link']}" target="_blank" rel="noopener" title="Where we would buy it">Buy ${mk}</a><a href="${o['UK sell link']||o['Buy link']}" target="_blank" rel="noopener" title="The UK listing we would sell on">Sell UK</a></div>`;}
+  return`<span class="rowacts"><a href="${o.Keepa}" target="_blank" rel="noopener" title="Keepa graph — the Track tab is on this page">Keepa</a><a href="${o.SAS}" target="_blank" rel="noopener" title="SellerAmp">SAS</a><a href="${o['Buy link']}" target="_blank" rel="noopener" title="Where we would buy it">Buy ${mk}</a><a href="${o['UK sell link']||o['Buy link']}" target="_blank" rel="noopener" title="The UK listing we would sell on">Sell UK</a></span>`;}
 function verdCell(o){const v=verdGet(o.ASIN)||{};const b=x=>`<button type="button" class="vb ${x[0]}${v.v===x?' on':''}" data-v="${x}" data-asin="${o.ASIN}" title="${x}">${x[0]}</button>`;
   const chips=v.v==='No'?`<div class="vreasons">${noReasons().map(r=>`<button type="button" class="vr${v.reason===r?' on':''}" data-r="${r}" data-asin="${o.ASIN}">${escapeHtml(r)}</button>`).join('')}</div>`:'';
   const note=v.v&&v.v!=='Seen'?`<input class="vnote" data-asin="${o.ASIN}" placeholder="note…" value="${escapeHtml(v.note||'')}">`:'';
@@ -404,46 +445,70 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
   let h;
   if(!all.length){$('#leads').innerHTML=`<tbody><tr><td style="text-align:center;color:var(--faint);padding:26px">${view.status==='REVIEW'?'Nothing to review — every lead on this run has a verdict and none has got better since. Switch to <b>Everything</b> to see them all.':'Nothing matches.'}</td></tr></tbody>`;$('#pager').innerHTML='';$('#openSel').textContent='Open in Keepa';return;}
   const asinl=o=>`<span class="asinl">${o.ASIN}<button type="button" data-copy="${o.ASIN}" title="Copy ASIN">${ICONS.copy}</button></span>`;
-  const roiCls=v=>v>=20?'pos':v>=10?'ok':v>=0?'warm':'neg';
-  const mk=m=>`<i class="mk m-${(m||'uk').toLowerCase()}">${m}</i>`;
+  const roiCls=v=>v>=20?'pos':v>=10?'pos soft':v>=0?'warm':'neg';
+  const mk=m=>`<i class="mk">${FLAG[m]||''} ${m}</i>`;
+  /* Rule 1's flag strings are long; show a short label, keep the full text on hover */
+  const SHORT=[[/^worst case \(Buy Box 90d (£[\d.,]+)/i,(m)=>['Worst case '+m[1],'info']],[/sell price volatile/i,()=>['Volatile sell','warn']],[/AMAZON OWNS THE BUY BOX/i,()=>['Amazon owns BB','warn']],[/UK buy: check OA/i,()=>['Check OA','good']],[/A2A->OA/i,()=>['OA only','info']],[/NOT A DROP/i,()=>['Not a drop','warn']],[/not in a drop/i,()=>['UK not in a drop','warn']],[/EU PLUG|PLUG/i,()=>['EU plug?','bad']],[/WIDE/i,()=>['Wide gap','warn']],[/no FBA/i,()=>['No FBA history','warn']],[/LIMITED|LTD/i,()=>['Ltd time deal','warn']],[/drops only/i,()=>['Demand from drops','warn']],[/tanked/i,()=>['Tanked','bad']],[/ZERO-RATED/i,()=>['0% VAT?','good']],[/price-match/i,()=>['Price-match','good']]];
+  const shortFlag=f=>{for(const [re,fn] of SHORT){const m=re.exec(f);if(m)return fn(m);}return[f.length>26?f.slice(0,24)+'…':f,''];};
+  const flagChip=f=>{const [l,c]=shortFlag(f);return`<i class="ch ${c}" title="${escapeHtml(f)}">${escapeHtml(l)}</i>`;};
+  /* the OA check: which retailers to look at for THIS product, and the tick boxes for what the VA has confirmed */
+  const pmOpts=o=>o['Category kind']==='grocery'?['Boots','Superdrug','Tesco','Brand direct']:PM_OPTIONS;
+  const oaCell=o=>{const fact=factGet(o.ASIN);const opts=pmOpts(o);const conf=(fact.pm||[]);
+    let best='';if((o.pot||[]).length){const b=o.pot.reduce((m,x)=>x.roi>m.roi?x:m,o.pot[0]);if(b.roi>=8)best=`<div class="oabest" title="${escapeHtml(o.pot.map(x=>`${x.who} ${x.pct}% → ${pct(x.roi)} ROI`).join(' · '))}"><b>Check OA</b> · up to ${pct(b.roi)} ROI with a retailer code</div>`;}
+    else if(o['Category kind']==='grocery')best=`<div class="oabest dim">Check Boots / Superdrug / Tesco by eye — no Amazon price-match on grocery</div>`;
+    return`${best}<div class="pms">${opts.map(x=>`<button type="button" class="pm${conf.includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}" title="Tick when you have confirmed ${x} has it at a price that works">${pmLabel(x)}</button>`).join('')}</div>${pmHint(o.Brand)}`;};
   /* Rule 1, UK buy: what the same lead looks like taken to OA — landed less a price-matcher's code. Display only; rule1.js is frozen. */
   const oaChip=o=>{if(o['Buy market']!=='UK')return'';const landed=+o['Landed £'],p=+o['Profit £'];if(!landed)return'';const V=/ZERO-RATED/.test(o.Flags||'')?1:1.2;
     const list=[];const be=discForBrand((cur.brands&&cur.brands[0])||cur.name);if(be){const r=discRate(be,landed);if(r>0)list.push([be.name,r]);}
     discMatchers().forEach(e=>{const r=discRate(e,landed);if(r>0&&!list.some(x=>x[0]===e.name))list.push([e.name,r]);});
     const rows=list.map(([who,pct])=>{const c=landed*(1-pct/100);const pp=p+(landed-c)/V;return{who,pct,p:pp,roi:c?100*pp/c:0};}).sort((a,b)=>b.roi-a.roi);
-    if(!rows.length)return'';const b=rows[0];const fact=factGet(o.ASIN);const conf=(fact.pm||[]).length;
-    return`<i class="ch ${conf?'good':'oa'}" title="${escapeHtml(rows.map(x=>`${x.who} ${Math.round(x.pct*10)/10}% → £${x.p.toFixed(2)} profit · ${Math.round(x.roi)}% ROI`).join(' · '))}">OA · ${escapeHtml(b.who)} ${Math.round(b.pct)}% → ${Math.round(b.roi)}% ROI</i>`;};
-  const pmRow=o=>o['Buy market']!=='UK'?'':`<div class="pms pms-r1">${PM_OPTIONS.map(x=>`<button type="button" class="pm${(factGet(o.ASIN).pm||[]).includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}" title="Tick when you have confirmed this retailer price-matches">${x}</button>`).join('')}</div>`;
-  const flagCls=f=>/PLUG|NOT A DROP|not in a drop|WIDE|volatile|no FBA|LIMITED|drops only|tanked|OWNS THE BUY BOX|worst case/i.test(f)?(/OWNS|PLUG|tanked|LIMITED/i.test(f)?'warn':'info'):/A2A->OA|price-match|check OA|ZERO-RATED/i.test(f)?'good':'';
-  if(cur.rule===1){h=`<thead><tr><th></th><th>#</th><th>Status</th><th>Product</th><th>Verdict</th><th>Links</th><th class="r">Landed £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">/mo</th><th>Flags · OA</th></tr></thead><tbody>`;
-    rows.forEach((o,i)=>{const fl=(o.Flags||'').split('; ').filter(Boolean);h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td>${statusCell(o)}</td>
-      <td class="prod"><span class="t" title="${escapeHtml(o.Title)}">${escapeHtml(o.Title)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o['Sell used'])}${o['LTD badge']?' · <b>LTD</b>':''}</span></span>${pend(cur.name)}</td>
-      <td class="vcell">${verdCell(o)}</td><td class="linkc">${acts(o)}</td>
+    if(!rows.length)return'';const b=rows[0];if(b.roi<8)return'';const fact=factGet(o.ASIN);const conf=(fact.pm||[]).length;
+    return`<i class="ch ${conf?'good':'oa'}" title="${escapeHtml(rows.map(x=>`${x.who} ${Math.round(x.pct*10)/10}% → £${x.p.toFixed(2)} profit · ${Math.round(x.roi)}% ROI`).join(' · '))}">Check OA · up to ${Math.round(b.roi)}% ROI</i>`;};
+  const pmRow=o=>o['Buy market']!=='UK'?'':`<div class="pms pms-r1">${PM_OPTIONS.map(x=>`<button type="button" class="pm${(factGet(o.ASIN).pm||[]).includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}" title="Tick when you have confirmed ${x} price-matches">${pmLabel(x)}</button>`).join('')}</div>`;
+  if(cur.rule===1){h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Product</th><th>Verdict</th><th class="r">Landed £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">/mo</th><th>Flags · OA check</th></tr></thead><tbody>`;
+    rows.forEach((o,i)=>{const fl=(o.Flags||'').split('; ').filter(Boolean);const band=bandOf(o.Score||1);h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td class="scorec"><span class="score ${band}">${o.Score||1}</span><div class="stat2">${statusCell(o)}</div></td>
+      <td class="prod"><span class="t" title="${escapeHtml(o.Title)}">${escapeHtml(o.Title)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o['Sell used'])}${o['LTD badge']?' · <b>LTD</b>':''}</span></span>${acts(o)}${pend(cur.name)}</td>
+      <td class="vcell">${verdCell(o)}</td>
       <td class="num r buyc">${mk(o['Buy market'])} <b>${gbp(o['Landed £'])}</b>${o['Discount applied']?`<span class="sub">${escapeHtml(o['Discount applied'])}</span>`:''}</td>
-      <td class="num r">${gbp(o['Sell £ used'])}<span class="sub">${escapeHtml(o['Sell range'])}</span></td>
+      <td class="num r">${gbp(o['Sell £ used'])}${(o['Sell low £']||0)<(o['Sell £ used']||0)-0.005?`<span class="sub" title="If it only ever fetches the Buy Box 90d average">worst £${(o['Sell low £']).toFixed(2)}</span>`:''}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r">${o.SPM}<span class="sub">${o['SPM from']}</span></td>
-      <td class="flagc"><span class="chips">${oaChip(o)}${fl.slice(0,3).map(f=>`<i class="ch ${flagCls(f)}" title="${escapeHtml(f)}">${escapeHtml(f.length>30?f.slice(0,28)+'…':f)}</i>`).join('')}${fl.length>3?`<i class="ch more" title="${escapeHtml(fl.slice(3).join(' · '))}">+${fl.length-3}</i>`:''}</span>${pmRow(o)}</td></tr>`;});}
-  else{h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Status</th><th>Product</th><th>Verdict</th><th>Links</th><th class="r">Buy £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">Demand</th><th>Price-matched at</th></tr></thead><tbody>`;
+      <td class="flagc">${(()=>{const oa=oaChip(o),fx=flagPick(fl);return`<span class="chips">${oa}${fx.show.map(flagChip).join('')}${fx.rest.length?`<i class="ch more" title="${escapeHtml(fx.rest.join(' · '))}">+${fx.rest.length}</i>`:''}</span>`;})()}${pmRow(o)}</td></tr>`;});}
+  else{h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Product</th><th>Verdict</th><th class="r">Buy £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">Demand</th><th title="We cannot see other retailers' prices. These are the ones worth checking for this product — tick what you confirm.">OA check · you check</th></tr></thead><tbody>`;
     rows.forEach(o=>{const pot=o['Potential score']>o.Score+5?o['Potential score']:0;const band=bandOf(Math.max(o.Score,pot));
       const fact=factGet(o.ASIN);const alt=[['Buy Box 90d',o['Buy Box 90d £']],['Buy Box 180d',o['Buy Box 180d £']],['FBA 90d',o['FBA 90d £']],['FBM 90d',o['FBM 90d £']],['Buy Box high',o['Buy Box high £']]].filter(x=>x[1]).map(x=>`${x[0]} ${gbp(x[1])}`).join(' · ');
       const vcls=fact.vat==null?'':(+fact.vat===0?'z':'s');const vtxt=fact.vat==null?(o['VAT %']===0?(cur.vat0?'0% VAT · FILTER':'0% VAT · CONFIRM'):'VAT 20%'):(+fact.vat===0?'0% VAT ✓':'20% VAT ✓');
       h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}">${sel(o)}<td class="idx">${o['#']}</td>
-      <td><span class="score ${band}">${o.Score}</span>${pot?`<span class="potl" title="Potential score with ${escapeHtml(o['Potential via'])}">→ ${pot}</span>`:''}</td>
-      <td>${statusCell(o)}</td>
-      <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d':''}</span></span><span class="chips">${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 4 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
-      <td class="vcell">${verdCell(o)}</td><td class="linkc">${acts(o)}</td>
+      <td class="scorec"><span class="score ${band}">${o.Score}</span>${pot?`<span class="potl" title="Potential score with ${escapeHtml(o['Potential via'])}">→ ${pot}</span>`:''}<div class="stat2">${statusCell(o)}</div></td>
+      <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d':''}</span></span>${acts(o)}<span class="chips">${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 4 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
+      <td class="vcell">${verdCell(o)}</td>
       <td class="num r buyc"><b>${gbp(o['After discount £'])}</b><span class="sub">${o['Discount applied']?'Amazon '+gbp(o['Buy at £'])+' · '+escapeHtml(o['Discount applied']):o['Amazon 90d drop %']+'% under 90d avg'}</span></td>
-      <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(alt)}">${escapeHtml(o['Sell from'])}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit"></td>
+      <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(o['Sell from']+' — '+alt)}">${escapeHtml(shortSell(o['Sell from']))}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit"></td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r">${o['Sells /mo']}<span class="sub">/mo · £${o['£ per month'].toLocaleString()}</span></td>
-      <td class="pmc"><div class="pms">${PM_OPTIONS.map(x=>`<button type="button" class="pm${(fact.pm||[]).includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}">${x}</button>`).join('')}</div>${(o.pot||[]).length?(()=>{const b=o.pot.reduce((m,x)=>x.roi>m.roi?x:m,o.pot[0]);return`<span class="sub" title="${escapeHtml(o.pot.map(x=>`${x.who} ${x.pct}% → ${pct(x.roi)} ROI`).join(' · '))}">best: ${escapeHtml(b.who)} ${b.pct}% → ${pct(b.roi)} ROI</span>`;})():''}</td></tr>`;});}
+      <td class="pmc">${oaCell(o)}</td></tr>`;});}
   $('#leads').innerHTML=h+'</tbody>';
   const from=all.length?(view.page-1)*PAGEN()+1:0,to=Math.min(all.length,view.page*PAGEN());
   let pg='';const win=[...new Set([1,2,view.page-1,view.page,view.page+1,pages-1,pages].filter(p=>p>=1&&p<=pages))].sort((a,b)=>a-b);
   let last=0;win.forEach(p=>{if(p-last>1)pg+='<span style="padding:0 4px;color:var(--faint)">…</span>';pg+=`<button data-pg="${p}" class="${p===view.page?'on':''}">${p}</button>`;last=p;});
   $('#pager').innerHTML=`<span>Showing ${from}–${to} of ${all.length}${view.sel.size?` · <b>${view.sel.size} selected</b>`:''}</span><div class="pg"><button data-pg="${view.page-1}" ${view.page<=1?'disabled':''}>‹</button>${pg}<button data-pg="${view.page+1}" ${view.page>=pages?'disabled':''}>›</button></div>`;
   $('#openSel').textContent=view.sel.size?`Open ${view.sel.size} ticked in Keepa`:all.length<=OPEN_ALL_MAX?`Open all ${all.length} in Keepa`:`Open ${rows.length} on this page in Keepa`;}
+/* b23 density pass (Jack, 14 Sep: "too busy") — the Sell cell already shows the worst case and the retailer buttons say
+   "check OA", so those two flags are noise; the rest are ranked and only two show, the others sit behind "+n" on hover */
+const FLAG_RANK=[/EU PLUG|PLUG CHECK/i,/tanked/i,/NOT A DROP/i,/no FBA seller/i,/LIMITED TIME/i,/AMAZON OWNS/i,/WIDE SELL/i,/volatile/i,/drops only/i,/not in a drop/i,/A2A->OA/i,/ZERO-RATED/i];
+function flagPick(fl,max){max=max==null?2:max;const keep=(fl||[]).filter(f=>!/^worst case|^UK buy: check OA/i.test(f));
+  const rank=f=>{const i=FLAG_RANK.findIndex(re=>re.test(f));return i<0?FLAG_RANK.length:i;};
+  const sorted=keep.slice().sort((a,b)=>rank(a)-rank(b));return{show:sorted.slice(0,max),rest:sorted.slice(max)};}
+function shortSell(w){if(!w)return'';return String(w)
+  .replace(/^Buy Box 90d average \(180d is an old higher price\) · no uplift/,'BB 90d avg · 180d was an old price')
+  .replace(/^Buy Box (90\/180d|90d) average · no uplift \(under £\d+\)/,'BB $1 avg · no uplift')
+  .replace(/^Buy Box (90d|180d) \+(\d+)%/,'BB $1 +$2%')
+  .replace(/capped at the FBA 90d average/,'capped at FBA 90d').replace(/capped at the Buy Box high/,'capped at BB high').replace(/capped at the 3P 90d average/,'capped at 3P 90d')
+  .replace(/^3P holds the Buy Box today/,'3P holds the Buy Box').replace(/^3P 90d average \(no Buy Box history\)/,'3P 90d avg · no BB history');}
+const PM_SHORT={'John Lewis':'JL','Brand direct':'Brand'};
+function pmLabel(x){return PM_SHORT[x]||x;}
+/* what Jack knows about where a brand's stock really turns up — the note on the brand's discount row (Settings) */
+function pmHint(brand){const e=typeof discForBrand==='function'?discForBrand(brand):null;if(!e||!e.note)return'';return`<div class="pmhint" title="${escapeHtml(e.name+': '+e.note)}">${escapeHtml(e.note)}</div>`;}
 function bandOf(sc){return sc>=70?'hi':sc>=50?'md':sc>=30?'lo':'weak';}
 function leadOf(a){return result?result.out.find(o=>o.ASIN===a):null;}
 function markAllSeen(){if(!result||!needMe())return;const list=result.out.filter(o=>!verdGet(o.ASIN));if(!list.length){toast('Everything already has a verdict');return;}
@@ -453,14 +518,14 @@ function markAllSeen(){if(!result||!needMe())return;const list=result.out.filter
 function onTableClick(e){const cp=e.target.closest('button[data-copy]');if(cp){copy(cp.dataset.copy,cp.dataset.copy+' copied');return;}
   const b=e.target.closest('button');if(!b)return;const a=b.dataset.asin||b.dataset.bl||b.dataset.blbrand||b.dataset.vat||b.dataset.track;if(!a)return;const o=leadOf(a);
   if(b.dataset.pm){const f=factGet(a);const pm=new Set(f.pm||[]);if(pm.has(b.dataset.pm))pm.delete(b.dataset.pm);else pm.add(b.dataset.pm);factSet(a,{pm:[...pm]});touched.add(a);run();return;}
-  if(b.dataset.vat!=null){if(!needMe())return;const f=factGet(a);const next=f.vat==null?0:(+f.vat===0?20:null);factSet(a,{vat:next});toast(next==null?'Back to the Rule 4 keyword rule':next+'% VAT set on '+a+' — shared');touched.add(a);run();return;}
+  if(b.dataset.vat!=null){if(!needMe(b))return;const f=factGet(a);const next=f.vat==null?0:(+f.vat===0?20:null);factSet(a,{vat:next});toast(next==null?'Back to the Rule 4 keyword rule':next+'% VAT set on '+a+' — shared');touched.add(a);run();return;}
   if(b.dataset.track!=null){if(!o)return;const f=factGet(a);const sug=f.track?f.track.target:(o.low?o.low.buy:Math.round((o.state.buy*0.9)*100)/100);
     const t=prompt('Track '+a+' on Keepa — target buy price £ (blank to clear)',sug);if(t===null)return;const v=parseFloat(t);
     factSet(a,{track:v>0?{target:v}:null});renderTable();if(v>0){toast('Noted £'+v.toFixed(2)+' — now set the same in Keepa');window.open(o.Keepa,'_blank');}return;}
-  if(b.dataset.bl!=null){if(!needMe())return;blPick=blPick===a?null:a;renderTable();return;}
-  if(b.dataset.blr){if(!needMe())return;blSet(a,{reason:b.dataset.blr,title:o?(o.Title||o.Product||''):'',source:cur.key});blPick=null;touched.delete(a);toast(a+' blacklisted · '+b.dataset.blr+' — never shows again');run();return;}
+  if(b.dataset.bl!=null){if(!needMe(b))return;blPick=blPick===a?null:a;renderTable();return;}
+  if(b.dataset.blr){if(!needMe(b))return;blSet(a,{reason:b.dataset.blr,title:o?(o.Title||o.Product||''):'',source:cur.key});blPick=null;touched.delete(a);toast(a+' blacklisted · '+b.dataset.blr+' — never shows again');run();return;}
   if(b.dataset.blbrand!=null){blPick=null;openBrandBlacklist(o?(o.Brand||(cur.type==='brand'?cur.name:'')):'',a);renderTable();return;}
-  if(b.dataset.v){if(!needMe())return;const v=verdGet(a)||{};touched.add(a);
+  if(b.dataset.v){if(!needMe(b))return;const v=verdGet(a)||{};touched.add(a);
     if(v.v===b.dataset.v){verdSet(a,null);if(o){o.verdict=null;o.QUEUE='new';o.sinceVerdict='';}}
     else{verdSet(a,{v:b.dataset.v,reason:b.dataset.v==='No'?v.reason||'':'',note:v.note||'',source:cur.key,state:o?o.state:null});if(o){o.verdict=verdGet(a);o.QUEUE='';o.sinceVerdict='';}}}
   else if(b.dataset.r){const v=verdGet(a)||{};verdSet(a,Object.assign(v,{reason:v.reason===b.dataset.r?'':b.dataset.r}));}
@@ -556,7 +621,7 @@ function onCloudPulled(ok){whoPaint();renderList();renderLog();renderSettings();
   if(ok&&cur){cloudPullLeads(cur.key).then(()=>{if(result)run();});}}
 
 /* ============ wiring ============ */
-function brandsInit(){renderList();renderLog();
+function brandsInit(){renderList();renderLog();if(!me())whoGate(true);
   $('#brandTbl').addEventListener('click',onListClick);document.addEventListener('click',e=>{if(!e.target.closest('.menu'))closeMenus();});
   $('#approvals').addEventListener('click',onApprovalClick);
   $('#addBrand').addEventListener('click',()=>openEdit(null));
@@ -587,7 +652,7 @@ function brandsInit(){renderList();renderLog();
   $('#fMarket').addEventListener('change',e=>{view.market=e.target.value;view.page=1;renderTable();});
   $('#floorRow').addEventListener('input',onFloorInput);
   $('#floorClear').addEventListener('click',()=>{if(!cur)return;delete cur.filters;srcSave(cur);paintFloors();lastSig='';run();});
-  $('#fQ').addEventListener('input',e=>{view.q=e.target.value;view.page=1;renderTable();});
+  $('#fQ').addEventListener('input',e=>{view.q=e.target.value;view.page=1;if(result)renderTable();});
   $('#fHideNo').addEventListener('change',e=>{view.hideNo=e.target.checked;view.page=1;renderTable();});
   $('#logExport').addEventListener('click',exportLog);
   $('#rulesToggle').addEventListener('click',()=>{const o=$('#rulesBox');const open=o.classList.toggle('show');$('#rulesToggle').textContent=open?'Hide the rules':'Show the rules';});

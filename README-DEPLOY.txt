@@ -12,7 +12,18 @@ Rules: js/rule1.js is FROZEN (9 Sep 2026). js/rule2.js is Rule 2 AND Rule 3 (sam
 Checks: open the page, add ?checks to the URL, and the known-answer tests run against the fixtures
         (fixtures are kept locally in bdl-sourcing-harness/fixtures, not in the repo).
 
-Build: v1.1 · 2026-09-14 · b18 — under-£60 sell model refitted on 13 of Jack's grocery calls (higher Buy Box 90/180d average, no uplift,
+Build: v1.1 · 2026-09-14 · b24 — Who-are-you gate on first visit and on every marking click (the click is replayed after picking); b23 KPIs + calmer tables
+  slot and no Step-4 merge box; OA chips just say 'Check OA · up to x% ROI' (retailers on hover).
+Previous: v1.1 · 2026-09-14 · b20 — Rule 1 leads get a score (same formula, display only, the frozen maths is untouched) and sort by it;
+  flag chips are short labels with the full text on hover; buy market shown as a flag; calmer palette (no coloured pills, ROI green/amber/red);
+  dropped-reason rows list their ASINs on hover; OA chip only when it is worth ≥8% ROI.
+Previous: v1.1 · 2026-09-14 · b19 — low-ticket sell: the 180d Buy Box average is ignored when it is a different price regime (>1.35× the 90d,
+  e.g. a launch price) — L'OR pods £19.94 → £10.82 (a loss, dropped); low-ticket SCORE scale: £1,500/month and £6/unit saturate under £60
+  (WoodWick candle 28 → 51). Mera and all 12 grocery calls unchanged. S&S 136 leads.
+  Also b19 — run screen tightened: floors live in the drop card (no dead space on one-file runs), summary compressed,
+  Keepa/SAS/Buy/Sell links under the product title (Links column gone), score + status in one column, 'OA check · you check' column with
+  category-aware retailers (grocery: Boots/Superdrug/Tesco by eye; electricals: Currys/AO/Marks Electrical; general: Argos/JL/Robert Dyas).
+Previous: v1.1 · 2026-09-14 · b18 — under-£60 sell model refitted on 13 of Jack's grocery calls (higher Buy Box 90/180d average, no uplift,
   capped at the FBA 90d average; all calls within ±9%): S&S 137 leads, Business 10, Mera unchanged.
   Round two of Jack's calls: Logitech within 2% of the frozen Rule 1 (no change); high-ticket: only FBA history proves a plateau now
   (FBM-only rows get +5%, not +25%) — Galaxy Book4 Pro £2,207 → £1,788; Mera 12 Sep 390 → 376, 11 Sep unchanged.

@@ -23,6 +23,27 @@ window.SourcingChecks=(function(){
       ok('R1 ASUS · leads',A.out.length,EXPECT.asus.leads);
       const mb=A.out.find(o=>o.ASIN==='B0H3VS2JL7');
       ok('R1 ASUS · B0H3VS2JL7 profit/ROI',mb?[mb['Profit £'],mb['ROI %']]:null,EXPECT.asus.mb);
+      /* Rule 1 b22 — sell never above "Buy Box: Highest" (Jack, 14 Sep: Lenovo Idea Tab "never ever been higher than 509.99").
+         Synthetic UK-only Finder; the Logitech/ASUS exports never carried the column, so their locks stand. */
+      const hdrC=['ASIN','Title','Brand','Categories: Root','Monthly Sales Trends: Bought in past month','Sales Rank: Drops last 30 days','Amazon: Current','Buy Box: Current','Buy Box: 90 days avg.','Buy Box: Highest','New, 3rd Party FBA: Current','New, 3rd Party FBA: 30 days avg.','New, 3rd Party FBA: 90 days avg.','Referral Fee %','FBA Pick&Pack Fee','Package: Weight (g)','Buy Box: Buy Box Seller'];
+      const rowC=(a,t,ukp,bb90,hi,f90)=>[a,t,'Lenovo','Computers & Accessories',100,30,ukp,ukp,bb90,hi,'','',f90,7,4.82,900,'Amazon'];
+      const tabC=[hdrC,rowC('B0GT2CJRP6','Lenovo Idea Tab Pro Gen 2',449.99,493.56,509.99,''),rowC('B0FXXRHY49','Lenovo L27-41 monitor',79.01,91.31,109,119.95),rowC('B0NOCAP000','No cap needed',50,80,120,'')];
+      const SC=describeExport(parseCSV(tabC.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n')));
+      const C=rule1Compute({UK:SC,viewer:SC,DE:null,FR:null,IT:null,ES:null},'Lenovo',0.86,null);
+      const tabl=C.out.find(o=>o.ASIN==='B0GT2CJRP6'),mon=C.out.find(o=>o.ASIN==='B0FXXRHY49'),noc=C.out.find(o=>o.ASIN==='B0NOCAP000');
+      ok('R1 cap · Idea Tab sells at the Buy Box high',tabl?[tabl['Sell £ used'],tabl['Sell used'],tabl['Sell high £']]:null,[509.99,'Buy Box 90d +8%, capped at the Buy Box high',509.99]);
+      ok('R1 cap · monitor: sell £98.61 stands, best case capped at £109',mon?[mon['Sell £ used'],mon['Sell high £'],mon['Sell range']]:null,[98.61,109,'£91.31-£109.00']);
+      ok('R1 cap · untouched when under the high',noc?[noc['Sell £ used'],noc['Sell used']]:null,[86.4,'Buy Box 90d +8%']);
+      ok('R1 cap · column seen / rows capped',[C.st.bbHiCol,C.st.capped],[true,1]);
+      ok('R1 cap · Logitech export has no column',L.st.bbHiCol,false);
+      const M12r=await csv('mera-2026-09-12b.csv');const MR=rule1Compute({UK:M12r,viewer:M12r,DE:null,FR:null,IT:null,ES:null},'Mera',0.86,null);
+      const hiOf={};M12r.rows.forEach(r=>{hiOf[(r.ASIN||'').trim()]=parseFloat(String(r['Buy Box: Highest']).replace(/[^0-9.]/g,''))||0;});
+      ok('R1 cap · Mera 12 Sep as UK-only: leads / capped',[MR.out.length,MR.st.capped],EXPECT.r1cap.mera);
+      ok('R1 cap · no lead sells above its Buy Box high',MR.out.every(o=>!hiOf[o.ASIN]||(o['Sell £ used']<=hiOf[o.ASIN]+0.01&&o['Sell high £']<=hiOf[o.ASIN]+0.01)),true);
+      /* b23 — table density helpers */
+      const fp=flagPick(['worst case (Buy Box 90d £10.00): 3%','UK buy: check OA retailers (Currys 5%, JL 4%, Argos 6%)','sell price volatile','demand from drops only - does it sell?','NOT A DROP: Buy Box 90d £12.00 = Amazon £11.50','ZERO-RATED VAT assumed (coffee/tea) - confirm']);
+      ok('b23 flags · two ranked chips, rest behind +n',[fp.show,fp.rest.length],[['NOT A DROP: Buy Box 90d £12.00 = Amazon £11.50','sell price volatile'],2]);
+      ok('b23 sell label · short forms',[shortSell('Buy Box 90/180d average · no uplift (under £60)'),shortSell('Buy Box 180d +25%'),shortSell('capped at the Buy Box high'),shortSell('3P holds the Buy Box today')],['BB 90/180d avg · no uplift','BB 180d +25%','capped at BB high','3P holds the Buy Box']);
       /* Rule 2 v2 — Mera, 11 Sep 2026 (sell price refitted 12 Sep on Jack's 10 graph reads) */
       const M=rule2Compute((await csv('mera-2026-09-11.csv')).rows);
       ok('R2 Mera 11 Sep · rows',M.st.rows,EXPECT.mera.rows);
@@ -54,6 +75,9 @@ window.SourcingChecks=(function(){
       ok('R3 Suz S&S · Ecover B0D1HBH6FN (Business 12% + S&S 15%)',ec?[ec.Score,ec['After discount £'],ec['Sell for £'],ec['ROI %'],ec['VAT %']]:null,EXPECT.sns.ecover);
       const pp=SN.all.find(o=>o.ASIN==='B08ZPSYKLP');
       ok('R3 Suz S&S · Pro Plus caffeine = 20% not coffee',pp?pp['VAT %']:null,20);
+      const lor=SN.all.find(o=>o.ASIN==='B0G4QJPXD6'),ww=SN.all.find(o=>o.ASIN==='B09RGW82GJ');
+      ok("R2 Suz S&S · L'OR pods: 180d is an old price regime, sell = 90d avg and it is a loss",lor?[lor['Sell for £'],lor.kept]:null,EXPECT.sns.lor);
+      ok('R2 Suz S&S · WoodWick candle: low-ticket score scale (Jack: a good lead, was 28)',ww?ww.Score:null,EXPECT.sns.woodwick);
       const sb=SN.all.find(o=>o.ASIN==='B0D32138JW'),sk=SN.all.find(o=>o.ASIN==='B0FNX6YLCJ'),fb=SN.all.find(o=>o.ASIN==='B07L5BS94K');
       ok('R2 Suz S&S · under-£60 sell = higher Buy Box average, no uplift (Starbucks / Shark / Febreze)',[sb&&sb['Sell for £'],sk&&sk['Sell for £'],fb&&fb['Sell for £']],[EXPECT.sns.starbucks,EXPECT.sns.shark,EXPECT.sns.febreze]);
       const BZ=rule2Compute((await csv('suz-business-2026-09-13.csv')).rows,{},{vatFor});
@@ -121,10 +145,12 @@ window.SourcingChecks=(function(){
     mera:{rows:525,leads:366,lenovo:[69,37.67,31.4],siemens:[77,107.12,30.7,100]},
     /* 14 Sep: FBM-only history no longer proves a plateau (Galaxy Book4 Pro: Jack £1,700–1,800 max, was £2,207) → 12 Sep 390 → 376. */
     mera12:{leads:376,first:'B0GTWMRV87',vaxSell:176.64,vaxScore:[65,77],no3p:139,withVat:[376,0],book4:[1788.23,'Buy Box 90d +5%'],phone:1393.96},
-    /* Suz 13 Sep (b18 under-£60 sell): S&S 2,520 rows → 137 qualify (66 zero-rated, 8 kept); Business 179 → 10. Ecover £9.05 after 12% + 15%, sells £19.86 (Buy Box 90d avg, no uplift). */
-    /* 14 Sep b18: under £60 the sell is the HIGHER Buy Box 90/180d average, no uplift, capped at the FBA 90d average — fitted on 13 of
-       Jack's grocery calls (all within ±9%). S&S 2,520 → 137, Business 179 → 10; Mera unchanged (her floor is £60). */
-    sns:{counts:[2520,137],first:'B0GV4KVQKK',vat0:[66,8],ecover:[30,9.05,19.86,18.7,20],starbucks:32.48,shark:25.22,febreze:18.29},
+    /* Suz 13 Sep (b19): S&S 2,520 rows → 136 qualify (66 zero-rated, 7 kept); Business 179 → 10. Ecover £9.05 after 12% + 15%, sells £19.86, scores 53 on the low-ticket scale. */
+    /* 14 Sep b19: under £60 sell = higher Buy Box 90/180d average unless the 180d is an old price regime (>1.35×: L'OR pods £34 launch vs
+       £10.82 now), no uplift, capped at FBA 90d avg; low-ticket score scale £1,500/mo · £6/unit (WoodWick 28 → 51). S&S 2,520 → 136. */
+    sns:{counts:[2520,136],first:'B0BC1SF8BZ',vat0:[66,7],ecover:[53,9.05,19.86,18.7,20],starbucks:32.48,shark:25.22,febreze:18.29,lor:[10.82,false],woodwick:51},
     biz:{counts:[179,10],first:'B0CVXQRN2K',lg:[54,403.73,522.97,13.4]},
+    /* 14 Sep b22: Rule 1 sell (and best case) capped at "Buy Box: Highest" when the export has it. Mera 12 Sep run as a UK-only Finder: leads / rows capped. */
+    r1cap:{mera:[298,59]},
     score1:75,score2:66};
   return{run,results:R};})();

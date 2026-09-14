@@ -12,9 +12,11 @@
    ============================================================================ */
 const R2={
   VAT:0.20, TARGET_ROI:5.0, MIN_SPM:10, PREP_MISC:1.00, DST:0.02, DEF_REF:15, DEF_FBA:3.50, SS_UK:0.15,
-  SELL_UPLIFT:1.25, SELL_UPLIFT_NO3P:1.05, LOW_TICKET:60, LONE_FBA_GAP:1.30, LONE_FBA_OFFERS:2, YOUNG_DAYS:90, THIN_REVIEWS:25,
-  /* score = 100 * ( sat(profit*spm,6000)^0.50 * sat(roi,9)^0.24 * sat(profit,18)^0.26 )^0.8 */
-  SAT:{money:6000,roi:9,profit:18},POW:{money:0.50,roi:0.24,profit:0.26,all:0.8},
+  SELL_UPLIFT:1.25, SELL_UPLIFT_NO3P:1.05, LOW_TICKET:60, REGIME_GAP:1.35, LONE_FBA_GAP:1.30, LONE_FBA_OFFERS:2, YOUNG_DAYS:90, THIN_REVIEWS:25,
+  /* score = 100 * ( sat(profit*spm,6000)^0.50 * sat(roi,9)^0.24 * sat(profit,18)^0.26 )^0.8
+     under £60 (14 Sep, Jack: WoodWick candle £3.08 × 300/mo at 21% ROI "is a good lead", scored 28) the money and profit scales
+     are a quarter of the high-ticket ones: £1,500/month and £6/unit saturate instead of £6,000 and £18 */
+  SAT:{money:6000,roi:9,profit:18},SAT_LOW:{money:1500,roi:9,profit:6},POW:{money:0.50,roi:0.24,profit:0.26,all:0.8},
   /* what each brand's own store / OA channel usually gives on top — keep if the needed % off <= max(10, this) */
   BRAND:{'acer':15,'bosch':10,'dyson':10,"de'longhi":10,'delonghi':10,'gillette':10,'henry':10,'numatic':10,
     'honor':10,'hoover':15,'huawei':15,'huel':10,'lego':5,'lenovo':10,'logitech':10,'miele':10,'ninja':9,
@@ -25,8 +27,8 @@ const R2={
   DEFAULT_ALLOW:10
 };
 function r2sat(x,h){return x>0?x/(x+h):0;}
-function r2score(p,roi,spm){if(p<=0||roi<=0)return 1;
-  const v=100*Math.pow(Math.pow(r2sat(p*spm,R2.SAT.money),R2.POW.money)*Math.pow(r2sat(roi,R2.SAT.roi),R2.POW.roi)*Math.pow(r2sat(p,R2.SAT.profit),R2.POW.profit),R2.POW.all);
+function r2score(p,roi,spm,low){if(p<=0||roi<=0)return 1;const S=low?R2.SAT_LOW:R2.SAT;
+  const v=100*Math.pow(Math.pow(r2sat(p*spm,S.money),R2.POW.money)*Math.pow(r2sat(roi,S.roi),R2.POW.roi)*Math.pow(r2sat(p,S.profit),R2.POW.profit),R2.POW.all);
   return Math.max(1,Math.min(100,Math.round(v)));}
 function r2fees(sale,ref,fba){const r=sale*ref;return r+fba+R2.PREP_MISC+(r+fba)*R2.DST;}
 function r2prof(sale,cost,ref,fba,vat){const V=1+(vat==null?R2.VAT:vat);const p=sale/V-cost/V-r2fees(sale,ref,fba);
@@ -54,7 +56,10 @@ function r2sell(r){
      £13.12, Solgar £9.89 all land within his calls. £60 = Mera's floor, so her rows never come through here; YSL at £50 does. */
   if((bb90||bb180||amz||0)<R2.LOW_TICKET){const base=[bb90,bb180].filter(x=>x);
     if(!base.length){const s=third.length?Math.min(...third):null;return{sell:s,why:s?'3P 90d average (no Buy Box history)':'',conf:'low'};}
-    let s=Math.max(...base),why=`Buy Box ${base.length===2?'90/180d':'90d'} average · no uplift (under £${R2.LOW_TICKET})`,conf='medium';
+    /* the higher of the two averages carries the normal price after a short dip (Sharpie) — unless the 180d is a different price
+       regime altogether (L'OR pods: 90d £10.82, 180d £34.24 from a £60 launch) — then the 90d is the truth */
+    const regime=bb90&&bb180&&bb180>bb90*R2.REGIME_GAP;
+    let s=regime?bb90:Math.max(...base),why=regime?'Buy Box 90d average (180d is an old higher price) · no uplift':`Buy Box ${base.length===2?'90/180d':'90d'} average · no uplift (under £${R2.LOW_TICKET})`,conf='medium';
     if(f90&&f90<s){s=f90;why='capped at the FBA 90d average';}
     if(hi&&hi<s){s=hi;why='capped at the Buy Box high';}
     return{sell:Math.round(s*100)/100,why,conf};}
@@ -98,12 +103,17 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     eff=Math.round(eff*100)/100;
     const [p,roi]=r2prof(sell,eff,ref,fba,vat),br=r2brate(brand,amz),nd=r2needed(sell,eff,ref,fba,null,vat);const bEntry=(typeof discForBrand==='function')?discForBrand(brand):null;
     const kept=nd<=Math.max(R2.DEFAULT_ALLOW,br||R2.DEFAULT_ALLOW);
-    const score=r2score(p,roi,Math.round(spm));
+    const low=sell<R2.LOW_TICKET;const score=r2score(p,roi,Math.round(spm),low);
     /* what an extra retailer discount would do — brand direct, and the best generic price-matcher */
     const pot=[];
-    if(br){const c=Math.round(amz*(1-br/100)*100)/100;const [pp,pr]=r2prof(sell,c,ref,fba,vat);pot.push({who:(bEntry?bEntry.name:brand.split(' ')[0]+' direct'),pct:br,cost:c,p:pp,roi:pr,score:r2score(pp,pr,Math.round(spm)),confirmed:(fact.pm||[]).some(x=>/direct|brand/i.test(x))});}
-    const matchers=(typeof discMatchers==='function')?discMatchers().map(e=>[e.name,discRate(e,amz)]).filter(x=>x[1]>0):R2.RETAIL;
-    matchers.forEach(([who,pct])=>{const c=Math.round(amz*(1-pct/100)*100)/100;const [pp,pr]=r2prof(sell,c,ref,fba,vat);pot.push({who,pct:Math.round(pct*10)/10,cost:c,p:pp,roi:pr,score:r2score(pp,pr,Math.round(spm)),confirmed:(fact.pm||[]).includes(who)});});
+    if(br){const c=Math.round(amz*(1-br/100)*100)/100;const [pp,pr]=r2prof(sell,c,ref,fba,vat);pot.push({who:(bEntry?bEntry.name:brand.split(' ')[0]+' direct'),pct:br,cost:c,p:pp,roi:pr,score:r2score(pp,pr,Math.round(spm),low),confirmed:(fact.pm||[]).some(x=>/direct|brand/i.test(x))});}
+    /* which retailers could price-match THIS product: electricals only get the electrical chains; grocery / health / beauty get none
+       (Boots, Superdrug and Tesco have their own prices, so there is nothing to compute — the VA checks them by eye) */
+    const root=(r['Categories: Root']||'').toLowerCase();
+    const grocery=/grocery|health|beauty|pet|baby|drugstore/.test(root);
+    const elec=/electronics|computers|home & garden|large appliances|diy|kitchen|garden|toys|sports|stationery|office/.test(root)||!root;
+    const matchers=grocery?[]:(typeof discMatchers==='function')?discMatchers().filter(e=>elec||!/marks electrical|ao\b|currys/i.test(e.name)).map(e=>[e.name,discRate(e,amz)]).filter(x=>x[1]>0):R2.RETAIL;
+    matchers.forEach(([who,pct])=>{const c=Math.round(amz*(1-pct/100)*100)/100;const [pp,pr]=r2prof(sell,c,ref,fba,vat);pot.push({who,pct:Math.round(pct*10)/10,cost:c,p:pp,roi:pr,score:r2score(pp,pr,Math.round(spm),low),confirmed:(fact.pm||[]).includes(who)});});
     const best=pot.reduce((m,x)=>x.score>m.score?x:m,{score:score,who:'',roi,p});
     /* history + risk signals */
     const f90=kNum(r['New, 3rd Party FBA: 90 days avg.']),fbm90=kNum(r['New, 3rd Party FBM: 90 days avg.']),bb90=kNum(r['Buy Box: 90 days avg.']);
@@ -140,7 +150,7 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
       '£ per month':Math.round(p*spm),'Needs % off':Math.round(nd*10)/10,'Brand discount %':br==null?'':br,
       'Check OA?':(br||nd>0)?'yes':'','FBA resale proven?':f90?'yes':'no','No 3P history?':no3P?'yes':'no','Limited time deal?':ltd?'yes':'no',
       'Amazon 90d drop %':kNum(r['Amazon: 90 days drop %'])||0,'Offers':kNum(r['New Offer Count: Current'])||0,'FBA offers':fbaN,'FBM offers':fbmN,
-      'Reviews':reviews,'Category':[r['Categories: Root'],r['Categories: Sub']].filter(Boolean).join(' › '),'Age days':age==null?'':age,'VAT %':Math.round(vat*100),'VAT from':vt.src==='va'?'VA':vt.src==='source'?'filter':vt.src==='rule'?'Rule 4':'default','Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||'',
+      'Reviews':reviews,'Category':[r['Categories: Root'],r['Categories: Sub']].filter(Boolean).join(' › '),'Category kind':grocery?'grocery':elec?'electrical':'general','Age days':age==null?'':age,'VAT %':Math.round(vat*100),'VAT from':vt.src==='va'?'VA':vt.src==='source'?'filter':vt.src==='rule'?'Rule 4':'default','Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||'',
       Keepa:`https://keepa.com/#!product/2-${a}`,'Buy link':`https://www.amazon.co.uk/dp/${a}`,'UK sell link':`https://www.amazon.co.uk/dp/${a}`,
       SAS:`https://sas.selleramp.com/sas/lookup?search_term=${a}&sas_cost_price=${eff.toFixed(2)}&sas_sale_price=${sell.toFixed(2)}`,
       kept,chips,pot,STATUS:'',Changed:'','Last seen':''};

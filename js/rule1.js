@@ -91,7 +91,7 @@ function rule1Compute(files,brand,rate,prevRun){
     (found[a]=found[a]||new Set()).add(d);
     if(d!=='UK'){const v=brNum(r['Amazon: Current']);if(v){(eu[a]=eu[a]||{})[d]=v;}
       if(brHasSS(r))(euSS[a]=euSS[a]||{})[d]=true;}});});
-  const vrows=files.viewer.rows,out=[],dropped=[],st={viewer:vrows.length,demand:0,sell:0,buy:0,kept:0},reasons={};
+  const vrows=files.viewer.rows,out=[],dropped=[],st={viewer:vrows.length,demand:0,sell:0,buy:0,kept:0,bbHiCol:vrows.some(r=>r['Buy Box: Highest']!=null&&r['Buy Box: Highest']!==''),capped:0},reasons={};
   const drop=(a,title,why,key)=>{dropped.push([a,title,why]);reasons[key]=(reasons[key]||0)+1;};
   for(const r of vrows){
     const a=(r.ASIN||'').trim(),title=r.Title||'',tl=title.toLowerCase();
@@ -148,10 +148,15 @@ function rule1Compute(files,brand,rate,prevRun){
     const pick=tied.find(o=>o[0]==='IT')||tied.reduce((m,o)=>o[2]<m[2]?o:m);
     const [d,local,landed,q]=pick;
     if(notADrop&&d==='UK')sells=[['Buy Box 90d - not a real drop',bb90]];
+    /* b22 (Jack, 14 Sep 2026: Lenovo Idea Tab "never ever been higher than 509.99"): nothing sells
+       above the highest Buy Box price Keepa has ever seen for the listing. Only bites when the
+       export carries "Buy Box: Highest"; the Logitech/ASUS locks below never had the column. */
+    const bbHi=brNum(r['Buy Box: Highest'])||0;
+    if(bbHi)sells=sells.map(([lab,sp])=>sp>bbHi+0.005?[lab+', capped at the Buy Box high',r2(bbHi)]:[lab,sp]);
     const vat=zeroVat?0:null;
     const cands=sells.map(([lab,sp])=>{const [p,roi]=brProfit(sp,landed,ref,fba,kg,vat,catRoot);return{p,roi,lab,sp};});
     const bestC=cands.reduce((m,c)=>c.roi>m.roi?c:m);const pr=bestC.p,roi=bestC.roi,src=bestC.lab,sell=bestC.sp;
-    const loSell=bb90||sell,hiSell=((fbaNow&&!ltd)?fbaNow:fba90)||sell;
+    const loSell=bb90||sell;let hiSell=((fbaNow&&!ltd)?fbaNow:fba90)||sell;if(bbHi&&hiSell>bbHi)hiSell=r2(bbHi);
     const [loP,loRoi]=brProfit(loSell,landed,ref,fba,kg,vat,catRoot),[hiP,hiRoi]=brProfit(hiSell,landed,ref,fba,kg,vat,catRoot);
     const bb90Roi=bb90?brProfit(bb90,landed,ref,fba,kg,vat,catRoot)[1]:null;
     let pmNote='',pmRoi=null;
@@ -170,7 +175,7 @@ function rule1Compute(files,brand,rate,prevRun){
     const wideGap=!!(fba90&&bb90&&fba90>bb90*BR.WIDE_GAP);
     const floor=wideGap?BR.MIN_ROI_WIDE:BR.MIN_ROI;
     if(Math.max(roi,hiRoi)<floor&&!(pmRoi!=null&&pmRoi>=5)){drop(a,title,`ROI ${roi}% below the ${floor}% floor (cheapest ${d} £${landed.toFixed(2)} landed, sell £${sell.toFixed(2)})`,wideGap?'Wide-gap, still under -15%':'ROI under breakeven');continue;}
-    st.kept++;
+    st.kept++;if(src.endsWith('capped at the Buy Box high'))st.capped++;
     const sd=brNum(r['Buy Box: Standard Deviation 90 days'])||0;
     const flags=[
       plugRisk?`PLUG CHECK - screen bought in ${d}, confirm UK lead`:'',

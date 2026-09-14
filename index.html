@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b18">
-<link rel="stylesheet" href="css/brands.css?v=b18">
+<link rel="stylesheet" href="css/base.css?v=b24">
+<link rel="stylesheet" href="css/brands.css?v=b24">
 </head>
 <body>
 <div class="wrap">
@@ -303,6 +303,18 @@
             </div>
             <div class="warn" id="warnRun"></div>
             <p class="sincenote" id="sinceNote" hidden><b>Tracking since / Listed since</b> aren't in this export — tick them in Keepa's column picker and product age comes for free.</p>
+            <div class="floors" id="floorRow">
+            <div class="fhead"><span class="ft">Customise this source</span><span class="fs" id="floorSaved"></span><button class="linkbtn" id="floorClear" type="button" hidden>Clear floors</button></div>
+            <div class="fin">
+              <label>Sales / month ≥<input id="fl_minSpm" type="number" inputmode="numeric" placeholder="10 · rule"></label>
+              <label>ROI % ≥<input id="fl_minRoi" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Profit £ ≥<input id="fl_minProfit" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Sell £ ≥<input id="fl_minSell" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Buy £ ≤<input id="fl_maxBuy" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Score ≥<input id="fl_minScore" type="number" inputmode="numeric" placeholder="any"></label>
+              <label>Offers ≥<input id="fl_minOffers" type="number" inputmode="numeric" placeholder="any"></label>
+            </div>
+          </div>
           </div>
           <div class="stepcard">
             <div class="stephead"><span class="n">2</span><div><p class="sh">Run summary</p><p class="ss">Key numbers from this export</p></div>
@@ -346,18 +358,7 @@
               <label class="chk"><input type="checkbox" id="fHideNo">hide No</label>
             </div>
           </div>
-          <div class="floors" id="floorRow">
-            <div class="fhead"><span class="ft">Customise this source</span><span class="fs" id="floorSaved"></span><button class="linkbtn" id="floorClear" type="button" hidden>Clear floors</button></div>
-            <div class="fin">
-              <label>Sales / month ≥<input id="fl_minSpm" type="number" inputmode="numeric" placeholder="10 · rule"></label>
-              <label>ROI % ≥<input id="fl_minRoi" type="number" inputmode="decimal" placeholder="any"></label>
-              <label>Profit £ ≥<input id="fl_minProfit" type="number" inputmode="decimal" placeholder="any"></label>
-              <label>Sell £ ≥<input id="fl_minSell" type="number" inputmode="decimal" placeholder="any"></label>
-              <label>Buy £ ≤<input id="fl_maxBuy" type="number" inputmode="decimal" placeholder="any"></label>
-              <label>Score ≥<input id="fl_minScore" type="number" inputmode="numeric" placeholder="any"></label>
-              <label>Offers ≥<input id="fl_minOffers" type="number" inputmode="numeric" placeholder="any"></label>
-            </div>
-          </div>
+          
           <div class="leadwrap"><div class="tablescroll"><table class="ltbl" id="leads"></table></div><div class="pager" id="pager"></div></div>
         </div>
       </div>
@@ -432,18 +433,18 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b18"></script>
-<script src="js/parse.js?v=b18"></script>
-<script src="js/rule1.js?v=b18"></script>
-<script src="js/rule2.js?v=b18"></script>
-<script src="js/export.js?v=b18"></script>
-<script src="js/rule4.js?v=b18"></script>
-<script src="js/queue.js?v=b18"></script>
-<script src="js/sources.js?v=b18"></script>
-<script src="js/cloud.js?v=b18"></script>
-<script src="js/leadtools.js?v=b18"></script>
-<script src="js/keepaconsole.js?v=b18"></script>
-<script src="js/brands.js?v=b18"></script>
-<script src="js/boot.js?v=b18"></script>
+<script src="js/core.js?v=b24"></script>
+<script src="js/parse.js?v=b24"></script>
+<script src="js/rule1.js?v=b24"></script>
+<script src="js/rule2.js?v=b24"></script>
+<script src="js/export.js?v=b24"></script>
+<script src="js/rule4.js?v=b24"></script>
+<script src="js/queue.js?v=b24"></script>
+<script src="js/sources.js?v=b24"></script>
+<script src="js/cloud.js?v=b24"></script>
+<script src="js/leadtools.js?v=b24"></script>
+<script src="js/keepaconsole.js?v=b24"></script>
+<script src="js/brands.js?v=b24"></script>
+<script src="js/boot.js?v=b24"></script>
 </body>
 </html>

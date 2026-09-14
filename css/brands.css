@@ -732,3 +732,69 @@
 .btbl td.nextc .l2{color:var(--faint)}
 .btbl .grp .gl{font-size:12px;letter-spacing:.08em}
 .vatgrid.one{grid-template-columns:1fr}
+
+/* ===== b19 · tighter run screen, links in the product cell, OA check ===== */
+.twocol{grid-template-columns:1fr 1.45fr}
+.stepcard .floors{margin:12px 0 0;padding:10px 12px}
+.stepcard .floors .fhead{margin-bottom:6px}
+.stepcard .floors .fs{font-size:12px}
+.stepcard .floors .fin{gap:6px}
+.stepcard .floors .fin input{width:92px;height:28px}
+.sum{padding:9px 11px;gap:2px}
+.sum .sv{font-size:20px}
+.sum .sl{font-size:11px}
+.sumgrid{gap:6px}
+.stepcard .story{margin-top:10px;padding:10px 12px;font-size:13px;line-height:1.5}
+.stepcard .story p.s2{font-size:12px}
+.statusrow.instory{margin-top:8px;gap:5px}
+.sumdetail{margin-top:8px;gap:8px}
+.sumdetail .dcol{padding:8px 10px}
+.sumdetail .dr{padding:2px 0;font-size:11.5px;grid-template-columns:minmax(0,1fr) 60px 38px}
+.sumdetail .dh{margin-bottom:4px}
+.prod .rowacts{display:flex;gap:4px;margin:4px 0 2px}
+.prod .rowacts a{height:21px;padding:0 6px;font-size:10.5px;font-family:var(--sans);font-weight:600}
+.scorec{white-space:nowrap}
+.scorec .stat2{margin-top:6px}
+.scorec .stat2 .chg{max-width:96px}
+.oabest{font-size:11.5px;color:var(--text);margin-bottom:5px;line-height:1.3}
+.oabest b{color:var(--iris)}
+.oabest.dim{color:var(--muted);font-size:11px}
+.ltbl td.pmc{min-width:150px;max-width:190px;white-space:normal}
+.ltbl td.pmc .pms{gap:3px}
+.ltbl td.pmc .pm{font-size:10.5px;padding:2px 6px}
+.ltbl td.prod{max-width:340px}
+
+/* ===== b20 · calmer palette: flags instead of coloured pills, fewer hues ===== */
+.mk{color:var(--text);background:var(--ink);border-color:var(--line2);font-family:var(--sans);font-size:12px;letter-spacing:0;padding:2px 7px}
+.mk.m-uk,.mk.m-de,.mk.m-fr,.mk.m-it,.mk.m-es{color:var(--text);background:var(--ink);border-color:var(--line2)}
+.ltbl td.num.pos.soft b{font-weight:600}
+.ltbl td.num.pos.soft{color:var(--jade);opacity:.85}
+.sumdetail .db span.m-uk,.sumdetail .db span.m-de,.sumdetail .db span.m-fr,.sumdetail .db span.m-it,.sumdetail .db span.m-es{background:var(--iris)}
+.sumdetail .dr[title]:not([title=""]){cursor:help}
+.ch.info{color:#9aa6ff;border-color:rgba(110,123,255,.32);background:rgba(110,123,255,.09)}
+.ltbl td.flagc{max-width:210px;min-width:170px}
+
+/* b23 — KPIs say what happened; tables lose the clutter (Jack, 14 Sep: "too busy… loads of dead space") */
+.wrap{max-width:1640px}
+.kpis{grid-template-columns:repeat(4,1fr);gap:10px}
+.kcap{grid-column:1/-1;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin:0 0 -2px 2px;font-weight:600}
+.kpi .ks{font-size:11px;color:var(--faint);margin-top:2px;font-family:var(--sans);font-variant-numeric:tabular-nums}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.ltbl td.flagc{max-width:240px}
+.ltbl td.flagc .chips{gap:3px;margin-top:0}
+.pms-r1{margin-top:4px}
+.pmhint{font-size:10.5px;color:var(--faint);margin-top:3px;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help}
+.brandnote{margin:0 0 8px;padding:8px 12px;border-radius:9px;background:rgba(110,123,255,.08);border:1px solid rgba(110,123,255,.25);font-size:12.5px;color:var(--text)}
+.brandnote b{color:var(--iris)}
+.ltbl td.sellc{min-width:130px}
+.ltbl td.sellc .sub{max-width:150px;white-space:normal;line-height:1.3}
+
+/* b24 — the who-are-you gate: nothing is marked by "nobody" */
+.whogate{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(7,9,14,.72);backdrop-filter:blur(3px)}
+.whogate.open{display:flex}
+.wg{width:min(440px,92vw);background:var(--surface2);border:1px solid var(--line2);border-radius:16px;padding:26px 26px 22px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.wgt{font-family:var(--disp);font-weight:800;font-size:22px;color:var(--text)}
+.wgs{font-size:13px;color:var(--muted);margin:8px 0 18px;line-height:1.5}
+.wgb{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.wgb button{font:inherit;font-weight:700;font-size:15px;padding:14px 0;border-radius:12px;border:1px solid var(--line2);background:var(--ink);color:var(--text);cursor:pointer}
+.wgb button:hover{border-color:var(--iris);color:var(--iris);background:rgba(110,123,255,.12)}
