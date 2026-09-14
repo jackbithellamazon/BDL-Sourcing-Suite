@@ -197,11 +197,11 @@ function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runN
   $('#step1Sub').textContent=r1?`Finder export for each of ${s.markets.join(' · ')}, then the UK Product Viewer. Any order.`:'UK Product Finder, all columns. One file.';
   const link=finderLink(s);
   if(!link){$('#keepaRow').innerHTML=`<span class="nolinkmsg">No Keepa link saved for this yet — <button type="button" class="linkbtn" id="keepaEdit">Edit</button> and paste the Finder link. Exports can still be dropped below.</span>`;$('#keepaEdit').addEventListener('click',()=>openEdit(cur));return;}
-  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1?s.markets.map(m=>`<a href="${link}" target="_blank" rel="noopener" title="Opens the filter — set Keepa to ${m}, run, export">${FLAG[m]} ${m}${ICONS.ext}</a>`).join(''):`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);}
+  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1?s.markets.map(m=>`<a href="${link}" target="_blank" rel="noopener" title="Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export">${FLAG[m]} ${m}${ICONS.ext}</a>`).join('')+`<span class="mkhint">Same filter for all ${s.markets.length}. Keepa cannot take the marketplace from a link — after it opens, switch the flag top-right of Keepa to that country, run, export. One file per country.</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);}
 /* floors: the inputs ARE this source's floors — saved as you type, shared, applied to every run of it */
 function paintFloors(){if(!cur)return;const f=cur.filters||{};const r1=cur.rule===1;
   FLOORS.forEach(([k,l,scope])=>{const el=$('#fl_'+k);if(!el)return;el.parentElement.hidden=(scope==='r2'&&r1);if(document.activeElement!==el)el.value=f[k]==null?'':f[k];});
-  const lab=floorsLabel(f);$('#floorSaved').innerHTML=lab?`<b>Floors for ${escapeHtml(cur.name)}:</b> ${escapeHtml(lab)} · saved for everyone`:`No floors set for ${escapeHtml(cur.name)} — the rule's own limits apply. Type a number and it is saved for everyone who runs this.`;
+  const lab=floorsLabel(f);$('#floorSaved').innerHTML=lab?`<b>${escapeHtml(cur.name)}:</b> ${escapeHtml(lab)} · saved for everyone`:`Your own limits for ${escapeHtml(cur.name)}, like Filter &amp; sort on the Keepa console. The rule already keeps only products with 10+ bought or 10+ rank drops a month; type a number to go stricter — saved for everyone who runs this.`;
   $('#floorClear').hidden=!lab;}
 let floorT=null;
 function onFloorInput(){if(!cur)return;clearTimeout(floorT);floorT=setTimeout(()=>{const f={};FLOORS.forEach(([k])=>{const el=$('#fl_'+k);if(!el)return;const v=el.value.trim();if(v!==''&&!isNaN(+v))f[k]=+v;});
@@ -258,11 +258,12 @@ function paintSlots(){if(!cur)return;const r1=cur.rule===1;
   /* the ASIN hand-off: every ASIN the Finders found, minus the ones the Viewer already covers */
   const merged=new Set();MARKETS.forEach(k=>{if(files[k])files[k].asins.forEach(a=>merged.add(a));});
   const covered=new Set(files.viewer?files.viewer.asins:[]);const missing=[...merged].filter(a=>!covered.has(a));
-  const bar=$('#asinBar');bar.hidden=!(r1&&merged.size);
+  const bar=$('#asinBar');bar.hidden=!r1;bar.classList.toggle('idle',!merged.size);$('#asinCopy').disabled=!merged.size;$('#asinOpen').disabled=!merged.size;
+  if(r1&&!merged.size){bar.classList.remove('done');$('#asinMsg').innerHTML=`<b>Step 4 happens here.</b> Drop the Finder exports above and this becomes one button that opens the UK Product Viewer with every ASIN merged and de-duplicated — no copying, no Keepa console.`;$('#asinN').textContent='0';bar._all=[];}
   if(r1&&merged.size){bar.classList.toggle('done',!missing.length);
     $('#asinMsg').innerHTML=!missing.length?`all ${merged.size.toLocaleString()} ASINs covered by the Viewer`
       :files.viewer?`Viewer covers ${covered.size.toLocaleString()} of ${merged.size.toLocaleString()} — the other <b>${missing.length.toLocaleString()}</b> aren't listed on Amazon UK, nothing to do`
-      :`<b>${missing.length.toLocaleString()}</b> of ${merged.size.toLocaleString()} ASINs have no UK data yet`;
+      :`<b>${merged.size.toLocaleString()}</b> ASINs merged and de-duplicated from ${MARKETS.filter(k=>files[k]).length} file${MARKETS.filter(k=>files[k]).length===1?'':'s'} — now open the UK Product Viewer with them loaded, export all columns, drop that here`;
     $('#asinN').textContent=merged.size.toLocaleString();bar._all=[...merged];}
   else if(bar)bar._all=[];
   const since=files.viewer?files.viewer.hasSince:(files.one?files.one.hasSince:true);$('#sinceNote').hidden=since;}
@@ -323,8 +324,8 @@ function sumTile(v,l,cls){return`<div class="sum ${cls||''}"><span class="sv">${
 function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=true;$('#results').hidden=false;
   const rev=out.filter(o=>o.QUEUE).length;let tiles;
   if(cur.rule===1){const cnt=k=>out.filter(o=>o['Buy market']===k).length,euN=out.length-cnt('UK');
-    tiles=sumTile(st.viewer,'in the Viewer')+sumTile(st.demand,'sell 10+/month in the UK')+sumTile(st.buy,'Amazon selling it')+sumTile(out.length,'leads','lead')
-      +sumTile(rev,'to review today',rev?'cool':'')+sumTile(out.filter(o=>o['ROI %']>=10).length,'ROI 10%+')+sumTile(cnt('UK'),'buy from UK')+sumTile(euN,euN?'buy from EU · '+['DE','FR','IT','ES'].map(k=>cnt(k)?k+' '+cnt(k):'').filter(Boolean).join(' '):'buy from EU','warm');}
+    tiles=sumTile(st.viewer,'in the Viewer')+sumTile(st.demand,'sell 10+/mo in the UK')+sumTile(st.buy,'Amazon selling it')+sumTile(out.length,'leads','lead')
+      +sumTile(rev,'to review today',rev?'cool':'')+sumTile(out.filter(o=>o['ROI %']>=10).length,'ROI 10%+')+sumTile(cnt('UK'),'buy from UK')+sumTile(euN,euN?'from EU · '+['DE','FR','IT','ES'].map(k=>cnt(k)?k+' '+cnt(k):'').filter(Boolean).join(' · '):'buy from EU','warm');}
   else{const m=out.reduce((s,o)=>s+o['£ per month'],0);
     tiles=sumTile(st.rows,'in the export')+sumTile(st.priced,'Amazon selling it')+sumTile(st.demand,'sell 10+/month')+sumTile(out.length,'leads','lead')
       +sumTile(rev,'to review today',rev?'cool':'')+sumTile(out.filter(o=>o.Score>=60).length,'score 60+')+sumTile(out.filter(o=>o.Score>=40&&o.Score<60).length,'score 40–59','warm')+sumTile('£'+Math.round(m).toLocaleString(),'£ / month on the list');}
@@ -350,7 +351,7 @@ function paintStory(){const R=result;if(!R||!cur)return;const st=R.st,out=R.out;
     :`First run for ${escapeHtml(cur.name)}, so everything counts as new. ${n(R.dropped.length)} dropped by the rule${R.blacklisted.length?`, ${n(R.blacklisted.length)} blacklisted`:''}.`;
   const carried=out.filter(o=>o.QUEUE==='new'&&o.STATUS!=='NEW').length;
   const story3=carried>=10?`<p class="s3">${n(carried)} of today's "need a look" were on the last run too and nobody has marked them. If they have already been looked at, press <b>Mark all as seen</b> once — from the next run only new and more-profitable leads come back.</p>`:'';
-  $('#story').innerHTML=`<p>${story}</p><p class="s2">${story2}</p>${story3}`;
+  $('#story').innerHTML=`<p>${story}</p><p class="s2">${story2}</p>${story3}`;$('#story').hidden=false;
   $('#statusRow').innerHTML=(R.prevStamp?`<span class="vs">vs ${escapeHtml(R.prevStamp.slice(0,10))}</span>`:`<span class="vs">first run for ${escapeHtml(cur.name)} — everything is NEW</span>`)+
     [['TO REVIEW',rev,'rev'],['NEW',c.NEW,'new'],['BETTER',c.BETTER,'better'],['WORSE',c.WORSE,'worse'],['UNCHANGED',c.UNCHANGED,'same'],['GONE',R.gone.length,'gone'],['BLACKLISTED',R.blacklisted.length,'bl']].map(([l,n,k])=>`<span class="spill ${k}${n?'':' zero'}"><b>${n}</b>${l}</span>`).join('');
 }
@@ -387,27 +388,39 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
   const pend=b=>bbStatusFor(b)==='pending'?`<i class="ch pend" title="Brand blacklist requested — waiting for Jack">BRAND BLACKLIST PENDING</i>`:'';
   let h;
   if(!all.length){$('#leads').innerHTML=`<tbody><tr><td style="text-align:center;color:var(--faint);padding:26px">${view.status==='REVIEW'?'Nothing to review — every lead on this run has a verdict and none has got better since. Switch to <b>Everything</b> to see them all.':'Nothing matches.'}</td></tr></tbody>`;$('#pager').innerHTML='';$('#openSel').textContent='Open in Keepa';return;}
-  if(cur.rule===1){h=`<thead><tr><th></th><th>#</th><th>Status</th><th>ASIN</th><th>Product</th><th>Verdict</th><th>Links</th><th class="r">Buy · landed £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">/mo</th><th>Flags</th></tr></thead><tbody>`;
-    rows.forEach((o,i)=>{h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td>${statusCell(o)}</td>${asin(o)}
-      <td class="prod"><span class="t" title="${escapeHtml(o.Title)}">${escapeHtml(o.Title)}</span><span class="s">${escapeHtml(o['Sell used'])}${o['LTD badge']?' · <b>LTD</b>':''}</span>${pend(cur.name)}</td>
+  const asinl=o=>`<span class="asinl">${o.ASIN}<button type="button" data-copy="${o.ASIN}" title="Copy ASIN">${ICONS.copy}</button></span>`;
+  const roiCls=v=>v>=20?'pos':v>=10?'ok':v>=0?'warm':'neg';
+  const mk=m=>`<i class="mk m-${(m||'uk').toLowerCase()}">${m}</i>`;
+  /* Rule 1, UK buy: what the same lead looks like taken to OA — landed less a price-matcher's code. Display only; rule1.js is frozen. */
+  const oaChip=o=>{if(o['Buy market']!=='UK')return'';const landed=+o['Landed £'],p=+o['Profit £'];if(!landed)return'';const V=/ZERO-RATED/.test(o.Flags||'')?1:1.2;
+    const list=[];const be=discForBrand((cur.brands&&cur.brands[0])||cur.name);if(be){const r=discRate(be,landed);if(r>0)list.push([be.name,r]);}
+    discMatchers().forEach(e=>{const r=discRate(e,landed);if(r>0&&!list.some(x=>x[0]===e.name))list.push([e.name,r]);});
+    const rows=list.map(([who,pct])=>{const c=landed*(1-pct/100);const pp=p+(landed-c)/V;return{who,pct,p:pp,roi:c?100*pp/c:0};}).sort((a,b)=>b.roi-a.roi);
+    if(!rows.length)return'';const b=rows[0];const fact=factGet(o.ASIN);const conf=(fact.pm||[]).length;
+    return`<i class="ch ${conf?'good':'oa'}" title="${escapeHtml(rows.map(x=>`${x.who} ${Math.round(x.pct*10)/10}% → £${x.p.toFixed(2)} profit · ${Math.round(x.roi)}% ROI`).join(' · '))}">OA · ${escapeHtml(b.who)} ${Math.round(b.pct)}% → ${Math.round(b.roi)}% ROI</i>`;};
+  const pmRow=o=>o['Buy market']!=='UK'?'':`<div class="pms pms-r1">${PM_OPTIONS.map(x=>`<button type="button" class="pm${(factGet(o.ASIN).pm||[]).includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}" title="Tick when you have confirmed this retailer price-matches">${x}</button>`).join('')}</div>`;
+  const flagCls=f=>/PLUG|NOT A DROP|not in a drop|WIDE|volatile|no FBA|LIMITED|drops only|tanked|OWNS THE BUY BOX|worst case/i.test(f)?(/OWNS|PLUG|tanked|LIMITED/i.test(f)?'warn':'info'):/A2A->OA|price-match|check OA|ZERO-RATED/i.test(f)?'good':'';
+  if(cur.rule===1){h=`<thead><tr><th></th><th>#</th><th>Status</th><th>Product</th><th>Verdict</th><th>Links</th><th class="r">Landed £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">/mo</th><th>Flags · OA</th></tr></thead><tbody>`;
+    rows.forEach((o,i)=>{const fl=(o.Flags||'').split('; ').filter(Boolean);h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td>${statusCell(o)}</td>
+      <td class="prod"><span class="t" title="${escapeHtml(o.Title)}">${escapeHtml(o.Title)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o['Sell used'])}${o['LTD badge']?' · <b>LTD</b>':''}</span></span>${pend(cur.name)}</td>
       <td class="vcell">${verdCell(o)}</td><td class="linkc">${acts(o)}</td>
-      <td class="num r buyc"><i class="mk ${o['Buy market']==='UK'?'uk':''}">${o['Buy market']}</i> <b>${gbp(o['Landed £'])}</b>${o['Discount applied']?`<span class="sub">${escapeHtml(o['Discount applied'])}</span>`:''}</td>
+      <td class="num r buyc">${mk(o['Buy market'])} <b>${gbp(o['Landed £'])}</b>${o['Discount applied']?`<span class="sub">${escapeHtml(o['Discount applied'])}</span>`:''}</td>
       <td class="num r">${gbp(o['Sell £ used'])}<span class="sub">${escapeHtml(o['Sell range'])}</span></td>
-      <td class="num r ${o['Profit £']>=0?'pos':'neg'}">${gbp(o['Profit £'])}</td><td class="num r ${o['ROI %']>=10?'pos':o['ROI %']>=0?'':'neg'}">${pct(o['ROI %'])}</td>
+      <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r">${o.SPM}<span class="sub">${o['SPM from']}</span></td>
-      <td class="flagc" title="${escapeHtml(o.Flags)}"><span class="chips">${(o.Flags||'').split('; ').filter(Boolean).map(f=>`<i class="ch ${/PLUG|NOT A DROP|WIDE|volatile|no FBA|LIMITED|drops only|tanked/i.test(f)?'warn':/A2A->OA|price-match/i.test(f)?'info':''}">${escapeHtml(f.length>42?f.slice(0,40)+'…':f)}</i>`).join('')}</span></td></tr>`;});}
-  else{h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Status</th><th>ASIN</th><th>Product</th><th>Verdict</th><th>Links</th><th class="r">Buy £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">Demand</th><th>Price-matched at</th></tr></thead><tbody>`;
+      <td class="flagc"><span class="chips">${oaChip(o)}${fl.slice(0,3).map(f=>`<i class="ch ${flagCls(f)}" title="${escapeHtml(f)}">${escapeHtml(f.length>30?f.slice(0,28)+'…':f)}</i>`).join('')}${fl.length>3?`<i class="ch more" title="${escapeHtml(fl.slice(3).join(' · '))}">+${fl.length-3}</i>`:''}</span>${pmRow(o)}</td></tr>`;});}
+  else{h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Status</th><th>Product</th><th>Verdict</th><th>Links</th><th class="r">Buy £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">Demand</th><th>Price-matched at</th></tr></thead><tbody>`;
     rows.forEach(o=>{const pot=o['Potential score']>o.Score+5?o['Potential score']:0;const band=bandOf(Math.max(o.Score,pot));
       const fact=factGet(o.ASIN);const alt=[['Buy Box 90d',o['Buy Box 90d £']],['Buy Box 180d',o['Buy Box 180d £']],['FBA 90d',o['FBA 90d £']],['FBM 90d',o['FBM 90d £']],['Buy Box high',o['Buy Box high £']]].filter(x=>x[1]).map(x=>`${x[0]} ${gbp(x[1])}`).join(' · ');
       const vcls=fact.vat==null?'':(+fact.vat===0?'z':'s');const vtxt=fact.vat==null?(o['VAT %']===0?(cur.vat0?'0% VAT · FILTER':'0% VAT · CONFIRM'):'VAT 20%'):(+fact.vat===0?'0% VAT ✓':'20% VAT ✓');
       h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}">${sel(o)}<td class="idx">${o['#']}</td>
       <td><span class="score ${band}">${o.Score}</span>${pot?`<span class="potl" title="Potential score with ${escapeHtml(o['Potential via'])}">→ ${pot}</span>`:''}</td>
-      <td>${statusCell(o)}</td>${asin(o)}
-      <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d tracked':''}</span><span class="chips">${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 4 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
+      <td>${statusCell(o)}</td>
+      <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d':''}</span></span><span class="chips">${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 4 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
       <td class="vcell">${verdCell(o)}</td><td class="linkc">${acts(o)}</td>
       <td class="num r buyc"><b>${gbp(o['After discount £'])}</b><span class="sub">${o['Discount applied']?'Amazon '+gbp(o['Buy at £'])+' · '+escapeHtml(o['Discount applied']):o['Amazon 90d drop %']+'% under 90d avg'}</span></td>
       <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(alt)}">${escapeHtml(o['Sell from'])}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit"></td>
-      <td class="num r ${o['Profit £']>=0?'pos':'neg'}">${gbp(o['Profit £'])}</td><td class="num r ${o['ROI %']>=10?'pos':o['ROI %']>=0?'':'neg'}">${pct(o['ROI %'])}</td>
+      <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r">${o['Sells /mo']}<span class="sub">/mo · £${o['£ per month'].toLocaleString()}</span></td>
       <td class="pmc"><div class="pms">${PM_OPTIONS.map(x=>`<button type="button" class="pm${(fact.pm||[]).includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}">${x}</button>`).join('')}</div>${(o.pot||[]).length?(()=>{const b=o.pot.reduce((m,x)=>x.roi>m.roi?x:m,o.pot[0]);return`<span class="sub" title="${escapeHtml(o.pot.map(x=>`${x.who} ${x.pct}% → ${pct(x.roi)} ROI`).join(' · '))}">best: ${escapeHtml(b.who)} ${b.pct}% → ${pct(b.roi)} ROI</span>`;})():''}</td></tr>`;});}
   $('#leads').innerHTML=h+'</tbody>';

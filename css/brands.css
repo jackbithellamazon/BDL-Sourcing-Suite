@@ -633,3 +633,64 @@
 .fxrow input:focus{outline:none;border-color:var(--iris)}
 .fxbtn{height:36px;width:36px;border-radius:9px;border:1px solid var(--line2);background:var(--ink);color:var(--muted);cursor:pointer}
 .fxbtn:hover{color:var(--text);border-color:var(--iris)}
+
+.keeparow .mkhint{flex-basis:100%;font-size:12px;color:var(--muted);margin-top:4px}
+.asinbar.idle{border-style:dashed;background:var(--ink)}
+.asinbar.idle .am{color:var(--muted)}
+.asinbar.idle .am b{color:var(--iris)}
+.asinbar .btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ===== b14 · colour + fit on the leads table, story inside the summary ===== */
+.asinl{font-family:var(--mono);font-size:11.5px;color:var(--iris);display:inline-flex;align-items:center;gap:2px}
+.asinl button{border:none;background:none;color:var(--faint);cursor:pointer;padding:0;vertical-align:middle;display:inline-flex}
+.asinl button svg{width:11px;height:11px}
+.asinl button:hover{color:var(--text)}
+.ltbl td.prod{min-width:250px;max-width:330px}
+.ltbl td.prod .t{font-size:14px;font-weight:600}
+.ltbl td.prod .s{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:0 4px;align-items:center}
+.mk{font-style:normal;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:5px;border:1px solid var(--line2);color:var(--muted);background:var(--ink)}
+.mk.m-uk{color:var(--jade);border-color:rgba(54,214,164,.5);background:var(--jade-dim)}
+.mk.m-de{color:var(--amber);border-color:rgba(251,191,36,.5);background:var(--amber-dim)}
+.mk.m-fr{color:#5aa9ff;border-color:rgba(90,169,255,.5);background:rgba(90,169,255,.12)}
+.mk.m-it{color:#4ade80;border-color:rgba(74,222,128,.5);background:rgba(74,222,128,.12)}
+.mk.m-es{color:#fb923c;border-color:rgba(251,146,60,.5);background:rgba(251,146,60,.12)}
+.ltbl td.num.ok{color:var(--iris)}
+.ltbl td.num.warm{color:var(--amber)}
+.ltbl td.flagc{max-width:300px;min-width:200px}
+.ltbl td.flagc .chips{margin-top:0}
+.ltbl thead th{background:linear-gradient(180deg,rgba(110,123,255,.10),transparent),var(--surface);color:var(--text);font-weight:600;border-bottom:1px solid rgba(110,123,255,.35)}
+.ltbl tbody tr:hover td{background:rgba(110,123,255,.05)}
+.sum .sl{white-space:normal;line-height:1.25}
+.stepcard .story{margin:12px 0 0;background:var(--ink);border-color:var(--line2)}
+.stepcard .story p{color:var(--muted)}
+.floors{border-color:rgba(110,123,255,.35);background:linear-gradient(100deg,rgba(110,123,255,.08),transparent 55%),var(--surface2)}
+.floors .ft{font-size:11px}
+.ltbl td.prod .s>span::before{content:'·';margin:0 4px 0 2px;color:var(--faint)}
+.ltbl td.flagc{max-width:250px;min-width:180px}
+.ltbl td.flagc{max-width:200px;min-width:160px}
+.ltbl td.num .sub{white-space:normal;max-width:100px;margin-left:auto}
+
+/* ===== b15 · font, links grid, OA chip ===== */
+.ltbl thead th{font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--text)}
+.ltbl td.num,.ltbl td.idx,.sum .sv,.kpi .kv{font-family:var(--sans);font-variant-numeric:tabular-nums}
+.ltbl td.num{font-weight:500}
+.ltbl td.num b{font-weight:700;font-size:14.5px}
+.ltbl td.num .sub{font-family:var(--sans)}
+.ch{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.01em;text-transform:none;padding:2px 7px;border-radius:6px}
+.ch.oa{color:#c4b5fd;border-color:rgba(154,123,255,.5);background:rgba(154,123,255,.14)}
+.spill{font-family:var(--sans);font-size:11px;letter-spacing:.02em}
+.spill b{font-size:12.5px}
+.vb{font-family:var(--sans);font-size:12px}
+.asinl{font-size:12px}
+.story b{font-family:var(--sans);font-weight:700;font-size:13.5px}
+.statusrow .vs,.fell .fn,.btbl .rl,.inprog,.floors .ft,.fst,.scope,.cloudpill,.fxchip,.gs .gn,.stephead .n,.kpi .kl{font-family:var(--sans)}
+.floors .ft{letter-spacing:.04em;font-size:11.5px}
+.ltbl td.linkc .rowacts{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.ltbl td.linkc .rowacts a{justify-content:center;font-family:var(--sans);font-size:11px;font-weight:600;height:23px;padding:0 5px}
+.ltbl td.linkc{min-width:96px}
+.pms-r1{margin-top:5px;gap:3px}
+.pms-r1 .pm{font-size:10.5px;padding:2px 6px}
+.ltbl td.flagc{max-width:190px;min-width:150px}
+.ltbl td.flagc .ch{white-space:normal;line-height:1.3}
+.pms-r1 .pm{padding:1px 5px;font-size:10px}
+.ltbl td.prod .s>span.asinl::before{content:none;margin:0}

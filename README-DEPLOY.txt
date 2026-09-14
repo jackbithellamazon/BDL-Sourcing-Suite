@@ -12,7 +12,15 @@ Rules: js/rule1.js is FROZEN (9 Sep 2026). js/rule2.js is Rule 2 AND Rule 3 (sam
 Checks: open the page, add ?checks to the URL, and the known-answer tests run against the fixtures
         (fixtures are kept locally in bdl-sourcing-harness/fixtures, not in the repo).
 
-Build: v1.1 · 2026-09-14 · b12 — leads per page (50/100/200/all) with 'Open these N in Keepa' saying how many it opens; the run
+Build: v1.1 · 2026-09-14 · b15 — UK-buy Rule 1 leads carry an 'OA · Currys 5% → £x · y% ROI' chip (best price-matcher from the discount
+  list, all of them on hover) plus the Currys/Argos/JL/Brand-direct confirm toggles; tables use Inter instead of the monospace (Jack: 'font is a bit
+  shit'); links as a 2×2 grid; sales floor placeholder shows the rule's own 10/month.
+Previous: v1.1 · 2026-09-14 · b14 — leads table redesign: ASIN sits under the title (both rules fit the card without scrolling at 1440),
+  coloured market pills, ROI bands, coloured flags, tinted header, row hover; the story sits inside the Run summary card (no dead space);
+  floors bar renamed 'Customise this source'.
+Previous: v1.1 · 2026-09-14 · b13 — Rule 1 run screen: the merge/Viewer bar is visible from the start ('Step 4 happens here'), plain-text
+  note that Keepa cannot take the marketplace from a link (switch the flag in Keepa per country); story repaints after verdicts; No rows readable.
+Previous: v1.1 · 2026-09-14 · b12 — leads per page (50/100/200/all) with 'Open these N in Keepa' saying how many it opens; the run
   summary points at 'Mark all as seen' when unreviewed leads are carried over from the last run.
 Previous: v1.1 · 2026-09-14 · b11 — readability + density pass on the leads table (brighter greys, bigger secondary text, tighter rows,
   chips capped at 4 + '+n'), Track button removed (Keepa's page has the Track tab), links next to the verdict, run summary told as a
