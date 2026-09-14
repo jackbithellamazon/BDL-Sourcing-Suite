@@ -266,7 +266,13 @@ async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return
     if(!d){notes.push(file.name+': no data rows');continue;}
     const f={name:file.name,rows:d.rows,hasFees:d.hasFees,asins:d.asins,domain:d.domain,hasSince:d.hasSince};
     if(!d.full&&!d.hasFees){notes.push(file.name+': not a full-column export — needs Title and the demand columns at minimum');continue;}
-    if(cur.rule!==1){if(d.domain&&d.domain!=='UK')notes.push(file.name+': this is a '+d.domain+' export — Rule '+cur.rule+' is UK only');files.one=f;continue;}
+    if(cur.rule!==1){if(d.domain&&d.domain!=='UK')notes.push(file.name+': this is a '+d.domain+' export — Rule '+cur.rule+' is UK only');
+      /* b37 (Jack, 15 Sep: two variants of Suz's filter, 17 leads shared, 23 not) — a second UK export merges into the first, de-duped by ASIN.
+         Clear files starts again. */
+      if(files.one&&files.one.name!==file.name){const seen=new Set(files.one.rows.map(r=>(r.ASIN||'').trim()));const add=f.rows.filter(r=>!seen.has((r.ASIN||'').trim()));
+        files.one={name:files.one.name+' + '+file.name,rows:files.one.rows.concat(add),hasFees:files.one.hasFees&&f.hasFees,asins:null,domain:f.domain,hasSince:files.one.hasSince&&f.hasSince,merged:(files.one.merged||1)+1};
+        notes.push(`${file.name}: ${add.length} new ASIN${add.length===1?'':'s'} merged in · ${f.rows.length-add.length} already in the first export`);continue;}
+      files.one=f;continue;}
     if(d.domain&&d.domain!=='UK'){files[d.domain]=f;continue;}
     if(ukOnly()){files.viewer=f;files.UK=null;continue;}   /* UK-only brand: the one UK export is buy side and sell side */
     /* UK: Keepa names the file — ProductViewer is the sell side, ProductFinder is the UK buy list.
@@ -303,6 +309,24 @@ function paintSlots(){if(!cur)return;const r1=cur.rule===1;
     $('#asinN').textContent=merged.size.toLocaleString();bar._all=[...merged];}
   else if(bar)bar._all=[];
   const since=files.viewer?files.viewer.hasSince:(files.one?files.one.hasSince:true);$('#sinceNote').hidden=since;}
+/* b29 (Jack, 15 Sep 00:50: "if it's done today and I press run surely I should see what it should be today"): a source that has been
+   run opens on its saved leads — every number, the Keepa inputs and the compare status come from src_leads — and a fresh export on
+   top re-runs it. Verdicts, prices and the Keepa/SAS links work exactly as on a live run. */
+function storedRows(key,rule){const m=leadMap(key)||{};const rows=[];let last='';
+  Object.entries(m).forEach(([a,e])=>{if(!e||!e.state)return;const s=e.state,k=s.k||{};const buy=+s.buy||0,sell=+s.sell||0,mk=s.mk||'UK';if(e.stamp>last)last=e.stamp;
+    const links={Keepa:`https://keepa.com/#!product/2-${a}`,SAS:`https://sas.selleramp.com/sas/lookup?search_term=${a}&sas_cost_price=${buy.toFixed(2)}&sas_sale_price=${sell.toFixed(2)}`,'Buy link':`https://www.amazon.${(typeof BR_LINK!=='undefined'&&BR_LINK[mk])||'co.uk'}/dp/${a}`,'UK sell link':`https://www.amazon.co.uk/dp/${a}`};
+    const o=rule===1
+      ?Object.assign({ASIN:a,Title:s.title||'',Brand:s.brand||'','Buy market':mk,'Landed £':buy,'Discount applied':s.disc||'','Sell £ used':sell,'Sell used':k.why||'','Sell low £':k.bb90||0,'Profit £':+s.profit||0,'ROI %':+s.roi||0,SPM:+s.spm||0,'SPM from':'','Flags':'','LTD badge':'',Score:+s.score||r2score(+s.profit||0,+s.roi||0,+s.spm||0,sell<R2.LOW_TICKET),'Fees from':'',Category:''},links)
+      :Object.assign({ASIN:a,Product:s.title||'',Brand:s.brand||'',Score:+s.score||1,'Potential score':0,'Potential via':'','Buy at £':k.amz||buy,'After discount £':buy,'Discount applied':s.disc||'','Sell for £':sell,'Sell from':k.why||'','Sell confidence':'','Buy Box 90d £':k.bb90||0,'Buy Box 180d £':k.bb180||0,'FBA 90d £':k.f90||0,'FBM 90d £':k.fbm90||0,'Buy Box high £':k.hi||0,'Profit £':+s.profit||0,'ROI %':+s.roi||0,'Sells /mo':+s.spm||0,'Demand from':'','£ per month':Math.round((+s.profit||0)*(+s.spm||0)),'Amazon 90d drop %':'',Reviews:0,'Age days':'','VAT %':20,'VAT from':'','Category kind':'general',Category:'',chips:[],pot:[],kept:true,'#':0},links);
+    o.stamp=e.stamp;o._prev=e.prev||null;rows.push(o);});
+  rows.sort((a,b)=>(b.Score||0)-(a.Score||0));rows.forEach((o,i)=>o['#']=i+1);return{rows,last};}
+function runStored(){if(!cur)return false;const {rows,last}=storedRows(cur.key,cur.rule);if(!rows.length)return false;
+  const prevMap={};rows.forEach(o=>{if(o._prev&&o._prev.state)prevMap[o.ASIN]={state:o._prev.state,stamp:o._prev.stamp};});
+  const rl=runLast(cur.key)||{};const n=rl.rowsIn||rows.length;
+  const R={rule:cur.rule,out:rows,all:rows,dropped:[],reasons:{},blacklisted:[],floored:0,stored:true,at:last,
+    st:cur.rule===1?{viewer:n,demand:'—',sell:'—',buy:'—',kept:rows.length,bbHiCol:true,capped:0}:{rows:n,priced:'—',demand:'—',kept:rows.length}};
+  R.gone=applyQueue(R.out,R.rule,prevMap,verdAll()).filter(([a])=>!blAll()[a]);R.prevStamp=null;result=R;
+  renderResults();renderGuide();return true;}
 function clearRun(){SLOTS.forEach(k=>files[k]=null);files.one=null;result=null;lastSig='';$('#fileIn').value='';view.sel.clear();view.page=1;touched.clear();blPick=null;
   warn([]);$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;if(cur){paintSlots();renderGuide();}}
 
@@ -323,7 +347,8 @@ function run(){if(!cur)return;
   /* UK-only brand with just the Finder export: the Finder carries the same columns, so it IS the sell side */
   if(cur.rule===1&&!files.viewer&&files.UK&&files.UK.hasFees&&cur.markets.every(m=>m==='UK')){files.viewer=files.UK;files.UK=null;paintSlots();}
   const ready=cur.rule===1?!!files.viewer:!!files.one;
-  if(!ready){result=null;$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;
+  if(!ready){if(runStored())return;result=null;$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;
+    ['#story','#statusRow','#sumDetail','#fell'].forEach(id=>{const e=$(id);if(e){e.innerHTML='';if(id==='#story')e.hidden=true;}});['#brandNote','#storedNote'].forEach(id=>{const e=$(id);if(e)e.hidden=true;});const fw=$('#feeWarn');if(fw)fw.classList.remove('show');
     $('#sumEmpty').textContent=cur.rule===1?(MARKETS.some(m=>files[m])?'Finder exports in — drop the UK Product Viewer export and the leads appear here.':'Drop the exports and the numbers appear here.'):'Drop the export and the numbers appear here.';renderGuide();return;}
   const prevMap=baselineOf(leadMap(cur.key));
   let R;
@@ -333,8 +358,10 @@ function run(){if(!cur)return;
       const text=((row.Title||'')+' | '+(row['Categories: Sub']||'')).toLowerCase();if(r4has(text,vat0Words().not))return{rate:R4.STANDARD,why:'20% — reads like an appliance, not the drink',src:'rule'};
       return{rate:0,why:'0% VAT — everything on this filter is tea / coffee',src:'source'};}):vatFor;
     R=rule2Compute(files.one.rows,factsAll(),{vatFor:vf,rule:cur.rule});R.rule=cur.rule;
-    R.dropped=R.all.filter(o=>!o.kept).map(o=>[o.ASIN,o.Product,`needs ${o['Needs % off']}% off Amazon to reach ${R2.TARGET_ROI}% ROI (brand allows ${o['Brand discount %']||R2.DEFAULT_ALLOW}%)`]);
-    R.reasons={'Needs more discount than the brand gives':R.dropped.length};}
+    const lowS=R.all.filter(o=>o.lowScore),noM=R.all.filter(o=>!o.kept&&!o.lowScore);
+    R.dropped=noM.map(o=>[o.ASIN,o.Product,`needs ${o['Needs % off']}% off Amazon to reach ${R2.TARGET_ROI}% ROI (brand allows ${o['Brand discount %']||R2.DEFAULT_ALLOW}%)`])
+      .concat(lowS.map(o=>[o.ASIN,o.Product,o.lowRoi?`ROI ${o['ROI %']}% — under ${R2.MIN_ROI_LOW}% even with a code`:`scored ${o.Score}${o['Potential score']>o.Score?' ('+o['Potential score']+' with a code)':''} — under ${R2.MIN_SCORE}, not worth a look`]));
+    R.reasons={'Needs more discount than the brand gives':noM.length};const lr=lowS.filter(o=>o.lowRoi).length,ls=lowS.length-lr;if(lr)R.reasons['ROI under '+R2.MIN_ROI_LOW+'% even with a code']=lr;if(ls)R.reasons['Scored under '+R2.MIN_SCORE+' even with a code']=ls;}
   /* the central blacklists: an ASIN, or an approved brand, never shows — on any rule, any run, whatever Keepa filter found it */
   const B=blAll(),bl=[];R.out=R.out.filter(o=>{const b=B[o.ASIN];const bb=bbStatusFor(o.Brand||(cur.type==='brand'?cur.name:''));
     if(b){bl.push([o.ASIN,o.Title||o.Product||'','BLACKLISTED · '+b.reason+(b.note?' — '+b.note:'')+(b.who?' · '+b.who:'')]);return false;}
@@ -365,7 +392,7 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
       +sumTile(rev,'to review today',rev?'cool':'')+sumTile(out.filter(o=>o['ROI %']>=10).length,'ROI 10%+')+sumTile(cnt('UK'),'buy from UK')+sumTile(euN,euN?'from EU · '+['DE','FR','IT','ES'].map(k=>cnt(k)?k+' '+cnt(k):'').filter(Boolean).join(' · '):'buy from EU','warm');}
   else{const m=out.reduce((s,o)=>s+o['£ per month'],0);
     tiles=sumTile(st.rows,'in the export')+sumTile(st.priced,'Amazon selling it')+sumTile(st.demand,'sell 10+/month')+sumTile(out.length,'leads','lead')
-      +sumTile(rev,'to review today',rev?'cool':'')+sumTile(out.filter(o=>o.Score>=60).length,'score 60+')+sumTile(out.filter(o=>o.Score>=40&&o.Score<60).length,'score 40–59','warm')+sumTile('£'+Math.round(m).toLocaleString(),'£ / month on the list');}
+      +sumTile(rev,'to review today',rev?'cool':'')+sumTile(out.filter(o=>o.Score>=60).length,'score 60+')+sumTile(out.filter(o=>o.Score>=40&&o.Score<60).length,'score 40–59','warm')+sumTile(out.filter(o=>o['ROI %']>=20).length,'ROI 20%+','jade');}
   $('#sumGrid').innerHTML=tiles;
   paintStory();
   const rs=Object.entries(R.reasons).sort((a,b)=>b[1]-a[1]);
@@ -376,6 +403,9 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
   let bn=$('#brandNote');if(!bn){bn=document.createElement('div');bn.id='brandNote';bn.className='brandnote';fw.parentNode.insertBefore(bn,fw);}
   const be=cur.rule===1?discForBrand((cur.brands&&cur.brands[0])||cur.name):null;
   if(be&&be.note){bn.innerHTML=`<b>${escapeHtml(be.name)}</b> · ${escapeHtml(be.note)}`;bn.hidden=false;}else bn.hidden=true;
+  let sn=$('#storedNote');if(!sn){sn=document.createElement('div');sn.id='storedNote';sn.className='storednote';fw.parentNode.insertBefore(sn,fw);}
+  if(R.stored){let d=R.at?new Date(String(R.at).replace(' ','T')):null;if(d&&isNaN(d))d=null;const day=String(R.at||'').slice(0,10);const when=d?(day===today()?'today '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})):(day?day:'the last run');
+    sn.innerHTML=`<b>Saved run from ${when}</b> · ${out.length} leads as they were scored then. Verdicts, prices and links work as normal. Drop a fresh export above to run today's.`;sn.hidden=false;}else sn.hidden=true;
   if(est)msgs.push('<b>'+est+' of '+out.length+' leads have estimated fees.</b> Tick <em>Referral Fee %</em> and <em>FBA Pick&amp;Pack Fee</em> on the export and the maths becomes exact.');
   if(R.rule===1&&R.st&&R.st.bbHiCol===false)msgs.push('<b>This export has no <em>Buy Box: Highest</em> column</b>, so sell prices could not be capped at the most the listing has ever sold for. Tick it on the Keepa export next time.');
   if(msgs.length){fw.innerHTML=msgs.join('<br>');fw.classList.add('show');}else{fw.classList.remove('show');}
@@ -448,18 +478,19 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
   const roiCls=v=>v>=20?'pos':v>=10?'pos soft':v>=0?'warm':'neg';
   const mk=m=>`<i class="mk">${FLAG[m]||''} ${m}</i>`;
   /* Rule 1's flag strings are long; show a short label, keep the full text on hover */
-  const SHORT=[[/^worst case \(Buy Box 90d (£[\d.,]+)/i,(m)=>['Worst case '+m[1],'info']],[/sell price volatile/i,()=>['Volatile sell','warn']],[/AMAZON OWNS THE BUY BOX/i,()=>['Amazon owns BB','warn']],[/UK buy: check OA/i,()=>['Check OA','good']],[/A2A->OA/i,()=>['OA only','info']],[/NOT A DROP/i,()=>['Not a drop','warn']],[/not in a drop/i,()=>['UK not in a drop','warn']],[/EU PLUG|PLUG/i,()=>['EU plug?','bad']],[/WIDE/i,()=>['Wide gap','warn']],[/no FBA/i,()=>['No FBA history','warn']],[/LIMITED|LTD/i,()=>['Ltd time deal','warn']],[/drops only/i,()=>['Demand from drops','warn']],[/tanked/i,()=>['Tanked','bad']],[/ZERO-RATED/i,()=>['0% VAT?','good']],[/price-match/i,()=>['Price-match','good']]];
+  const SHORT=[[/^worst case \(Buy Box 90d (£[\d.,]+)/i,(m)=>['Worst case '+m[1],'info']],[/sell price volatile/i,()=>['Volatile sell','warn']],[/AMAZON OWNS THE BUY BOX/i,()=>['Amazon owns BB','warn']],[/UK buy: check OA/i,()=>['Check OA','good']],[/A2A->OA/i,()=>['OA only','info']],[/NOT A DROP/i,()=>['Not a drop','warn']],[/not in a drop/i,()=>['UK not in a drop','warn']],[/EU PLUG|PLUG/i,()=>['EU plug?','bad']],[/WIDE/i,()=>['Wide gap','warn']],[/no FBA/i,()=>['No FBA history','warn']],[/LIMITED|LTD/i,()=>['Ltd time deal','warn']],[/drops only/i,()=>['Demand from drops','warn']],[/tanked/i,()=>['FBA price falling','warn']],[/ZERO-RATED/i,()=>['0% VAT?','good']],[/price-match/i,()=>['Price-match','good']]];
   const shortFlag=f=>{for(const [re,fn] of SHORT){const m=re.exec(f);if(m)return fn(m);}return[f.length>26?f.slice(0,24)+'…':f,''];};
   const flagChip=f=>{const [l,c]=shortFlag(f);return`<i class="ch ${c}" title="${escapeHtml(f)}">${escapeHtml(l)}</i>`;};
   /* the OA check: which retailers to look at for THIS product, and the tick boxes for what the VA has confirmed */
-  const pmOpts=o=>o['Category kind']==='grocery'?['Boots','Superdrug','Tesco','Brand direct']:PM_OPTIONS;
+  const hb=o=>/health|beauty|drugstore/i.test(o.Category||'');
+  const pmOpts=o=>o['Category kind']==='grocery'?(hb(o)?['Boots','Superdrug','Brand direct']:['Tesco','Boots','Brand direct']):PM_OPTIONS;
   const oaCell=o=>{const fact=factGet(o.ASIN);const opts=pmOpts(o);const conf=(fact.pm||[]);
     /* b26 (Jack: "don't forget the discount on Shark and Ninja… tell us to go to OA check"): the brand's own code is named outright */
     let best='';const P=o.pot||[];if(P.length){const be=discForBrand(o.Brand);const bp=P.find(x=>be?x.who===be.name:/ direct$/.test(x.who));const b=P.reduce((m,x)=>x.roi>m.roi?x:m,P[0]);
       const parts=[];if(bp&&bp.roi>=5)parts.push(`<b>OA · ${escapeHtml(bp.who)} ${bp.pct}%</b> → ${pct(bp.roi)} ROI`);
-      if(b.roi>=8&&(!bp||b.who!==bp.who))parts.push(`${bp?'or ':'<b>Check OA</b> · '}up to ${pct(b.roi)} ROI with a retailer code`);
+      if(b.roi>=8&&(!bp||b.who!==bp.who))parts.push(`${bp?'or ':'<b>Check OA</b> · '}up to ${pct(b.roi)} ROI with a code`);
       if(parts.length)best=`<div class="oabest" title="${escapeHtml(P.map(x=>`${x.who} ${x.pct}% → ${pct(x.roi)} ROI`).join(' · '))}">${parts.join(' · ')}</div>`;}
-    else if(o['Category kind']==='grocery')best=`<div class="oabest dim">Check Boots / Superdrug / Tesco by eye — no Amazon price-match on grocery</div>`;
+    else if(o['Category kind']==='grocery')best=`<div class="oabest dim">${hb(o)?'Boots / Superdrug':'Tesco / Boots'} — check by eye, they don't price-match Amazon</div>`;
     return`${best}<div class="pms">${opts.map(x=>`<button type="button" class="pm${conf.includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}" title="Tick when you have confirmed ${x} has it at a price that works">${pmLabel(x)}</button>`).join('')}</div>${pmHint(o.Brand)}`;};
   /* Rule 1, UK buy: what the same lead looks like taken to OA — landed less a price-matcher's code. Display only; rule1.js is frozen. */
   const oaChip=o=>{if(o['Buy market']!=='UK')return'';const landed=+o['Landed £'],p=+o['Profit £'];if(!landed)return'';const V=/ZERO-RATED/.test(o.Flags||'')?1:1.2;
@@ -475,7 +506,7 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
       <td class="prod"><span class="t" title="${escapeHtml(o.Title)}">${escapeHtml(o.Title)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o['Sell used'])}${o['LTD badge']?' · <b>LTD</b>':''}</span></span>${acts(o)}${pend(cur.name)}</td>
       <td class="vcell">${verdCell(o)}</td>
       <td class="num r buyc">${mk(o['Buy market'])} <b>${gbp(o['Landed £'])}</b>${o['Discount applied']?`<span class="sub">${escapeHtml(o['Discount applied'])}</span>`:''}</td>
-      <td class="num r">${gbp(o['Sell £ used'])}${(o['Sell low £']||0)<(o['Sell £ used']||0)-0.005?`<span class="sub" title="If it only ever fetches the Buy Box 90d average">worst £${(o['Sell low £']).toFixed(2)}</span>`:''}</td>
+      <td class="num r">${gbp(o['Sell £ used'])}${(o['Sell low £']||0)>0&&(o['Sell low £']||0)<(o['Sell £ used']||0)-0.005?`<span class="sub" title="If it only ever fetches the Buy Box 90d average">worst £${(o['Sell low £']).toFixed(2)}</span>`:''}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r">${o.SPM}<span class="sub">${o['SPM from']}</span></td>
       <td class="flagc">${(()=>{const oa=oaChip(o),fx=flagPick(fl);return`<span class="chips">${oa}${fx.show.map(flagChip).join('')}${fx.rest.length?`<i class="ch more" title="${escapeHtml(fx.rest.join(' · '))}">+${fx.rest.length}</i>`:''}</span>`;})()}${pmRow(o)}</td></tr>`;});}
@@ -487,10 +518,10 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
       <td class="scorec"><span class="score ${band}">${o.Score}</span>${pot?`<span class="potl" title="Potential score with ${escapeHtml(o['Potential via'])}">→ ${pot}</span>`:''}<div class="stat2">${statusCell(o)}</div></td>
       <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d':''}</span></span>${acts(o)}<span class="chips">${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 3 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
       <td class="vcell">${verdCell(o)}</td>
-      <td class="num r buyc"><b>${gbp(o['After discount £'])}</b><span class="sub">${o['Discount applied']?'Amazon '+gbp(o['Buy at £'])+' · '+escapeHtml(o['Discount applied']):o['Amazon 90d drop %']+'% under 90d avg'}</span></td>
+      <td class="num r buyc"><b>${gbp(o['After discount £'])}</b><span class="sub">${o['Discount applied']?'Amazon '+gbp(o['Buy at £'])+' · '+escapeHtml(o['Discount applied']):(o['Amazon 90d drop %']!==''&&o['Amazon 90d drop %']!=null?o['Amazon 90d drop %']+'% under 90d avg':'')}</span></td>
       <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(o['Sell from']+' — '+alt)}">${escapeHtml(shortSell(o['Sell from']))}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit"></td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
-      <td class="num r">${o['Sells /mo']}<span class="sub">/mo · £${o['£ per month'].toLocaleString()}</span></td>
+      <td class="num r">${o['Sells /mo']}<span class="sub">/mo${o['Demand from']?' · '+escapeHtml(o['Demand from']):''}</span></td>
       <td class="pmc">${oaCell(o)}</td></tr>`;});}
   $('#leads').innerHTML=h+'</tbody>';
   const from=all.length?(view.page-1)*PAGEN()+1:0,to=Math.min(all.length,view.page*PAGEN());
@@ -510,7 +541,7 @@ function shortSell(w){if(!w)return'';return String(w)
   .replace(/^Buy Box (90d|180d) \+(\d+)%/,'BB $1 +$2%')
   .replace(/capped at the FBA 90d average/,'capped at FBA 90d').replace(/capped at the Buy Box high/,'capped at BB high').replace(/capped at the 3P 90d average/,'capped at 3P 90d')
   .replace(/^3P holds the Buy Box today/,'3P holds the Buy Box').replace(/^3P 90d average \(no Buy Box history\)/,'3P 90d avg · no BB history');}
-const PM_SHORT={'John Lewis':'JL','Brand direct':'Brand'};
+const PM_SHORT={};   /* b29: Jack — "why the fuck JL and Brand" — full names */
 function pmLabel(x){return PM_SHORT[x]||x;}
 /* what Jack knows about where a brand's stock really turns up — the note on the brand's discount row (Settings) */
 function pmHint(brand){const e=typeof discForBrand==='function'?discForBrand(brand):null;if(!e||!e.note)return'';return`<div class="pmhint" title="${escapeHtml(e.name+': '+e.note)}">${escapeHtml(e.note)}</div>`;}
@@ -555,12 +586,27 @@ function openInKeepa(){if(!result){toast('Nothing to open',true);return;}
 /* ============ runs log (the 7-day count) ============ */
 function renderLog(){const runs=runsAll().slice().reverse().slice(0,60);const V=verdAll();const el=$('#runLog');
   if(!runs.length){el.innerHTML='<div class="empty"><span>No runs yet. Hit Run on a brand and drop its exports — every run lands here with its lead count and what was marked.</span></div>';return;}
-  const tot={runs:runs.length,leads:0,y:0,n:0,m:0,tr:0};
-  const rows=runs.map(r=>{let y=0,n=0,m=0;(r.asins||[]).forEach(a=>{const v=V[a];if(!v)return;if(v.v==='Yes')y++;else if(v.v==='No')n++;else if(v.v==='Maybe')m++;});const tr=toReviewCount(r);
-    tot.leads+=r.leads;tot.y+=y;tot.n+=n;tot.m+=m;tot.tr+=tr;
-    return`<tr><td class="num">${fmtWhen(r.at)}</td><td>${escapeHtml(r.name)}<div class="chg">Rule ${r.rule} · ${(r.files||[]).length} file${(r.files||[]).length===1?'':'s'}${r.who?' · '+escapeHtml(r.who):''}</div></td><td class="num">${r.rowsIn.toLocaleString()}</td><td class="num">${r.leads}</td><td class="num">${r.new}</td><td class="num">${r.better}</td><td class="num">${r.worse}</td><td class="num">${r.gone}</td><td class="num pos">${y||'<span class=z>0</span>'}</td><td class="num neg">${n||'<span class=z>0</span>'}</td><td class="num">${m||'<span class=z>0</span>'}</td><td class="num ${tr?'':'pos'}">${tr||'<span class=z>0</span>'}</td></tr>`;}).join('');
-  el.innerHTML=`<div class="logstats">${stat('Runs',tot.runs)}${stat('Leads produced',tot.leads)}${stat('Marked Yes',tot.y)}${stat('Marked No',tot.n)}${stat('Still to review',tot.tr)}</div>
-    <div class="tablewrap show"><div class="tablescroll"><table><thead><tr><th>When</th><th>Source</th><th class="r">Rows in</th><th class="r">Leads</th><th class="r">New</th><th class="r">Better</th><th class="r">Worse</th><th class="r">Gone</th><th class="r">Yes</th><th class="r">No</th><th class="r">Maybe</th><th class="r">Unreviewed</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;}
+  /* b32 (Jack: "redo this pls") — same tiles as the Brands page, and every run reads as a sentence: what went in, what the rules cut, what came out, what got judged */
+  const wk=runs.filter(r=>new Date(r.at).getTime()>=weekAgo());
+  const tot={runs:wk.length,rows:0,leads:0,y:0,n:0,m:0,tr:0};
+  const rowsH=runs.map(r=>{let y=0,n=0,m=0;(r.asins||[]).forEach(a=>{const v=V[a];if(!v)return;if(v.v==='Yes')y++;else if(v.v==='No')n++;else if(v.v==='Maybe')m++;});const tr=toReviewCount(r);
+    if(new Date(r.at).getTime()>=weekAgo()){tot.rows+=r.rowsIn||0;tot.leads+=r.leads||0;tot.y+=y;tot.n+=n;tot.m+=m;tot.tr+=tr;}
+    const src=srcGet(r.source)||{key:r.source,name:r.name,type:'brand'};const cut=Math.max(0,(r.rowsIn||0)-(r.leads||0)),pct=r.rowsIn?Math.round(cut/r.rowsIn*100):0;
+    const judged=y+n+m,jp=r.leads?Math.round(judged/r.leads*100):0;
+    return`<tr><td class="lwhen">${fmtWhen(r.at)}<div class="chg">${r.who?escapeHtml(r.who):'<span class="z">no name</span>'}</div></td>
+      <td class="lsrc"><div class="lrow">${avatar(src)}<div><b>${escapeHtml(r.name)}</b><div class="chg">Rule ${r.rule} · ${(r.files||[]).length} file${(r.files||[]).length===1?'':'s'}</div></div></div></td>
+      <td class="num">${(r.rowsIn||0).toLocaleString()}</td>
+      <td class="num"><span class="cutn">${cut.toLocaleString()}</span><div class="cutbar"><i style="width:${pct}%"></i></div><div class="chg">${pct}% cut</div></td>
+      <td class="num lead"><b>${r.leads}</b></td>
+      <td class="num"><span class="pill-new">${r.new}</span></td><td class="num"><span class="pill-better">${r.better||0}</span></td><td class="num"><span class="pill-worse">${r.worse||0}</span></td><td class="num"><span class="pill-gone">${r.gone||0}</span></td>
+      <td class="num pos">${y||'<span class=z>0</span>'}</td><td class="num neg">${n||'<span class=z>0</span>'}</td><td class="num">${m||'<span class=z>0</span>'}</td>
+      <td class="num"><b class="${tr?'amber':'jade'}">${tr}</b><div class="chg">${jp}% judged</div></td></tr>`;}).join('');
+  const k=(v,l,sub,cls,ic)=>`<div class="kpi"><span class="ki ${cls||''}">${ic}</span><div><div class="kv">${v}</div><div class="kl">${l}</div>${sub?`<div class="ks">${sub}</div>`:''}</div></div>`;
+  const saved=tot.rows?Math.round((tot.rows-tot.leads)/tot.rows*100):0;
+  el.innerHTML=`<div class="kpis logkpis"><div class="kcap">This week</div>
+      ${k(tot.runs,'Runs','','',ICONS.hist)}${k(tot.rows.toLocaleString(),'ASINs put through the rules',`${saved}% cut`,'',ICONS.eye)}${k(tot.leads.toLocaleString(),'Leads produced','','iris',ICONS.play)}
+      ${k(tot.y,'Marked Yes',`${tot.n} No · ${tot.m} Maybe`,tot.y?'jade':'',ICONS.edit)}${k(tot.tr.toLocaleString(),'Still to review','',tot.tr?'amber':'jade',ICONS.eye)}</div>
+    <div class="tablewrap show"><div class="tablescroll"><table class="logtbl"><thead><tr><th>When</th><th>Source</th><th class="r">In</th><th class="r">Cut by the rules</th><th class="r">Leads</th><th class="r">New</th><th class="r">Better</th><th class="r">Worse</th><th class="r">Gone</th><th class="r">Yes</th><th class="r">No</th><th class="r">Maybe</th><th class="r">To review</th></tr></thead><tbody>${rowsH}</tbody></table></div></div>`;}
 function stat(k,v,sub){return`<div class="stat"><span class="k">${k}</span><span class="v">${typeof v==='number'?v.toLocaleString():v}</span>${sub?`<span class="sub">${escapeHtml(sub)}</span>`:''}</div>`;}
 function exportLog(){const runs=runsAll(),V=verdAll();
   const hdr=['at','who','source','rule','files','rows_in','leads','new','better','worse','gone','blacklisted','yes','no','maybe','seen'];
@@ -626,7 +672,16 @@ function onCloudPulled(ok){whoPaint();renderList();renderLog();renderSettings();
   if(ok&&cur){cloudPullLeads(cur.key).then(()=>{if(result)run();});}}
 
 /* ============ wiring ============ */
-function brandsInit(){renderList();renderLog();if(!me())whoGate(true);
+/* b31 (15 Sep 02:20): the Keepa key lives in Jack's Cloudflare Worker; the app only ever asks it for the token balance (free) —
+   automation proper waits until the trial week is done */
+const WORKER='https://bdl-sourcing.jackbithellbusiness.workers.dev';
+async function paintTokens(){let el=$('#tokPill');const cp=$('#cloudPill');if(!cp)return;if(!el){el=document.createElement('span');el.id='tokPill';el.className='pill tok';cp.parentNode.insertBefore(el,cp);}
+  try{const r=await fetch(WORKER+'/health');const t=await r.json();if(t.ok&&t.tokensLeft!=null){el.textContent='Keepa · '+t.tokensLeft.toLocaleString()+' tokens';el.title=`Keepa API balance via the Worker · refills ${t.refillRate}/min · nothing runs automatically yet`;el.classList.remove('bad');}
+    else{el.textContent='Keepa · no key';el.title=t.error||'Worker answered without a balance';el.classList.add('bad');}}
+  catch(e){el.textContent='Keepa · offline';el.title='Could not reach the Worker';el.classList.add('bad');}}
+function brandsInit(){renderList();renderLog();if(!me())whoGate(true);paintTokens();setInterval(paintTokens,10*60*1000);
+  /* b30 (Jack: "still loads of dead space on ASUS"): the floors card lives under the run summary, so the two columns come out level */
+  {const fr=$('#floorRow'),tc=document.querySelector('#viewRun .twocol');if(fr&&tc)tc.after(fr);}
   $('#brandTbl').addEventListener('click',onListClick);document.addEventListener('click',e=>{if(!e.target.closest('.menu'))closeMenus();});
   $('#approvals').addEventListener('click',onApprovalClick);
   $('#addBrand').addEventListener('click',()=>openEdit(null));

@@ -164,15 +164,18 @@ window.SourcingChecks=(function(){
     asus:{demand:114,leads:50,mb:[80.04,89.3]},
     /* 14 Sep evening b25: 366 → 364 (STATUS toaster + BELLA air fryer: a month flat 30%+ under the 90-day average = the price moved). */
     /* b26: 364 → 356 (FBA 30/90d midpoint floor). */
-    mera:{rows:525,leads:356,lenovo:[69,37.67,31.4],siemens:[77,107.12,30.7,100]},
+    /* b44: the score-35 floor is under-£60 only — Mera 11 Sep 355 (one sub-£60 row), 12 Sep back to 346. */
+    mera:{rows:525,leads:355,lenovo:[69,37.67,31.4],siemens:[77,107.12,30.7,100]},
     /* 14 Sep: FBM-only history no longer proves a plateau (Galaxy Book4 Pro: Jack £1,700–1,800 max, was £2,207) → 12 Sep 390 → 376. */
     /* b25: 376 → 355 (every change a cut: lowest 3P channel caps, FBM at +10%); Vivobook no longer first; Vax £172.50 vs Jack's £180 (was £176.64). */
     mera12:{leads:346,first:'B0G53YPLW6',vaxSell:172.5,vaxScore:[58,75],no3p:139,withVat:[346,0],book4:[1788.23,'Buy Box 90d +5%'],phone:1393.96},
     /* Suz 13 Sep (b19): S&S 2,520 rows → 136 qualify (66 zero-rated, 7 kept); Business 179 → 10. Ecover £9.05 after 12% + 15%, sells £19.86, scores 53 on the low-ticket scale. */
     /* 14 Sep b19: under £60 sell = higher Buy Box 90/180d average unless the 180d is an old price regime (>1.35×: L'OR pods £34 launch vs
        £10.82 now), no uplift, capped at FBA 90d avg; low-ticket score scale £1,500/mo · £6/unit (WoodWick 28 → 51). S&S 2,520 → 136. */
-    sns:{counts:[2520,132],first:'B0BC1SF8BZ',vat0:[66,7],ecover:[53,9.05,19.86,18.7,20],starbucks:32.48,shark:25.22,febreze:18.29,lor:[10.82,false],woodwick:51},
-    biz:{counts:[179,10],first:'B0CVXQRN2K',lg:[44,403.73,496.75,8.5]},
+    /* b40: under-£60 score = ROI and volume (Jack: '£1 at 100% on 1,000 a month is like an 80') — Ecover 53→68, WoodWick 51→69; Menopace now first on S&S. */
+    sns:{counts:[2520,51],first:'B000JPQR30',vat0:[66,1],ecover:[68,9.05,19.86,18.7,20],starbucks:32.48,shark:25.22,febreze:18.29,lor:[10.82,false],woodwick:69},
+    /* b39: Ecover (£1.59, 18%, 1,000/mo) now outscores the Philips shaver on Suz's Business list. */
+    biz:{counts:[179,8],first:'B0D1HBH6FN',lg:[44,403.73,496.75,8.5]},
     /* 14 Sep b22: Rule 1 sell (and best case) capped at "Buy Box: Highest" when the export has it. Mera 12 Sep run as a UK-only Finder: leads / rows capped. */
     r1cap:{mera:[298,59]},
     /* 14 Sep evening b25: £60+ base = BB 90d; 30d base when the price moved 30%+ (and FBA fell or is absent); plateau proven by FBA

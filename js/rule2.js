@@ -16,7 +16,13 @@ const R2={
   /* score = 100 * ( sat(profit*spm,6000)^0.50 * sat(roi,9)^0.24 * sat(profit,18)^0.26 )^0.8
      under £60 (14 Sep, Jack: WoodWick candle £3.08 × 300/mo at 21% ROI "is a good lead", scored 28) the money and profit scales
      are a quarter of the high-ticket ones: £1,500/month and £6/unit saturate instead of £6,000 and £18 */
-  SAT:{money:6000,roi:9,profit:18},SAT_LOW:{money:1500,roi:9,profit:6},POW:{money:0.50,roi:0.24,profit:0.26,all:0.8},
+  SAT:{money:6000,roi:9,profit:18},
+  /* b38 (Jack, 15 Sep: "I thought it would be pretty good at over 20% ROI" — the Hogwarts model, 25% on 100/mo, scored 33 because half the
+     score was money-a-month): under £60 the score leans on ROI and profit a unit; volume still counts but half-saturates at £600/mo.
+     Hogwarts 33→53, WoodWick 58→72, BioEars 63→76, Pepsi 64→73. Over £60 is untouched. */
+  /* b39 (Jack, 15 Sep 06:30: "100% ROI, £1, 1K+ a month is a banger if I go deep on it") — under £60 profit a unit barely matters once it
+     clears £1.50; ROI and volume carry it. £1/100%/1,000 → 75, £1.50/60%/2,000 → 82, Hogwarts £2.49/25%/100 → 59, £1/15%/300 → 55. */
+  SAT_LOW:{money:300,roi:20,profit:1},POW:{money:0.50,roi:0.24,profit:0.26,all:0.8},POW_LOW:{money:0.38,roi:0.5,profit:0.12,all:0.8},   /* b40: Jack — "£1 at 100% on 1,000 a month is like an 80" */
   /* what each brand's own store / OA channel usually gives on top — keep if the needed % off <= max(10, this) */
   BRAND:{'acer':15,'bosch':10,'dyson':10,"de'longhi":10,'delonghi':10,'gillette':10,'henry':10,'numatic':10,
     'honor':10,'hoover':15,'huawei':15,'huel':10,'lego':5,'lenovo':10,'logitech':10,'miele':10,'ninja':9,
@@ -24,11 +30,11 @@ const R2={
     'vax':10,'wahl':15,'e.l.f.':20,'elf':20},
   /* generic UK retailers that price-match Amazon and then discount on top */
   RETAIL:[['Argos',6],['Currys',5],['John Lewis',4]],
-  DEFAULT_ALLOW:10
+  DEFAULT_ALLOW:10, MIN_SCORE:35, MIN_ROI_LOW:10   /* b45 (Jack): "I won't buy anything under 10% ROI on the lower-ticket side" — own price or with a code */   /* b41 (Jack, 15 Sep: "the shit shouldn't be on her thing to look at") — a row must score 35, on its own or with a code, to be a lead */
 };
 function r2sat(x,h){return x>0?x/(x+h):0;}
-function r2score(p,roi,spm,low){if(p<=0||roi<=0)return 1;const S=low?R2.SAT_LOW:R2.SAT;
-  const v=100*Math.pow(Math.pow(r2sat(p*spm,S.money),R2.POW.money)*Math.pow(r2sat(roi,S.roi),R2.POW.roi)*Math.pow(r2sat(p,S.profit),R2.POW.profit),R2.POW.all);
+function r2score(p,roi,spm,low){if(p<=0||roi<=0)return 1;const S=low?R2.SAT_LOW:R2.SAT,P=low?(R2.POW_LOW||R2.POW):R2.POW;
+  const v=100*Math.pow(Math.pow(r2sat(p*spm,S.money),P.money)*Math.pow(r2sat(roi,S.roi),P.roi)*Math.pow(r2sat(p,S.profit),P.profit),P.all);
   return Math.max(1,Math.min(100,Math.round(v)));}
 function r2fees(sale,ref,fba){const r=sale*ref;return r+fba+R2.PREP_MISC+(r+fba)*R2.DST;}
 function r2prof(sale,cost,ref,fba,vat){const V=1+(vat==null?R2.VAT:vat);const p=sale/V-cost/V-r2fees(sale,ref,fba);
@@ -134,9 +140,17 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     const root=(r['Categories: Root']||'').toLowerCase();
     const grocery=/grocery|health|beauty|pet|baby|drugstore/.test(root);
     const elec=/electronics|computers|home & garden|large appliances|diy|kitchen|garden|toys|sports|stationery|office/.test(root)||!root;
-    const matchers=grocery?[]:(typeof discMatchers==='function')?discMatchers().filter(e=>elec||!/marks electrical|ao\b|currys/i.test(e.name)).map(e=>[e.name,discRate(e,amz)]).filter(x=>x[1]>0):R2.RETAIL;
+    /* b34: Marks Electrical and AO only stock real electricals — not toys, sports or stationery, which the wider 'elec' bucket includes */
+    const hard=/electronics|computers|large appliances/.test(root);
+    /* b35 (Jack: "an extra 5% on a low-ticket lead could make it a banger"): grocery, health and beauty get their own price-matchers —
+       Boots, Superdrug, Tesco, Holland & Barrett — from the Settings discount list, so the "→ score with a code" shows there too */
+    const matchers=(typeof discMatchers!=='function')?(grocery?[]:R2.RETAIL)
+      :grocery?discAll().filter(e=>e.type==='retailer'&&/boots|superdrug|tesco|holland/i.test(e.name)).map(e=>[e.name,discRate(e,amz)]).filter(x=>x[1]>0)
+      :discMatchers().filter(e=>(hard||!/marks electrical|ao\b/i.test(e.name))&&(elec||!/currys/i.test(e.name))).map(e=>[e.name,discRate(e,amz)]).filter(x=>x[1]>0);
     matchers.forEach(([who,pct])=>{const c=Math.round(amz*(1-pct/100)*100)/100;const [pp,pr]=r2prof(sell,c,ref,fba,vat);pot.push({who,pct:Math.round(pct*10)/10,cost:c,p:pp,roi:pr,score:r2score(pp,pr,Math.round(spm),low),confirmed:(fact.pm||[]).includes(who)});});
     const best=pot.reduce((m,x)=>x.score>m.score?x:m,{score:score,who:'',roi,p});
+    const bestRoi=Math.max(roi,...pot.map(x=>x.roi));
+    const keptFinal=kept&&(!low||(Math.max(score,best.score)>=R2.MIN_SCORE&&bestRoi>=R2.MIN_ROI_LOW));   /* b44/b45: the floor is for the under-£60 feeds only — Mera's list shows everything */
     /* history + risk signals */
     const f90=kNum(r['New, 3rd Party FBA: 90 days avg.']),fbm90=kNum(r['New, 3rd Party FBM: 90 days avg.']),bb90=kNum(r['Buy Box: 90 days avg.']);
     const fbaN=kNum(r['Buy Box Eligible Offer Counts: New FBA'])||0,fbmN=kNum(r['New FBM Offer Count: Current'])||0;
@@ -149,6 +163,10 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     if(p>=40)chips.push(['HIGH PROFIT','good']);
     if(roi>=20)chips.push(['HIGH ROI','good']);else if(roi>0&&roi<8)chips.push(['THIN MARGIN','warn']);
     if(p<=0)chips.push(['LOSS AT AMAZON PRICE','bad']);
+    /* b43 (Jack, 15 Sep: Polly Pocket and BioEars "tanking as a lot of sellers have jumped on it") — FBA sliding month on month with a crowd of
+       sellers. A flag for the VA's eyes, not a price change: Pepsi shows the same shape and he still called it £33. */
+    {const fc=kNum(r['New, 3rd Party FBA: Current']),f30t=kNum(r['New, 3rd Party FBA: 30 days avg.']),f90t=kNum(r['New, 3rd Party FBA: 90 days avg.']),oc=kNum(r['New Offer Count: Current'])||0;
+      if(fc&&f30t&&f90t&&fc<f30t&&f30t<f90t*0.97&&oc>=30)chips.push(['TANKING? · '+oc+' SELLERS','bad']);}
     if(nd>0&&kept)chips.push([`NEEDS ${Math.round(nd)}% OFF`,'warn']);
     if(best.who&&best.score>score+5)chips.push([`→ ${best.score} WITH ${best.who.toUpperCase()} ${best.pct}%`,best.confirmed?'good':'info']);
     (fact.pm||[]).forEach(x=>chips.push([`PM CONFIRMED · ${x.toUpperCase()}`,'good']));
@@ -175,7 +193,7 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
       'Reviews':reviews,'Category':[r['Categories: Root'],r['Categories: Sub']].filter(Boolean).join(' › '),'Category kind':grocery?'grocery':elec?'electrical':'general','Age days':age==null?'':age,'VAT %':Math.round(vat*100),'VAT from':vt.src==='va'?'VA':vt.src==='source'?'filter':vt.src==='rule'?'Rule 3':'default','Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||'',
       Keepa:`https://keepa.com/#!product/2-${a}`,'Buy link':`https://www.amazon.co.uk/dp/${a}`,'UK sell link':`https://www.amazon.co.uk/dp/${a}`,
       SAS:`https://sas.selleramp.com/sas/lookup?search_term=${a}&sas_cost_price=${eff.toFixed(2)}&sas_sale_price=${sell.toFixed(2)}`,
-      kept,chips,pot,STATUS:'',Changed:'','Last seen':''};
+      kept:keptFinal,lowScore:kept&&!keptFinal,lowRoi:kept&&low&&bestRoi<R2.MIN_ROI_LOW,chips,pot,STATUS:'',Changed:'','Last seen':''};
     all.push(o);}
   const out=all.filter(o=>o.kept).sort((x,y)=>y.Score-x.Score||y['Potential score']-x['Potential score']||y['£ per month']-x['£ per month']);
   out.forEach((o,i)=>o['#']=i+1);st.kept=out.length;

@@ -798,3 +798,48 @@
 .wgb{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .wgb button{font:inherit;font-weight:700;font-size:15px;padding:14px 0;border-radius:12px;border:1px solid var(--line2);background:var(--ink);color:var(--text);cursor:pointer}
 .wgb button:hover{border-color:var(--iris);color:var(--iris);background:rgba(110,123,255,.12)}
+
+/* b29 — saved-run banner, brighter OA cell, full retailer names, links as buttons */
+.storednote{margin:0 0 8px;padding:8px 12px;border-radius:9px;background:var(--jade-dim);border:1px solid rgba(54,214,164,.35);font-size:12.5px;color:var(--text)}
+.storednote b{color:var(--jade)}
+.oabest{color:var(--text)}
+.oabest b{color:var(--jade)}
+.oabest.dim{color:var(--muted)}
+.pm{color:var(--text);border-color:rgba(110,123,255,.35);background:rgba(110,123,255,.08)}
+.pm:hover{background:rgba(110,123,255,.2)}
+.pm.on{background:var(--jade-dim);color:var(--jade);border-color:rgba(54,214,164,.6)}
+.prod .rowacts{gap:5px;margin:5px 0 3px}
+.prod .rowacts a{height:22px;padding:0 9px;border-radius:6px;background:rgba(110,123,255,.16);border:1px solid rgba(110,123,255,.45);color:#dfe3ff;font-size:11px;font-weight:700;letter-spacing:.01em}
+.prod .rowacts a:hover{background:var(--iris);color:#fff;border-color:var(--iris)}
+.floors label small{display:block;font-size:10px;color:var(--faint);font-weight:500;text-transform:none;letter-spacing:0;margin:-2px 0 2px}
+/* b30 — tighter file rows, floors card sits under the summary */
+.filechips{gap:4px}
+.fchip{padding:5px 10px}
+.stepcard .floors{margin:12px 0 0}
+#viewRun>.floors,#viewRun .floors.wide{margin:0 0 14px}
+#viewRun>.floors .fin{display:flex;flex-wrap:wrap;gap:8px 14px}
+#viewRun>.floors .fin label{min-width:120px;flex:1 1 120px}
+.prod .rowacts a{white-space:nowrap}
+
+/* b31 — Keepa token balance pill (from the Worker) */
+.pill.tok{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--jade);background:var(--jade-dim);border:1px solid rgba(54,214,164,.35);margin-right:8px}
+.pill.tok.bad{color:var(--amber);background:var(--amber-dim);border-color:rgba(251,191,36,.4)}
+
+/* b32 — Runs log redo */
+.logkpis{grid-template-columns:repeat(5,1fr);margin-bottom:14px}
+.logtbl td{vertical-align:middle;padding:9px 10px}
+.logtbl .lrow{display:flex;align-items:center;gap:9px}
+.logtbl .lrow .av,.logtbl .lrow .avatar{flex:none}
+.logtbl td.lsrc b{color:var(--text);font-weight:600}
+.logtbl td.lwhen{font-family:var(--sans);color:var(--text);white-space:nowrap}
+.logtbl td.lead b{font-size:15px;color:var(--text)}
+.logtbl .cutn{color:var(--muted)}
+.logtbl .cutbar{height:4px;border-radius:3px;background:var(--line);margin:3px 0 0;overflow:hidden;min-width:60px}
+.logtbl .cutbar i{display:block;height:100%;background:var(--coral);opacity:.75}
+.logtbl .pill-new,.logtbl .pill-better,.logtbl .pill-worse,.logtbl .pill-gone{display:inline-block;min-width:26px;padding:2px 7px;border-radius:12px;font-weight:700;font-size:12px}
+.logtbl .pill-new{color:var(--jade);background:var(--jade-dim)}
+.logtbl .pill-better{color:var(--iris);background:rgba(110,123,255,.14)}
+.logtbl .pill-worse{color:var(--amber);background:var(--amber-dim)}
+.logtbl .pill-gone{color:var(--coral);background:var(--coral-dim)}
+.logtbl b.amber{color:var(--amber)}.logtbl b.jade{color:var(--jade)}
+.logtbl .z{color:var(--faint)}
