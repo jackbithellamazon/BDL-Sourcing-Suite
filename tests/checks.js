@@ -44,6 +44,26 @@ window.SourcingChecks=(function(){
       const fp=flagPick(['worst case (Buy Box 90d £10.00): 3%','UK buy: check OA retailers (Currys 5%, JL 4%, Argos 6%)','sell price volatile','demand from drops only - does it sell?','NOT A DROP: Buy Box 90d £12.00 = Amazon £11.50','ZERO-RATED VAT assumed (coffee/tea) - confirm']);
       ok('b23 flags · two ranked chips, rest behind +n',[fp.show,fp.rest.length],[['NOT A DROP: Buy Box 90d £12.00 = Amazon £11.50','sell price volatile'],2]);
       ok('b23 sell label · short forms',[shortSell('Buy Box 90/180d average · no uplift (under £60)'),shortSell('Buy Box 180d +25%'),shortSell('capped at the Buy Box high'),shortSell('3P holds the Buy Box today')],['BB 90/180d avg · no uplift','BB 180d +25%','capped at BB high','3P holds the Buy Box']);
+      /* b25 — £60+ refit on Jack's 14 Sep evening calls (Mera 12 Sep export carries every column) */
+      const MF=rule2Compute((await csv('mera-2026-09-12b.csv')).rows,{},{vatFor});const fx=a=>MF.all.find(o=>o.ASIN===a);
+      const vb=fx('B0GTWMRV87'),cb=fx('B0CHF986Q4'),sm=fx('B0CVXXDFLQ'),ts=fx('B00Q8OKQGU');
+      ok('R2 fit · Vivobook 15 (Jack £425–450; parked FBA £599.99 ignored, FBM £399 +10% caps)',vb?[vb['Sell for £'],vb['Sell from']]:null,EXPECT.r2fit.vivobook);
+      ok('R2 fit · IdeaPad Chromebook (Jack £325; 26 sellers)',cb?[cb['Sell for £'],cb['Sell from']]:null,EXPECT.r2fit.chromebook);
+      ok('R2 fit · Siemens EQ500 (Jack £596; 3P floor £674)',sm?[sm['Sell for £'],sm['Sell from']]:null,EXPECT.r2fit.siemens);
+      ok('R2 fit · STATUS toaster (Jack: never) → price moved, dropped',ts?[ts['Sell for £'],ts['Sell from'],!!MF.out.find(o=>o.ASIN==='B00Q8OKQGU')]:null,EXPECT.r2fit.toaster);
+      ok('R2 fit · lead state carries Keepa inputs',(()=>{const k=leadState(vb,2).k;return[k.bb90,k.bb30,k.f90,k.fbm90,typeof k.why];})(),EXPECT.r2fit.keepa);
+      /* b26 — round-4 calls: Shark upright £200–205, Ninja Detect £125–135, Brother £155.99 max, Hoover HMC5 £169–170, AOC £249.99 (data says
+         £171 Buy Box / £199 FBA — disputed), Jet 75E £265, Ninja Blast £79–85 "tanked, full of sellers" */
+      const f2=a=>{const o=MF.all.find(x=>x.ASIN===a);return o?[o['Sell for £'],o['Sell from']]:null;};
+      ok('R2 fit · Shark upright (Jack £200–205; FBA 30/90d midpoint caps)',f2('B08CKWG1L9'),EXPECT.r2fit2.shark);
+      ok('R2 fit · Ninja Detect (Jack £125–135)',f2('B0D8QP7NWR'),EXPECT.r2fit2.ninja);
+      ok('R2 fit · Brother printer (Jack £155.99 max)',f2('B0CJV7P1C2'),EXPECT.r2fit2.brother);
+      ok('R2 fit · Hoover HMC5 (Jack £169–170)',f2('B0H4TMTMG8'),EXPECT.r2fit2.hoover);
+      ok('R2 fit · Samsung Jet 75E (Jack £249.99 — model +9%, he prices under the 3P pack; FBA 30/90d midpoint caps)',f2('B0CGXQG4M4'),EXPECT.r2fit2.jet);
+      ok('R2 fit · Ninja Blast 2-pack (Jack £79–85; FBA 30/90d midpoint £78.86)',f2('B0DNR78C5J'),EXPECT.r2fit2.blast);
+      /* b27 — Canon PIXMA TS4150i, Jack £62 min / £67–69, buy Argos £39.99 −6%: computers take the plateau model under £60 */
+      const CN=rule2Compute((await csv('canon-ts4150i-2026-09-14.csv')).rows,{},{vatFor});const cn=CN.all[0];
+      ok('R2 fit · Canon TS4150i (Jack £62–69; £56 Buy Box avg, FBA £60–62)',cn?[cn['Sell for £'],cn['Sell from'],cn['Category kind']]:null,EXPECT.r2fit2.canon);
       /* Rule 2 v2 — Mera, 11 Sep 2026 (sell price refitted 12 Sep on Jack's 10 graph reads) */
       const M=rule2Compute((await csv('mera-2026-09-11.csv')).rows);
       ok('R2 Mera 11 Sep · rows',M.st.rows,EXPECT.mera.rows);
@@ -142,15 +162,23 @@ window.SourcingChecks=(function(){
   const EXPECT=window.SOURCING_EXPECT||{
     logitech:{demand:241,leads:88,first:'B07MTXLFXV'},
     asus:{demand:114,leads:50,mb:[80.04,89.3]},
-    mera:{rows:525,leads:366,lenovo:[69,37.67,31.4],siemens:[77,107.12,30.7,100]},
+    /* 14 Sep evening b25: 366 → 364 (STATUS toaster + BELLA air fryer: a month flat 30%+ under the 90-day average = the price moved). */
+    /* b26: 364 → 356 (FBA 30/90d midpoint floor). */
+    mera:{rows:525,leads:356,lenovo:[69,37.67,31.4],siemens:[77,107.12,30.7,100]},
     /* 14 Sep: FBM-only history no longer proves a plateau (Galaxy Book4 Pro: Jack £1,700–1,800 max, was £2,207) → 12 Sep 390 → 376. */
-    mera12:{leads:376,first:'B0GTWMRV87',vaxSell:176.64,vaxScore:[65,77],no3p:139,withVat:[376,0],book4:[1788.23,'Buy Box 90d +5%'],phone:1393.96},
+    /* b25: 376 → 355 (every change a cut: lowest 3P channel caps, FBM at +10%); Vivobook no longer first; Vax £172.50 vs Jack's £180 (was £176.64). */
+    mera12:{leads:346,first:'B0G53YPLW6',vaxSell:172.5,vaxScore:[58,75],no3p:139,withVat:[346,0],book4:[1788.23,'Buy Box 90d +5%'],phone:1393.96},
     /* Suz 13 Sep (b19): S&S 2,520 rows → 136 qualify (66 zero-rated, 7 kept); Business 179 → 10. Ecover £9.05 after 12% + 15%, sells £19.86, scores 53 on the low-ticket scale. */
     /* 14 Sep b19: under £60 sell = higher Buy Box 90/180d average unless the 180d is an old price regime (>1.35×: L'OR pods £34 launch vs
        £10.82 now), no uplift, capped at FBA 90d avg; low-ticket score scale £1,500/mo · £6/unit (WoodWick 28 → 51). S&S 2,520 → 136. */
-    sns:{counts:[2520,136],first:'B0BC1SF8BZ',vat0:[66,7],ecover:[53,9.05,19.86,18.7,20],starbucks:32.48,shark:25.22,febreze:18.29,lor:[10.82,false],woodwick:51},
-    biz:{counts:[179,10],first:'B0CVXQRN2K',lg:[54,403.73,522.97,13.4]},
+    sns:{counts:[2520,132],first:'B0BC1SF8BZ',vat0:[66,7],ecover:[53,9.05,19.86,18.7,20],starbucks:32.48,shark:25.22,febreze:18.29,lor:[10.82,false],woodwick:51},
+    biz:{counts:[179,10],first:'B0CVXQRN2K',lg:[44,403.73,496.75,8.5]},
     /* 14 Sep b22: Rule 1 sell (and best case) capped at "Buy Box: Highest" when the export has it. Mera 12 Sep run as a UK-only Finder: leads / rows capped. */
     r1cap:{mera:[298,59]},
+    /* 14 Sep evening b25: £60+ base = BB 90d; 30d base when the price moved 30%+ (and FBA fell or is absent); plateau proven by FBA
+       and capped at the LOWEST 3P channel. Vivobook £599.99 → £443.40, Chromebook £354.94 → £337.28, Siemens £597.16 → £591.65, toaster gone. */
+    r2fit:{vivobook:[438.9,'capped at the 3P floor (lowest 3P average)'],chromebook:[336.62,'capped at the 3P floor (lowest 3P average)'],siemens:[591.65,'Buy Box 90d +25%'],toaster:[25.15,'Buy Box 30d (price moved down) +5%',false],keepa:[422.29,314.06,599.99,399,'string']},
+    /* 14 Sep late b26: the FBA floor is the midpoint of the 30- and 90-day FBA averages when the 30-day is lower. Chromebook £337.28 → £336.62. */
+    r2fit2:{shark:[209.11,'capped at the 3P floor (lowest 3P average)'],ninja:[136.05,'Buy Box 90d +25%'],brother:[157.72,'capped at the 3P floor (lowest 3P average)'],hoover:[169.46,'capped at the 3P floor (lowest 3P average)'],jet:[271.95,'capped at the 3P floor (lowest 3P average)'],blast:[78.86,'capped at the 3P floor (lowest 3P average)'],canon:[60.91,'capped at the 3P floor (lowest 3P average)','electrical']},
     score1:75,score2:66};
   return{run,results:R};})();

@@ -12,7 +12,7 @@ Rules: js/rule1.js is FROZEN (9 Sep 2026). js/rule2.js is Rule 2 AND Rule 3 (sam
 Checks: open the page, add ?checks to the URL, and the known-answer tests run against the fixtures
         (fixtures are kept locally in bdl-sourcing-harness/fixtures, not in the repo).
 
-Build: v1.1 · 2026-09-14 · b24 — Who-are-you gate on first visit and on every marking click (the click is replayed after picking); b23 KPIs + calmer tables
+Build: v1.1 · 2026-09-15 · b28 — VAT rule is now called Rule 3 everywhere on screen (was Rule 4; the old Rule 3 folded into Rule 2 on 13 Sep); Electronics/computers/large appliances take the plateau model under £60 (Canon TS4150i); FBA floor = lower of the FBA 30d/90d averages; OA cell names the brand code (Shark 9%, Hoover 15%…); Rule 2 £60+ refit; Keepa inputs on lead states; who-are-you gate
   slot and no Step-4 merge box; OA chips just say 'Check OA · up to x% ROI' (retailers on hover).
 Previous: v1.1 · 2026-09-14 · b20 — Rule 1 leads get a score (same formula, display only, the frozen maths is untouched) and sort by it;
   flag chips are short labels with the full text on hover; buy market shown as a flag; calmer palette (no coloured pills, ROI green/amber/red);

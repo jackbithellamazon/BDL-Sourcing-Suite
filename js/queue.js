@@ -5,7 +5,12 @@
    The compare baseline is shared (src_leads), so it does not matter whose machine ran it last. */
 const Q={EPS_GBP:0.005,EPS_ROI:0.05,SELL_DROP:0.95};
 /* the numbers a lead is judged on — one shape for every rule so the compare is one function */
-function leadState(o,rule){const id={brand:(o.Brand||'').slice(0,60),title:(o.Title||o.Product||'').slice(0,90)};return rule===1
+/* b25: the Keepa inputs behind the sell price ride along in `k`, so a call of Jack's can be refitted from Supabase without the export */
+function leadKeepa(o,rule){const src=rule===1
+  ?{amz:o['UK Amazon now £'],bb90:o['Sell BB 90d £'],fnow:o['Sell FBA now £'],f30:o['Sell FBA 30d £'],f90:o['Sell FBA 90d £'],why:o['Sell used']}
+  :{amz:o['Buy at £'],bb30:o['Buy Box 30d £'],bb90:o['Buy Box 90d £'],bb180:o['Buy Box 180d £'],hi:o['Buy Box high £'],f30:o['FBA 30d £'],f90:o['FBA 90d £'],fbm90:o['FBM 90d £'],off:o.Offers,why:o['Sell from']};
+  const k={};Object.entries(src).forEach(([a,v])=>{if(v!=null&&v!==''&&v!==0)k[a]=typeof v==='number'?Math.round(v*100)/100:String(v).slice(0,60);});return k;}
+function leadState(o,rule){const id={brand:(o.Brand||'').slice(0,60),title:(o.Title||o.Product||'').slice(0,90),k:leadKeepa(o,rule)};return rule===1
   ?Object.assign({buy:o['Landed £'],sell:o['Sell £ used'],profit:o['Profit £'],roi:o['ROI %'],spm:o.SPM,disc:o['Discount applied']||'',mk:o['Buy market']||'UK'},id)
   :Object.assign({buy:o['After discount £'],sell:o['Sell for £'],profit:o['Profit £'],roi:o['ROI %'],spm:o['Sells /mo'],score:o.Score,disc:o['Discount applied']||'',mk:'UK'},id);}
 function discSet(s){return new Set((s||'').split(';').map(x=>x.trim().toLowerCase()).filter(Boolean));}

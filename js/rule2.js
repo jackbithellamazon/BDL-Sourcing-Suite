@@ -12,7 +12,7 @@
    ============================================================================ */
 const R2={
   VAT:0.20, TARGET_ROI:5.0, MIN_SPM:10, PREP_MISC:1.00, DST:0.02, DEF_REF:15, DEF_FBA:3.50, SS_UK:0.15,
-  SELL_UPLIFT:1.25, SELL_UPLIFT_NO3P:1.05, LOW_TICKET:60, REGIME_GAP:1.35, LONE_FBA_GAP:1.30, LONE_FBA_OFFERS:2, YOUNG_DAYS:90, THIN_REVIEWS:25,
+  SELL_UPLIFT:1.25, MOVED:0.70, FBM_LIFT:1.10, SELL_UPLIFT_NO3P:1.05, LOW_TICKET:60, REGIME_GAP:1.35, LONE_FBA_GAP:1.30, LONE_FBA_OFFERS:2, YOUNG_DAYS:90, THIN_REVIEWS:25,
   /* score = 100 * ( sat(profit*spm,6000)^0.50 * sat(roi,9)^0.24 * sat(profit,18)^0.26 )^0.8
      under £60 (14 Sep, Jack: WoodWick candle £3.08 × 300/mo at 21% ROI "is a good lead", scored 28) the money and profit scales
      are a quarter of the high-ticket ones: £1,500/month and £6/unit saturate instead of £6,000 and £18 */
@@ -54,7 +54,12 @@ function r2sell(r){
      dipped), capped at the 3P FBA 90-day average when there is one (Nicorette £9.82, Grenade £12.00) and at the Buy Box high.
      Not capped at Amazon's own average — that dragged Sharpie to £7.01. Shark £25.22, Febreze £18.29, Starbucks £32.48, MacuShield
      £13.12, Solgar £9.89 all land within his calls. £60 = Mera's floor, so her rows never come through here; YSL at £50 does. */
-  if((bb90||bb180||amz||0)<R2.LOW_TICKET){const base=[bb90,bb180].filter(x=>x);
+  /* b27 (Jack, 14 Sep midnight: Canon PIXMA TS4150i, Buy Box average £56 with FBA sellers at £60–62 and 3P winning the box a third of
+     the time — his sell £62–69, the consumables rule said £56): electronics, computers and large appliances are never "Amazon is the
+     market" goods, so they take the plateau model whatever the price. Grocery, beauty, home, stationery stay on the under-£60 rule. */
+  const hardGoods=/electronics|computers|large appliances/.test((r['Categories: Root']||'').toLowerCase())
+    &&!/\b(ink|inks|toner|cartridges?|batter(?:y|ies)|film|refills?|bottle)\b/i.test(r.Title||'');   /* inks, toner, batteries, film = consumables: Amazon is the market */
+  if(!hardGoods&&(bb90||bb180||amz||0)<R2.LOW_TICKET){const base=[bb90,bb180].filter(x=>x);
     if(!base.length){const s=third.length?Math.min(...third):null;return{sell:s,why:s?'3P 90d average (no Buy Box history)':'',conf:'low'};}
     /* the higher of the two averages carries the normal price after a short dip (Sharpie) — unless the 180d is a different price
        regime altogether (L'OR pods: 90d £10.82, 180d £34.24 from a £60 launch) — then the 90d is the truth */
@@ -63,18 +68,35 @@ function r2sell(r){
     if(f90&&f90<s){s=f90;why='capped at the FBA 90d average';}
     if(hi&&hi<s){s=hi;why='capped at the Buy Box high';}
     return{sell:Math.round(s*100)/100,why,conf};}
-  /* with FBA history the higher of the 90/180-day Buy Box averages carries the plateau; without it, the 90-day
-     average alone is closest to Jack's calls (the 180-day one drags in the launch price on new listings).
-     14 Sep: FBM-only history does NOT count — one FBM seller at £2,499 on the Galaxy Book4 Pro made it "traded" and gave
-     £2,207 against Jack's £1,700–1,800 max. Only FBA sellers prove a plateau. */
-  const proven=!!f90;
-  const base=proven?Math.max(bb90||0,bb180||0):(bb90||bb180||0);
+  /* £60+ — refit 14 Sep evening on Jack's calls: Vivobook 15 £425–450 against a lone FBA seller parked at £599.99 while FBM sat at
+     £399 and the Buy Box slid £502 → £422 → £314; IdeaPad Chromebook £325 with 26 sellers; Siemens EQ500 £596 with every 3P channel
+     at £674–698; Galaxy Book4 Pro £1,700–1,800 with one FBM at £2,499; STATUS toaster "never sell it" after a month flat at £23.95
+     against an £86 90-day average; Sonicare 5300 "it tanked", £85–89.
+     · the base is the Buy Box 90-day average (the 180-day drags the old regime in);
+     · a month sitting 30%+ under that base, with no FBA seller or an FBA average that fell too, means the price moved — the
+       30-day average is the base (toaster → loss → dropped);
+     · a plateau above the Buy Box is proven by FBA history and its height is the LOWEST 3P channel, FBA or FBM, because the higher
+       one can be a parked seller nobody buys from. Sell = base +25%, never above that floor; without proof, +5%.
+     Unchanged by design: S26 Ultra £1,393.96 (no 3P, +5%), Book4 £1,788.23 (FBM-only is not proof). */
+  const bb30=kNum(r['Buy Box: 30 days avg.']),f30=kNum(r['New, 3rd Party FBA: 30 days avg.']);
+  let base=bb90||bb180||0,baseWhy='Buy Box 90d';
   if(!base){const s=third.length?Math.max(...third):null;return{sell:s,why:s?'3P 90d average (no Buy Box history)':'',conf:'low'};}
-  /* the +25% plateau effect only shows up where FBA sellers have traded it; brand-new Amazon-only listings
-     sit at the Buy Box average (S26+ 1.01x, S26 Ultra 0.97x, A37 0.97x on Jack's 12 Sep calls; S26 Ultra 512GB £1,299.99 minimum, 14 Sep) */
+  const moved=!!(bb30&&bb30<base*R2.MOVED&&(!f90||(f30&&f30<f90*0.9)));
+  if(moved){base=bb30;baseWhy='Buy Box 30d (price moved down)';}
+  /* the lowest 3P channel is the ceiling either way: above the base it is the plateau height, below it it is what 3P actually sells at
+     (Melitta FBA £102 against a £134 Buy Box average, Hisense TV FBA £473 against £609) */
+  /* an FBM seller prices under FBA for the same sale (Vax SpinScrub: FBM £158, FBA £227, Jack £180; Vivobook: FBM £399, Jack £425–450),
+     so the FBM channel counts at +10% before it can cap anything */
+  /* b26 (Jack, 14 Sep late): Shark upright £200–205 against FBA 90d £220 / 30d £198, Jet 75E £265 against £283 / £261, Ninja Blast
+     £79–85 against £87 / £71 — a falling FBA channel is priced between where it was and where it is: the floor is the midpoint of the
+     30- and 90-day FBA averages when the 30-day is lower (Shark £209, Jet £272, Blast £79 — all within 3% of his calls) */
+  const fbaFloor=f90?((f30&&f30<f90)?(f30+f90)/2:f90):0;
+  const fbmAdj=fbm90?fbm90*R2.FBM_LIFT:0,chans=[fbaFloor,fbmAdj].filter(x=>x);
+  const lowest=chans.length?Math.min(...chans):0;
+  const proven=!!f90&&lowest>base*R2.SELL_UPLIFT_NO3P;
   const up=proven?R2.SELL_UPLIFT:R2.SELL_UPLIFT_NO3P;
-  let s=base*up,why=`Buy Box ${proven&&bb180&&bb180>(bb90||0)?'180d':'90d'} +${Math.round((up-1)*100)}%`,conf=proven?'medium':'low';
-  if(third.length&&Math.max(...third)<s){s=Math.max(...third);why='capped at the 3P 90d average';conf='high';}
+  let s=base*up,why=`${baseWhy} +${Math.round((up-1)*100)}%`,conf=proven?'medium':(moved?'medium':'low');
+  if(lowest&&lowest<s){s=lowest;why='capped at the 3P floor (lowest 3P average)';conf='high';}
   if(hi&&hi<s){s=hi;why='capped at the Buy Box high';}
   return{sell:Math.round(s*100)/100,why,conf};}
 
@@ -145,12 +167,12 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     if(vat===0)chips.push([vt.src==='va'?'0% VAT · SET BY VA':vt.src==='source'?'0% VAT · FILTER':'0% VAT · CHECK',vt.src==='warn'?'warn':vt.src==='va'||vt.src==='source'?'good':'warn']);else if(vt.src==='va')chips.push(['20% VAT · SET BY VA','info']);else if(vt.src==='rule')chips.push(['20% VAT · APPLIANCE','info']);
     const o={ASIN:a,Product:r.Title||'',Brand:brand,Score:score,'Potential score':best.score,'Potential via':best.who?`${best.who} ${best.pct}%`:'',
       'Buy at £':amz,'After discount £':eff,'Discount applied':ap.join('; '),'Sell for £':sell,'Sell from':fact.sell?'VA':S.why,'Sell confidence':fact.sell?'set':S.conf,
-      'Buy Box 90d £':bb90,'Buy Box 180d £':kNum(r['Buy Box: 180 days avg.']),'FBA 90d £':f90,'FBM 90d £':fbm90,'Buy Box high £':kNum(r['Buy Box: Highest']),
+      'Buy Box 90d £':bb90,'Buy Box 180d £':kNum(r['Buy Box: 180 days avg.']),'FBA 90d £':f90,'FBM 90d £':fbm90,'Buy Box high £':kNum(r['Buy Box: Highest']),'Buy Box 30d £':kNum(r['Buy Box: 30 days avg.']),'FBA 30d £':kNum(r['New, 3rd Party FBA: 30 days avg.']),'Offers':kNum(r['New Offer Count: Current']),
       'Profit £':p,'ROI %':roi,'Sells /mo':Math.round(spm),'Demand from':bought?'confirmed':'drops',
       '£ per month':Math.round(p*spm),'Needs % off':Math.round(nd*10)/10,'Brand discount %':br==null?'':br,
       'Check OA?':(br||nd>0)?'yes':'','FBA resale proven?':f90?'yes':'no','No 3P history?':no3P?'yes':'no','Limited time deal?':ltd?'yes':'no',
       'Amazon 90d drop %':kNum(r['Amazon: 90 days drop %'])||0,'Offers':kNum(r['New Offer Count: Current'])||0,'FBA offers':fbaN,'FBM offers':fbmN,
-      'Reviews':reviews,'Category':[r['Categories: Root'],r['Categories: Sub']].filter(Boolean).join(' › '),'Category kind':grocery?'grocery':elec?'electrical':'general','Age days':age==null?'':age,'VAT %':Math.round(vat*100),'VAT from':vt.src==='va'?'VA':vt.src==='source'?'filter':vt.src==='rule'?'Rule 4':'default','Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||'',
+      'Reviews':reviews,'Category':[r['Categories: Root'],r['Categories: Sub']].filter(Boolean).join(' › '),'Category kind':grocery?'grocery':elec?'electrical':'general','Age days':age==null?'':age,'VAT %':Math.round(vat*100),'VAT from':vt.src==='va'?'VA':vt.src==='source'?'filter':vt.src==='rule'?'Rule 3':'default','Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||'',
       Keepa:`https://keepa.com/#!product/2-${a}`,'Buy link':`https://www.amazon.co.uk/dp/${a}`,'UK sell link':`https://www.amazon.co.uk/dp/${a}`,
       SAS:`https://sas.selleramp.com/sas/lookup?search_term=${a}&sas_cost_price=${eff.toFixed(2)}&sas_sale_price=${sell.toFixed(2)}`,
       kept,chips,pot,STATUS:'',Changed:'','Last seen':''};
