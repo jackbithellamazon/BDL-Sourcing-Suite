@@ -40,7 +40,7 @@ const SRC_SEED=[
   {key:'steelseries',name:'SteelSeries',type:'brand',rule:1,markets:['DE','FR','IT','ES'],cadence:'weekly'},
   {key:'tassimo',name:'Tassimo',type:'brand',rule:1,markets:['UK'],cadence:'3 days',note:'run with Bosch'},
   {key:'tefal',name:'Tefal',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'3 days',note:'Amazon down 8% · Buy Box £10+',status:'active',link:LINKS.tefal},
-  {key:'bialetti',name:'Bialetti',type:'brand',rule:1,markets:['UK'],cadence:'weekly',note:'no price-drop filter — rarely drops, this one is about the sales side',status:'active',link:LINKS.bialetti},
+  {key:'bialetti',name:'Bialetti',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'weekly',note:'no price-drop filter — rarely drops, this one is about the sales side',status:'active',link:LINKS.bialetti},
   {key:'repken',name:'Repken · seller watch',type:'filter',rule:1,markets:['UK'],cadence:'weekly',note:'what seller A142PBK7GX1DM8 sells that Amazon has dropped 8%+ · Buy Box £8+',owner:'VAs',status:'active',link:LINKS.repken}
 ];
 const SRC_RETIRED=['corsair','elgato','shark','sandisk'];
@@ -87,6 +87,7 @@ function srcAll(){let v=lsGet(SRC_KEY,null);if(!v||!v.length){v=SRC_SEED.map(s=>
   if(v.some(x=>x.key==='bls')){v=v.filter(x=>x.key!=='bls');changed=true;if(typeof cloudQueue==='function')cloudQueue('src_sources','delete',{col:'key',vals:['bls']});}
   /* b32 (Jack, 15 Sep: "make these all active pls"): every Testing source goes Active once; paused ones stay paused */
   v.forEach(x=>{if((x.migV||0)<2){if(x.status==='testing'){x.status='active';x.paused=false;}x.migV=2;changed=true;}});
+  v.forEach(x=>{if(x.key==='bialetti'&&(x.migV||0)<4){x.markets=['UK','DE','FR','IT','ES'];x.migV=4;changed=true;}});   /* b50: Jack — "Bialetti needs all marketplaces" */
   v.forEach(x=>{if(x.key==='suz-deep-drops'&&(x.migV||0)<3){const sd=SRC_SEED.find(z=>z.key==='suz-deep-drops');if(sd){x.name=sd.name;x.note=sd.note;x.link=sd.link;}x.migV=3;changed=true;}});   /* b42: Jack's final A2A £10–40 link */
   v.forEach(x=>{if(x.note&&/Rule 4/.test(x.note)){x.note=x.note.replace(/Rule 4/g,'Rule 3');changed=true;}   /* b28: the VAT rule is Rule 3 on screen */
     if(x.key==='skullcandy'&&(x.migV||0)<1){if(!(x.markets||[]).includes('UK'))x.markets=['UK','DE','FR','IT','ES'];x.migV=1;changed=true;}});
