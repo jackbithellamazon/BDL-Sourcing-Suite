@@ -204,6 +204,7 @@ async function openRun(key){const s=srcGet(key);if(!s)return;
   if(!(lockFresh(s)&&ownLock(s)))srcLock(cur);
   if(!me()){toast('Pick who you are (top right) so this run carries your name',true);const w=$('#whoSel');if(w){w.classList.add('shake');setTimeout(()=>w.classList.remove('shake'),600);}}
   $('#viewList').hidden=true;$('#viewRun').hidden=false;paintRunHead();paintSlots();paintFloors();renderGuide();
+  {const tc=document.querySelector('#viewRun .twocol');if(tc)tc.classList.toggle('one',cur.rule!==1||ukOnly());}   /* b48: one-file sources stack, no dead column */
   $('#sumEmpty').textContent='Loading the shared compare baseline…';
   await cloudPullLeads(key);run();window.scrollTo({top:0,behavior:'smooth'});}
 function backToList(){if(cur&&ownLock(cur))srcUnlock(cur);$('#viewRun').hidden=true;$('#viewList').hidden=false;renderList();}
@@ -323,7 +324,7 @@ function runStored(){if(!cur)return false;const {rows,last}=storedRows(cur.key,c
   const rl=runLast(cur.key)||{};const n=rl.rowsIn||rows.length;
   const R={rule:cur.rule,out:rows,all:rows,dropped:[],reasons:{},blacklisted:[],floored:0,stored:true,at:last,
     st:cur.rule===1?{viewer:n,demand:'—',sell:'—',buy:'—',kept:rows.length,bbHiCol:true,capped:0}:{rows:n,priced:'—',demand:'—',kept:rows.length}};
-  R.gone=applyQueue(R.out,R.rule,prevMap,verdAll()).filter(([a])=>!blAll()[a]);R.prevStamp=null;result=R;
+  R.gone=applyQueue(R.out,R.rule,prevMap,verdAll()).filter(([a])=>!blAll()[a]);R.prevMap=prevMap;const pst=Object.values(prevMap).map(p=>p.stamp).filter(Boolean).sort();R.prevStamp=pst.length?pst[pst.length-1]:null;result=R;
   renderResults();renderGuide();return true;}
 function clearRun(){SLOTS.forEach(k=>files[k]=null);files.one=null;result=null;lastSig='';$('#fileIn').value='';view.sel.clear();view.page=1;touched.clear();blPick=null;
   warn([]);$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;if(cur){paintSlots();renderGuide();}}
@@ -371,7 +372,7 @@ function run(){if(!cur)return;
   if(fl.length){R.dropped=fl.concat(R.dropped);R.reasons['Below the floors set for '+cur.name]=fl.length;}R.floored=fl.length;
   if(R.rule!==1)R.out.forEach((o,i)=>o['#']=i+1);
   R.gone=applyQueue(R.out,R.rule,prevMap,verdAll()).filter(([a])=>!B[a]);   /* a blacklisted ASIN is not 'gone', it is banned */
-  const stamps=Object.values(prevMap).map(p=>p.stamp).filter(Boolean).sort();R.prevStamp=stamps.length?stamps[stamps.length-1]:null;
+  const stamps=Object.values(prevMap).map(p=>p.stamp).filter(Boolean).sort();R.prevStamp=stamps.length?stamps[stamps.length-1]:null;R.prevMap=prevMap;
   result=R;
   const s=sig();if(s!==lastSig){lastSig=s;view.page=1;view.sel.clear();logRun();}
   renderResults();renderGuide();}
@@ -411,6 +412,30 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
   const unseen=out.filter(o=>!verdGet(o.ASIN)).length;const sb=$('#seenAll');sb.hidden=!unseen;sb.textContent=`Mark all ${unseen} as seen`;
   renderTable();}
 /* the summary in words + the status pills — repainted after every verdict so the numbers never lie */
+/* b48 (Jack, 15 Sep: "some type of analysis vs last but better… difference from yesterday… the overall assessment of the file") */
+function ukDate(stamp){const s=String(stamp||'');const m=/^(\d{4})-(\d{2})-(\d{2})(?:[T_ ](\d{2}):?(\d{2}))?/.exec(s);if(!m)return escapeHtml(s);
+  const d=new Date(+m[1],+m[2]-1,+m[3],m[4]?+m[4]:0,m[5]?+m[5]:0);const wd=d.toLocaleDateString('en-GB',{weekday:'short'});
+  return `${wd} ${m[3]}/${m[2]}/${m[1]}`+(m[4]?` · ${m[4]}:${m[5]}`:'');}
+function paintCompare(R,c,rev){let el=$('#vsYest');const sr=$('#statusRow');if(!sr)return;if(!el){el=document.createElement('div');el.id='vsYest';el.className='vsyest';sr.parentNode.insertBefore(el,sr);}
+  const pm=R.prevMap||{};const prev=Object.values(pm).map(p=>p.state).filter(Boolean);
+  if(!R.prevStamp||!prev.length){el.hidden=true;return;}
+  const out=R.out;const sc=o=>+o.Score||0,psc=s=>+s.score||0,roi=o=>+o['ROI %']||0,proi=s=>+s.roi||0;
+  const hasPrevScore=prev.some(s=>s.score);
+  const rows=[['Leads',prev.length,out.length],['To review',null,rev],['Score 70+',hasPrevScore?prev.filter(s=>psc(s)>=70).length:null,out.filter(o=>sc(o)>=70).length],['Score 50+',hasPrevScore?prev.filter(s=>psc(s)>=50).length:null,out.filter(o=>sc(o)>=50).length],['ROI 20%+',prev.filter(s=>proi(s)>=20).length,out.filter(o=>roi(o)>=20).length],['Average ROI',Math.round(prev.reduce((a,s)=>a+proi(s),0)/prev.length)+'%',Math.round(out.reduce((a,o)=>a+roi(o),0)/(out.length||1))+'%']];
+  const delta=(a,b)=>{if(a==null||typeof a==='string')return'';const d=b-a;return d?`<i class="${d>0?'up':'down'}">${d>0?'+':''}${d}</i>`:'<i class="flat">=</i>';};
+  const tbl=`<table class="vstbl"><thead><tr><th></th><th>yesterday</th><th>today</th><th></th></tr></thead><tbody>${rows.map(([k,a,b])=>`<tr><td>${k}</td><td class="num">${a==null?'—':a}</td><td class="num"><b>${b}</b></td><td class="num">${delta(a,b)}</td></tr>`).join('')}</tbody></table>`;
+  const nm=o=>escapeHtml((o.Product||o.Title||'').slice(0,42));
+  const newest=out.filter(o=>o.STATUS==='NEW').sort((a,b)=>sc(b)-sc(a))[0];
+  const riser=out.filter(o=>o.STATUS==='BETTER').sort((a,b)=>(b.gain||0)-(a.gain||0))[0];
+  const faller=out.filter(o=>o.STATUS==='WORSE').sort((a,b)=>(a.gain||0)-(b.gain||0))[0];
+  const up=c.NEW+c.BETTER,dn=c.WORSE+R.gone.length;
+  const tone=up>=dn?(up>dn*1.5?'A good day: more came in or improved than slipped.':'A steady day: gains and slips about even.'):(dn>up*2?'A softer day: prices moved against you on most of yesterday\'s list.':'A slightly softer day: more slipped than improved.');
+  const lines=[tone];
+  if(newest)lines.push(`Best new lead: <b>${nm(newest)}</b> — score ${sc(newest)}, ${Math.round(roi(newest))}% ROI.`);
+  if(riser)lines.push(`Biggest improvement: <b>${nm(riser)}</b> — ${escapeHtml(riser.Changed||'')}.`);
+  if(faller)lines.push(`Biggest fall: <b>${nm(faller)}</b> — ${escapeHtml(faller.Changed||'')}.`);
+  const q50=out.filter(o=>o.QUEUE&&sc(o)>=50).length;if(rev)lines.push(`Of the ${rev} to review, <b>${q50}</b> score 50 or better.`);
+  el.innerHTML=`<div class="vsh">vs ${ukDate(R.prevStamp)}</div><div class="vsbody">${tbl}<div class="vslines">${lines.map(l=>`<p>${l}</p>`).join('')}</div></div>`;el.hidden=false;}
 function paintStory(){const R=result;if(!R||!cur)return;const st=R.st,out=R.out;const rev=out.filter(o=>o.QUEUE).length;
   const c={NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};out.forEach(o=>c[o.STATUS]++);
   const judged=out.filter(o=>o.verdict&&!o.QUEUE).length;const V=verdAll();const yes=out.filter(o=>(V[o.ASIN]||{}).v==='Yes').length,no=out.filter(o=>(V[o.ASIN]||{}).v==='No').length;
@@ -419,7 +444,7 @@ function paintStory(){const R=result;if(!R||!cur)return;const st=R.st,out=R.out;
     ?`${n(st.viewer)} products in the Viewer → ${n(st.demand)} sell 10+ a month in the UK → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`
     :`${n(st.rows)} products in the export → ${n(st.priced)} sold by Amazon → ${n(st.demand)} sell 10+ a month → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`;
   const story2=R.prevStamp
-    ?`Against ${escapeHtml(R.prevStamp.slice(0,10))}: ${n(c.NEW)} new, ${n(c.BETTER)} more profitable, ${n(c.WORSE)} worse, ${n(c.UNCHANGED)} the same, ${n(R.gone.length)} gone. ${judged?`${n(judged)} already have a verdict and have not improved since${yes||no?` (${n(yes)} Yes · ${n(no)} No)`:''}. `:''}${n(R.dropped.length)} dropped by the rule${R.blacklisted.length?`, ${n(R.blacklisted.length)} blacklisted`:''}.`
+    ?`Against ${ukDate(R.prevStamp)}: ${n(c.NEW)} new, ${n(c.BETTER)} more profitable, ${n(c.WORSE)} worse, ${n(c.UNCHANGED)} the same, ${n(R.gone.length)} gone. ${judged?`${n(judged)} already have a verdict and have not improved since${yes||no?` (${n(yes)} Yes · ${n(no)} No)`:''}. `:''}${n(R.dropped.length)} dropped by the rule${R.blacklisted.length?`, ${n(R.blacklisted.length)} blacklisted`:''}.`
     :`First run for ${escapeHtml(cur.name)}, so everything counts as new. ${n(R.dropped.length)} dropped by the rule${R.blacklisted.length?`, ${n(R.blacklisted.length)} blacklisted`:''}.`;
   const carried=out.filter(o=>o.QUEUE==='new'&&o.STATUS!=='NEW').length;
   const parked=out.filter(o=>!o.QUEUE&&!o.verdict).length;
@@ -435,7 +460,8 @@ function paintStory(){const R=result;if(!R||!cur)return;const st=R.st,out=R.out;
   else{const b=[['Score 70+',o=>o.Score>=70,'g'],['Score 50–69',o=>o.Score>=50&&o.Score<70,'i'],['Score 30–49',o=>o.Score>=30&&o.Score<50,'a'],['Under 30',o=>o.Score<30,'f']];left=b.map(([k,f,c])=>bar(k,out.filter(f).length,out.length||1,c)).join('');}
   const roi=[['ROI 20%+',o=>o['ROI %']>=20,'g'],['ROI 10–20%',o=>o['ROI %']>=10&&o['ROI %']<20,'i'],['ROI under 10%',o=>o['ROI %']<10,'a']].map(([k,f,c])=>bar(k,out.filter(f).length,out.length||1,c)).join('');
   $('#sumDetail').innerHTML=`<div class="dcol"><div class="dh">Why ${R.dropped.length.toLocaleString()} were dropped</div>${rs.length?rs.map(([k,v])=>bar(k,v,totIn,'d')).join(''):'<div class="dr"><span class="dk">nothing dropped</span></div>'}</div><div class="dcol"><div class="dh">The ${out.length} leads</div>${left}${roi}</div>`;
-  $('#statusRow').innerHTML=(R.prevStamp?`<span class="vs">vs ${escapeHtml(R.prevStamp.slice(0,10))}</span>`:`<span class="vs">first run for ${escapeHtml(cur.name)} — everything is NEW</span>`)+
+  paintCompare(R,c,rev);
+  $('#statusRow').innerHTML=(R.prevStamp?`<span class="vs">vs ${ukDate(R.prevStamp)}</span>`:`<span class="vs">first run for ${escapeHtml(cur.name)} — everything is NEW</span>`)+
     [['TO REVIEW',rev,'rev'],['NEW',c.NEW,'new'],['BETTER',c.BETTER,'better'],['WORSE',c.WORSE,'worse'],['UNCHANGED',c.UNCHANGED,'same'],['GONE',R.gone.length,'gone'],['BLACKLISTED',R.blacklisted.length,'bl']].map(([l,n,k])=>`<span class="spill ${k}${n?'':' zero'}"><b>${n}</b>${l}</span>`).join('');
 }
 function visible(){const q=view.q.toLowerCase();const list=result.out.filter(o=>{
@@ -472,7 +498,7 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
   const sel=o=>`<td class="sel"><input type="checkbox" data-sel="${o.ASIN}"${view.sel.has(o.ASIN)?' checked':''}></td>`;
   const pend=b=>bbStatusFor(b)==='pending'?`<i class="ch pend" title="Brand blacklist requested — waiting for Jack">BRAND BLACKLIST PENDING</i>`:'';
   let h;
-  if(!all.length){$('#leads').innerHTML=`<tbody><tr><td style="text-align:center;color:var(--faint);padding:26px">${view.status==='REVIEW'?'Nothing to review — every lead on this run has a verdict and none has got better since. Switch to <b>Everything</b> to see them all.':'Nothing matches.'}</td></tr></tbody>`;$('#pager').innerHTML='';$('#openSel').textContent='Open in Keepa';return;}
+  if(!all.length){$('#leads').innerHTML=`<tbody><tr><td style="text-align:center;color:var(--faint);padding:26px">${view.status==='REVIEW'?'Nothing new to review — every lead on this run is the same as or worse than the last run, or already judged and not improved since. Switch to <b>Everything</b> to see them all.':'Nothing matches.'}</td></tr></tbody>`;$('#pager').innerHTML='';$('#openSel').textContent='Open in Keepa';return;}
   const asinl=o=>`<span class="asinl">${o.ASIN}<button type="button" data-copy="${o.ASIN}" title="Copy ASIN">${ICONS.copy}</button></span>`;
   const roiCls=v=>v>=20?'pos':v>=10?'pos soft':v>=0?'warm':'neg';
   const mk=m=>`<i class="mk">${FLAG[m]||''} ${m}</i>`;

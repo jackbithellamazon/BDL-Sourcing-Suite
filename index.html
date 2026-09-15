@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b47">
-<link rel="stylesheet" href="css/brands.css?v=b47">
+<link rel="stylesheet" href="css/base.css?v=b49">
+<link rel="stylesheet" href="css/brands.css?v=b49">
 </head>
 <body>
 <div class="wrap">
@@ -306,7 +306,7 @@
             <div class="floors" id="floorRow">
             <div class="fhead"><span class="ft">Customise this source</span><span class="fs" id="floorSaved"></span><button class="linkbtn" id="floorClear" type="button" hidden>Clear floors</button></div>
             <div class="fin">
-              <label>Sales / month ≥ <small>bought, or Keepa rank drops</small><input id="fl_minSpm" type="number" inputmode="numeric" placeholder="10"></label>
+              <label title="Bought in the past month, or Keepa rank drops — whichever Keepa gives. The rule already floors this at 10.">Sales / month ≥<input id="fl_minSpm" type="number" inputmode="numeric" placeholder="10"></label>
               <label>ROI % ≥<input id="fl_minRoi" type="number" inputmode="decimal" placeholder="any"></label>
               <label>Profit £ ≥<input id="fl_minProfit" type="number" inputmode="decimal" placeholder="any"></label>
               <label>Sell £ ≥<input id="fl_minSell" type="number" inputmode="decimal" placeholder="any"></label>
@@ -348,7 +348,7 @@
           </div>
 
           <div class="leadhead" id="leadTop">
-            <h3 id="leadCount">Leads</h3><span class="sub">To review = new, or better than when it was last judged · Y/N/M saves as you click · ⃠ = never show again</span>
+            <h3 id="leadCount">Leads</h3><span class="sub">To review = new, or better than the last run (or better since it was judged) · Y/N/M saves as you click · ⃠ = never show again</span>
             <div class="right">
               <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fQ" placeholder="ASIN, title, brand…" autocomplete="off"></div>
               <select id="fStatus"><option value="REVIEW">To review</option><option value="ALL">Everything</option><option>NEW</option><option>BETTER</option><option>WORSE</option><option>UNCHANGED</option></select>
@@ -433,18 +433,18 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b47"></script>
-<script src="js/parse.js?v=b47"></script>
-<script src="js/rule1.js?v=b47"></script>
-<script src="js/rule2.js?v=b47"></script>
-<script src="js/export.js?v=b47"></script>
-<script src="js/rule4.js?v=b47"></script>
-<script src="js/queue.js?v=b47"></script>
-<script src="js/sources.js?v=b47"></script>
-<script src="js/cloud.js?v=b47"></script>
-<script src="js/leadtools.js?v=b47"></script>
-<script src="js/keepaconsole.js?v=b47"></script>
-<script src="js/brands.js?v=b47"></script>
-<script src="js/boot.js?v=b47"></script>
+<script src="js/core.js?v=b49"></script>
+<script src="js/parse.js?v=b49"></script>
+<script src="js/rule1.js?v=b49"></script>
+<script src="js/rule2.js?v=b49"></script>
+<script src="js/export.js?v=b49"></script>
+<script src="js/rule4.js?v=b49"></script>
+<script src="js/queue.js?v=b49"></script>
+<script src="js/sources.js?v=b49"></script>
+<script src="js/cloud.js?v=b49"></script>
+<script src="js/leadtools.js?v=b49"></script>
+<script src="js/keepaconsole.js?v=b49"></script>
+<script src="js/brands.js?v=b49"></script>
+<script src="js/boot.js?v=b49"></script>
 </body>
 </html>

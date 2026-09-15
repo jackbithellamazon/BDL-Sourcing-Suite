@@ -11,7 +11,7 @@ function leadKeepa(o,rule){const src=rule===1
   :{amz:o['Buy at £'],bb30:o['Buy Box 30d £'],bb90:o['Buy Box 90d £'],bb180:o['Buy Box 180d £'],hi:o['Buy Box high £'],f30:o['FBA 30d £'],f90:o['FBA 90d £'],fbm90:o['FBM 90d £'],off:o.Offers,why:o['Sell from']};
   const k={};Object.entries(src).forEach(([a,v])=>{if(v!=null&&v!==''&&v!==0)k[a]=typeof v==='number'?Math.round(v*100)/100:String(v).slice(0,60);});return k;}
 function leadState(o,rule){const id={brand:(o.Brand||'').slice(0,60),title:(o.Title||o.Product||'').slice(0,90),k:leadKeepa(o,rule)};return rule===1
-  ?Object.assign({buy:o['Landed £'],sell:o['Sell £ used'],profit:o['Profit £'],roi:o['ROI %'],spm:o.SPM,disc:o['Discount applied']||'',mk:o['Buy market']||'UK'},id)
+  ?Object.assign({buy:o['Landed £'],sell:o['Sell £ used'],profit:o['Profit £'],roi:o['ROI %'],spm:o.SPM,score:o.Score||0,disc:o['Discount applied']||'',mk:o['Buy market']||'UK'},id)
   :Object.assign({buy:o['After discount £'],sell:o['Sell for £'],profit:o['Profit £'],roi:o['ROI %'],spm:o['Sells /mo'],score:o.Score,disc:o['Discount applied']||'',mk:'UK'},id);}
 function discSet(s){return new Set((s||'').split(';').map(x=>x.trim().toLowerCase()).filter(Boolean));}
 function fmtP(v){return Math.abs(v)<1?Math.round(Math.abs(v)*100)+'p':'£'+Math.abs(v).toFixed(2);}
