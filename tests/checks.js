@@ -136,6 +136,10 @@ window.SourcingChecks=(function(){
       const q=[{ASIN:'A','After discount £':100,'Sell for £':150,'Profit £':10,'ROI %':10,'Sells /mo':30,Score:40,'Discount applied':''},{ASIN:'B','After discount £':100,'Sell for £':150,'Profit £':10,'ROI %':10,'Sells /mo':30,Score:40,'Discount applied':''},{ASIN:'C','After discount £':100,'Sell for £':150,'Profit £':10,'ROI %':10,'Sells /mo':30,Score:40,'Discount applied':''}];
       const gone=applyQueue(q,2,{B:{state:{buy:100,sell:150,profit:10,roi:10,spm:30},stamp:'2026-09-12_0700'},C:{state:{buy:100,sell:150,profit:10,roi:10,spm:30},stamp:'2026-09-12_0700'},Z:{state:{buy:50,sell:80,profit:5,roi:9,spm:10},stamp:'2026-09-12_0700'}},{B:{v:'No',state:{buy:100,sell:150,profit:10,roi:10,spm:30}},C:{v:'No',state:{buy:101,sell:150,profit:9.5,roi:9.4,spm:30}}});
       ok('queue · new, judged-unchanged, judged-but-better, gone',[q[0].QUEUE,q[1].QUEUE,q[2].QUEUE,gone.length],['new','','better',1]);
+      /* b47: no verdict + same as the last run = not queued (Jack: "only new or better leads in here"); worse likewise; better is */
+      {const q2=[{ASIN:'U','After discount £':100,'Sell for £':150,'Profit £':10,'ROI %':10,'Sells /mo':30,Score:40},{ASIN:'W','After discount £':110,'Sell for £':150,'Profit £':4,'ROI %':4,'Sells /mo':30,Score:20},{ASIN:'B','After discount £':90,'Sell for £':150,'Profit £':20,'ROI %':22,'Sells /mo':30,Score:60}];
+        const pm={U:{state:{buy:100,sell:150,profit:10,roi:10,spm:30},stamp:'2026-09-14_0700'},W:{state:{buy:100,sell:150,profit:10,roi:10,spm:30},stamp:'2026-09-14_0700'},B:{state:{buy:100,sell:150,profit:10,roi:10,spm:30},stamp:'2026-09-14_0700'}};
+        applyQueue(q2,2,pm,{});ok('queue · no verdict: unchanged / worse / better',[q2[0].STATUS,q2[0].QUEUE,q2[1].STATUS,q2[1].QUEUE,q2[2].STATUS,q2[2].QUEUE],['UNCHANGED','','WORSE','','BETTER','new']);}
       /* floors — the per-source Filter & Sort */
       const fo={ASIN:'F','Sells /mo':120,'ROI %':14,'Profit £':22,'Sell for £':180,'After discount £':140,Score:55,'Potential score':60,Offers:4};
       ok('floors · none set passes',failsFloor(fo,null,2),'');

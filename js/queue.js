@@ -40,7 +40,10 @@ function applyQueue(out,rule,prevMap,verdicts){prevMap=prevMap||{};verdicts=verd
     o.STATUS=c.status;o.Changed=c.why.join('; ');o['Last seen']=p?p.stamp:'';o.gain=c.gain;o.state=s;seen.add(o.ASIN);
     if(p&&p.state&&c.status==='WORSE'&&+p.state.buy<+s.buy)o.low={buy:+p.state.buy,stamp:p.stamp};
     const v=verdicts[o.ASIN];o.verdict=v||null;
-    if(!v){o.QUEUE='new';o['Review?']='no verdict yet';o.sinceVerdict='';}
+    /* b47 (Jack, 15 Sep: "I thought it was only new or better leads in here") — a lead with no verdict is queued only if it is new,
+       or better than the last run, or there was no last run. Unchanged and worse rows were on yesterday's list already; they stay in
+       Everything and come back the moment they improve. */
+    if(!v){const fresh=!p||c.status==='NEW'||c.status==='BETTER';o.QUEUE=fresh?'new':'';o['Review?']=fresh?'no verdict yet':'';o.sinceVerdict='';}
     else{const cv=v.state?compareState(s,v.state):{status:'UNCHANGED',why:[]};
       if(cv.status==='BETTER'){o.QUEUE='better';o.sinceVerdict=cv.why.join('; ');o['Review?']='better since '+v.v+(v.who?' by '+v.who:'')+': '+o.sinceVerdict;}
       else{o.QUEUE='';o.sinceVerdict='';o['Review?']='';}}});

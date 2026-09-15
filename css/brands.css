@@ -843,3 +843,22 @@
 .logtbl .pill-gone{color:var(--coral);background:var(--coral-dim)}
 .logtbl b.amber{color:var(--amber)}.logtbl b.jade{color:var(--jade)}
 .logtbl .z{color:var(--faint)}
+
+/* b46 — due rows read red, done-today reads grey, cadence folds under status */
+.btbl tr.isdue td{background:rgba(247,106,131,.07)}
+.btbl tr.isdue td:first-child{box-shadow:inset 3px 0 0 var(--coral)}
+.btbl td.stc .cad{display:block;font-size:11px;color:var(--faint);margin-top:3px}
+.btbl td.nextc .nx{display:inline-block;font-weight:700;font-size:12.5px}
+.btbl td.nextc .nx.due{color:var(--coral);background:var(--coral-dim);border:1px solid rgba(247,106,131,.45);padding:2px 9px;border-radius:14px;font-size:11.5px;letter-spacing:.02em;text-transform:uppercase}
+.btbl td.nextc .nx.done{color:var(--faint);font-weight:600}
+.btbl td.nextc .nx.ok{color:var(--text);font-weight:600}
+.btbl td.nextc .nx.paused{color:var(--faint);font-weight:500}
+.btbl td.nextc .l2{display:block;font-size:11px;color:var(--faint);margin-top:2px}
+.btbl td.lastc .l1{font-weight:600;color:var(--text)}
+.btbl th{color:var(--muted)}
+
+/* b47 — floors: the hint sits beside the label, the rule default reads clearly */
+.floors label small{display:inline;margin:0 0 0 6px;font-size:10px;color:var(--faint);font-weight:500;text-transform:none}
+.floors .fin input::placeholder{color:var(--muted);opacity:1}
+#fl_minSpm::placeholder{color:var(--text);opacity:.85}
+.floors .fin label{align-self:flex-end}

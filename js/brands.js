@@ -80,19 +80,17 @@ function renderList(){renderKpis();renderApprovals();const q=lview.q.toLowerCase
   const tb=$('#brandTbl');
   if(!rows.length){tb.innerHTML=`<tbody><tr><td colspan="8" style="text-align:center;color:var(--faint);padding:22px">${lview.seg==='due'?'Nothing due — everything has been run inside its cadence.':lview.seg==='mine'?(me()?'Nothing is yours yet — Jack sets the owner in Edit.':'Pick who you are (top right) to see your list.'):'Nothing here.'}</td></tr></tbody>`;return;}
   const rowHtml=s=>{const d=dueState(s),last=runLast(s.key),nx=nextRun(s),tok=tokenEstimate(s),lk=lockFresh(s)?s.inProgress:null,mine=lk&&ownLock(s),tr=toReviewCount(last);
-    const nextTxt=d.due?'Due now':nx?fmtWhen(nx.toISOString()).replace(' 07:00',''):(s.status==='paused'?'Paused':'—');
-    return`<tr class="${s.status==='paused'?'paused':''}" data-key="${s.key}">
+    return`<tr class="${s.status==='paused'?'paused':(d.cls==='due'?'isdue':'')}" data-key="${s.key}">
       <td class="namec"><div class="brandcell">${avatar(s)}<div class="ntext"><div class="nline"><span class="bname">${escapeHtml(s.name)}</span><span class="rl" title="${RULE_LABEL[s.rule]||''}">Rule ${s.rule}</span></div><span class="note" title="${escapeHtml(s.note||'')}">${escapeHtml(s.note||(s.type==='filter'?'Saved Keepa filter':'Brand run · UK sell side'))}</span></div></div></td>
       <td class="ownc">${escapeHtml(s.owner||'VAs')}</td>
       <td><div class="flags" title="${s.markets.join(' · ')}">${s.markets.map(m=>`<span class="f">${FLAG[m]}</span>`).join('')}</div></td>
-      <td class="stc"><span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span>${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
-      <td class="cadc">${CADENCE_LABEL[s.cadence]||s.cadence}</td>
+      <td class="stc"><span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span><span class="cad">${CADENCE_LABEL[s.cadence]||s.cadence}</span>${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
       <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` <span class="who">${escapeHtml(last.who)}</span>`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}</td>
-      <td class="nextc"><span class="nx ${d.due?'now':''}">${nextTxt}</span><span class="l2" title="Run by export today = 0 Keepa tokens. If this ran through the API by itself it would cost about ${tok.toLocaleString()} tokens.">manual export</span></td>
+      <td class="nextc"><span class="nx ${d.cls}">${d.label}</span><span class="l2" title="Run by export today = 0 Keepa tokens. If this ran through the API by itself it would cost about ${tok.toLocaleString()} tokens.">${d.sub||'by export'}</span></td>
       <td class="actc"><div class="acts">${finderLink(s)?`<a class="ib" href="${finderLink(s)}" target="_blank" rel="noopener" title="${s.link?'Open the saved Keepa filter':'Open the generated Keepa filter (edit to paste your own)'}">${ICONS.ext}</a>`:`<span class="ib nolink" title="No Keepa link saved yet — Edit and paste it">?</span>`}<button class="btn run xs" data-act="run" ${s.status==='paused'?'disabled':''} title="${lk&&!mine?'Someone else has it open — you can still join':''}">${ICONS.run}${lk&&!mine?'Join':'Run'}</button><button class="ib" data-act="edit" title="Edit">${ICONS.edit}</button>
         <div class="menu"><button class="ib" data-act="menu" aria-label="More">⋮</button>
           <div class="pop"><button data-act="history">${ICONS.hist}History</button><button data-act="pause">${s.status==='paused'?ICONS.play:ICONS.pause}${s.status==='paused'?'Set active':'Pause'}</button>${lk?`<button data-act="unlock">${ICONS.eye}Clear "on it"</button>`:''}<button data-act="delete" class="danger">${ICONS.trash}Delete</button></div></div></div></td></tr>`;};
-  const head=`<thead><tr><th>Name</th><th>Owner</th><th>Buy from</th><th>Status</th><th>Cadence</th><th>Last run</th><th>Next run</th><th></th></tr></thead>`;
+  const head=`<thead><tr><th>Name</th><th>Owner</th><th>Buy from</th><th>Status · cadence</th><th>Last run</th><th>Next run</th><th></th></tr></thead>`;
   const filters=rows.filter(s=>s.type==='filter'),brands=rows.filter(s=>s.type!=='filter');
   const group=(label,list)=>list.length?`<tr class="grp"><td colspan="8"><span class="gl">${label}</span><span class="gn">${list.length}</span></td></tr>`+list.map(rowHtml).join(''):'';
   tb.innerHTML=head+'<tbody>'+group('Saved filters',filters)+group('Brands',brands)+'</tbody>';}
@@ -415,16 +413,17 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
 /* the summary in words + the status pills — repainted after every verdict so the numbers never lie */
 function paintStory(){const R=result;if(!R||!cur)return;const st=R.st,out=R.out;const rev=out.filter(o=>o.QUEUE).length;
   const c={NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};out.forEach(o=>c[o.STATUS]++);
-  const judged=out.length-rev;const V=verdAll();const yes=out.filter(o=>(V[o.ASIN]||{}).v==='Yes').length,no=out.filter(o=>(V[o.ASIN]||{}).v==='No').length;
+  const judged=out.filter(o=>o.verdict&&!o.QUEUE).length;const V=verdAll();const yes=out.filter(o=>(V[o.ASIN]||{}).v==='Yes').length,no=out.filter(o=>(V[o.ASIN]||{}).v==='No').length;
   const n=v=>`<b>${(+v).toLocaleString()}</b>`;
   const story=cur.rule===1
     ?`${n(st.viewer)} products in the Viewer → ${n(st.demand)} sell 10+ a month in the UK → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`
     :`${n(st.rows)} products in the export → ${n(st.priced)} sold by Amazon → ${n(st.demand)} sell 10+ a month → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`;
   const story2=R.prevStamp
-    ?`Against ${escapeHtml(R.prevStamp.slice(0,10))}: ${n(c.NEW)} new, ${n(c.BETTER)} more profitable, ${n(c.WORSE)} worse, ${n(c.UNCHANGED)} the same, ${n(R.gone.length)} gone. ${n(judged)} already have a verdict and have not improved since${yes||no?` (${n(yes)} Yes · ${n(no)} No)`:''}. ${n(R.dropped.length)} dropped by the rule${R.blacklisted.length?`, ${n(R.blacklisted.length)} blacklisted`:''}.`
+    ?`Against ${escapeHtml(R.prevStamp.slice(0,10))}: ${n(c.NEW)} new, ${n(c.BETTER)} more profitable, ${n(c.WORSE)} worse, ${n(c.UNCHANGED)} the same, ${n(R.gone.length)} gone. ${judged?`${n(judged)} already have a verdict and have not improved since${yes||no?` (${n(yes)} Yes · ${n(no)} No)`:''}. `:''}${n(R.dropped.length)} dropped by the rule${R.blacklisted.length?`, ${n(R.blacklisted.length)} blacklisted`:''}.`
     :`First run for ${escapeHtml(cur.name)}, so everything counts as new. ${n(R.dropped.length)} dropped by the rule${R.blacklisted.length?`, ${n(R.blacklisted.length)} blacklisted`:''}.`;
   const carried=out.filter(o=>o.QUEUE==='new'&&o.STATUS!=='NEW').length;
-  const story3=carried>=10?`<p class="s3">${n(carried)} of today's "need a look" were on the last run too and nobody has marked them. If they have already been looked at, press <b>Mark all as seen</b> once — from the next run only new and more-profitable leads come back.</p>`:'';
+  const parked=out.filter(o=>!o.QUEUE&&!o.verdict).length;
+  const story3=parked?`<p class="s3">${n(parked)} lead${parked===1?' is':'s are'} the same or worse than the last run and ${parked===1?'has':'have'} no verdict, so ${parked===1?'it is':'they are'} not in today's queue — switch to <b>Everything</b> to see ${parked===1?'it':'them'}; ${parked===1?'it comes':'they come'} back the moment ${parked===1?'it improves':'they improve'}.</p>`:'';
   $('#story').innerHTML=`<p>${story}</p><p class="s2">${story2}</p>${story3}`;$('#story').hidden=false;
   /* detail: why things dropped, and what is left */
   const rs=Object.entries(R.reasons).sort((a,b)=>b[1]-a[1]);const totIn=(st.viewer||st.rows)||1;

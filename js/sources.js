@@ -109,7 +109,7 @@ function srcUnlock(s,direct){if(!s||!s.inProgress)return;delete s.inProgress;src
 function srcKeyFor(name){return name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
 /* sorted: filters first, then brands A-Z */
 /* b32: due now sits at the top of each group, then soonest next run, then name */
-function dueRank(s){const d=dueState(s);if(d.due)return 0;if(d.cls==='paused')return 9000;const m=/in (\d+)d/.exec(d.label);return m?+m[1]:5000;}
+function dueRank(s){return dueState(s).rank;}
 function srcSorted(){return srcAll().sort((a,b)=>(a.type===b.type?0:a.type==='filter'?-1:1)||(dueRank(a)-dueRank(b))||a.name.localeCompare(b.name));}
 /* Keepa Product Finder link for a brand: the brand strings + Amazon down 9%+ vs its 90-day average.
    The link carries no marketplace — Keepa runs it on whichever locale is selected, so one link does all five. */
@@ -135,13 +135,18 @@ function tokenEstimate(src){const last=runLast(src.key);const rowsIn=last?last.r
   const eu=src.markets.filter(m=>m!=='UK').length;return 10*src.markets.length+rowsIn+Math.round(eu*rowsIn*0.25);}
 function nextRun(src){const last=runLast(src.key);const days=CADENCE_DAYS[src.cadence];if(!last||!days)return null;
   const d=new Date(last.at);d.setDate(d.getDate()+days);d.setHours(7,0,0,0);return d;}
-function dueState(src){if(src.status==='paused')return{label:'paused',cls:'paused',due:false};
+/* b46 (Jack, 15 Sep): "next run if today should be red as due today, overdue red too, the whole line red; if done today greyed out" */
+function dueState(src){if(src.status==='paused')return{label:'Paused',cls:'paused',due:false,rank:9000};
   const last=runLast(src.key);const days=CADENCE_DAYS[src.cadence];
-  if(!last)return{label:'never run',cls:'due',due:true};
-  const age=(Date.now()-new Date(last.at).getTime())/864e5;
-  if(!days)return{label:'one-off',cls:'',due:false};
-  if(age>=days)return{label:'due',cls:'due',due:true};
-  return{label:'in '+Math.max(1,Math.ceil(days-age))+'d',cls:'ok',due:false};}
+  if(!last)return{label:'Due now',cls:'due',due:true,rank:1,sub:'never run'};
+  const lastDay=String(last.at).slice(0,10),t=today();
+  const nx=new Date(last.at);nx.setDate(nx.getDate()+(days||0));nx.setHours(7,0,0,0);const nxDay=nx.toISOString().slice(0,10);
+  const nice=nx.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  if(lastDay===t)return{label:'Done today',cls:'done',due:false,rank:8000,sub:days?'next '+nice:'one-off'};
+  if(!days)return{label:'One-off',cls:'',due:false,rank:5000};
+  if(nxDay<t){const od=Math.round((new Date(t)-new Date(nxDay))/864e5);return{label:'Overdue · '+od+'d',cls:'due',due:true,rank:0,sub:'was due '+nice};}
+  if(nxDay===t)return{label:'Due today',cls:'due',due:true,rank:1};
+  const inD=Math.round((new Date(nxDay)-new Date(t))/864e5);return{label:nice,cls:'ok',due:false,rank:100+inD,sub:'in '+inD+'d'};}
 function fmtWhen(iso){const d=new Date(iso);const t=new Date();const sameDay=d.toDateString()===t.toDateString();
   const y=new Date(t);y.setDate(t.getDate()-1);const yest=d.toDateString()===y.toDateString();
   const hm=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
