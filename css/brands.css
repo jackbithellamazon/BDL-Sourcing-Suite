@@ -1183,3 +1183,96 @@ html[data-theme="light"] .rl.r2{color:#0b6fb8;background:rgba(11,111,184,.1)}
 .audone .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 @media (max-width:1100px){.aukpis{grid-template-columns:repeat(3,1fr)}.augrid{grid-template-columns:1fr}.aupanel{position:static;max-height:none}.ausplit{grid-template-columns:1fr}
   .aurow{grid-template-columns:44px minmax(0,1fr)}.aut{grid-column:2}.aubtns{grid-column:2;grid-row:auto;flex-wrap:wrap;margin-top:6px}.aulinks{margin-left:0}}
+
+/* ===== b65 · Jack, 16 Sep: "font and colours are awful, make it easier to look at" =====
+   Colour now only appears where it means something: a judged row, a signal, or the row you are on.
+   The six buttons are on the row you are working, not on all 134 at once. */
+.aurow{grid-template-columns:46px minmax(0,1fr) auto;padding:11px 14px 11px 17px;gap:3px 13px}
+.aurow::before{opacity:0}
+.aurow.judged::before{opacity:.85}
+.aurow.focus::before{opacity:1;width:4px}
+.aurow:hover{background:rgba(255,255,255,.022)}
+.aut{font-size:14px;font-weight:600;letter-spacing:-.005em}
+.aurow .auasin{font-family:var(--sans);font-size:12px;letter-spacing:.02em;color:var(--faint)}
+.aurow .auimg{font-family:var(--sans);font-size:11px;color:var(--faint);background:var(--ink)}
+.aufacts{gap:10px;font-size:12.5px}
+.aufacts .new{color:var(--iris);font-weight:600}
+.aulinks a{border-color:transparent;background:transparent;color:var(--faint);padding:0 5px}
+.aulinks a:hover{color:var(--iris);border-color:var(--line2);background:var(--ink)}
+.aurow.focus .aulinks a{border-color:var(--line2);background:var(--ink);color:var(--muted)}
+/* the mark: what this row already is, in one quiet pill */
+.aumark{grid-column:3;grid-row:1/span 2;align-self:center;display:flex;justify-content:flex-end;min-width:104px}
+.aujudge{font-size:12px;color:var(--faint);opacity:.6}
+.aurow:hover .aujudge{opacity:0}
+.aupill.big{height:26px;font-size:12px;padding:0 11px;color:var(--c);border-color:color-mix(in srgb,var(--c) 45%,transparent);background:color-mix(in srgb,var(--c) 12%,transparent)}
+.aubtns{display:none}
+.aurow:hover .aubtns,.aurow.focus .aubtns{display:flex;grid-column:3;grid-row:1/span 2;align-self:center}
+.aurow:hover .aumark,.aurow.focus .aumark{display:none}
+.aurow.focus .aubtns{grid-column:2/4;grid-row:auto;flex-wrap:wrap;margin-top:7px;align-self:auto}
+.aub{height:30px;border-width:1px;font-size:12.5px;border-color:color-mix(in srgb,var(--c) 40%,transparent);color:var(--muted);background:var(--ink)}
+.aub kbd{border-color:var(--line2);color:var(--faint)}
+.aub:hover{color:var(--c);border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.aub:hover kbd{border-color:currentColor;color:currentColor}
+.aurow.focus .aub{color:var(--c);border-color:color-mix(in srgb,var(--c) 55%,transparent)}
+.aurow.focus .aub kbd{border-color:currentColor;color:currentColor}
+.aub.on{background:var(--c);color:#08101a;border-color:var(--c)}
+.aub.on kbd{border-color:rgba(0,0,0,.3);color:#08101a}
+/* the "nothing has a picture yet" call-out */
+.aunodet{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;margin-bottom:10px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(110,123,255,.14),rgba(154,123,255,.07));border:1px solid rgba(110,123,255,.35)}
+.aunodet b{color:var(--text)}
+.aunodet .row{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.aunodet .ssub{flex:1 1 100%;margin:0;font-size:12px;color:var(--muted)}
+/* panel + landing: calmer type */
+.aupanel h3{font-size:15px}
+.aufgrid .v{font-family:var(--sans);font-size:15px}
+.aufgrid .k{font-size:11.5px}
+.auimg img{background:#fff}
+.autabs button{font-size:12.5px}
+.aupline b{font-size:17px}
+@media (max-width:1100px){.aumark{grid-column:2;grid-row:auto;justify-content:flex-start;margin-top:6px}
+  .aurow:hover .aubtns,.aurow.focus .aubtns{grid-column:2;grid-row:auto;align-self:auto;margin-top:6px}}
+
+/* b65 fit: links in the audit header are buttons, not underlined text; an ASIN-only row reads as a name */
+#page-audit a.btn,#page-audit .aulinksbig a,#page-audit .aulinks a{text-decoration:none}
+.aut.plain{font-family:var(--sans);letter-spacing:.04em;font-size:13.5px;color:var(--text)}
+.aurow .aufacts .auasin{border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+.aurow .aufacts .auasin:hover{border-color:var(--iris)}
+
+.aunote{flex:1 1 100%;margin-top:6px;font-size:12.5px;color:var(--iris)}
+.aunote:empty{display:none}
+
+/* ===== b66 · real buttons on every row, Keepa follows you, auto Missed it ===== */
+.aurow{grid-template-columns:56px minmax(0,1fr) auto;gap:3px 14px;padding:12px 14px 12px 18px}
+.auimg{width:56px;height:56px;border-radius:10px;grid-row:1/span 3}
+.aut{font-size:14.5px}
+.aufacts{font-size:12.5px;margin-top:1px}
+.auright{grid-column:3;grid-row:1/span 2;display:flex;flex-direction:column;align-items:flex-end;gap:6px;align-self:center}
+.aulinks{display:flex;gap:6px;margin:0}
+.aulk{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--line2);background:var(--ink);color:var(--text);font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap}
+.aulk svg{width:14px;height:14px;flex:none}
+.aulk.amazon:hover{border-color:#FF9900;color:#FFB84D}
+.aulk.keepa:hover{border-color:#5B8DEF;color:#8FB3FF}
+.aulk.sas:hover{border-color:var(--jade);color:var(--jade)}
+.aulinksbig{display:flex;gap:8px}
+.aulinksbig .aulk{flex:1;justify-content:center;height:38px;font-size:13px}
+.aumark{display:flex;justify-content:flex-end;min-width:0;grid-column:auto;grid-row:auto}
+.aujudge{font-size:12px;color:var(--faint);opacity:.75}
+.aurow:hover .aumark,.aurow.focus .aumark{display:flex}
+.aubtns{display:none}
+.aurow:hover .aubtns,.aurow.focus .aubtns{display:flex;grid-column:2/4;grid-row:3;flex-wrap:wrap;margin-top:6px;align-self:auto}
+.aurow.focus .aubtns{grid-row:auto}
+@media (max-width:1100px){.auright{grid-column:2;grid-row:auto;align-items:flex-start;flex-direction:row;flex-wrap:wrap;margin-top:6px}
+  .aurow:hover .aubtns,.aurow.focus .aubtns{grid-column:2;grid-row:auto}}
+/* b66 fix: the chosen answer on the row you are on keeps dark text on its filled colour */
+.aurow.focus .aub.on,.aurow:hover .aub.on{color:#08101a;background:var(--c);border-color:var(--c)}
+.aurow.focus .aub.on kbd,.aurow:hover .aub.on kbd{color:#08101a;border-color:rgba(0,0,0,.3)}
+.aurow.focus .aub.on svg{color:#08101a}
+
+/* b67: fewer clicks — Start on the landing page, Next rival on the shelf, the add-a-shelf boxes tucked away */
+.auadd{margin-top:16px}
+.auadd summary{cursor:pointer;font-size:13px;color:var(--muted);font-weight:600;padding:8px 0;list-style:none;display:flex;align-items:center;gap:8px}
+.auadd summary::before{content:'';width:7px;height:7px;border-right:2px solid var(--faint);border-bottom:2px solid var(--faint);transform:rotate(-45deg);transition:transform .15s}
+.auadd[open] summary::before{transform:rotate(45deg)}
+.auadd summary:hover{color:var(--text)}
+.ausplit{margin-top:8px}
