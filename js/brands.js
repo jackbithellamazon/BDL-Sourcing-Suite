@@ -37,7 +37,10 @@ const closeMenus=()=>document.querySelectorAll('.menu.open').forEach(m=>m.classL
 
 /* ============ identity ============ */
 function whoPaint(){['#whoSel','#meIn'].forEach(id=>{const el=$(id);if(el&&el.value!==me())el.value=me();});}
-function whoSet(v){lsSet(ME_KEY,v);whoPaint();renderList();if(result)renderTable();toast(v?'You are '+v+' — everything you mark carries your name':'No name set — nothing can be marked until you pick one',!v);}
+/* the storefront audit is Jack's page — the tile is not there for anyone else */
+function paintJackOnly(){document.querySelectorAll('.jackonly').forEach(el=>{el.hidden=!isJack();});
+  if(!isJack()){const p=$('#page-audit');if(p&&p.classList.contains('active')){document.querySelector('.pagebtn[data-page="page-brands"]').click();}}}
+function whoSet(v){lsSet(ME_KEY,v);whoPaint();paintJackOnly();if(typeof renderAudit==='function')renderAudit();renderList();if(result)renderTable();toast(v?'You are '+v+' — everything you mark carries your name':'No name set — nothing can be marked until you pick one',!v);}
 /* b24 (14 Sep: Jack clicked Y/N/M all afternoon with no name picked — every click was refused by a toast he never saw and the
    work was lost). The question is now a gate you cannot miss: it opens on first visit and on any marking click, and the click
    that hit it is replayed once a name is picked. */
@@ -839,6 +842,7 @@ function showTab(tab,quiet){if(!['brands','runs','leads'].includes(tab))tab='bra
   $('#cardBrands').hidden=tab!=='brands';$('#cardRuns').hidden=tab!=='runs';$('#cardLeads').hidden=tab!=='leads';
   if(tab==='runs')renderLog();if(tab==='leads'&&typeof renderHistory==='function')renderHistory();}
 function openHash(){let h=location.hash||'';
+  if(/^#audit/i.test(h)&&typeof auHash==='function'&&isJack()){auHash();return;}
   /* b61: AVM HQ links carry the VA's name (#run=key&who=Suz) so the who-are-you gate never appears */
   const wm=/[&?]who=([A-Za-z]+)/.exec(h);if(wm){const w=USERS.find(u=>u.toLowerCase()===wm[1].toLowerCase());if(w&&me()!==w){lsSet(ME_KEY,w);whoPaint();}const g=$('#whoGate');if(w&&g)g.hidden=true;h=h.replace(/[&?]who=[A-Za-z]+/,'');}
   const m=/^#run=([a-z0-9-]+)/i.exec(h);
@@ -846,7 +850,7 @@ function openHash(){let h=location.hash||'';
   if(/^#(runs|leads|history)\b/i.test(h)){const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b&&!b.classList.contains('active'))b.click();if(cur&&!$('#viewRun').hidden)backToList();showTab(/^#runs/i.test(h)?'runs':'leads');return;}const goBrands=()=>{const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b&&!b.classList.contains('active'))b.click();};
   if(m&&srcGet(m[1])){goBrands();openRun(m[1]);return;}
   if(/^#due/i.test(h)){goBrands();if(cur&&!$('#viewRun').hidden)backToList();const b=document.querySelector('#lSeg button[data-seg="due"]');if(b)b.click();}}
-function brandsInit(){if(typeof bbSeed==='function')bbSeed();renderList();renderLog();if(!me())whoGate(true);setTimeout(openHash,50);window.addEventListener('hashchange',openHash);paintTokens();setInterval(paintTokens,10*60*1000);
+function brandsInit(){if(typeof bbSeed==='function')bbSeed();paintJackOnly();renderList();renderLog();if(!me())whoGate(true);setTimeout(openHash,50);window.addEventListener('hashchange',openHash);paintTokens();setInterval(paintTokens,10*60*1000);
   /* b30 (Jack: "still loads of dead space on ASUS"): the floors card lives under the run summary, so the two columns come out level */
   {const fr=$('#floorRow'),tc=document.querySelector('#viewRun .twocol');if(fr&&tc)tc.after(fr);}
   $('#brandTbl').addEventListener('click',onListClick);
@@ -862,7 +866,7 @@ function brandsInit(){if(typeof bbSeed==='function')bbSeed();renderList();render
   /* b58 (Jack: "still so rigid on seeing history leads"): Brands · Runs · Lead history are three views of the same page */
   document.querySelectorAll('#lvNav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
   showTab(lview.tab||'brands',true);
-  runsLogInit();historyInit();
+  runsLogInit();historyInit();if(typeof auInit==='function')auInit();
   $('#drawer .veil').addEventListener('click',closeDrawer);
   $('#backBtn').addEventListener('click',backToList);
   $('#runEdit').addEventListener('click',()=>openEdit(cur));$('#runHist').addEventListener('click',()=>openHistory(cur));

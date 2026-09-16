@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b63">
-<link rel="stylesheet" href="css/brands.css?v=b63">
+<link rel="stylesheet" href="css/base.css?v=b64">
+<link rel="stylesheet" href="css/brands.css?v=b64">
 </head>
 <body>
 <div class="wrap">
@@ -47,6 +47,11 @@
     <button class="pagebtn" data-page="page-brands">
       <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span>
       <span class="ptxt"><span class="pt">Brands / Filters</span><span class="ps">Saved searches · run what is due · mark the leads</span></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+    <button class="pagebtn jackonly" data-page="page-audit" hidden>
+      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-7h6v7"/></svg></span>
+      <span class="ptxt"><span class="pt">Storefront audits</span><span class="ps">Go down a rival's shelf · one answer each</span></span>
       <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
     </button>
     <button class="pagebtn" data-page="page-settings">
@@ -416,6 +421,8 @@
     <div class="drawer" id="drawer"><div class="veil"></div><div class="pane" id="drawerBody"></div></div>
   </div>
 
+  <div class="page" id="page-audit"></div>
+
   <!-- ======================================================= -->
   <!-- PAGE 4 · SETTINGS                                        -->
   <!-- ======================================================= -->
@@ -482,19 +489,20 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b63"></script>
-<script src="js/parse.js?v=b63"></script>
-<script src="js/rule1.js?v=b63"></script>
-<script src="js/rule2.js?v=b63"></script>
-<script src="js/export.js?v=b63"></script>
-<script src="js/rule4.js?v=b63"></script>
-<script src="js/queue.js?v=b63"></script>
-<script src="js/sources.js?v=b63"></script>
-<script src="js/cloud.js?v=b63"></script>
-<script src="js/leadtools.js?v=b63"></script>
-<script src="js/keepaconsole.js?v=b63"></script>
-<script src="js/brands.js?v=b63"></script>
-<script src="js/history.js?v=b63"></script>
-<script src="js/boot.js?v=b63"></script>
+<script src="js/core.js?v=b64"></script>
+<script src="js/parse.js?v=b64"></script>
+<script src="js/rule1.js?v=b64"></script>
+<script src="js/rule2.js?v=b64"></script>
+<script src="js/export.js?v=b64"></script>
+<script src="js/rule4.js?v=b64"></script>
+<script src="js/queue.js?v=b64"></script>
+<script src="js/sources.js?v=b64"></script>
+<script src="js/cloud.js?v=b64"></script>
+<script src="js/leadtools.js?v=b64"></script>
+<script src="js/keepaconsole.js?v=b64"></script>
+<script src="js/brands.js?v=b64"></script>
+<script src="js/history.js?v=b64"></script>
+<script src="js/audit.js?v=b64"></script>
+<script src="js/boot.js?v=b64"></script>
 </body>
 </html>

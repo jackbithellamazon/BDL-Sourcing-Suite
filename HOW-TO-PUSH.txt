@@ -1,43 +1,45 @@
-BDL Sourcing — push b63 live
+BDL Sourcing — push b64 live
 ============================
 1. Open  https://github.com/jackbithellamazon/BDL-Sourcing-Suite
 2. Add file  →  Upload files
-3. Drag EVERYTHING inside this folder into the page:
-      index.html
-      css/      (base.css, brands.css)
-      js/       (boot, core, parse, rule1, rule2, rule4, queue, sources, cloud,
-                 leadtools, keepaconsole, brands, history)
-      tests/    (checks.js)
-      README-DEPLOY.txt
-   You do NOT need this HOW-TO-PUSH.txt file, but it does no harm.
-4. Commit. The live site updates within a minute, same address:
+3. Drag EVERYTHING inside this folder in (index.html, css/, js/, tests/, README-DEPLOY.txt).
+   The .sql and this .txt are for you, not the website — dragging them in does no harm.
+4. Commit. Live within a minute, same address:
       https://jackbithellamazon.github.io/BDL-Sourcing-Suite/
-5. Check it worked: the header should read  v1.2 · 2026-09-16 · b63
+5. The header should then read  v1.2 · 2026-09-16 · b64
 
-WHAT IS IN THIS PUSH (b47 → b63, live was on b46)
--------------------------------------------------
+THEN, ONCE: turn the storefront audit on
+----------------------------------------
+Open Supabase → the BDL project → SQL editor → New query.
+Paste all of 2026-09-16-BDL-SOURCING-AUDIT-SUPABASE.sql and Run.
+It only creates three new tables and one view. Nothing existing is touched.
+Until you run it the audit page still works; answers wait in your browser and
+send themselves the moment the tables exist.
+
+WHAT IS IN THIS PUSH (b47 → b64, live was on b46)
+--------------------------------------------------
+Storefront audits (new page, yours only)
+  · Every rival OA Overview tracks, their shelf, and how much is left to judge
+  · Keys 1-6: Not lead · Unsure · Discord · WS · Joint lead · Missed it
+  · Missed it then asks why: out of stock, passed on it, too slow, price gone
+  · An answer belongs to the product, so it counts on every rival's shelf
+  · Products you already sell are marked green automatically
+  · Each row says if it was a lead on our own filters and nobody said Yes
+  · Titles and pictures free from a Keepa export, or about 1 token each
+  · Undo, shift-select a run, mark the rest Not lead, end-of-audit summary
+
 For the VAs
-  · Step-by-step instructions on every run screen, quoting Keepa's own export box
-  · "Your day" banner: what is due for you, and a Start button
-  · Next due button, so they go filter to filter without the list
+  · Step-by-step instructions on every run screen, quoting Keepa's export box
+  · "Your day" banner and a Next due button
   · Owner, status, cadence, Edit, Pause, Delete and Mark-all-seen are yours only
-  · Links from AVM HQ carry the VA's name, so the who-are-you box never shows
 
 Seeing the work
-  · Lead history: every lead ever kept, on every source, filter and sort any way
-  · Runs log: filter by period, person, rule, source; roll up by source, day or person
-  · To review / All leads / New / Better / Worse / Same buttons with counts
-  · Last runs shown under each source name
+  · Lead history: every lead ever kept, filter and sort any way
+  · Runs log with filters and roll-ups by source, day or person
+  · To review / All leads / New / Better / Worse / Same, with counts
 
 The maths
-  · Under £60 the sell price is never capped below the cheapest FBA offer live now
-  · Rule 3 VAT fix: a coffee or tea title naming beans, ground, instant, pods, bags
-    or a weight stays 0% whatever else it says
-  · Amazon Basics, Clipper, Google, NETGEAR, HP, Oral-B, Microsoft, Staub, Xiaomi banned
+  · Under £60 the sell is never capped below the cheapest FBA offer live now
+  · Tea and coffee VAT fix, and nine brands banned outright
 
-Sources
-  · Hoover, Tassimo, GoPro, Corsair/Elgato, Skullcandy, SteelSeries: your Keepa links, Active
-  · SteelSeries now runs UK as well as the four EU markets
-  · Five old ShiftTrack filters kept as paused sources, with their run history
-
-89 known-answer checks pass on this build (add ?checks to the URL).
+94 known-answer checks pass on this build (add ?checks to the URL).

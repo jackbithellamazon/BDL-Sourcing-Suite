@@ -153,6 +153,28 @@ window.SourcingChecks=(function(){
       ok('R2 score · £100/20%/50',r2score(100,20,50),EXPECT.score2);
       /* b57: five old ShiftTrack filters seeded paused with their links (Jack's 15 Sep notes) — never active by default */
       const hist=['suz-20plus','suz-7day-7-40','suz-7day-7-50','mera-7day-50plus','mera-7day-20-all'];
+      /* b64: the storefront audit. An answer belongs to the product; your own correction inside 15 minutes rewrites
+         the same row; anyone else's press writes a new one; a Keepa export fills the details for free. */
+      const nowT='2026-09-16T10:00:00.000Z',soon='2026-09-16T10:05:00.000Z',later='2026-09-16T12:00:00.000Z';
+      const p1=audPress('B0TEST00001',null,'not','Jack','A1',nowT);
+      const p2=audPress('B0TEST00001',p1.row,'discord','Jack','A1',soon);      /* same person, 5 min later → correction */
+      const p3=audPress('B0TEST00001',p2.row,'discord','Jack','A1',later);     /* same person, 2 h later → new row */
+      const p4=audPress('B0TEST00001',p2.row,'ws','Mera','A1',soon);           /* someone else → new row */
+      ok('Audit · a correction rewrites, a later press adds',[p1.replaced,p2.replaced,p2.row.id===p1.row.id,p3.replaced,p4.replaced,p4.row.id===p2.row.id],
+        [false,true,true,false,false,false]);
+      ok('Audit · status: verdict, then a joint lead we sell, else to do',
+        [audStatus({verdict:'not'},false),audStatus(null,true),audStatus(null,false)],['not','jointauto','todo']);
+      const csvRow=(await csv('tea-coffee-2026-09-15.csv')).rows.find(r=>r.ASIN==='B0CNXZYW75');
+      const pr=audFromCsv(csvRow);
+      ok('Audit · a Keepa export fills the details free',[pr.asin,pr.brand,Math.round(pr.price*100)/100,pr.image.startsWith('https://m.media-amazon.com/images/'),pr.source],
+        ['B0CNXZYW75','STARBUCKS',27.99,true,'export']);
+      ok('Audit · Keepa API product → the same shape',(()=>{const k=audFromKeepa({asin:'B0TEST00002',title:'Test',brand:'B',imagesCSV:'51abc.jpg,52def.jpg',stats:{current:[1299,-1,-1,4210,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1199]},categoryTree:[{name:'Grocery'}],monthlySold:400});
+        return [k.price,k.rank,k.image,k.root,k.mo];})(),[11.99,4210,'https://m.media-amazon.com/images/I/51abc.jpg','Grocery',400]);
+      ok('Audit · our own lead history is read back per ASIN',(()=>{const O=audOurIndex(
+          [{name:'Mera high-ticket',source:'mera-highticket',day:'2026-09-15',at:'2026-09-15T10:00:00Z',who:'Mera',asins:['B0TEST00003']}],
+          {'mera-highticket':{B0TEST00003:{state:{score:64,roi:12,profit:5,buy:10,sell:20},stamp:'2026-09-15_1000'}}},
+          {});
+        const e=O.B0TEST00003;return [e.runs,e.src,e.owner,e.score,e.roi,!!e.said];})(),[1,'Mera high-ticket','Mera',64,12,false]);
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */
