@@ -175,6 +175,14 @@ window.SourcingChecks=(function(){
           {'mera-highticket':{B0TEST00003:{state:{score:64,roi:12,profit:5,buy:10,sell:20},stamp:'2026-09-15_1000'}}},
           {});
         const e=O.B0TEST00003;return [e.runs,e.src,e.owner,e.score,e.roi,!!e.said];})(),[1,'Mera high-ticket','Mera',64,12,false]);
+      /* b73 (Jack, 16 Sep): the audit's SellerAmp button must NOT carry a cost price. The Buy Box figure is what the
+         RIVAL sells at, not what Jack pays, so sending it as sas_cost_price made SellerAmp read a 0% deal. Clicking
+         the button and pressing S now open exactly the same URL. */
+      ok('Audit · SellerAmp opens on the ASIN alone, no cost price',(()=>{const html=auLinks('B0TEST00004');
+        const hrefs=[...html.matchAll(/href="([^"]+)"/g)].map(m=>m[1]);
+        const sas=hrefs.find(h=>h.includes('selleramp'))||'';
+        return [sas.includes('sas_cost_price'),sas.includes('sas_sale_price'),sas,hrefs.length];
+      })(),[false,false,'https://sas.selleramp.com/sas/lookup?search_term=B0TEST00004',3]);
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */

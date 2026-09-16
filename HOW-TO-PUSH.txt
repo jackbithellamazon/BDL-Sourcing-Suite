@@ -1,38 +1,22 @@
-BDL Sourcing — push b72      (live is still b64)
-================================================
+BDL SOURCING — b73 · 16 Sep 2026
 
-STEP 1 · the app          2 minutes
------------------------------------
-https://github.com/jackbithellamazon/BDL-Sourcing-Suite → Add file → Upload files
-Drag in: index.html, css/, js/, tests/, README-DEPLOY.txt   → Commit
-Header should then read  v1.2 · 2026-09-16 · b72
+ONE STEP. The Cloudflare Worker is already done (you deployed it, /health says hasKey true,
+charts pull as real PNGs and cache for 24h). Nothing to do there.
 
-STEP 2 · the Worker, for the price charts     2 minutes, and it cannot lose anything
-------------------------------------------------------------------------------------
-Cloudflare → Workers & Pages → bdl-sourcing → Edit code
-Select all the code, paste in 2026-09-16-BDL-SOURCING-WORKER-v2.js → Deploy
-Then REFRESH the Sourcing app once.
+1. UPLOAD THE APP
+   GitHub → your sourcing repo → Add file → Upload files.
+   Drag in: index.html, css, js, tests, README-DEPLOY.txt  (everything except this file).
+   Commit. GitHub Pages serves it within a minute, same URL.
+   Then hard-refresh the app once (Cmd+Shift+R).
 
-Why it is safe:
- · Your Keepa key is NOT in that file. It lives in the Worker's secret,
-   KEEPA_API_KEY, and editing code never touches secrets.
- · The whole change is two lines: 'graphimage' added to the allowed list, and
-   an image is passed through as an image instead of text. Everything else,
-   including who is allowed to call it, is identical.
- · If anything at all looks wrong: paste ROLLBACK-old-worker-v1.js back in and
-   Deploy. Cloudflare also keeps every past version under Deployments, so you
-   can roll back there in one click without any file.
- · Nothing else in the app depends on this step. Skip it and everything works,
-   you just press K for the chart instead of seeing it in the panel.
+WHAT CHANGED SINCE b72
+   The SellerAmp button no longer sends a cost price.
+   The Buy Box figure on the audit panel is what the RIVAL sells at, not what you pay, so
+   sending it as sas_cost_price made SellerAmp open on a 0% deal. It now opens on the ASIN
+   alone — exactly what pressing S already did, so the button and the key finally match.
+   A check guards it: "Audit · SellerAmp opens on the ASIN alone, no cost price".
 
-WHAT b72 GIVES YOU
-------------------
-· The Keepa 90-day chart inside the audit, for the product you are on
-  (Amazon, Buy Box, 3rd party, sales rank). About 1 token each.
-· Bigger answer buttons: key + icon + word, in colour, solid when chosen.
-· Amazon · Keepa · SellerAmp as proper buttons on every row AND pinned at the
-  top of the panel so they never scroll away.
-· A plain "Next ↓" button on the row you are on, for when you are on the mouse
-  and want to leave one without judging it.
-· Keys still do everything: 1-6 judge and move on, arrows move, U undoes,
-  O / K / S open Amazon / Keepa / SellerAmp, / searches.
+ROLLBACK
+   Upload the previous files over the top. GitHub keeps every version in the repo history.
+
+95 checks, all green.
