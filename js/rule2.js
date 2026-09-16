@@ -71,7 +71,13 @@ function r2sell(r){
        regime altogether (L'OR pods: 90d £10.82, 180d £34.24 from a £60 launch) — then the 90d is the truth */
     const regime=bb90&&bb180&&bb180>bb90*R2.REGIME_GAP;
     let s=regime?bb90:Math.max(...base),why=regime?'Buy Box 90d average (180d is an old higher price) · no uplift':`Buy Box ${base.length===2?'90/180d':'90d'} average · no uplift (under £${R2.LOW_TICKET})`,conf='medium';
-    if(f90&&f90<s){s=f90;why='capped at the FBA 90d average';}
+    /* b62 (Jack, 16 Sep, Nescafé Decaf 100g x6: "sell price for me is 20+, no FBA seller under 21, 0% VAT, fast selling"):
+       never cap below where the FBA sellers actually are TODAY. When the cheapest live FBA offer sits above the 90-day FBA
+       average, that live offer is the cap. It only ever lifts the sell back towards the Buy Box average — never past it.
+       Measured on his tea & coffee, S&S, A2A £10-40 and Business exports: one extra lead (that jar), none lost. */
+    const fcur=kNum(r['New, 3rd Party FBA: Current']);
+    const fCap=(f90&&fcur&&fcur>f90)?fcur:f90;
+    if(fCap&&fCap<s){s=fCap;why=fCap===fcur&&f90&&fcur>f90?'capped at the cheapest FBA offer live now':'capped at the FBA 90d average';}
     if(hi&&hi<s){s=hi;why='capped at the Buy Box high';}
     return{sell:Math.round(s*100)/100,why,conf};}
   /* £60+ — refit 14 Sep evening on Jack's calls: Vivobook 15 £425–450 against a lone FBA seller parked at £599.99 while FBM sat at

@@ -1,0 +1,43 @@
+BDL Sourcing — push b63 live
+============================
+1. Open  https://github.com/jackbithellamazon/BDL-Sourcing-Suite
+2. Add file  →  Upload files
+3. Drag EVERYTHING inside this folder into the page:
+      index.html
+      css/      (base.css, brands.css)
+      js/       (boot, core, parse, rule1, rule2, rule4, queue, sources, cloud,
+                 leadtools, keepaconsole, brands, history)
+      tests/    (checks.js)
+      README-DEPLOY.txt
+   You do NOT need this HOW-TO-PUSH.txt file, but it does no harm.
+4. Commit. The live site updates within a minute, same address:
+      https://jackbithellamazon.github.io/BDL-Sourcing-Suite/
+5. Check it worked: the header should read  v1.2 · 2026-09-16 · b63
+
+WHAT IS IN THIS PUSH (b47 → b63, live was on b46)
+-------------------------------------------------
+For the VAs
+  · Step-by-step instructions on every run screen, quoting Keepa's own export box
+  · "Your day" banner: what is due for you, and a Start button
+  · Next due button, so they go filter to filter without the list
+  · Owner, status, cadence, Edit, Pause, Delete and Mark-all-seen are yours only
+  · Links from AVM HQ carry the VA's name, so the who-are-you box never shows
+
+Seeing the work
+  · Lead history: every lead ever kept, on every source, filter and sort any way
+  · Runs log: filter by period, person, rule, source; roll up by source, day or person
+  · To review / All leads / New / Better / Worse / Same buttons with counts
+  · Last runs shown under each source name
+
+The maths
+  · Under £60 the sell price is never capped below the cheapest FBA offer live now
+  · Rule 3 VAT fix: a coffee or tea title naming beans, ground, instant, pods, bags
+    or a weight stays 0% whatever else it says
+  · Amazon Basics, Clipper, Google, NETGEAR, HP, Oral-B, Microsoft, Staub, Xiaomi banned
+
+Sources
+  · Hoover, Tassimo, GoPro, Corsair/Elgato, Skullcandy, SteelSeries: your Keepa links, Active
+  · SteelSeries now runs UK as well as the four EU markets
+  · Five old ShiftTrack filters kept as paused sources, with their run history
+
+89 known-answer checks pass on this build (add ?checks to the URL).

@@ -80,6 +80,11 @@ async function cloudPullLeads(sourceKey){if(!cloudEnabled()||!cloud.tables)retur
   try{const rows=await cloudGetAll('src_leads','select=*&source_key=eq.'+encodeURIComponent(sourceKey));
     const m={};rows.forEach(r=>m[r.asin]={state:r.state,stamp:r.stamp,prev:r.prev||null});const all=leadAll();all[sourceKey]=m;lsSet(LEAD_KEY,all);return true;}
   catch(e){cloud.err=e.message;if(missingTables(e))cloud.tables=false;paintCloud();return false;}}
+/* b58: every source's lead states in one go — the Lead history view. Replaces the local map wholesale (never with unsent changes pending). */
+async function cloudPullLeadsAll(){if(!cloudEnabled()||!cloud.tables)return false;
+  if(outbox().length){await cloudFlush();if(outbox().length)return false;}
+  try{const rows=await cloudGetAll('src_leads','select=*');const all={};rows.forEach(r=>{(all[r.source_key]=all[r.source_key]||{})[r.asin]={state:r.state,stamp:r.stamp,prev:r.prev||null};});lsSet(LEAD_KEY,all);cloud.last=Date.now();cloud.err='';paintCloud();return true;}
+  catch(e){cloud.err=e.message;if(missingTables(e))cloud.tables=false;paintCloud();return false;}}
 /* ---- the pill in the header ---- */
 function paintCloud(){const el=document.getElementById('cloudPill');if(!el)return;const n=outbox().length;let cls='',txt='',title='';
   if(!cloudEnabled()){cls='off';txt='Local · sandbox';title='Cloud is off on localhost (add ?cloud to the URL to test it)';}

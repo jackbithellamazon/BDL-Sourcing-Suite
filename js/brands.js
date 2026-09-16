@@ -8,7 +8,13 @@ const touched=new Set();   /* rows judged this sitting stay visible in "To revie
 const files={viewer:null,UK:null,DE:null,FR:null,IT:null,ES:null,one:null};
 const view={status:'REVIEW',market:'ALL',q:'',hideNo:false,sort:'default',page:1,per:50,sel:new Set()};
 const PAGEN=()=>view.per>0?view.per:1e9;
-const lview={q:'',market:'ALL',rule:'ALL',owner:'ALL',seg:'all'};
+const LVIEW_KEY='bdl-sourcing-lview';
+const lview=Object.assign({q:'',market:'ALL',rule:'ALL',owner:'ALL',seg:'all',type:'ALL',sort:'due',tab:'brands'},lsGet(LVIEW_KEY,{})||{});
+function lviewSave(){const {q,...rest}=lview;lsSet(LVIEW_KEY,rest);}
+/* b58: one colour per person, used everywhere a name shows */
+const OWNER_CLS={Jack:'o-jack',Mera:'o-mera',Suz:'o-suz',VAs:'o-vas'};
+function ownCls(n){return OWNER_CLS[n]||'o-vas';}
+function whoChip(n){return n?`<span class="whochip ${ownCls(n)}">${escapeHtml(n)}</span>`:'<span class="whochip o-none">no name</span>';}
 const RULE_LABEL={1:'buy UK/EU · sell UK',2:'UK Amazon-to-Amazon'};
 const ICONS={
   run:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
@@ -68,10 +74,37 @@ function renderKpis(){const all=srcAll(),runs=runsAll(),V=verdAll(),LA=leadAll()
     +k(asins.size?Math.round(checked/asins.size*100)+'%':'—','Checked',asins.size?`${checked.toLocaleString()} of ${asins.size.toLocaleString()} leads judged`:'no leads yet',asins.size&&checked/asins.size<.5?'coral':'jade',ICONS.eye)
     +k(tr.toLocaleString(),'To review now',trSrc?`across ${trSrc} filter${trSrc===1?'':'s'}`:'','iris',ICONS.eye)
     +k(due,'Due today',`${active} active · ${testing} testing`,due?'amber':'jade',ICONS.cal);}
-function renderList(){renderKpis();renderApprovals();const q=lview.q.toLowerCase();
-  const rows=srcSorted().filter(s=>{
+function listSorted(){const L=srcAll();const last=s=>runLast(s.key);const t=s=>{const l=last(s);return l?l.at:'';};
+  const cmp={due:(a,b)=>(dueRank(a)-dueRank(b))||a.name.localeCompare(b.name),name:(a,b)=>a.name.localeCompare(b.name),
+    owner:(a,b)=>(a.owner||'VAs').localeCompare(b.owner||'VAs')||a.name.localeCompare(b.name),
+    last:(a,b)=>(t(b)>t(a)?1:t(b)<t(a)?-1:0)||a.name.localeCompare(b.name),
+    leads:(a,b)=>(((last(b)||{}).leads||0)-((last(a)||{}).leads||0))||a.name.localeCompare(b.name),
+    review:(a,b)=>(toReviewCount(last(b))-toReviewCount(last(a)))||a.name.localeCompare(b.name),
+    cadence:(a,b)=>((CADENCE_DAYS[a.cadence]||99)-(CADENCE_DAYS[b.cadence]||99))||a.name.localeCompare(b.name)}[lview.sort]||null;
+  if(!cmp)return srcSorted();
+  return L.sort((a,b)=>(a.type===b.type?0:a.type==='filter'?-1:1)||cmp(a,b));}
+function segCounts(){const all=srcAll();const c={due:0,mine:0,all:all.length,active:0,paused:0};
+  all.forEach(s=>{if(dueState(s).due)c.due++;if(s.status==='paused')c.paused++;else c.active++;if((me()&&s.owner===me())||(lockFresh(s)&&ownLock(s)))c.mine++;});
+  document.querySelectorAll('#lSeg button').forEach(b=>{const n=b.querySelector('b');if(n)n.textContent=c[b.dataset.seg]||0;});
+  const nb=$('#lvnBrands'),nr=$('#lvnRuns'),nl=$('#lvnLeads');if(nb)nb.textContent=all.length;if(nr)nr.textContent=runsAll().length;
+  if(nl){let n=0;const LA=leadAll();Object.values(LA).forEach(m=>n+=Object.keys(m||{}).length);nl.textContent=n.toLocaleString();}}
+/* b60 (Jack: "needs to be smooth and easy for my VAs"): the next thing to run, for whoever is signed in */
+function nextDue(fromKey){const m=me();const L=srcAll().filter(s=>s.status!=='paused'&&s.key!==fromKey&&dueState(s).due);
+  L.sort((a,b)=>((m&&b.owner===m)-(m&&a.owner===m))||(dueRank(a)-dueRank(b))||a.name.localeCompare(b.name));return L[0]||null;}
+function renderYourDay(){const el=$('#yourDay');if(!el)return;const m=me();if(!m){el.hidden=true;return;}
+  const mine=srcAll().filter(s=>s.status!=='paused'&&(s.owner===m||(m==='Jack'&&false)));const due=mine.filter(s=>dueState(s).due);
+  const tr=mine.reduce((n,s)=>n+toReviewCount(runLast(s.key)),0);const nx=nextDue(null);
+  const dueAny=srcAll().filter(s=>s.status!=='paused'&&dueState(s).due).length;
+  el.innerHTML=`<div class="yd"><span class="ydn">${whoChip(m)}</span><span class="ydt">${mine.length?(due.length?`<b>${due.length}</b> of your ${mine.length} filters ${due.length===1?'is':'are'} due today`:`all ${mine.length} of your filters are done for today ✓`):`nothing is assigned to you yet`}${tr?` · <b>${tr.toLocaleString()}</b> lead${tr===1?'':'s'} waiting for a look`:''}${!due.length&&dueAny?` · ${dueAny} due for others`:''}</span>
+    ${nx?`<button class="btn primary sm" type="button" data-start="${nx.key}">${ICONS.run}Start with ${escapeHtml(nx.name)}${nx.owner!==m?' ('+((nx.owner||'VAs')==='VAs'?'VAs':escapeHtml(nx.owner)+"'s")+')':''}</button>`:''}</div>`;el.hidden=false;}
+const HOWTO_KEY='bdl-sourcing-howto-hidden';
+function renderHowTo(){const el=$('#howTo');if(!el)return;el.hidden=!!lsGet(HOWTO_KEY,false);}
+function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay();renderHowTo();const q=lview.q.toLowerCase();
+  const rows=listSorted().filter(s=>{
     if(lview.seg==='due'&&!dueState(s).due)return false;
     if(lview.seg==='paused'&&s.status!=='paused')return false;
+    if(lview.seg==='active'&&s.status==='paused')return false;
+    if(lview.type!=='ALL'&&(s.type==='filter'?'filter':'brand')!==lview.type)return false;
     if(lview.seg==='mine'&&!(me()&&s.owner===me())&&!(lockFresh(s)&&ownLock(s)))return false;
     if(lview.market!=='ALL'&&!s.markets.includes(lview.market))return false;
     if(lview.rule!=='ALL'&&String(s.rule)!==lview.rule)return false;
@@ -80,16 +113,16 @@ function renderList(){renderKpis();renderApprovals();const q=lview.q.toLowerCase
   const tb=$('#brandTbl');
   if(!rows.length){tb.innerHTML=`<tbody><tr><td colspan="8" style="text-align:center;color:var(--faint);padding:22px">${lview.seg==='due'?'Nothing due — everything has been run inside its cadence.':lview.seg==='mine'?(me()?'Nothing is yours yet — Jack sets the owner in Edit.':'Pick who you are (top right) to see your list.'):'Nothing here.'}</td></tr></tbody>`;return;}
   const rowHtml=s=>{const d=dueState(s),last=runLast(s.key),nx=nextRun(s),tok=tokenEstimate(s),lk=lockFresh(s)?s.inProgress:null,mine=lk&&ownLock(s),tr=toReviewCount(last);
-    return`<tr class="${s.status==='paused'?'paused':(d.cls==='due'?'isdue':'')}" data-key="${s.key}">
-      <td class="namec"><div class="brandcell">${avatar(s)}<div class="ntext"><div class="nline"><span class="bname">${escapeHtml(s.name)}</span><span class="rl" title="${RULE_LABEL[s.rule]||''}">Rule ${s.rule}</span></div><span class="note" title="${escapeHtml(s.note||'')}">${escapeHtml(s.note||(s.type==='filter'?'Saved Keepa filter':'Brand run · UK sell side'))}</span></div></div></td>
-      <td class="ownc">${escapeHtml(s.owner||'VAs')}</td>
+    return`<tr class="${s.status==='paused'?'paused':(d.cls==='due'?'isdue':d.cls==='done'?'isdone':'')}" data-key="${s.key}">
+      <td class="namec"><div class="brandcell">${avatar(s)}<div class="ntext"><div class="nline"><span class="bname">${escapeHtml(s.name)}</span><span class="rl r${s.rule}" title="${RULE_LABEL[s.rule]||''}">Rule ${s.rule}</span></div><span class="note" title="${escapeHtml(s.note||'')}">${escapeHtml(s.note||(s.type==='filter'?'Saved Keepa filter':'Brand run · UK sell side'))}</span></div></div></td>
+      <td class="ownc">${isJack()?`<select class="inl ownsel ${ownCls(s.owner||'VAs')}" data-key="${s.key}" title="Who runs this — saves straight away">${['Jack','Mera','Suz','VAs'].map(u=>`<option${(s.owner||'VAs')===u?' selected':''}>${u}</option>`).join('')}</select>`:whoChip(s.owner||'VAs')}</td>
       <td><div class="flags" title="${s.markets.join(' · ')}">${s.markets.map(m=>`<span class="f">${FLAG[m]}</span>`).join('')}</div></td>
-      <td class="stc"><span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span><span class="cad">${CADENCE_LABEL[s.cadence]||s.cadence}</span>${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
-      <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` <span class="who">${escapeHtml(last.who)}</span>`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}</td>
+      <td class="stc">${isJack()?`<select class="inl stsel s-${s.status}" data-key="${s.key}" title="Active runs on its cadence · Testing = trial · Paused = off the list — saves straight away">${Object.entries(STATUS_LABEL).map(([k,l])=>`<option value="${k}"${s.status===k?' selected':''}>${l}</option>`).join('')}</select><select class="inl cadsel" data-key="${s.key}" title="How often it should run — saves straight away">${Object.entries(CADENCE_LABEL).map(([k,l])=>`<option value="${k}"${s.cadence===k?' selected':''}>${l}</option>`).join('')}</select>`:`<span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span><span class="l2">${CADENCE_LABEL[s.cadence]||s.cadence}</span>`}${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
+      <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` ${whoChip(last.who)}`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}</td>
       <td class="nextc"><span class="nx ${d.cls}">${d.label}</span><span class="l2" title="Run by export today = 0 Keepa tokens. If this ran through the API by itself it would cost about ${tok.toLocaleString()} tokens.">${d.sub||'by export'}</span></td>
-      <td class="actc"><div class="acts">${finderLink(s)?`<a class="ib" href="${finderLink(s)}" target="_blank" rel="noopener" title="${s.link?'Open the saved Keepa filter':'Open the generated Keepa filter (edit to paste your own)'}">${ICONS.ext}</a>`:`<span class="ib nolink" title="No Keepa link saved yet — Edit and paste it">?</span>`}<button class="btn run xs" data-act="run" ${s.status==='paused'?'disabled':''} title="${lk&&!mine?'Someone else has it open — you can still join':''}">${ICONS.run}${lk&&!mine?'Join':'Run'}</button><button class="ib" data-act="edit" title="Edit">${ICONS.edit}</button>
+      <td class="actc"><div class="acts">${finderLink(s)?`<a class="ib" href="${finderLink(s)}" target="_blank" rel="noopener" title="${s.link?'Open the saved Keepa filter':'Open the generated Keepa filter (edit to paste your own)'}">${ICONS.ext}</a>`:`<span class="ib nolink" title="No Keepa link saved yet — Edit and paste it">?</span>`}<button class="btn run xs" data-act="run" ${s.status==='paused'?'disabled':''} title="${lk&&!mine?'Someone else has it open — you can still join':''}">${ICONS.run}${lk&&!mine?'Join':'Run'}</button>${isJack()?`<button class="ib" data-act="edit" title="Edit">${ICONS.edit}</button>`:''}
         <div class="menu"><button class="ib" data-act="menu" aria-label="More">⋮</button>
-          <div class="pop"><button data-act="history">${ICONS.hist}History</button><button data-act="pause">${s.status==='paused'?ICONS.play:ICONS.pause}${s.status==='paused'?'Set active':'Pause'}</button>${lk?`<button data-act="unlock">${ICONS.eye}Clear "on it"</button>`:''}<button data-act="delete" class="danger">${ICONS.trash}Delete</button></div></div></div></td></tr>`;};
+          <div class="pop"><button data-act="history">${ICONS.hist}History</button>${isJack()?`<button data-act="pause">${s.status==='paused'?ICONS.play:ICONS.pause}${s.status==='paused'?'Set active':'Pause'}</button>`:''}${lk?`<button data-act="unlock">${ICONS.eye}Clear "on it"</button>`:''}${isJack()?`<button data-act="delete" class="danger">${ICONS.trash}Delete</button>`:''}</div></div></div></td></tr>`;};
   const head=`<thead><tr><th>Name</th><th>Owner</th><th>Buy from</th><th>Status · cadence</th><th>Last run</th><th>Next run</th><th></th></tr></thead>`;
   const filters=rows.filter(s=>s.type==='filter'),brands=rows.filter(s=>s.type!=='filter');
   const group=(label,list)=>list.length?`<tr class="grp"><td colspan="8"><span class="gl">${label}</span><span class="gn">${list.length}</span></td></tr>`+list.map(rowHtml).join(''):'';
@@ -99,11 +132,11 @@ function onListClick(e){const b=e.target.closest('button[data-act]');if(!b){clos
   if(act==='menu'){const m=b.closest('.menu');const open=m.classList.contains('open');closeMenus();if(!open)m.classList.add('open');e.stopPropagation();return;}
   closeMenus();
   if(act==='run')openRun(key);
-  else if(act==='edit')openEdit(s);
+  else if(act==='edit'){if(!isJack()){toast('Only Jack edits filters — ask him',true);return;}openEdit(s);}
   else if(act==='history')openHistory(s);
   else if(act==='unlock'){srcUnlock(s);renderList();toast('Cleared');}
-  else if(act==='pause'){s.status=s.status==='paused'?'active':'paused';s.paused=s.status==='paused';srcSave(s);renderList();toast(s.name+(s.status==='paused'?' paused':' set active'));}
-  else if(act==='delete'){if(!confirm('Delete '+s.name+' from the list for everyone? Its run history is kept.'))return;srcRemove(key);renderList();toast(s.name+' deleted');}}
+  else if(act==='pause'){if(!isJack()){toast('Only Jack pauses filters',true);return;}s.status=s.status==='paused'?'active':'paused';s.paused=s.status==='paused';srcSave(s);renderList();toast(s.name+(s.status==='paused'?' paused':' set active'));}
+  else if(act==='delete'){if(!isJack()){toast('Only Jack deletes filters',true);return;}if(!confirm('Delete '+s.name+' from the list for everyone? Its run history is kept.'))return;srcRemove(key);renderList();toast(s.name+' deleted');}}
 /* brand-blacklist requests waiting on Jack — everyone sees them, only Jack gets the buttons */
 function renderApprovals(){const el=$('#approvals');if(!el)return;const P=Object.entries(bbAll()).filter(([k,r])=>r.status==='pending');
   if(!P.length){el.hidden=true;el.innerHTML='';return;}el.hidden=false;
@@ -204,14 +237,15 @@ async function openRun(key){const s=srcGet(key);if(!s)return;
   if(!(lockFresh(s)&&ownLock(s)))srcLock(cur);
   if(!me()){toast('Pick who you are (top right) so this run carries your name',true);const w=$('#whoSel');if(w){w.classList.add('shake');setTimeout(()=>w.classList.remove('shake'),600);}}
   $('#viewList').hidden=true;$('#viewRun').hidden=false;paintRunHead();paintSlots();paintFloors();renderGuide();
-  {const tc=document.querySelector('#viewRun .twocol');if(tc)tc.classList.toggle('one',cur.rule!==1||ukOnly());}   /* b48: one-file sources stack, no dead column */
+  {const tc=document.querySelector('#viewRun .twocol');if(tc)tc.classList.add('one');}   /* b48/b55: every source stacks — no dead column either side (Jack, ASUS run) */
   $('#sumEmpty').textContent='Loading the shared compare baseline…';
   await cloudPullLeads(key);run();window.scrollTo({top:0,behavior:'smooth'});}
 function backToList(){if(cur&&ownLock(cur))srcUnlock(cur);$('#viewRun').hidden=true;$('#viewList').hidden=false;renderList();}
-function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runName').textContent=s.name;
+function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runName').textContent=s.name;$('#runEdit').hidden=!isJack();
   $('#runMk').innerHTML=s.markets.map(m=>`<i class="mk ${m==='UK'?'uk':''}">${m}</i>`).join(' ');
   const ol=otherLock(s);const lk=ol?` · <span class="lock">${escapeHtml(ol.who)} is also on this (since ${new Date(ol.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})})</span>`:'';
-  $('#runMeta').innerHTML=`${escapeHtml(s.owner||'VAs')} · Rule ${s.rule} · ${RULE_LABEL[s.rule]||''} · ${STATUS_LABEL[s.status]||''} · ${CADENCE_LABEL[s.cadence]||s.cadence} · ~${tokenEstimate(s).toLocaleString()} Keepa tokens if automated, 0 by export`+(s.note?' · '+escapeHtml(s.note):'')+lk;
+  $('#runMeta').innerHTML=`${whoChip(s.owner||'VAs')} <span class="rl r${s.rule}">Rule ${s.rule} · ${RULE_LABEL[s.rule]||''}</span> <span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||''}</span> <span class="mchip">${CADENCE_LABEL[s.cadence]||s.cadence}</span>`+(s.note?` <span class="mnote" title="${escapeHtml(s.note)}">${escapeHtml(s.note)}</span>`:'')+lk;
+  paintRunStrip();paintNext();
   const r1=s.rule===1;
   const uk1=r1&&s.markets.every(m=>m==='UK');
   $('#step1Title').textContent=r1&&!uk1?'Drop the Product Finder exports':"Drop this morning's export";
@@ -219,6 +253,15 @@ function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runN
   const link=finderLink(s);
   if(!link){$('#keepaRow').innerHTML=`<span class="nolinkmsg">No Keepa link saved for this yet — <button type="button" class="linkbtn" id="keepaEdit">Edit</button> and paste the Finder link. Exports can still be dropped below.</span>`;$('#keepaEdit').addEventListener('click',()=>openEdit(cur));return;}
   $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1&&!uk1?s.markets.map(m=>`<a href="${link}" data-mk="${m}" target="_blank" rel="noopener" title="Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export">${FLAG[m]} ${m}<span class="tick">✓</span>${ICONS.ext}</a>`).join('')+`<span class="mkhint">Same filter for all ${s.markets.length}. Keepa cannot take the marketplace from a link — after it opens, switch the flag top-right of Keepa to that country, run, export. One file per country.</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);}
+function paintNext(){const nx=cur?nextDue(cur.key):null;['#runNext','#runNext2'].forEach(id=>{const b=$(id);if(!b)return;b.hidden=!nx;if(nx){b.innerHTML=(id==='#runNext2'?'Done — next due: ':'Next due: ')+escapeHtml(nx.name)+' →';b.dataset.key=nx.key;}});}
+/* b59 (Jack: "make it easier to see the history"): the last runs of this source sit under its name, one chip each; the whole history and
+   every lead it ever kept are one click away */
+function paintRunStrip(){const el=$('#runStrip');if(!el||!cur)return;const runs=runsFor(cur.key).slice().reverse();const V=verdAll();
+  if(!runs.length){el.hidden=true;el.innerHTML='';return;}
+  const chips=runs.slice(0,7).map(r=>{let y=0,j=0;(r.asins||[]).forEach(a=>{const v=V[a];if(!v)return;j++;if(v.v==='Yes')y++;});const tr=toReviewCount(r);
+    return`<button type="button" class="rchip${tr?'':' done'}" data-act="hist" title="${escapeHtml(r.name)} · ${fmtWhen(r.at)}${r.who?' · '+escapeHtml(r.who):''} · ${r.rowsIn||0} in → ${r.leads} leads · ${r.new} new · ${r.better||0} better · ${j} judged"><span class="d">${ukDate(r.at).replace(/^\w+ /,'').replace(/\/\d{4}/,'')}</span><b>${r.leads}</b><span class="s">leads</span>${y?`<span class="y">${y}Y</span>`:''}<span class="tr ${tr?'':'z'}">${tr?tr+' to review':'all judged'}</span></button>`;}).join('');
+  const tot=runs.reduce((n,r)=>n+(r.leads||0),0);
+  el.innerHTML=`<span class="rl-lab">Last runs</span>${chips}${runs.length>7?`<button type="button" class="rchip more" data-act="hist">+${runs.length-7} more</button>`:''}<span class="rl-tot">${runs.length} run${runs.length===1?'':'s'} · ${tot.toLocaleString()} leads all time</span>`;el.hidden=false;}
 /* floors: the inputs ARE this source's floors — saved as you type, shared, applied to every run of it */
 function paintFloors(){if(!cur)return;const f=cur.filters||{};const r1=cur.rule===1;
   FLOORS.forEach(([k,l,scope])=>{const el=$('#fl_'+k);if(!el)return;el.parentElement.hidden=(scope==='r2'&&r1);if(document.activeElement!==el)el.value=f[k]==null?'':f[k];});
@@ -237,27 +280,47 @@ function renderGuide(){const g=$('#guide');if(!g||!cur)return;const r1=cur.rule=
   const have=MARKETS.filter(m=>files[m]).length,want=r1?cur.markets.filter(m=>m!=='UK'||!files.viewer).length:0;const anyFinder=MARKETS.some(m=>files[m]);
   const bar=$('#asinBar'),merged=(bar&&bar._all)?bar._all.length:0;
   const rev=result?result.out.filter(o=>o.QUEUE).length:0;
+  const EXPORT=['At the bottom of the Keepa table, set rows per page to the biggest number, so every result is on one page. Keepa only exports the page you can see.',
+    'Click Export (top right of the table). In the Export Data box choose: What to export → All active columns. Format → CSV. Leave "Include currency symbols" unticked. Press Export.',
+    'The file lands in your Downloads. Do not open or rename it.'];
+  const HOW={open:['Click the 🇬🇧 the filter button under step 1. Keepa opens with this saved search loaded.','Wait until the table has finished filling.'],
+    exp:EXPORT,
+    drop:['Drag the downloaded CSV onto the big box under step 1, or click the box and pick it from Downloads.','The numbers appear on the right straight away. If a yellow warning says a column is missing, switch that column on in Keepa (the columns button above the table) and export again.'],
+    review:['Click Open all in Keepa — every lead on the page opens in one go.','Read each graph. Back here, click Y (buy), N (no) or M (maybe) on that lead\'s row. A No needs a reason chip.','When the To-review list is empty, press Next due →.'],
+    openEach:['Click 🇬🇧 UK under step 1. Keepa opens the filter on the UK site. Wait for the table, then export (step 2).','Click 🇩🇪 DE. The same filter opens — now change Keepa\'s own country with the flag at the top right of Keepa to Germany and wait for the table to reload. Export again.','Repeat for each flag. One export per country.'],
+    expEach:EXPORT.concat(['Do this once per country. File names do not matter — the app reads the country from inside the file.']),
+    dropAll:['Drop all the country files on the box at once.','The chips under the box show which countries are in.'],
+    viewer:['Click Open UK Product Viewer with them loaded. Every ASIN from the country files goes in, merged and de-duped.','Wait for the Viewer table to fill.'],
+    viewerExp:EXPORT,
+    viewerDrop:['Drop the Viewer file on the same box. Leads appear.']};
   let steps;
   if(r1&&ukOnly())steps=[
-    ['Open the Keepa filter',FLAG.UK+' UK',!!files.viewer],
-    ['Export CSV — all columns','one file · it has the sell side too',!!files.viewer],
-    ['Drop it here','leads appear',!!result],
-    ['Review what needs a look',result?`${rev} to review`:'',!!result&&rev===0]];
+    ['Open the Keepa filter',FLAG.UK+' UK',!!files.viewer,HOW.open],
+    ['Export CSV — all columns','one file · it has the sell side too',!!files.viewer,HOW.exp],
+    ['Drop it here','leads appear',!!result,HOW.drop],
+    ['Review what needs a look',result?`${rev} to review`:'',!!result&&rev===0,HOW.review]];
   else if(r1)steps=[
-    ['Open the Keepa filter for each market',`${cur.markets.map(m=>FLAG[m]).join(' ')} · switch Keepa's locale, run it`,anyFinder],
-    ['Export CSV from each',`all columns · ${cur.markets.length} file${cur.markets.length===1?'':'s'}`,anyFinder],
-    ['Drop them here',`${have} of ${cur.markets.length} in`,have>=cur.markets.length&&have>0],
-    ['Open the UK Product Viewer with the ASINs',merged?`${merged.toLocaleString()} ASINs merged — one click below`:'the app merges and de-dupes them',!!files.viewer],
-    ['Export ALL columns from the Viewer','this is the UK selling side: sales, fees, offers',!!files.viewer],
-    ['Drop the Viewer export here','leads appear',!!result],
-    ['Review what needs a look',result?`${rev} to review`:'',!!result&&rev===0]];
+    ['Open the Keepa filter for each market',`${cur.markets.map(m=>FLAG[m]).join(' ')} · switch Keepa's country, run it`,anyFinder,HOW.openEach],
+    ['Export CSV from each',`all columns · ${cur.markets.length} file${cur.markets.length===1?'':'s'}`,anyFinder,HOW.expEach],
+    ['Drop them here',`${have} of ${cur.markets.length} in`,have>=cur.markets.length&&have>0,HOW.dropAll],
+    ['Open the UK Product Viewer with the ASINs',merged?`${merged.toLocaleString()} ASINs merged — one click below`:'the app merges and de-dupes them',!!files.viewer,HOW.viewer],
+    ['Export ALL columns from the Viewer','this is the UK selling side: sales, fees, offers',!!files.viewer,HOW.viewerExp],
+    ['Drop the Viewer export here','leads appear',!!result,HOW.viewerDrop],
+    ['Review what needs a look',result?`${rev} to review`:'',!!result&&rev===0,HOW.review]];
   else steps=[
-    ['Open the Keepa filter',finderLink(cur)?FLAG.UK+' UK':'no link saved yet — Edit and paste it',!!files.one],
-    ['Export CSV — all columns','one file',!!files.one],
-    ['Drop it here','leads appear',!!result],
-    ['Review what needs a look',result?`${rev} to review`:'',!!result&&rev===0]];
+    ['Open the Keepa filter',finderLink(cur)?FLAG.UK+' UK':'no link saved yet — Edit and paste it',!!files.one,HOW.open],
+    ['Export CSV — all columns','one file',!!files.one,HOW.exp],
+    ['Drop it here','leads appear',!!result,HOW.drop],
+    ['Review what needs a look',result?`${rev} to review`:'',!!result&&rev===0,HOW.review]];
   let next=steps.findIndex(s=>!s[2]);
-  g.innerHTML=steps.map((s,i)=>`<div class="gs ${s[2]?'done':i===next?'now':''}"><span class="gn">${s[2]?'✓':i+1}</span><div><div class="gt">${escapeHtml(s[0])}</div>${s[1]?`<div class="gd">${escapeHtml(s[1])}</div>`:''}</div></div>`).join('');}
+  const full=guideFull();g.classList.toggle('full',full);
+  const intro=result?(rev?`<b>${rev} lead${rev===1?'':'s'} need a look.</b> Open them in Keepa, or mark Y / N / M on the row — every click is shared. <b>All leads</b> shows everything this run kept.`:`<b>Nothing new to review.</b> Everything here is the same as last time or already judged — <b>All leads</b> shows the full list.`)
+    :`<b>How this works:</b> open the Keepa filter → export the CSV (all columns) → drop it here. The rules cut the list down; you judge what is left. Nothing here needs a login — pick your name top right and every click is saved for everyone.`;
+  g.innerHTML=`<div class="ghead">${intro}<button type="button" class="linkbtn gtog" id="guideTog">${full?'Compact view':'Step-by-step'}</button></div>`+steps.map((s,i)=>`<div class="gs ${s[2]?'done':i===next?'now':''}"><span class="gn">${s[2]?'✓':i+1}</span><div><div class="gt">${escapeHtml(s[0])}</div>${s[1]?`<div class="gd">${escapeHtml(s[1])}</div>`:''}${full&&s[3]?`<ul class="gh">${(Array.isArray(s[3])?s[3]:[s[3]]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>`:''}</div></div>`).join('');
+  $('#guideTog').addEventListener('click',()=>{lsSet(GUIDE_KEY,!guideFull());renderGuide();});}
+/* b60: VAs get the full step-by-step by default; Jack gets the compact strip. Either can switch, remembered per browser. */
+const GUIDE_KEY='bdl-sourcing-guidefull';
+function guideFull(){const v=lsGet(GUIDE_KEY,null);return v==null?me()!=='Jack':!!v;}
 function ukOnly(){return!!(cur&&cur.rule===1&&cur.markets.every(m=>m==='UK'));}
 function sig(){return SLOTS.map(k=>files[k]?files[k].name+':'+files[k].rows.length:'').join('|')+'|'+(files.one?files.one.name+':'+files.one.rows.length:'');}
 async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return;const notes=[];
@@ -354,7 +417,7 @@ function run(){if(!cur)return;
   if(cur.rule===1){R=rule1Compute(files,cur.name,rate(),null);R.rule=1;R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;o.Score=r2score(o['Profit £'],o['ROI %'],o.SPM,(o['Sell £ used']||0)<R2.LOW_TICKET);});}
   else{/* a tea & coffee filter: every row is 0% unless it reads like an appliance (machine, grinder…) or a VA has set it */
     const vf=cur.vat0?((row,fact)=>{if(fact&&fact.vat!=null&&fact.vat!=='')return vatFor(row,fact);
-      const text=((row.Title||'')+' | '+(row['Categories: Sub']||'')).toLowerCase();if(r4has(text,vat0Words().not))return{rate:R4.STANDARD,why:'20% — reads like an appliance, not the drink',src:'rule'};
+      const text=((row.Title||'')+' | '+(row['Categories: Sub']||'')).toLowerCase();if(r4isAppliance(text))return{rate:R4.STANDARD,why:'20% — reads like an appliance, not the drink',src:'rule'};
       return{rate:0,why:'0% VAT — everything on this filter is tea / coffee',src:'source'};}):vatFor;
     R=rule2Compute(files.one.rows,factsAll(),{vatFor:vf,rule:cur.rule});R.rule=cur.rule;
     const lowS=R.all.filter(o=>o.lowScore),noM=R.all.filter(o=>!o.kept&&!o.lowScore);
@@ -370,12 +433,17 @@ function run(){if(!cur)return;
   /* this source's own floors — the customisable Filter & Sort, saved on the source so it is the same for everyone */
   const fl=[];R.out=R.out.filter(o=>{const why=failsFloor(o,cur.filters,R.rule);if(why){fl.push([o.ASIN,o.Title||o.Product||'','Below the floors set for '+cur.name+': '+why]);return false;}return true;});
   if(fl.length){R.dropped=fl.concat(R.dropped);R.reasons['Below the floors set for '+cur.name]=fl.length;}R.floored=fl.length;
+  /* b54 (Jack, 15 Sep: the WD SSD at −3% "not even a 1, wouldn't show as it's not profit at all") — a Rule 1 row that loses money at the
+     buy price and can't reach 10% with any code is not a lead. rule1.js stays frozen; this is the same "not worth a look" cut Rule 2 has. */
+  if(R.rule===1){const dead=[];R.out=R.out.filter(o=>{if(+o['ROI %']>=0)return true;const best=codeBestRoi(o);if(best>=10)return true;dead.push([o.ASIN,o.Title||'',`loses money at the ${o['Buy market']||'UK'} price (${o['ROI %']}% ROI) and no code gets it to 10%${best>-99?' (best '+Math.round(best)+'%)':''}`]);return false;});
+    if(dead.length){R.dropped=dead.concat(R.dropped);R.reasons['Loses money, no code fixes it']=dead.length;}}
   if(R.rule!==1)R.out.forEach((o,i)=>o['#']=i+1);
   R.gone=applyQueue(R.out,R.rule,prevMap,verdAll()).filter(([a])=>!B[a]);   /* a blacklisted ASIN is not 'gone', it is banned */
   const stamps=Object.values(prevMap).map(p=>p.stamp).filter(Boolean).sort();R.prevStamp=stamps.length?stamps[stamps.length-1]:null;R.prevMap=prevMap;
   result=R;
-  const s=sig();if(s!==lastSig){lastSig=s;view.page=1;view.sel.clear();logRun();}
-  renderResults();renderGuide();}
+  const s=sig();const fresh=s!==lastSig;if(fresh){lastSig=s;view.page=1;view.sel.clear();logRun();}
+  renderResults();renderGuide();paintNext();
+  if(fresh&&R.out.length&&!R.stored){setTimeout(()=>{const t=$('#leadTop');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});},250);}}
 function logRun(){const R=result,c={NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};R.out.forEach(o=>c[o.STATUS]++);
   const names=cur.rule===1?SLOTS.filter(k=>files[k]).map(k=>files[k].name):[files.one.name];
   const rowsIn=cur.rule===1?files.viewer.rows.length:files.one.rows.length;
@@ -404,12 +472,14 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
   if(be&&be.note){bn.innerHTML=`<b>${escapeHtml(be.name)}</b> · ${escapeHtml(be.note)}`;bn.hidden=false;}else bn.hidden=true;
   let sn=$('#storedNote');if(!sn){sn=document.createElement('div');sn.id='storedNote';sn.className='storednote';fw.parentNode.insertBefore(sn,fw);}
   if(R.stored){let d=R.at?new Date(String(R.at).replace(' ','T')):null;if(d&&isNaN(d))d=null;const day=String(R.at||'').slice(0,10);const when=d?(day===today()?'today '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})):(day?day:'the last run');
-    sn.innerHTML=`<b>Saved run from ${when}</b> · ${out.length} leads as they were scored then. Verdicts, prices and links work as normal. Drop a fresh export above to run today's.`;sn.hidden=false;}else sn.hidden=true;
+    const rv=out.filter(o=>o.QUEUE).length;
+    sn.innerHTML=`<b>Showing the saved run from ${when}</b> · ${out.length} leads as they were scored then · ${rv?rv+' still to review':'all judged'} · verdicts and links work as normal.${view.status==='REVIEW'&&rv<out.length?` <button type="button" class="linkbtn" id="snAll">Show all ${out.length} leads</button>`:''} Drop today's export above to refresh.`;sn.hidden=false;
+    const sa=$('#snAll');if(sa)sa.addEventListener('click',()=>{view.status='ALL';view.page=1;renderTable();$('#leadTop').scrollIntoView({behavior:'smooth',block:'start'});});}else sn.hidden=true;
   if(est)msgs.push('<b>'+est+' of '+out.length+' leads have estimated fees.</b> Tick <em>Referral Fee %</em> and <em>FBA Pick&amp;Pack Fee</em> on the export and the maths becomes exact.');
   if(R.rule===1&&R.st&&R.st.bbHiCol===false)msgs.push('<b>This export has no <em>Buy Box: Highest</em> column</b>, so sell prices could not be capped at the most the listing has ever sold for. Tick it on the Keepa export next time.');
   if(msgs.length){fw.innerHTML=msgs.join('<br>');fw.classList.add('show');}else{fw.classList.remove('show');}
   $('#fMarket').hidden=cur.rule!==1;
-  const unseen=out.filter(o=>!verdGet(o.ASIN)).length;const sb=$('#seenAll');sb.hidden=!unseen;sb.textContent=`Mark all ${unseen} as seen`;
+  const unseen=out.filter(o=>!verdGet(o.ASIN)).length;const sb=$('#seenAll');sb.hidden=!unseen||!isJack();sb.textContent=`Mark all ${unseen} as seen`;
   renderTable();}
 /* the summary in words + the status pills — repainted after every verdict so the numbers never lie */
 /* b48 (Jack, 15 Sep: "some type of analysis vs last but better… difference from yesterday… the overall assessment of the file") */
@@ -493,12 +563,14 @@ function statusCell(o){const sp=`<span class="spill ${({NEW:'new',BETTER:'better
   return sp+chg+since+low;}
 function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.length/PAGEN()));if(view.page>pages)view.page=pages;
   const rows=all.slice((view.page-1)*PAGEN(),view.page*PAGEN());
-  $('#leadCount').textContent=(view.status==='REVIEW'?'To review':'Leads')+(all.length===result.out.length?` (${all.length})`:` (${all.length} of ${result.out.length})`);
+  {const out=result.out,c={REVIEW:out.filter(o=>o.QUEUE).length,ALL:out.length,NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};out.forEach(o=>{if(c[o.STATUS]!=null)c[o.STATUS]++;});
+    document.querySelectorAll('#fSeg button').forEach(b=>{b.classList.toggle('on',b.dataset.st===view.status);const n=b.querySelector('b');if(n)n.textContent=c[b.dataset.st]||0;});}
+  $('#leadCount').textContent=({REVIEW:'To review',ALL:'All leads',NEW:'New',BETTER:'Better',WORSE:'Worse',UNCHANGED:'Unchanged'})[view.status]+(all.length===result.out.length?` (${all.length})`:` (${all.length} of ${result.out.length})`);
   const asin=o=>`<td class="asin">${o.ASIN}<button type="button" data-copy="${o.ASIN}" title="Copy ASIN">${ICONS.copy}</button></td>`;
   const sel=o=>`<td class="sel"><input type="checkbox" data-sel="${o.ASIN}"${view.sel.has(o.ASIN)?' checked':''}></td>`;
   const pend=b=>bbStatusFor(b)==='pending'?`<i class="ch pend" title="Brand blacklist requested — waiting for Jack">BRAND BLACKLIST PENDING</i>`:'';
   let h;
-  if(!all.length){$('#leads').innerHTML=`<tbody><tr><td style="text-align:center;color:var(--faint);padding:26px">${view.status==='REVIEW'?'Nothing new to review — every lead on this run is the same as or worse than the last run, or already judged and not improved since. Switch to <b>Everything</b> to see them all.':'Nothing matches.'}</td></tr></tbody>`;$('#pager').innerHTML='';$('#openSel').textContent='Open in Keepa';return;}
+  if(!all.length){$('#leads').innerHTML=`<tbody><tr><td style="text-align:center;color:var(--faint);padding:26px">${view.status==='REVIEW'?'Nothing new to review — every lead on this run is the same as or worse than the last run, or already judged and not improved since. Hit <b>All leads</b> above to see them all.':'Nothing matches.'}</td></tr></tbody>`;$('#pager').innerHTML='';$('#openSel').textContent='Open in Keepa';return;}
   const asinl=o=>`<span class="asinl">${o.ASIN}<button type="button" data-copy="${o.ASIN}" title="Copy ASIN">${ICONS.copy}</button></span>`;
   const roiCls=v=>v>=20?'pos':v>=10?'pos soft':v>=0?'warm':'neg';
   const mk=m=>`<i class="mk">${FLAG[m]||''} ${m}</i>`;
@@ -570,6 +642,11 @@ const PM_SHORT={};   /* b29: Jack — "why the fuck JL and Brand" — full names
 function pmLabel(x){return PM_SHORT[x]||x;}
 /* what Jack knows about where a brand's stock really turns up — the note on the brand's discount row (Settings) */
 function pmHint(brand){const e=typeof discForBrand==='function'?discForBrand(brand):null;if(!e||!e.note)return'';return`<div class="pmhint" title="${escapeHtml(e.name+': '+e.note)}">${escapeHtml(e.note)}</div>`;}
+/* best ROI a Rule 1 UK row reaches with the brand's own code or a price-matcher's — the OA chip's maths, shared with run() */
+function codeBestRoi(o){if(!cur||o['Buy market']!=='UK')return -99;const landed=+o['Landed £'],p=+o['Profit £'];if(!landed)return -99;const V=/ZERO-RATED/.test(o.Flags||'')?1:1.2;
+  const list=[];const be=discForBrand((cur.brands&&cur.brands[0])||cur.name);if(be){const r=discRate(be,landed);if(r>0)list.push(r);}
+  discMatchers().forEach(e=>{const r=discRate(e,landed);if(r>0)list.push(r);});
+  return list.reduce((m,pct)=>{const c=landed*(1-pct/100);const pp=p+(landed-c)/V;return Math.max(m,c?100*pp/c:-99);},-99);}
 function bandOf(sc){return sc>=70?'hi':sc>=50?'md':sc>=30?'lo':'weak';}
 function leadOf(a){return result?result.out.find(o=>o.ASIN===a):null;}
 function markAllSeen(){if(!result||!needMe())return;const list=result.out.filter(o=>!verdGet(o.ASIN));if(!list.length){toast('Everything already has a verdict');return;}
@@ -606,32 +683,84 @@ function dlDropped(){if(!result){toast('Run something first',true);return;}downl
 const OPEN_ALL_MAX=250;
 function openInKeepa(){if(!result){toast('Nothing to open',true);return;}
   const all=visible();const list=view.sel.size?[...view.sel]:(all.length<=OPEN_ALL_MAX?all:all.slice((view.page-1)*PAGEN(),view.page*PAGEN())).map(o=>o.ASIN);
-  if(!list.length){toast('Nothing to open',true);return;}window.open(keepaLink(list,'2'),'_blank');}
+  if(!list.length){toast('Nothing to open',true);return;}window.open(keepaLink(list,'2'),'_blank');
+  /* b56 (Jack, 15 Sep): opening leads in Keepa IS the review most days — so the ones opened count as seen by whoever pressed the button.
+     Yes/No/Maybe already on a row are kept; rows with no verdict get SEEN with today's numbers, so "better since seen" works from here. */
+  if(!me())return;const fresh=list.map(a=>result.out.find(o=>o.ASIN===a)).filter(o=>o&&!verdGet(o.ASIN));
+  if(fresh.length){verdSetMany(fresh.map(o=>({asin:o.ASIN,v:{v:'Seen',reason:'',note:'',source:cur.key,state:o.state}})));fresh.forEach(o=>{o.verdict=verdGet(o.ASIN);o.QUEUE='';o.sinceVerdict='';});renderResults();renderLog();toast(`Opened ${list.length} in Keepa · ${fresh.length} marked seen by ${me()}`);}}
 
 /* ============ runs log (the 7-day count) ============ */
-function renderLog(){const runs=runsAll().slice().reverse().slice(0,60);const V=verdAll();const el=$('#runLog');
-  if(!runs.length){el.innerHTML='<div class="empty"><span>No runs yet. Hit Run on a brand and drop its exports — every run lands here with its lead count and what was marked.</span></div>';return;}
-  /* b32 (Jack: "redo this pls") — same tiles as the Brands page, and every run reads as a sentence: what went in, what the rules cut, what came out, what got judged */
-  const wk=runs.filter(r=>new Date(r.at).getTime()>=weekAgo());
-  const tot={runs:wk.length,rows:0,leads:0,y:0,n:0,m:0,tr:0};
-  const rowsH=runs.map(r=>{let y=0,n=0,m=0;(r.asins||[]).forEach(a=>{const v=V[a];if(!v)return;if(v.v==='Yes')y++;else if(v.v==='No')n++;else if(v.v==='Maybe')m++;});const tr=toReviewCount(r);
-    if(new Date(r.at).getTime()>=weekAgo()){tot.rows+=r.rowsIn||0;tot.leads+=r.leads||0;tot.y+=y;tot.n+=n;tot.m+=m;tot.tr+=tr;}
-    const src=srcGet(r.source)||{key:r.source,name:r.name,type:'brand'};const cut=Math.max(0,(r.rowsIn||0)-(r.leads||0)),pct=r.rowsIn?Math.round(cut/r.rowsIn*100):0;
-    const judged=y+n+m,jp=r.leads?Math.round(judged/r.leads*100):0;
-    return`<tr><td class="lwhen">${fmtWhen(r.at)}<div class="chg">${r.who?escapeHtml(r.who):'<span class="z">no name</span>'}</div></td>
-      <td class="lsrc"><div class="lrow">${avatar(src)}<div><b>${escapeHtml(r.name)}</b><div class="chg">Rule ${r.rule} · ${(r.files||[]).length} file${(r.files||[]).length===1?'':'s'}</div></div></div></td>
-      <td class="num">${(r.rowsIn||0).toLocaleString()}</td>
-      <td class="num"><span class="cutn">${cut.toLocaleString()}</span><div class="cutbar"><i style="width:${pct}%"></i></div><div class="chg">${pct}% cut</div></td>
-      <td class="num lead"><b>${r.leads}</b></td>
-      <td class="num"><span class="pill-new">${r.new}</span></td><td class="num"><span class="pill-better">${r.better||0}</span></td><td class="num"><span class="pill-worse">${r.worse||0}</span></td><td class="num"><span class="pill-gone">${r.gone||0}</span></td>
-      <td class="num pos">${y||'<span class=z>0</span>'}</td><td class="num neg">${n||'<span class=z>0</span>'}</td><td class="num">${m||'<span class=z>0</span>'}</td>
-      <td class="num"><b class="${tr?'amber':'jade'}">${tr}</b><div class="chg">${jp}% judged</div></td></tr>`;}).join('');
+/* b58 (Jack: "we should be getting a mega amount of data in this too"): the log is filterable, sortable, and rolls up by source / day / person */
+const RLOG_KEY='bdl-sourcing-rlog';
+const rlog=Object.assign({period:'7d',who:'ALL',rule:'ALL',src:'ALL',q:'',sort:'at',dir:-1,group:'runs',all:false},lsGet(RLOG_KEY,{})||{});
+function rlogSave(){const {q,...rest}=rlog;lsSet(RLOG_KEY,rest);}
+function periodFrom(p){const t=new Date();t.setHours(0,0,0,0);if(p==='today')return t.getTime();if(p==='7d')return Date.now()-7*864e5;if(p==='30d')return Date.now()-30*864e5;return 0;}
+const PERIOD_LABEL={today:'Today',"7d":'Last 7 days',"30d":'Last 30 days',all:'All time'};
+function runRows(){const V=verdAll();return runsAll().map(r=>{let y=0,n=0,m=0;(r.asins||[]).forEach(a=>{const v=V[a];if(!v)return;if(v.v==='Yes')y++;else if(v.v==='No')n++;else if(v.v==='Maybe')m++;});
+  const tr=toReviewCount(r),rowsIn=r.rowsIn||0,leads=r.leads||0,cut=Math.max(0,rowsIn-leads);
+  return{r,at:r.at,ms:new Date(r.at).getTime(),who:r.who||'',key:r.source,name:r.name||r.source,rule:r.rule,files:(r.files||[]).length,rowsIn,cut,pct:rowsIn?Math.round(cut/rowsIn*100):0,leads,new:r.new||0,better:r.better||0,worse:r.worse||0,gone:r.gone||0,y,n,m,tr,jp:leads?Math.round((y+n+m)/leads*100):0,day:String(r.day||r.at).slice(0,10)};});}
+function runsFiltered(){const from=periodFrom(rlog.period),q=(rlog.q||'').toLowerCase();
+  return runRows().filter(x=>x.ms>=from&&(rlog.who==='ALL'||x.who===rlog.who)&&(rlog.rule==='ALL'||String(x.rule)===rlog.rule)&&(rlog.src==='ALL'||x.key===rlog.src)&&(!q||(x.name+' '+x.who).toLowerCase().includes(q)));}
+function cutCls(p){return p>=85?'jade':p>=60?'amber':'coral';}
+function cutCell(cut,pct){return`<span class="cutn">${cut.toLocaleString()}</span><div class="cutbar ${cutCls(pct)}"><i style="width:${pct}%"></i></div><div class="chg">${pct}% cut</div>`;}
+function znum(v,cls){return v?`<span class="${cls||''}">${v.toLocaleString()}</span>`:'<span class=z>0</span>';}
+function renderLog(){const el=$('#runLog');if(!el)return;const all=runsAll();
+  if(!all.length){el.innerHTML='<div class="empty"><span>No runs yet. Hit Run on a brand and drop its exports — every run lands here with its lead count and what was marked.</span></div>';return;}
+  /* the source dropdown follows what has actually run */
+  const sel=$('#rlSrc');if(sel){const have=new Set([...sel.options].map(o=>o.value));const names={};all.forEach(r=>names[r.source]=r.name||r.source);
+    Object.entries(names).sort((a,b)=>a[1].localeCompare(b[1])).forEach(([k,n])=>{if(!have.has(k)){const o=document.createElement('option');o.value=k;o.textContent=n;sel.appendChild(o);}});sel.value=rlog.src;if(sel.value!==rlog.src){rlog.src='ALL';sel.value='ALL';}}
+  const rows=runsFiltered();
+  const tot={runs:rows.length,rows:0,leads:0,new:0,better:0,y:0,n:0,m:0,tr:0};rows.forEach(x=>{tot.rows+=x.rowsIn;tot.leads+=x.leads;tot.new+=x.new;tot.better+=x.better;tot.y+=x.y;tot.n+=x.n;tot.m+=x.m;tot.tr+=x.tr;});
+  const saved=tot.rows?Math.round((tot.rows-tot.leads)/tot.rows*100):0,lpr=tot.runs?(tot.leads/tot.runs):0;
+  /* best source in the period = most leads per run, with at least one run */
+  const bySrc={};rows.forEach(x=>{const b=bySrc[x.key]=bySrc[x.key]||{name:x.name,runs:0,leads:0};b.runs++;b.leads+=x.leads;});
+  const best=Object.values(bySrc).sort((a,b)=>(b.leads/b.runs)-(a.leads/a.runs))[0];
+  const byWho={};rows.forEach(x=>{const w=x.who||'no name';byWho[w]=(byWho[w]||0)+1;});const busiest=Object.entries(byWho).sort((a,b)=>b[1]-a[1])[0];
   const k=(v,l,sub,cls,ic)=>`<div class="kpi"><span class="ki ${cls||''}">${ic}</span><div><div class="kv">${v}</div><div class="kl">${l}</div>${sub?`<div class="ks">${sub}</div>`:''}</div></div>`;
-  const saved=tot.rows?Math.round((tot.rows-tot.leads)/tot.rows*100):0;
-  el.innerHTML=`<div class="kpis logkpis"><div class="kcap">This week</div>
-      ${k(tot.runs,'Runs','','',ICONS.hist)}${k(tot.rows.toLocaleString(),'ASINs put through the rules',`${saved}% cut`,'',ICONS.eye)}${k(tot.leads.toLocaleString(),'Leads produced','','iris',ICONS.play)}
-      ${k(tot.y,'Marked Yes',`${tot.n} No · ${tot.m} Maybe`,tot.y?'jade':'',ICONS.edit)}${k(tot.tr.toLocaleString(),'Still to review','',tot.tr?'amber':'jade',ICONS.eye)}</div>
-    <div class="tablewrap show"><div class="tablescroll"><table class="logtbl"><thead><tr><th>When</th><th>Source</th><th class="r">In</th><th class="r">Cut by the rules</th><th class="r">Leads</th><th class="r">New</th><th class="r">Better</th><th class="r">Worse</th><th class="r">Gone</th><th class="r">Yes</th><th class="r">No</th><th class="r">Maybe</th><th class="r">To review</th></tr></thead><tbody>${rowsH}</tbody></table></div></div>`;}
+  const kp=`<div class="kpis logkpis"><div class="kcap">${PERIOD_LABEL[rlog.period]||''}${rlog.src!=='ALL'||rlog.who!=='ALL'||rlog.rule!=='ALL'?' · filtered':''}</div>
+      ${k(tot.runs,'Runs',busiest?`${busiest[0]} ran ${busiest[1]}`:'','',ICONS.hist)}${k(tot.rows.toLocaleString(),'ASINs put through the rules',`${saved}% cut`,'',ICONS.eye)}${k(tot.leads.toLocaleString(),'Leads produced',`${tot.new.toLocaleString()} new · ${tot.better.toLocaleString()} better`,'iris',ICONS.play)}
+      ${k(lpr.toFixed(1),'Leads a run',best?`best: ${escapeHtml(best.name)} · ${(best.leads/best.runs).toFixed(1)}`:'',lpr>=20?'jade':'amber',ICONS.run)}${k(tot.y,'Marked Yes',`${tot.n} No · ${tot.m} Maybe`,tot.y?'jade':'',ICONS.edit)}${k(tot.tr.toLocaleString(),'Still to review',tot.leads?`${Math.round((tot.leads-tot.tr)/tot.leads*100)}% judged`:'',tot.tr?'amber':'jade',ICONS.eye)}</div>`;
+  const th=(key,label,cls)=>`<th class="${cls||''} sortable${rlog.sort===key?' on':''}" data-sort="${key}" title="Sort by ${label}">${label}${rlog.sort===key?(rlog.dir<0?' ↓':' ↑'):''}</th>`;
+  const numTh=[['rowsIn','In'],['cut','Cut by the rules'],['leads','Leads'],['new','New'],['better','Better'],['worse','Worse'],['gone','Gone'],['y','Yes'],['n','No'],['m','Maybe'],['tr','To review']];
+  let body='',head='';
+  if(rlog.group==='runs'){
+    const dir=rlog.dir;const sk=rlog.sort;rows.sort((a,b)=>{const av=sk==='name'||sk==='who'?String(a[sk]).toLowerCase():+a[sk]||0,bv=sk==='name'||sk==='who'?String(b[sk]).toLowerCase():+b[sk]||0;return (av<bv?-1:av>bv?1:0)*dir||b.ms-a.ms;});
+    const show=rlog.all?rows:rows.slice(0,60);
+    head=`<tr>${th('at','When','')}${th('who','Who','')}${th('name','Source','')}${numTh.map(([k,l])=>th(k,l,'r')).join('')}</tr>`;
+    body=show.map(x=>{const src=srcGet(x.key)||{key:x.key,name:x.name,type:'brand'};
+      return`<tr class="rrow" data-key="${x.key}" title="Open ${escapeHtml(x.name)} on its saved leads">
+      <td class="lwhen">${fmtWhen(x.at)}</td><td>${whoChip(x.who)}</td>
+      <td class="lsrc"><div class="lrow">${avatar(src)}<div><b>${escapeHtml(x.name)}</b><div class="chg"><span class="rl r${x.rule}">Rule ${x.rule}</span> · ${x.files} file${x.files===1?'':'s'}</div></div></div></td>
+      <td class="num">${x.rowsIn.toLocaleString()}</td><td class="num">${cutCell(x.cut,x.pct)}</td><td class="num lead"><b>${x.leads}</b></td>
+      <td class="num"><span class="pill-new">${x.new}</span></td><td class="num"><span class="pill-better">${x.better}</span></td><td class="num"><span class="pill-worse">${x.worse}</span></td><td class="num"><span class="pill-gone">${x.gone}</span></td>
+      <td class="num pos">${znum(x.y)}</td><td class="num neg">${znum(x.n)}</td><td class="num">${znum(x.m)}</td>
+      <td class="num"><b class="${x.tr?'amber':'jade'}">${x.tr}</b><div class="chg">${x.jp}% judged</div></td></tr>`;}).join('');
+    if(!rlog.all&&rows.length>60)body+=`<tr><td colspan="14" class="more">Newest 60 of ${rows.length} — tick “show every row” for the lot</td></tr>`;}
+  else{
+    const gk=x=>rlog.group==='source'?x.key:rlog.group==='day'?x.day:(x.who||'no name');
+    const G={};rows.forEach(x=>{const g=G[gk(x)]=G[gk(x)]||{key:gk(x),name:rlog.group==='source'?x.name:rlog.group==='day'?x.day:(x.who||'no name'),rule:x.rule,runs:0,rowsIn:0,cut:0,leads:0,new:0,better:0,worse:0,gone:0,y:0,n:0,m:0,tr:0,last:0,srcs:new Set()};
+      g.runs++;['rowsIn','cut','leads','new','better','worse','gone','y','n','m','tr'].forEach(f=>g[f]+=x[f]);g.last=Math.max(g.last,x.ms);g.srcs.add(x.key);});
+    const list=Object.values(G).map(g=>Object.assign(g,{pct:g.rowsIn?Math.round(g.cut/g.rowsIn*100):0,lpr:g.runs?g.leads/g.runs:0,jp:g.leads?Math.round((g.y+g.n+g.m)/g.leads*100):0}));
+    const sk=['at','who'].includes(rlog.sort)?'last':rlog.sort;const dir=rlog.dir;
+    list.sort((a,b)=>{const av=sk==='name'?a.name.toLowerCase():+a[sk]||0,bv=sk==='name'?b.name.toLowerCase():+b[sk]||0;return (av<bv?-1:av>bv?1:0)*dir||b.leads-a.leads;});
+    const glabel=rlog.group==='source'?'Source':rlog.group==='day'?'Day':'Person';
+    head=`<tr>${th('name',glabel,'')}${th('runs','Runs','r')}${th('last','Last run','')}${numTh.map(([k,l])=>th(k,l,'r')).join('')}${th('lpr','Leads / run','r')}</tr>`;
+    body=list.map(g=>{const src=rlog.group==='source'?(srcGet(g.key)||{key:g.key,name:g.name,type:'brand'}):null;
+      const nameCell=rlog.group==='source'?`<div class="lrow">${avatar(src)}<div><b>${escapeHtml(g.name)}</b><div class="chg"><span class="rl r${g.rule}">Rule ${g.rule}</span></div></div></div>`
+        :rlog.group==='day'?`<b>${ukDate(g.name).replace(/ · .*$/,'')}</b>`:`${whoChip(g.name==='no name'?'':g.name)}<div class="chg">${g.srcs.size} source${g.srcs.size===1?'':'s'}</div>`;
+      return`<tr class="${rlog.group==='source'?'rrow':''}" data-key="${rlog.group==='source'?g.key:''}"><td class="lsrc">${nameCell}</td><td class="num"><b>${g.runs}</b></td><td class="lwhen">${fmtWhen(new Date(g.last).toISOString())}</td>
+      <td class="num">${g.rowsIn.toLocaleString()}</td><td class="num">${cutCell(g.cut,g.pct)}</td><td class="num lead"><b>${g.leads.toLocaleString()}</b></td>
+      <td class="num"><span class="pill-new">${g.new}</span></td><td class="num"><span class="pill-better">${g.better}</span></td><td class="num"><span class="pill-worse">${g.worse}</span></td><td class="num"><span class="pill-gone">${g.gone}</span></td>
+      <td class="num pos">${znum(g.y)}</td><td class="num neg">${znum(g.n)}</td><td class="num">${znum(g.m)}</td>
+      <td class="num"><b class="${g.tr?'amber':'jade'}">${g.tr.toLocaleString()}</b><div class="chg">${g.jp}% judged</div></td><td class="num"><b class="${g.lpr>=20?'jade':g.lpr>=5?'iris':'amber'}">${g.lpr.toFixed(1)}</b></td></tr>`;}).join('');}
+  el.innerHTML=kp+`<div class="tablewrap show"><div class="tablescroll"><table class="logtbl"><thead>${head}</thead><tbody>${body||'<tr><td colspan="14" class="more">Nothing in this window — widen the period.</td></tr>'}</tbody></table></div></div>`;}
+function runsLogInit(){const el=$('#runLog');if(!el)return;
+  [['rlPeriod','period'],['rlWho','who'],['rlRule','rule'],['rlSrc','src']].forEach(([id,k])=>{const e=$('#'+id);if(!e)return;e.value=rlog[k];e.addEventListener('change',ev=>{rlog[k]=ev.target.value;rlogSave();renderLog();});});
+  $('#rlQ').addEventListener('input',e=>{rlog.q=e.target.value;renderLog();});
+  const ra=$('#rlAll');ra.checked=!!rlog.all;ra.addEventListener('change',e=>{rlog.all=e.target.checked;rlogSave();renderLog();});
+  document.querySelectorAll('#rlGroup button').forEach(b=>{b.classList.toggle('on',b.dataset.g===rlog.group);b.addEventListener('click',()=>{document.querySelectorAll('#rlGroup button').forEach(x=>x.classList.remove('on'));b.classList.add('on');rlog.group=b.dataset.g;rlogSave();renderLog();});});
+  el.addEventListener('click',e=>{const th=e.target.closest('th.sortable');if(th){const k=th.dataset.sort;if(rlog.sort===k)rlog.dir=-rlog.dir;else{rlog.sort=k;rlog.dir=['name','who'].includes(k)?1:-1;}rlogSave();renderLog();return;}
+    const tr=e.target.closest('tr.rrow');if(tr&&tr.dataset.key&&srcGet(tr.dataset.key))openRun(tr.dataset.key);});}
 function stat(k,v,sub){return`<div class="stat"><span class="k">${k}</span><span class="v">${typeof v==='number'?v.toLocaleString():v}</span>${sub?`<span class="sub">${escapeHtml(sub)}</span>`:''}</div>`;}
 function exportLog(){const runs=runsAll(),V=verdAll();
   const hdr=['at','who','source','rule','files','rows_in','leads','new','better','worse','gone','blacklisted','yes','no','maybe','seen'];
@@ -704,17 +833,36 @@ async function paintTokens(){let el=$('#tokPill');const cp=$('#cloudPill');if(!c
   try{const r=await fetch(WORKER+'/health');const t=await r.json();if(t.ok&&t.tokensLeft!=null){el.textContent='Keepa · '+t.tokensLeft.toLocaleString()+' tokens';el.title=`Keepa API balance via the Worker · refills ${t.refillRate}/min · nothing runs automatically yet`;el.classList.remove('bad');}
     else{el.textContent='Keepa · no key';el.title=t.error||'Worker answered without a balance';el.classList.add('bad');}}
   catch(e){el.textContent='Keepa · offline';el.title='Could not reach the Worker';el.classList.add('bad');}}
-function brandsInit(){renderList();renderLog();if(!me())whoGate(true);paintTokens();setInterval(paintTokens,10*60*1000);
+/* b53: deep links for AVM HQ tasks — #run=<source key> opens that run screen, #due opens the Brands list on what's due */
+function showTab(tab,quiet){if(!['brands','runs','leads'].includes(tab))tab='brands';lview.tab=tab;if(!quiet)lviewSave();
+  document.querySelectorAll('#lvNav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  $('#cardBrands').hidden=tab!=='brands';$('#cardRuns').hidden=tab!=='runs';$('#cardLeads').hidden=tab!=='leads';
+  if(tab==='runs')renderLog();if(tab==='leads'&&typeof renderHistory==='function')renderHistory();}
+function openHash(){let h=location.hash||'';
+  /* b61: AVM HQ links carry the VA's name (#run=key&who=Suz) so the who-are-you gate never appears */
+  const wm=/[&?]who=([A-Za-z]+)/.exec(h);if(wm){const w=USERS.find(u=>u.toLowerCase()===wm[1].toLowerCase());if(w&&me()!==w){lsSet(ME_KEY,w);whoPaint();}const g=$('#whoGate');if(w&&g)g.hidden=true;h=h.replace(/[&?]who=[A-Za-z]+/,'');}
+  const m=/^#run=([a-z0-9-]+)/i.exec(h);
+  const lm=/^#leads=([a-z0-9-]+)/i.exec(h);if(lm&&srcGet(lm[1])){const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b&&!b.classList.contains('active'))b.click();if(cur&&!$('#viewRun').hidden)backToList();historyOpenFor(lm[1]);return;}
+  if(/^#(runs|leads|history)\b/i.test(h)){const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b&&!b.classList.contains('active'))b.click();if(cur&&!$('#viewRun').hidden)backToList();showTab(/^#runs/i.test(h)?'runs':'leads');return;}const goBrands=()=>{const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b&&!b.classList.contains('active'))b.click();};
+  if(m&&srcGet(m[1])){goBrands();openRun(m[1]);return;}
+  if(/^#due/i.test(h)){goBrands();if(cur&&!$('#viewRun').hidden)backToList();const b=document.querySelector('#lSeg button[data-seg="due"]');if(b)b.click();}}
+function brandsInit(){if(typeof bbSeed==='function')bbSeed();renderList();renderLog();if(!me())whoGate(true);setTimeout(openHash,50);window.addEventListener('hashchange',openHash);paintTokens();setInterval(paintTokens,10*60*1000);
   /* b30 (Jack: "still loads of dead space on ASUS"): the floors card lives under the run summary, so the two columns come out level */
   {const fr=$('#floorRow'),tc=document.querySelector('#viewRun .twocol');if(fr&&tc)tc.after(fr);}
-  $('#brandTbl').addEventListener('click',onListClick);document.addEventListener('click',e=>{if(!e.target.closest('.menu'))closeMenus();});
+  $('#brandTbl').addEventListener('click',onListClick);
+  /* b52 (Jack: "make it easier to edit and change who the VA is") — owner and cadence change in the row and save for everyone */
+  $('#brandTbl').addEventListener('change',e=>{const sel=e.target.closest('select.inl');if(!sel)return;const s=srcGet(sel.dataset.key);if(!s)return;if(sel.classList.contains('ownsel'))s.owner=sel.value;else if(sel.classList.contains('cadsel'))s.cadence=sel.value;else if(sel.classList.contains('stsel')){s.status=sel.value;s.paused=s.status==='paused';}
+    srcSave(s);toast(`${s.name}: ${sel.classList.contains('ownsel')?'now '+s.owner+"'s":sel.classList.contains('stsel')?(STATUS_LABEL[s.status]||s.status):CADENCE_LABEL[s.cadence]} — saved for everyone`);renderList();});
+  $('#brandTbl').addEventListener('click',e=>{if(e.target.closest('select.inl'))e.stopPropagation();},true);document.addEventListener('click',e=>{if(!e.target.closest('.menu'))closeMenus();});
   $('#approvals').addEventListener('click',onApprovalClick);
   $('#addBrand').addEventListener('click',()=>openEdit(null));
   $('#lq').addEventListener('input',e=>{lview.q=e.target.value;renderList();});
-  $('#lMarket').addEventListener('change',e=>{lview.market=e.target.value;renderList();});
-  $('#lRule').addEventListener('change',e=>{lview.rule=e.target.value;renderList();});
-  $('#lOwner').addEventListener('change',e=>{lview.owner=e.target.value;renderList();});
-  document.querySelectorAll('#lSeg button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#lSeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');lview.seg=b.dataset.seg;renderList();}));
+  [['lMarket','market'],['lRule','rule'],['lOwner','owner'],['lType','type'],['lSort','sort']].forEach(([id,k])=>{const el=$('#'+id);if(!el)return;el.value=lview[k];if(el.value!==lview[k]){lview[k]=el.value;}el.addEventListener('change',e=>{lview[k]=e.target.value;lviewSave();renderList();});});
+  document.querySelectorAll('#lSeg button').forEach(b=>{b.classList.toggle('on',b.dataset.seg===lview.seg);b.addEventListener('click',()=>{document.querySelectorAll('#lSeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');lview.seg=b.dataset.seg;lviewSave();renderList();});});
+  /* b58 (Jack: "still so rigid on seeing history leads"): Brands · Runs · Lead history are three views of the same page */
+  document.querySelectorAll('#lvNav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+  showTab(lview.tab||'brands',true);
+  runsLogInit();historyInit();
   $('#drawer .veil').addEventListener('click',closeDrawer);
   $('#backBtn').addEventListener('click',backToList);
   $('#runEdit').addEventListener('click',()=>openEdit(cur));$('#runHist').addEventListener('click',()=>openHistory(cur));
@@ -731,7 +879,13 @@ function brandsInit(){renderList();renderLog();if(!me())whoGate(true);paintToken
   $('#openSel').addEventListener('click',openInKeepa);
   $('#leads').addEventListener('click',onTableClick);$('#leads').addEventListener('change',onTableChange);$('#leads').addEventListener('input',onTableInput);
   $('#pager').addEventListener('click',e=>{const b=e.target.closest('button[data-pg]');if(!b||b.disabled)return;view.page=parseInt(b.dataset.pg);touched.clear();renderTable();$('#leadTop').scrollIntoView({behavior:'smooth',block:'start'});});
-  $('#fStatus').addEventListener('change',e=>{view.status=e.target.value;view.page=1;touched.clear();renderTable();});
+  document.querySelectorAll('#fSeg button').forEach(b=>b.addEventListener('click',()=>{view.status=b.dataset.st;view.page=1;touched.clear();renderTable();}));
+  ['#runNext','#runNext2'].forEach(id=>$(id).addEventListener('click',e=>{const k=e.currentTarget.dataset.key;if(k&&srcGet(k)){backToList();openRun(k);window.scrollTo({top:0,behavior:'smooth'});}}));
+  $('#yourDay').addEventListener('click',e=>{const b=e.target.closest('button[data-start]');if(b)openRun(b.dataset.start);});
+  $('#howToHide').addEventListener('click',()=>{lsSet(HOWTO_KEY,true);renderHowTo();});$('#howToShow').addEventListener('click',()=>{lsSet(HOWTO_KEY,false);renderHowTo();$('#howTo').scrollIntoView({behavior:'smooth',block:'center'});});
+  $('#runStrip').addEventListener('click',e=>{if(e.target.closest('[data-act="hist"]')&&cur)openHistory(cur);});
+  $('#runCopyLink').addEventListener('click',e=>{if(!cur)return;const w=USERS.includes(cur.owner)?'&who='+cur.owner:'';copy(location.origin+location.pathname+'#run='+cur.key+w,'Link copied — paste it into the AVM HQ task'+(w?' (opens as '+cur.owner+', no name prompt)':''),e.currentTarget,'Copied');});
+  $('#runAllTime').addEventListener('click',()=>{if(!cur)return;const k=cur.key;backToList();historyOpenFor(k);});
   $('#fSort').addEventListener('change',e=>{view.sort=e.target.value;view.page=1;renderTable();});
   $('#fPer').addEventListener('change',e=>{view.per=parseInt(e.target.value);view.page=1;renderTable();});
   $('#fMarket').addEventListener('change',e=>{view.market=e.target.value;view.page=1;renderTable();});

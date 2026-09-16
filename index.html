@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b50">
-<link rel="stylesheet" href="css/brands.css?v=b50">
+<link rel="stylesheet" href="css/base.css?v=b63">
+<link rel="stylesheet" href="css/brands.css?v=b63">
 </head>
 <body>
 <div class="wrap">
@@ -249,9 +249,20 @@
   <div class="page" id="page-brands">
 
     <div id="viewList">
-      <div class="card">
+      <div class="lvnav" id="lvNav"><button class="on" data-tab="brands" type="button"><span class="t">Brands / Filters</span><b id="lvnBrands">0</b></button><button data-tab="runs" type="button"><span class="t">Runs</span><b id="lvnRuns">0</b></button><button data-tab="leads" type="button"><span class="t">Lead history</span><b id="lvnLeads">0</b></button></div>
+      <div class="card" id="cardBrands">
         <div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><h2>Brands / Filters</h2><span class="sub">every saved Keepa search we run · greyed = not switched on yet · <b>In progress</b> = someone is on it right now</span>
-          <div class="right"><button class="btn primary sm" id="addBrand" type="button"><span class="lab">+ Add brand / filter</span></button></div></div>
+          <div class="right"><button class="btn ghost sm" id="howToShow" type="button">How to use this</button><button class="btn primary sm" id="addBrand" type="button"><span class="lab">+ Add brand / filter</span></button></div></div>
+        <div class="yourday" id="yourDay" hidden></div>
+        <div class="howto" id="howTo" hidden>
+          <div class="hh"><b>How a day works</b><button class="linkbtn" id="howToHide" type="button">Got it, hide this</button></div>
+          <ol>
+            <li><b>Pick your name</b> top right. Everything you click is saved under it, for everyone.</li>
+            <li><b>Hit Due.</b> The red rows are yours to run today. Start at the top — or press <b>Start</b> in the banner.</li>
+            <li><b>On the run screen</b> follow the numbered steps: open the Keepa filter, set rows per page to the max, Export → All active columns → CSV, drop the file in the box. The rules do the maths.</li>
+            <li><b>Judge the To-review list.</b> Open them in Keepa, read the graph, then <b>Y</b> / <b>N</b> / <b>M</b> on the row. A No needs a reason. Then <b>Next due →</b>.</li>
+          </ol>
+        </div>
         <div class="kpis" id="bKpis"></div>
         <div class="approvals" id="approvals" hidden></div>
         <div class="tb">
@@ -259,15 +270,48 @@
           <select id="lMarket"><option value="ALL">All markets</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
           <select id="lOwner"><option value="ALL">All owners</option><option>Jack</option><option>Mera</option><option>Suz</option><option>VAs</option></select>
           <select id="lRule"><option value="ALL">All rules</option><option value="1">Rule 1 · buy UK/EU, sell UK</option><option value="2">Rule 2 · UK Amazon-to-Amazon</option></select>
-          <div class="seg" id="lSeg"><button data-seg="due" type="button">Due</button><button data-seg="mine" type="button">Mine</button><button class="on" data-seg="all" type="button">All</button><button data-seg="paused" type="button">Paused</button></div>
+          <select id="lType"><option value="ALL">Filters + brands</option><option value="filter">Saved filters</option><option value="brand">Brands</option></select>
+          <select id="lSort" title="Order of the list"><option value="due">Sort · due first</option><option value="name">Sort · name A–Z</option><option value="owner">Sort · owner</option><option value="last">Sort · last run, newest</option><option value="leads">Sort · most leads</option><option value="review">Sort · most to review</option><option value="cadence">Sort · cadence</option></select>
+          <div class="seg" id="lSeg"><button data-seg="due" type="button">Due <b>0</b></button><button data-seg="mine" type="button">Mine <b>0</b></button><button class="on" data-seg="all" type="button">All <b>0</b></button><button data-seg="active" type="button">Active <b>0</b></button><button data-seg="paused" type="button">Paused <b>0</b></button></div>
         </div>
         <div class="tblwrap"><table class="btbl" id="brandTbl"></table></div>
       </div>
 
-      <div class="card">
-        <div class="cardhead"><h2>Runs</h2><span class="sub">every export processed · leads it produced · what got marked. This is the 7-day test.</span>
+      <div class="card" id="cardRuns" hidden>
+        <div class="cardhead"><h2>Runs</h2><span class="sub">every export processed · leads it produced · what got marked · click a run to open its leads</span>
           <div class="right"><button class="btn ghost sm" id="logExport" type="button">Export log + verdicts</button></div></div>
+        <div class="tb" id="rlTb">
+          <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="rlQ" placeholder="Search runs…" autocomplete="off"></div>
+          <select id="rlPeriod"><option value="today">Today</option><option value="7d" selected>Last 7 days</option><option value="30d">Last 30 days</option><option value="all">All time</option></select>
+          <select id="rlWho"><option value="ALL">Ran by · anyone</option><option>Jack</option><option>Mera</option><option>Suz</option></select>
+          <select id="rlRule"><option value="ALL">All rules</option><option value="1">Rule 1</option><option value="2">Rule 2</option></select>
+          <select id="rlSrc"><option value="ALL">All sources</option></select>
+          <div class="seg" id="rlGroup"><button class="on" data-g="runs" type="button">Runs</button><button data-g="source" type="button">By source</button><button data-g="day" type="button">By day</button><button data-g="who" type="button">By person</button></div>
+          <label class="chk" title="Otherwise the newest 60 rows"><input type="checkbox" id="rlAll">show every row</label>
+        </div>
         <div id="runLog"></div>
+      </div>
+
+      <div class="card" id="cardLeads" hidden>
+        <div class="cardhead"><h2>Lead history</h2><span class="sub">every lead the rules have kept, on every source · shared · judge from here or open it in Keepa</span>
+          <div class="right"><button class="btn ghost sm" id="hsRefresh" type="button" title="Pull the newest lead states from the shared storage">Refresh</button><button class="btn ghost sm" id="hsCsv" type="button">Export this view</button><button class="btn primary sm" id="hsKeepa" type="button" title="Opens the leads on this page in the Keepa Product Viewer">Open page in Keepa</button></div></div>
+        <div class="kpis hskpis" id="hsKpis"></div>
+        <div class="tb" id="hsTb">
+          <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="hsQ" placeholder="ASIN, title, brand…" autocomplete="off"></div>
+          <select id="hsSrc"><option value="ALL">All sources</option></select>
+          <select id="hsOwner"><option value="ALL">All owners</option><option>Jack</option><option>Mera</option><option>Suz</option><option>VAs</option></select>
+          <select id="hsRule"><option value="ALL">All rules</option><option value="1">Rule 1</option><option value="2">Rule 2</option></select>
+          <select id="hsVerd"><option value="ALL">Any verdict</option><option value="none">No verdict yet</option><option value="Yes">Yes</option><option value="No">No</option><option value="Maybe">Maybe</option><option value="Seen">Seen only</option></select>
+          <select id="hsStatus"><option value="ALL">Any move</option><option value="NEW">New</option><option value="BETTER">Better</option><option value="WORSE">Worse</option><option value="UNCHANGED">Unchanged</option></select>
+          <select id="hsSeen"><option value="all">Seen · any time</option><option value="today">Seen today</option><option value="7d">Seen · last 7 days</option><option value="30d">Seen · last 30 days</option><option value="older">Not seen for 7+ days</option></select>
+          <select id="hsBand"><option value="ALL">Any sell price</option><option value="a">Under £20</option><option value="b">£20 – £60</option><option value="c">£60 – £150</option><option value="d">£150+</option></select>
+          <select id="hsScore"><option value="0">Score · any</option><option value="35">Score 35+</option><option value="50">Score 50+</option><option value="75">Bangers · 75+</option></select>
+          <select id="hsRoi"><option value="-999">ROI · any</option><option value="0">ROI 0%+</option><option value="10">ROI 10%+</option><option value="20">ROI 20%+</option><option value="30">ROI 30%+</option><option value="50">ROI 50%+</option></select>
+          <select id="hsProfit"><option value="-999">Profit · any</option><option value="1">£1+</option><option value="5">£5+</option><option value="10">£10+</option><option value="25">£25+</option></select>
+          <select id="hsPer"><option value="50">50 per page</option><option value="100">100 per page</option><option value="200">200 per page</option><option value="0">All on one page</option></select>
+          <button class="btn ghost sm" id="hsReset" type="button">Reset</button>
+        </div>
+        <div class="tablewrap show"><div class="tablescroll"><table class="logtbl hstbl" id="hsTbl"></table></div><div class="pager" id="hsPager"></div></div>
       </div>
     </div>
 
@@ -278,12 +322,16 @@
           <span id="runAvatar"></span>
           <div><h2><span id="runName">—</span><span id="runMk"></span></h2><div class="meta" id="runMeta"></div></div>
           <div class="right">
+            <button class="btn primary sm" id="runNext" type="button" hidden title="Open the next filter that is due today">Next due →</button>
+            <button class="btn ghost sm" id="runCopyLink" type="button" title="Copies a link that opens this run screen — paste it into the AVM HQ task">Copy link for AVM HQ</button>
+            <button class="btn ghost sm" id="runAllTime" type="button" title="Every lead this source has ever kept, in the Lead history">All-time leads</button>
             <button class="btn ghost sm" id="runHist" type="button">History</button>
             <button class="btn ghost sm" id="runEdit" type="button">Edit</button>
             <button class="btn ghost danger sm" id="clearRun" type="button">Clear files</button>
           </div>
         </div>
 
+        <div class="runstrip" id="runStrip" hidden></div>
         <div class="guide" id="guide"></div>
         <div class="twocol">
           <div class="stepcard">
@@ -338,20 +386,21 @@
         <div id="results" hidden>
           <div class="warn feewarn" id="feeWarn"></div>
           <div class="toolbar">
-            <button class="btn primary" id="dlSheet" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="lab">Download review sheet</span></button>
-            <button class="btn solid" id="openSel" type="button">Open in Keepa</button>
+            <button class="btn primary" id="openSel" type="button">Open in Keepa</button>
             <button class="btn solid" id="copyKept" type="button"><span class="lab">Copy lead ASINs</span></button>
+            <button class="btn ghost" id="dlSheet" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="lab">Review sheet (xlsx)</span></button>
             <div class="spacer"></div>
             <button class="btn solid seen" id="seenAll" type="button" hidden title="Baseline: mark every lead without a verdict as SEEN — from the next run only NEW and BETTER show as to-review">Mark all as seen</button>
             <button class="btn ghost" id="dlCsv" type="button">CSV</button>
             <button class="btn ghost" id="dlDropped" type="button">Dropped list</button>
+            <button class="btn primary" id="runNext2" type="button" hidden title="Open the next filter that is due today">Done — next due →</button>
           </div>
 
           <div class="leadhead" id="leadTop">
-            <h3 id="leadCount">Leads</h3><span class="sub">To review = new, or better than the last run (or better since it was judged) · Y/N/M saves as you click · ⃠ = never show again</span>
+            <h3 id="leadCount">Leads</h3><span class="sub"><b>To review</b> = new, or better than the last run (or better since it was judged) · <b>All leads</b> = everything this run kept · Y/N/M saves as you click · ⃠ = never show again</span>
             <div class="right">
               <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fQ" placeholder="ASIN, title, brand…" autocomplete="off"></div>
-              <select id="fStatus"><option value="REVIEW">To review</option><option value="ALL">Everything</option><option>NEW</option><option>BETTER</option><option>WORSE</option><option>UNCHANGED</option></select>
+              <div class="seg segl" id="fSeg" title="Which leads to show"><button class="on" data-st="REVIEW" type="button">To review <b>0</b></button><button data-st="ALL" type="button">All leads <b>0</b></button><button data-st="NEW" type="button">New <b>0</b></button><button data-st="BETTER" type="button">Better <b>0</b></button><button data-st="WORSE" type="button">Worse <b>0</b></button><button data-st="UNCHANGED" type="button">Same <b>0</b></button></div>
               <select id="fPer" title="How many leads per page — Open in Keepa takes the page"><option value="50">50 per page</option><option value="100">100 per page</option><option value="200">200 per page</option><option value="0">All on one page</option></select>
               <select id="fSort"><option value="default">Sort · score</option><option value="gain">Sort · biggest improvement</option><option value="profit">Sort · profit</option><option value="roi">Sort · ROI</option><option value="month">Sort · £ / month</option></select>
               <select id="fMarket"><option value="ALL">Buy from · all</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
@@ -433,18 +482,19 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b50"></script>
-<script src="js/parse.js?v=b50"></script>
-<script src="js/rule1.js?v=b50"></script>
-<script src="js/rule2.js?v=b50"></script>
-<script src="js/export.js?v=b50"></script>
-<script src="js/rule4.js?v=b50"></script>
-<script src="js/queue.js?v=b50"></script>
-<script src="js/sources.js?v=b50"></script>
-<script src="js/cloud.js?v=b50"></script>
-<script src="js/leadtools.js?v=b50"></script>
-<script src="js/keepaconsole.js?v=b50"></script>
-<script src="js/brands.js?v=b50"></script>
-<script src="js/boot.js?v=b50"></script>
+<script src="js/core.js?v=b63"></script>
+<script src="js/parse.js?v=b63"></script>
+<script src="js/rule1.js?v=b63"></script>
+<script src="js/rule2.js?v=b63"></script>
+<script src="js/export.js?v=b63"></script>
+<script src="js/rule4.js?v=b63"></script>
+<script src="js/queue.js?v=b63"></script>
+<script src="js/sources.js?v=b63"></script>
+<script src="js/cloud.js?v=b63"></script>
+<script src="js/leadtools.js?v=b63"></script>
+<script src="js/keepaconsole.js?v=b63"></script>
+<script src="js/brands.js?v=b63"></script>
+<script src="js/history.js?v=b63"></script>
+<script src="js/boot.js?v=b63"></script>
 </body>
 </html>

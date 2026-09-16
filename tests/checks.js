@@ -151,6 +151,20 @@ window.SourcingChecks=(function(){
       ok('fees · £100 sale, 15%, £3.50 FBA',Math.round(brFees(100,0.15,3.50,0.5,'')*100)/100,19.87);
       ok('R2 score · £30/10%/1000',r2score(30,10,1000),EXPECT.score1);
       ok('R2 score · £100/20%/50',r2score(100,20,50),EXPECT.score2);
+      /* b57: five old ShiftTrack filters seeded paused with their links (Jack's 15 Sep notes) — never active by default */
+      const hist=['suz-20plus','suz-7day-7-40','suz-7day-7-50','mera-7day-50plus','mera-7day-20-all'];
+      /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
+      ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
+      /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */
+      ok('Blacklist · Jack-approved brand bans seeded',BB_SEED.map(([k])=>k),['microsoft','staub','xiaomi']);
+      /* b58: the Lead history view builds from whatever lead states this browser holds, without throwing */
+      ok('History · builds from stored leads',typeof hsRows==='function'&&Array.isArray(hsRows())&&Array.isArray(hsFiltered()),true);
+      /* b59: Rule 3 keyword fix — the drink's form wins over incidental words (tea & coffee export 15 Sep: 14 of 84 rows went 20%) */
+      ok('R3 VAT · jar / caddy / biscuit / "espresso machine" in a coffee title stay 0%',[
+        vatFor({Title:'Nescafé Original Decaf Instant Coffee 100g Jar | Multipack of 6'}).rate,vatFor({Title:'Ahmad Tea London Collection | Explore London Tea Caddy | English Breakfast 40 Tea Bags'}).rate,
+        vatFor({Title:'Yorkshire Tea Caramelised Biscuit Brew, 160 Tea Bags'}).rate,vatFor({Title:'illy Classico Coffee Beans, 100% Arabica, Ideal for Moka Pot and Espresso Machine, 250g'}).rate,
+        vatFor({Title:"De'Longhi Dedica Espresso Coffee Machine, Stainless Steel"}).rate,vatFor({Title:'Coffee Machine Descaler 500g Powder'}).rate,vatFor({Title:'Tassimo Kenco Americano XL Coffee Pods x16 T-Discs'}).rate],[0,0,0,0,0.2,0.2,0]);
+      ok('Sources · ShiftTrack history rows seeded paused',hist.map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,s.owner,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/')&&!s.link.includes("'"))]:null;}),EXPECT.hist);
     }catch(e){R.push({name:'checks crashed: '+e.message,pass:false,got:String(e.stack||e),want:''});}
     render(performance.now()-t0);return R;}
   function render(ms){const pass=R.filter(r=>r.pass).length;
@@ -177,7 +191,11 @@ window.SourcingChecks=(function(){
     /* 14 Sep b19: under £60 sell = higher Buy Box 90/180d average unless the 180d is an old price regime (>1.35×: L'OR pods £34 launch vs
        £10.82 now), no uplift, capped at FBA 90d avg; low-ticket score scale £1,500/mo · £6/unit (WoodWick 28 → 51). S&S 2,520 → 136. */
     /* b40: under-£60 score = ROI and volume (Jack: '£1 at 100% on 1,000 a month is like an 80') — Ecover 53→68, WoodWick 51→69; Menopace now first on S&S. */
-    sns:{counts:[2520,51],first:'B000JPQR30',vat0:[66,1],ecover:[68,9.05,19.86,18.7,20],starbucks:32.48,shark:25.22,febreze:18.29,lor:[10.82,false],woodwick:69},
+    /* b59: 66 → 74 zero-rated — the 8 that moved were tea/coffee charged 20% for a word in the title (100g Jar, Gift Set, Caffeine Free,
+       Biscuit Brew, White Cup, in Caddy, Liquorice Root, Herbal). Nothing moved the other way (Pro Plus capsules, diffuser refill stay 20%). */
+    /* b62 (Jack, 16 Sep): under £60 the sell is never capped below the cheapest FBA offer live now → the Nescafé Decaf 100g x6 jar
+       (B000TCPV30, sell £18.96 → £19.80, ROI 8.8% → 15.8%) becomes the 52nd lead here. It is the only row the change adds. */
+    sns:{counts:[2520,52],first:'B000JPQR30',vat0:[74,2],ecover:[68,9.05,19.86,18.7,20],starbucks:32.48,shark:25.22,febreze:18.29,lor:[10.82,false],woodwick:69},
     /* b39: Ecover (£1.59, 18%, 1,000/mo) now outscores the Philips shaver on Suz's Business list. */
     biz:{counts:[179,8],first:'B0D1HBH6FN',lg:[44,403.73,496.75,8.5]},
     /* 14 Sep b22: Rule 1 sell (and best case) capped at "Buy Box: Highest" when the export has it. Mera 12 Sep run as a UK-only Finder: leads / rows capped. */
@@ -187,5 +205,6 @@ window.SourcingChecks=(function(){
     r2fit:{vivobook:[438.9,'capped at the 3P floor (lowest 3P average)'],chromebook:[336.62,'capped at the 3P floor (lowest 3P average)'],siemens:[591.65,'Buy Box 90d +25%'],toaster:[25.15,'Buy Box 30d (price moved down) +5%',false],keepa:[422.29,314.06,599.99,399,'string']},
     /* 14 Sep late b26: the FBA floor is the midpoint of the 30- and 90-day FBA averages when the 30-day is lower. Chromebook £337.28 → £336.62. */
     r2fit2:{shark:[209.11,'capped at the 3P floor (lowest 3P average)'],ninja:[136.05,'Buy Box 90d +25%'],brother:[157.72,'capped at the 3P floor (lowest 3P average)'],hoover:[169.46,'capped at the 3P floor (lowest 3P average)'],jet:[271.95,'capped at the 3P floor (lowest 3P average)'],blast:[78.86,'capped at the 3P floor (lowest 3P average)'],canon:[60.91,'capped at the 3P floor (lowest 3P average)','electrical']},
-    score1:75,score2:66};
+    score1:75,score2:66,
+    hist:[['paused','Suz',true],['paused','Suz',true],['paused','Suz',true],['paused','Mera',true],['paused','Mera',true]]};
   return{run,results:R};})();
