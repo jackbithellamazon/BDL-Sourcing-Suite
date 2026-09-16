@@ -1,28 +1,38 @@
-BDL Sourcing — push b67 live
-============================
-1. https://github.com/jackbithellamazon/BDL-Sourcing-Suite  →  Add file  →  Upload files
-2. Drag everything inside this folder in (index.html, css/, js/, tests/, README-DEPLOY.txt).
-3. Commit. Live within a minute. Header should read  v1.2 · 2026-09-16 · b67
-The Supabase SQL is already done. Nothing else to run. No Keepa export needed.
+BDL Sourcing — push b72      (live is still b64)
+================================================
 
-HOW AN AUDIT GOES NOW (fewest clicks)
--------------------------------------
-1. Storefront audits → press Start. It opens the rival with the most to do.
-2. Pictures, titles, prices and ranks load by themselves (about 1 token each,
-   once, saved for good). Leads we had and never bought are already marked
-   Missed it. Products you sell are already marked green.
-3. Turn on "Keepa follows me" once. One Keepa tab then shows whatever product
-   you are on.
-4. Keys 1–6 judge and move on. U undoes. Arrows move without judging.
-5. When the shelf is done, press Next rival. Repeat.
+STEP 1 · the app          2 minutes
+-----------------------------------
+https://github.com/jackbithellamazon/BDL-Sourcing-Suite → Add file → Upload files
+Drag in: index.html, css/, js/, tests/, README-DEPLOY.txt   → Commit
+Header should then read  v1.2 · 2026-09-16 · b72
 
-WHAT CHANGED SINCE b64 (the one live now)
------------------------------------------
-· Buttons only on the row you are on; every other row is calm
-· Amazon · Keepa · SellerAmp are real buttons on every row
-· "Keepa follows me" tab
-· Details load themselves (free from our own leads first, then tokens)
-· Missed it is automatic for leads we had and never bought
-· Start on the landing page, Next rival on every shelf
-· Cards read "495 left to judge · 21 marked for you"
-· The add-a-shelf boxes are tucked under "Add a shelf that is not on the list"
+STEP 2 · the Worker, for the price charts     2 minutes, and it cannot lose anything
+------------------------------------------------------------------------------------
+Cloudflare → Workers & Pages → bdl-sourcing → Edit code
+Select all the code, paste in 2026-09-16-BDL-SOURCING-WORKER-v2.js → Deploy
+Then REFRESH the Sourcing app once.
+
+Why it is safe:
+ · Your Keepa key is NOT in that file. It lives in the Worker's secret,
+   KEEPA_API_KEY, and editing code never touches secrets.
+ · The whole change is two lines: 'graphimage' added to the allowed list, and
+   an image is passed through as an image instead of text. Everything else,
+   including who is allowed to call it, is identical.
+ · If anything at all looks wrong: paste ROLLBACK-old-worker-v1.js back in and
+   Deploy. Cloudflare also keeps every past version under Deployments, so you
+   can roll back there in one click without any file.
+ · Nothing else in the app depends on this step. Skip it and everything works,
+   you just press K for the chart instead of seeing it in the panel.
+
+WHAT b72 GIVES YOU
+------------------
+· The Keepa 90-day chart inside the audit, for the product you are on
+  (Amazon, Buy Box, 3rd party, sales rank). About 1 token each.
+· Bigger answer buttons: key + icon + word, in colour, solid when chosen.
+· Amazon · Keepa · SellerAmp as proper buttons on every row AND pinned at the
+  top of the panel so they never scroll away.
+· A plain "Next ↓" button on the row you are on, for when you are on the mouse
+  and want to leave one without judging it.
+· Keys still do everything: 1-6 judge and move on, arrows move, U undoes,
+  O / K / S open Amazon / Keepa / SellerAmp, / searches.
