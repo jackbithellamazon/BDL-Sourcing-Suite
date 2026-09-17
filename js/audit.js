@@ -519,7 +519,7 @@ function auJudgeNow(asins,code){const sh=audShelf(auView.shelf);if(!sh)return;
      Pressing a key redrew the list and that was the entire feedback — nothing told you it had landed. The
      row that was just judged is now marked for one render, so it can flash its own verdict colour once and
      the chip can pop in. The mark clears itself, so scrolling past later never replays it. */
-  auView.landed={a:asin,at:Date.now()};
+  auView.landed={a:asins[0],at:Date.now()};   /* b98: `asin` never existed here — the parameter is `asins`, and the ReferenceError killed the redraw on EVERY press */
   clearTimeout(auView._landT);auView._landT=setTimeout(()=>{auView.landed=null;},600);
   auView.sel=new Set();if(!(t&&t.reasons))auAdvance();renderAudit();auFollow();}
 /* b95 (Jack: "why does unsure take us to the top — i want to bulk go through them rapid without being moved").

@@ -1,4 +1,4 @@
-BDL SOURCING — b97 · 17 Sep 2026
+BDL SOURCING — b98 · 17 Sep 2026
 YOU ARE STILL ON b73. This folder is everything since, in one upload.
 
 1. UPLOAD
@@ -11,6 +11,13 @@ YOU ARE STILL ON b73. This folder is everything since, in one upload.
    Then every lead says "1 of 24" beside its sales figure. Free, no tokens. Tell the VAs too.
 
 WHAT LANDS, NEWEST FIRST
+   b98  THE CRASH. This was the real one, and it was mine. In b94 I wrote `a:asin` inside a function
+        whose parameter is `asins` - so every verdict press threw a ReferenceError immediately after
+        saving your answer and before redrawing the screen. The answer went in. Nothing moved. It
+        looked exactly like "Discord has no second step", and it would have been doing the same to
+        every other verdict too. Nothing in the 129 checks ever called that function, so they all
+        passed. There is now a check that reads the judge path's own source and fails on a name
+        that is not in scope.
    b97  DISCORD, THE ACTUAL BUG. Marking a row with the verdict it ALREADY has is a no-op inside -
         there is nothing to save - and the code bailed out at that point before redrawing anything.
         So on any row you had already pressed Discord on, pressing 3 again did literally nothing:
@@ -103,4 +110,4 @@ WHAT LANDS, NEWEST FIRST
 ROLLBACK
    Upload the previous files over the top. GitHub keeps every version.
 
-129 checks, all green.
+131 checks, all green.

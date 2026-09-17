@@ -447,6 +447,28 @@ window.SourcingChecks=(function(){
         const redrawn=again.same&&(first.row.verdict==='discord');
         return [first.same===true,again.same===true,redrawn];
       })(),[false,true,true]);
+      /* b98. b94 wrote `auView.landed={a:asin,…}` inside auJudgeNow(asins,code) — `asin` does not exist
+         there, so EVERY verdict press threw a ReferenceError after saving but before redrawing. The verdict
+         went in, the screen never moved, and it looked exactly like "Discord has no second step".
+         Nothing here called auJudgeNow, so 128 checks passed while the one thing he does all day was broken.
+         These read the functions' own source and fail on a name that is not in scope. */
+      ok('Audit · the judge path only uses names that exist',(()=>{
+        const bad=[];
+        [['auJudgeNow',auJudgeNow],['auAdvance',auAdvance],['auFirstTodo',auFirstTodo],['audJudge',audJudge]]
+          .forEach(([name,fn])=>{
+            /* comments mention the names they are explaining, so read the CODE only */
+            const src=fn.toString().replace(/\/\*[\s\S]*?\*\//g,' ').replace(/\/\/[^\n]*/g,' ');
+            const params=(src.slice(src.indexOf('(')+1,src.indexOf(')'))||'').split(',').map(x=>x.trim()).filter(Boolean);
+            /* a bare `asin` inside a function whose parameter is `asins` is the exact slip b94 made */
+            /* `asin:` is a property NAME and fine; `.asin` is a property READ and fine.
+               A bare `asin` being used as a value is the slip. */
+            if(params.includes('asins')&&/[^\w.]asin\b(?!s)(?!\s*:)/.test(src))bad.push(name+' uses `asin` but takes `asins`');});
+        return bad;})(),[]);
+      ok('Audit · a press marks the row it was actually given',(()=>{
+        const v={landed:null};
+        const mark=(asins)=>{v.landed={a:asins[0],at:Date.now()};};
+        mark(['B0TEST00060','B0TEST00061']);
+        return [v.landed.a,typeof v.landed.a];})(),['B0TEST00060','string']);
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */
