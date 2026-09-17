@@ -1,4 +1,4 @@
-BDL SOURCING — b95 · 17 Sep 2026
+BDL SOURCING — b96 · 17 Sep 2026
 YOU ARE STILL ON b73. This folder is everything since, in one upload.
 
 1. UPLOAD
@@ -11,6 +11,11 @@ YOU ARE STILL ON b73. This folder is everything since, in one upload.
    Then every lead says "1 of 24" beside its sales figure. Free, no tokens. Tell the VAs too.
 
 WHAT LANDS, NEWEST FIRST
+   b96  DISCORD'S SECOND CLICK. It worked in every test and not on your machine, and the reason is
+        a list of the six verdicts saved in your browser. Nothing in the app ever writes it, but if
+        one is there it used to win outright - and yours was saved before PS/THC/FFB existed, so
+        your Discord had no second step at all. A saved list can still say which verdicts exist and
+        what they are called; how one BEHAVES now always comes from the code. Nothing to clear.
    b95  THE JUMP TO THE TOP. It was never Unsure - it was every key. Judging searched DOWN for the
         next unjudged row and, finding none below you, wrapped round and started again at row 1.
         One press and you were at the top with no idea where you had been. It only goes down now.
@@ -93,4 +98,4 @@ WHAT LANDS, NEWEST FIRST
 ROLLBACK
    Upload the previous files over the top. GitHub keeps every version.
 
-126 checks, all green.
+128 checks, all green.

@@ -421,6 +421,21 @@ window.SourcingChecks=(function(){
         const todo=[false,true,false,true];
         const first=()=>{for(let i=0;i<todo.length;i++)if(todo[i])return i;return -1;};
         return first();})(),1);
+      /* b96 (Jack: "discord not having the 2nd click"). A verdict list saved in the browser before PS/THC/FFB
+         existed used to win outright, so his Discord had no reasons and the second step never appeared. */
+      ok('Audit · an old saved verdict list cannot freeze out a new behaviour',(()=>{
+        const key='bdl-sourcing-audit-types',keep=localStorage.getItem(key);
+        lsSet(key,[{code:'discord',label:'Discord',short:'Discord',hex:'#8C95FF',icon:'msg'},
+                   {code:'not',label:'Not lead',short:'Not lead',hex:'#FF5C6C',icon:'x'}]);
+        const t=audTypes();const d=t.find(x=>x.code==='discord');
+        if(keep==null)localStorage.removeItem(key);else localStorage.setItem(key,keep);
+        return [t.length,(d.reasons||[]).join('/'),d.prompt,d.hex];
+      })(),[2,'PS/THC/FFB','Which Discord?','#8C95FF']);
+      ok('Audit · with nothing saved it is simply the six in the code',(()=>{
+        const key='bdl-sourcing-audit-types',keep=localStorage.getItem(key);
+        localStorage.removeItem(key);const n=audTypes().length;
+        if(keep!=null)localStorage.setItem(key,keep);
+        return n;})(),AUDIT_TYPES.length);
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */

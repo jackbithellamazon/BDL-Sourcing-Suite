@@ -1,5 +1,5 @@
 /* BDL Sourcing — boot. Bump BUILD every ship. */
-const BUILD={version:'1.2',date:'2026-09-17',n:95};
+const BUILD={version:'1.2',date:'2026-09-17',n:96};
 const THEME_KEY='sourcing-suite-theme';
 function setTheme(theme){const mode=theme==='dark'?'dark':'light';document.documentElement.dataset.theme=mode;
   $('#themeLabel').textContent=mode==='dark'?'Dark':'Light';

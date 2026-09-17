@@ -27,7 +27,15 @@ const AUDIT_TYPES=[
    Never found it = our filters never surfaced it at all, and the rival is selling it anyway. Slotted before
    Other so the list still ends on the catch-all; Other moves from Y to U, every other key stays put. */
 const AU_RKEYS=['q','w','e','r','t','y','u'];
-function audTypes(){const v=lsGet('bdl-sourcing-audit-types',null);return Array.isArray(v)&&v.length?v:AUDIT_TYPES;}
+/* b96 (Jack: "discord not having the 2nd click"). The six verdicts can be overridden by a list saved in the
+   browser — a hook for when he names extra ones. Nothing in the app writes it, but a list saved before a
+   feature existed used to win outright, so his Discord had no reasons array and the PS/THC/FFB step simply
+   never appeared. A saved list may say WHICH verdicts exist and what they are called; how one BEHAVES always
+   comes from the code. Otherwise every future change is invisible to whoever has an old list stored. */
+function audTypes(){const v=lsGet('bdl-sourcing-audit-types',null);
+  if(!Array.isArray(v)||!v.length)return AUDIT_TYPES;
+  return v.map(t=>{const base=AUDIT_TYPES.find(b=>b.code===t.code);if(!base)return t;
+    return Object.assign({},base,t,{reasons:base.reasons,prompt:base.prompt});});}
 function audType(code){return audTypes().find(t=>t.code===code)||null;}
 const AU_ICON={x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>',
   help:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.3M12 17h.01"/></svg>',
