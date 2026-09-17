@@ -1428,6 +1428,10 @@ html[data-theme="light"] .rl.r2{color:#0b6fb8;background:rgba(11,111,184,.1)}
 #leadResults .toolbar::before{content:"";position:absolute;left:-24px;right:-24px;top:0;bottom:0;
   background:var(--surface);z-index:-1}
 html{scroll-behavior:smooth}
+/* b92 — but NOT while judging a shelf: smooth scrolling turns every keypress into an animation you
+   have to wait for, and on a fast run it reads as lag. The audit list moves instantly. */
+body.auditing{scroll-behavior:auto}
+body.auditing .aulist{scroll-behavior:auto}
 /* anything the app scrolls to clears the sticky bar instead of hiding under it */
 #leadResults .ltbl,#leadResults .tablewrap,.aurow{scroll-margin-top:72px}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
@@ -1470,3 +1474,47 @@ html{scroll-behavior:smooth}
 
 /* b88 — "loading…" where a seller count has not been fetched yet, rather than a bare dash */
 .aufgrid .pend{color:var(--faint);font-size:12.5px;font-weight:600;font-family:var(--sans)}
+
+/* b93 (Jack: "improve colours"). The stripe was on EVERY row — 117 to-do rows all wearing iris at 55%
+   opacity, with the odd orange in it. A colour on everything is a colour on nothing, so:
+     · to do      no stripe at all. It is the default state, it does not need announcing.
+     · judged     the verdict's own colour, full strength. That is the whole point of the list.
+     · where you are   a wider bar plus a lift, so you never lose your place mid-run.
+   Same rule as the tab strip and the chips: bright means a decision, quiet means a fact. */
+.aulist .aurow::before{opacity:0;width:3px;transition:opacity .12s,width .12s}
+.aulist .aurow.judged::before{opacity:1}
+.aulist .aurow.focus::before{opacity:1;width:4px}
+.aulist .aurow.focus{background:var(--raise)}
+.aulist .aurow.judged:not(.focus){background:color-mix(in srgb,var(--edge) 4%,transparent)}
+.aulist .aurow.sel{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--iris) 45%,transparent)}
+.aulist .aurow:hover:not(.focus){background:color-mix(in srgb,var(--text) 4%,transparent)}
+
+/* b94 — what a press feels like. Three things were missing: no sign it registered, no sense of the row
+   settling, and the next row arriving with no warning. One 420ms flash in the verdict's own colour answers
+   all three — you see it land, you see it go quiet, and your eye is already on the row below. */
+@keyframes auLand{
+  0%   {background:color-mix(in srgb,var(--edge) 34%,transparent)}
+  55%  {background:color-mix(in srgb,var(--edge) 16%,transparent)}
+  100% {background:color-mix(in srgb,var(--edge) 4%,transparent)}
+}
+@keyframes auPop{0%{transform:scale(.82);opacity:0}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+.aulist .aurow.landed{animation:auLand .42s ease-out}
+.aulist .aurow.landed .aupill.big{animation:auPop .28s ease-out}
+.aulist .aurow{transition:background .16s ease}
+/* the row you land on lifts in rather than snapping */
+.aulist .aurow.focus{transition:background .16s ease}
+@media (prefers-reduced-motion:reduce){
+  .aulist .aurow.landed,.aulist .aurow.landed .aupill.big{animation:none}
+  .aulist .aurow{transition:none}
+}
+
+/* b95 — a shelf you are working through should read as three states at a glance, not fourteen colours.
+   Unjudged titles carry full contrast so your eye lands on work; a judged row keeps its verdict colour
+   but its title steps back — still perfectly readable, just no longer asking for attention. */
+.aulist .aurow .aut{color:var(--text)}
+.aulist .aurow.judged:not(.focus) .aut{color:color-mix(in srgb,var(--text) 82%,transparent)}
+.aulist .aurow.judged:not(.focus) .auimg{opacity:.82}
+.aulist .aurow.judged:not(.focus) .aulk{opacity:.72}
+.aulist .aurow.judged:not(.focus):hover .aulk,.aulist .aurow.judged:not(.focus):hover .aut{opacity:1;color:var(--text)}
+/* the verdict chip is the loudest thing on a finished row — that is the one fact worth reading */
+.aulist .aurow.judged .aupill.big{font-weight:750}

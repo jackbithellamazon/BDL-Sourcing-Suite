@@ -21,8 +21,12 @@ const AUDIT_TYPES=[
   {code:'discord',label:'Discord',short:'Discord',hex:'#8C95FF',icon:'msg',prompt:'Which Discord?',reasons:['PS','THC','FFB']},
   {code:'ws',label:'WS',short:'WS',hex:'#22D3EE',icon:'box'},
   {code:'joint',label:'Joint lead',short:'Joint',hex:'#2CE38B',icon:'check'},
-  {code:'missed',label:'Missed it',short:'Missed it',hex:'#FF8A3D',icon:'clock',prompt:'Why missed?',reasons:['Out of stock','Passed on it','Too slow','Price gone','Never looked at','Other']}];
-const AU_RKEYS=['q','w','e','r','t','y'];
+  {code:'missed',label:'Missed it',short:'Missed it',hex:'#FF8A3D',icon:'clock',prompt:'Why missed?',reasons:['Out of stock','Passed on it','Too slow','Price gone','Never looked at','Never found it','Other']}];
+/* b91 (Jack, 17 Sep): "never found it" is a different answer from "never looked at", and it is the one that
+   points at a filter rather than at a person. Never looked at = it reached our list and nobody judged it.
+   Never found it = our filters never surfaced it at all, and the rival is selling it anyway. Slotted before
+   Other so the list still ends on the catch-all; Other moves from Y to U, every other key stays put. */
+const AU_RKEYS=['q','w','e','r','t','y','u'];
 function audTypes(){const v=lsGet('bdl-sourcing-audit-types',null);return Array.isArray(v)&&v.length?v:AUDIT_TYPES;}
 function audType(code){return audTypes().find(t=>t.code===code)||null;}
 const AU_ICON={x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>',
@@ -211,7 +215,11 @@ function auSyncNote(){const n=audOut().length;if(!cloudEnabled())return'<span cl
   return n?`<span class="ausync">${n} answer${n===1?'':'s'} to send</span>`:'<span class="ausync ok">Saved for everyone</span>';}
 function audPaintSync(){const el=$('#auSync');if(el)el.outerHTML=auSyncNote().replace('<span class="','<span id="auSync" class="');}
 
+const AU_ANCHOR={top:null,key:null};
 function renderAudit(){const host=$('#page-audit');if(!host)return;
+  document.body.classList.toggle('auditing',auView.mode==='audit');
+  const _f=document.querySelector('.aurow.focus');
+  if(_f&&AU_ANCHOR.key===auView.shelf+'|'+auView.focus)AU_ANCHOR.top=_f.getBoundingClientRect().top;
   if(!isJack()){host.innerHTML=`<div class="card"><div class="empty"><span>The storefront audit is Jack's. Pick your name top right if this is you.</span></div></div>`;return;}
   if(auView.mode==='audit'&&auView.shelf&&audShelf(auView.shelf))auRenderOne();else auRenderList();}
 /* b69 (Jack: "highest % of products I sell too") — the rival you overlap with most is the one worth auditing,
@@ -325,7 +333,7 @@ function auRow(it,i,sh){const V=audAll();const v=V[it.a];const p=audState.prod[i
   const o=auOurs()[it.a];const t=audType(st);const newShelf=!it.base&&auDays(it.first)<=14;
   const btns=audTypes().map((x,n)=>{const on=(v&&v.verdict===x.code)||(st==='jointauto'&&x.code==='joint');
     return`<button type="button" class="aub ${on?'on':''}${st==='jointauto'&&x.code==='joint'?' auto':''}" style="--c:${x.hex}" data-v="${x.code}" data-a="${it.a}" title="${escapeHtml(x.label)} · key ${n+1}"><kbd>${n+1}</kbd>${AU_ICON[x.icon]||''}<span class="lab">${escapeHtml(x.short||x.label)}</span></button>`;}).join('');
-  const reasons=v&&audType(v.verdict)&&audType(v.verdict).reasons&&(i===auView.focus||!v.reason)
+  const reasons=v&&audType(v.verdict)&&audType(v.verdict).reasons&&i===auView.focus
     ?`<div class="aureasons" style="--c:${audType(v.verdict).hex}">${audType(v.verdict).prompt||'Why?'}${audType(v.verdict).reasons.map((x,n)=>`<button type="button" class="aurs ${v.reason===x?'on':''}" data-r="${escapeHtml(x)}" data-a="${it.a}"><kbd>${AU_RKEYS[n].toUpperCase()}</kbd>${escapeHtml(x)}</button>`).join('')}</div>`:'';
   const ourChip=o?(o.said==='Yes'?`<span class="aupill p-yes src" title="${escapeHtml('Found by '+o.src+' · '+o.day+' · score '+(o.score||0))}"><i class="sq" style="background:${auAv(o.owner||o.saidBy||'VAs')}"></i>${escapeHtml(auSrcShort(o.src))} · ${escapeHtml(o.saidBy||'we')} said Yes</span>`
       :`<span class="aupill p-had src" title="${escapeHtml('Found by '+o.src+' · '+o.owner+' · '+o.day+' · score '+(o.score||0)+' · buy '+gbp(o.buy)+' → sell '+gbp(o.sell)+' · '+(o.roi||0)+'% ROI'+(o.runs>1?' · seen on '+o.runs+' runs':''))}"><i class="sq" style="background:${auAv(o.owner||'VAs')}"></i>${escapeHtml(auSrcShort(o.src))}${o.roi!=null&&o.roi!==''?' · '+o.roi+'%':''}${o.said?' · they said '+escapeHtml(o.said):' · nobody said Yes'}</span>`):'';
@@ -333,7 +341,8 @@ function auRow(it,i,sh){const V=audAll();const v=V[it.a];const p=audState.prod[i
   const links=auLinks(it.a);
   const sellers=+p.fba||+p.offers||0;
   const money=[p.price?gbp(p.price):'',p.rank?'#'+(+p.rank).toLocaleString():'',p.mo?(+p.mo).toLocaleString()+' a month':'',sellers?sellers+' seller'+(sellers===1?'':'s'):''].filter(Boolean).join('  ·  ');
-  return`<div class="aurow ${i===auView.focus?'focus':''} ${auView.sel.has(it.a)?'sel':''} ${st!=='todo'?'judged':''}" data-i="${i}" data-a="${it.a}" style="--edge:${st==='todo'?'var(--iris)':(t?t.hex:(st==='jointauto'?'#2CE38B':'var(--line2)'))}">
+  const landed=auView.landed&&auView.landed.a===it.a&&Date.now()-auView.landed.at<600?' landed':'';
+  return`<div class="aurow ${i===auView.focus?'focus':''} ${auView.sel.has(it.a)?'sel':''} ${st!=='todo'?'judged':''}${landed}" data-i="${i}" data-a="${it.a}" style="--edge:${st==='todo'?'var(--iris)':(t?t.hex:(st==='jointauto'?'#2CE38B':'var(--line2)'))}">
     <div class="auimg">${p.image?`<img loading="lazy" src="${escapeHtml(p.image)}" alt="">`:escapeHtml(it.a.slice(0,2))}</div>
     <div class="aumain">
       <div class="aut" title="${escapeHtml(p.title||it.a)}">${escapeHtml(p.title||it.a)}</div>
@@ -385,8 +394,21 @@ function auRenderOne(){const sh=audShelf(auView.shelf);const c=auCounts(sh);cons
       !vis.length?'<div class="empty"><span>Nothing in this tab.</span></div>':
       `<div class="augrid"><div class="aulist">${page.map((it,i)=>auRow(it,i,sh)).join('')}${vis.length>AUD.PAGE?`<div class="aumore">Showing the first ${AUD.PAGE} of ${vis.length}. Judge these and the rest follow.</div>`:''}</div>
         <aside class="aupanel">${auPanel(vis[auView.focus],sh)}</aside></div>`}
-    <div class="aukeys"><span><kbd>1</kbd>–<kbd>${audTypes().length}</kbd> judge</span><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>⇧↓</kbd> select a run</span><span><kbd>U</kbd> undo</span><span><kbd>O</kbd><kbd>K</kbd><kbd>S</kbd> Amazon · Keepa · SellerAmp</span><span><kbd>/</kbd> search</span></div></div>`;
-  const f=document.querySelector('.aurow.focus');if(f)f.scrollIntoView({block:'nearest'});
+    <div class="aukeys"><span><kbd>1</kbd>–<kbd>${audTypes().length}</kbd> judge</span><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>⇧↓</kbd> select a run</span><span><kbd>G</kbd> back to the next one waiting</span><span><kbd>U</kbd> undo</span><span><kbd>O</kbd><kbd>K</kbd><kbd>S</kbd> Amazon · Keepa · SellerAmp</span><span><kbd>/</kbd> search</span></div></div>`;
+  /* b92 (Jack: "isn't smooth at all - very very jumpy"). Judging changes a row's height — the six
+     buttons appear, a reason row opens, both close again — and every row below it jumped. The list is
+     re-rendered wholesale, so the cure is to pin the row you are ON: remember where it sat on screen
+     before the render and scroll by exactly the difference after it. The page then never moves under
+     your hand, however much the row grows. scrollIntoView only ran when the row left the viewport,
+     which is why it felt fine sometimes and awful others. */
+  const f=document.querySelector('.aurow.focus');
+  if(f){const after=f.getBoundingClientRect().top;
+    if(AU_ANCHOR.top!=null&&AU_ANCHOR.key===auView.shelf+'|'+auView.focus){
+      const drift=after-AU_ANCHOR.top;
+      if(Math.abs(drift)>1)window.scrollBy(0,drift);
+    }else if(after<0||after>innerHeight-120){f.scrollIntoView({block:'nearest',behavior:'auto'});}
+    AU_ANCHOR.top=f.getBoundingClientRect().top;AU_ANCHOR.key=auView.shelf+'|'+auView.focus;}
+  else{AU_ANCHOR.top=null;}
   const cur=vis[auView.focus];if(cur)auLoadGraph(cur.a);}
 /* b71: the price graph. Keepa's free chart is limited by IP address, and when it trips it returns a small PNG that says
    "blocked" rather than an error — so a real chart is judged by its width, never by onload alone. It loads only for the
@@ -471,10 +493,29 @@ function auJudgeNow(asins,code){const sh=audShelf(auView.shelf);if(!sh)return;co
   asins.forEach(a=>auView.stay.add(a));
   const gap=(Date.now()-auView.lastAt)/1000;if(auView.lastAt&&gap<60){auView.secs=auView.secs.concat([gap]).slice(-40);auSave();}auView.lastAt=Date.now();
   const t=audType(code);toast(`Marked ${t?t.label:code}${asins.length>1?' on '+asins.length+' products':''} — press U to undo`);
+  /* b94 (Jack: "improve smoothness when i tick it and how it reacts when it's ticked and where it goes").
+     Pressing a key redrew the list and that was the entire feedback — nothing told you it had landed. The
+     row that was just judged is now marked for one render, so it can flash its own verdict colour once and
+     the chip can pop in. The mark clears itself, so scrolling past later never replays it. */
+  auView.landed={a:asin,at:Date.now()};
+  clearTimeout(auView._landT);auView._landT=setTimeout(()=>{auView.landed=null;},600);
   auView.sel=new Set();if(!(t&&t.reasons))auAdvance();renderAudit();auFollow();}
+/* b95 (Jack: "why does unsure take us to the top — i want to bulk go through them rapid without being moved").
+   It was not Unsure. auAdvance searched DOWN for the next unjudged row and, finding none, wrapped round and
+   searched from the top — so the moment everything below you was done, one keypress teleported you to row 1
+   and you lost your place completely. It only ever goes down now. Run out of work below and you stay exactly
+   where you are, and it tells you how many are left above and which key goes back to them. */
 function auAdvance(){const sh=audShelf(auView.shelf);if(!sh)return;const vis=auVisible(sh);const V=audAll();
-  for(let i=auView.focus+1;i<vis.length;i++){if(audStatus(V[vis[i].a],audSells(sh.id,vis[i].a))==='todo'){auView.focus=i;return;}}
-  for(let i=0;i<auView.focus;i++){if(audStatus(V[vis[i].a],audSells(sh.id,vis[i].a))==='todo'){auView.focus=i;return;}}}
+  const todo=i=>audStatus(V[vis[i].a],audSells(sh.id,vis[i].a))==='todo';
+  for(let i=auView.focus+1;i<vis.length;i++){if(todo(i)){auView.focus=i;return;}}
+  let above=0;for(let i=0;i<auView.focus;i++)if(todo(i))above++;
+  if(auView.focus<vis.length-1)auView.focus=vis.length-1;      /* settle on the last row, never the first */
+  toast(above?`That is the bottom — ${above} still to judge above you, press G to go back to them`
+             :'That is every product on this shelf judged');}
+/* G — back to the first thing still waiting, for when you have skipped some on the way down */
+function auFirstTodo(){const sh=audShelf(auView.shelf);if(!sh)return;const vis=auVisible(sh);const V=audAll();
+  for(let i=0;i<vis.length;i++){if(audStatus(V[vis[i].a],audSells(sh.id,vis[i].a))==='todo'){auView.focus=i;renderAudit();auFollow();return;}}
+  toast('Nothing left to judge on this shelf');}
 function auOpenKeepaViewer(){const sh=audShelf(auView.shelf);if(!sh)return;const need=sh.items.filter(it=>!audState.prod[it.a]).map(it=>it.a).slice(0,250);
   if(!need.length){toast('Every product already has its details');return;}
   copy(need.join(', '),need.length+' ASINs copied — they are also loading in the Viewer');window.open(keepaLink(need,'2'),'_blank');
@@ -562,6 +603,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     const types=audTypes();const n=parseInt(e.key,10);
     if(n>=1&&n<=types.length&&it){e.preventDefault();auJudgeNow(auView.sel.size?[...auView.sel]:[it.a],types[n-1].code);return;}
     const rk=AU_RKEYS.indexOf(String(e.key).toLowerCase());
+    if((e.key==='g'||e.key==='G')&&!e.metaKey&&!e.ctrlKey){e.preventDefault();auFirstTodo();return;}
     if(rk>=0&&it){const v=audGet(it.a);const ty=v&&audType(v.verdict);if(ty&&ty.reasons&&ty.reasons[rk]){audSetReason(it.a,ty.reasons[rk]);auAdvance();renderAudit();auFollow();return;}}
     if(e.key==='u'||e.key==='U'){const b=audUndo();toast(b?'Undone':'Nothing to undo');
       if(b){const back=auVisible(sh).findIndex(x=>x.a===b[0].asin);if(back>=0)auView.focus=back;renderAudit();}return;}

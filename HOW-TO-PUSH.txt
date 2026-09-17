@@ -1,4 +1,4 @@
-BDL SOURCING — b90 · 17 Sep 2026
+BDL SOURCING — b95 · 17 Sep 2026
 YOU ARE STILL ON b73. This folder is everything since, in one upload.
 
 1. UPLOAD
@@ -11,6 +11,30 @@ YOU ARE STILL ON b73. This folder is everything since, in one upload.
    Then every lead says "1 of 24" beside its sales figure. Free, no tokens. Tell the VAs too.
 
 WHAT LANDS, NEWEST FIRST
+   b95  THE JUMP TO THE TOP. It was never Unsure - it was every key. Judging searched DOWN for the
+        next unjudged row and, finding none below you, wrapped round and started again at row 1.
+        One press and you were at the top with no idea where you had been. It only goes down now.
+        Run out below and you stay put; it tells you how many are still waiting above and G takes
+        you back to the first of them. Judged rows also step back visually so your eye lands on
+        the work rather than on what you have already done.
+   b94  WHAT A PRESS FEELS LIKE. Judging a row flashes that row once in the verdict's own colour and
+        pops the chip in - 420ms - then it settles to its quiet judged tint. You see it land, you
+        see it go quiet, and your eye is already on the row below. Pass the row again later and it
+        does not replay. Off entirely if your machine is set to reduce motion.
+   b93  COLOURS. The left stripe was on every single row - 117 to-do rows in iris at half opacity,
+        with the odd orange lost among them - so the colour told you nothing. Now a to-do row has
+        no stripe at all, a judged row wears its verdict's colour at full strength with a faint
+        tint behind it, and the row you are on gets a wider bar and a lift. Bright means decided.
+   b92  THE JUMPINESS. Judging changes a row's height - six buttons appear, a reason row opens, both
+        close again - and every row below jumped. The row you are ON is now pinned to the same spot
+        on screen across the redraw, so the page never moves under your hand. Smooth scrolling is
+        off while a shelf is open (it made every keypress an animation you waited for), and the
+        reason picker only opens on the row you are on - a judged row with no reason used to keep
+        it open forever, which is why you had two rows expanded at once.
+   b91  Missed it has a seventh reason: "Never found it" (key Y). Different from "Never looked at" -
+        never LOOKED at means it reached your list and nobody judged it, never FOUND means the filters
+        never surfaced it and the rival is selling it anyway. One is a filter to fix, the other is a
+        VA to chase. Other moves from Y to U; every other key is where it was.
    b90  Handling is one number: PREP_MISC GBP 1.00 a unit in Rule 1, instead of 60p prep + 40p misc.
         Rule 2 already worked that way. Same money either way - checked against your own 62-lead EU
         run and every landed cost, sell price, profit, ROI and breakeven came out identical.
@@ -69,4 +93,4 @@ WHAT LANDS, NEWEST FIRST
 ROLLBACK
    Upload the previous files over the top. GitHub keeps every version.
 
-117 checks, all green.
+126 checks, all green.

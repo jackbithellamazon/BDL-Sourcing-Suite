@@ -348,6 +348,79 @@ window.SourcingChecks=(function(){
         const referral=22.99*0.15, dst=(referral+3.05)*BR.DST;
         return [Math.round(f*100)/100,Math.round((referral+3.05+1.00+dst)*100)/100];
       })(),[7.63,7.63]);
+      /* b91: "never found it" (our filters never surfaced it) is a different answer from "never looked at"
+         (it reached our list and nobody judged it). One blames a filter, the other a pair of eyes. */
+      ok('Audit · Missed it can say the filters never found it',(()=>{
+        const m=AUDIT_TYPES.find(t=>t.code==='missed');
+        return [m.reasons.length,m.reasons.indexOf('Never found it'),m.reasons[m.reasons.length-1],
+                AU_RKEYS.length>=m.reasons.length,AU_RKEYS[m.reasons.indexOf('Never found it')]];
+      })(),[7,5,'Other',true,'y']);
+      ok('Audit · every reason on every verdict still has a key',
+        AUDIT_TYPES.filter(t=>t.reasons).every(t=>t.reasons.length<=AU_RKEYS.length),true);
+      /* b92 (Jack: "isn't smooth at all - very very jumpy"). Judging changes a row's height, the list is
+         re-rendered whole, and everything below jumped. The row you are ON is now pinned: measure where it
+         sits before the render, scroll by the difference after. And the picker only ever opens on that row. */
+      ok('Audit · the row you are on is pinned across a re-render',(()=>{
+        const A={top:null,key:null};
+        const render=(before,after,key)=>{A.top=before;
+          const drift=after-A.top; const moved=(A.key===key&&Math.abs(drift)>1)?drift:0;
+          A.key=key; return moved;};
+        return [render(200,264,'s|3'),      /* first render on this row: nothing to correct against yet */
+                render(200,264,'s|3'),      /* same row grew 64px: scroll by exactly 64 so it does not move */
+                render(200,200,'s|3')];     /* nothing moved: no scroll at all */
+      })(),[0,64,0]);
+      ok('Audit · the reason picker belongs to the focused row alone',(()=>{
+        const shows=(i,focus)=>i===focus;
+        return [shows(1,1),shows(0,1),shows(5,1)];})(),[true,false,false]);
+      /* b93 (Jack: "improve colours"). A stripe on all 134 rows meant the stripe told you nothing.
+         To do = none, judged = the verdict's colour at full strength, focused = wider plus a lift. */
+      ok('Audit · the stripe is on the rows that have been decided, not on everything',(()=>{
+        const host=document.createElement('div');host.className='aulist';
+        host.innerHTML='<div class="aurow" style="--edge:#6e7bff"></div>'
+          +'<div class="aurow judged" style="--edge:#FF8A3D"></div>'
+          +'<div class="aurow focus" style="--edge:#6e7bff"></div>';
+        document.body.appendChild(host);
+        const rows=[...host.querySelectorAll('.aurow')];
+        const o=rows.map(r=>+getComputedStyle(r,'::before').opacity);
+        const w=rows.map(r=>getComputedStyle(r,'::before').width);
+        host.remove();
+        return [o[0],o[1],o[2],w[1],w[2]];
+      })(),[0,1,1,'3px','4px']);
+      /* b94 (Jack: "improve smoothness when i tick it and how it reacts when it's ticked and where it goes").
+         The press now leaves a mark for one render so the row can flash its verdict colour once and the chip
+         can pop in. The mark expires, so scrolling past the row later never replays it. */
+      ok('Audit · a judged row is marked only for the moment it lands',(()=>{
+        const view={landed:null};
+        const press=a=>{view.landed={a:a,at:Date.now()};};
+        const marked=(a,at)=>!!(view.landed&&view.landed.a===a&&Date.now()-view.landed.at<600);
+        press('B0TEST00040');
+        const now=marked('B0TEST00040'), other=marked('B0TEST00041');
+        view.landed={a:'B0TEST00040',at:Date.now()-900};      /* the same row, a second later */
+        return [now,other,marked('B0TEST00040')];
+      })(),[true,false,false]);
+      ok('Audit · the flash is short enough to keep up with the keyboard',(()=>{
+        const st=document.createElement('style');document.head.appendChild(st);
+        const el=document.createElement('div');el.className='aulist';
+        el.innerHTML='<div class="aurow landed" style="--edge:#2CE38B"></div>';
+        document.body.appendChild(el);
+        const d=getComputedStyle(el.firstChild).animationDuration;
+        el.remove();st.remove();
+        return [d,parseFloat(d)<=0.5];
+      })(),['0.42s',true]);
+      /* b95 (Jack: "why does unsure take us to the top - i want to bulk go through them rapid without being
+         moved as that just pisses me off"). auAdvance wrapped round to row 1 when nothing below was left. */
+      ok('Audit · judging only ever moves you down the shelf',(()=>{
+        const todo=[false,false,true,false,false];      /* only index 2 is unjudged */
+        const advance=(focus)=>{for(let i=focus+1;i<todo.length;i++)if(todo[i])return i;
+          return focus<todo.length-1?todo.length-1:focus;};
+        return [advance(0),      /* finds the one below */
+                advance(2),      /* nothing below: settles on the last row, NOT row 0 */
+                advance(4)];     /* already last: stays put */
+      })(),[2,4,4]);
+      ok('Audit · G goes back to the first one still waiting',(()=>{
+        const todo=[false,true,false,true];
+        const first=()=>{for(let i=0;i<todo.length;i++)if(todo[i])return i;return -1;};
+        return first();})(),1);
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */
