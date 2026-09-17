@@ -436,6 +436,17 @@ window.SourcingChecks=(function(){
         localStorage.removeItem(key);const n=audTypes().length;
         if(keep!=null)localStorage.setItem(key,keep);
         return n;})(),AUDIT_TYPES.length);
+      /* b97 (Jack: "still not working bro"). Pressing the verdict a row already HAS is a no-op in audJudge,
+         and the caller bailed before redrawing — so on a row already marked Discord, pressing 3 did nothing
+         at all and the PS/THC/FFB picker could never be reached again. */
+      ok('Audit · pressing the verdict a row already has still opens its picker',(()=>{
+        const now='2026-09-17T10:00:00.000Z';
+        const first=audPress('B0TEST00050',null,'discord','Jack','A1',now);
+        const again=audPress('B0TEST00050',first.row,'discord','Jack','A1',now);
+        /* audJudge would return nothing for the second press: same verdict, nothing to write */
+        const redrawn=again.same&&(first.row.verdict==='discord');
+        return [first.same===true,again.same===true,redrawn];
+      })(),[false,true,true]);
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */

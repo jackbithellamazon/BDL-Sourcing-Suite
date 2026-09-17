@@ -497,7 +497,21 @@ function auOpen(id){auView.mode='audit';auView.shelf=id;auView.q='';auView.order
     auNote(got?`Details loaded · about ${got} tokens · <button type="button" class="linkbtn" id="auAutoOff">stop doing this automatically</button>`:'');})();}
 function auNote(html,pct){const el=$('#auNote2');if(!el)return;el.innerHTML=(pct!=null?`<span class="auload"><i style="width:${Math.round(pct)}%"></i></span>`:'')+(html||'');}
 function auBack(){auView.mode='list';auView.shelf=null;location.hash='#audit';renderAudit();}
-function auJudgeNow(asins,code){const sh=audShelf(auView.shelf);if(!sh)return;const b=audJudge(asins,code,sh.seller||sh.id);if(!b)return;
+function auJudgeNow(asins,code){const sh=audShelf(auView.shelf);if(!sh)return;
+  const b=audJudge(asins,code,sh.seller||sh.id);
+  if(!b){
+    /* b97 (Jack: "still not working bro"). audJudge treats pressing the verdict a row ALREADY has as a
+       no-op and returns nothing — and this bailed out before anything redrew. So once a row was on
+       Discord, pressing 3 again did precisely nothing: no picker, no feedback, no clue why. Pressing it
+       again is how you reach or change the destination, so it has to redraw even when the verdict itself
+       has not moved. This is why it looked broken on rows he had already pressed Discord on. */
+    const t0=audType(code);
+    if(asins.length===1&&(audGet(asins[0])||{}).verdict===code){
+      const vis=auVisible(sh);const k=vis.findIndex(it=>it.a===asins[0]);if(k>=0)auView.focus=k;
+      renderAudit();auFollow();
+      if(!(t0&&t0.reasons))toast('Already marked '+(t0?t0.label:code)+' — press U to undo');
+    }
+    return;}
   asins.forEach(a=>auView.stay.add(a));
   const gap=(Date.now()-auView.lastAt)/1000;if(auView.lastAt&&gap<60){auView.secs=auView.secs.concat([gap]).slice(-40);auSave();}auView.lastAt=Date.now();
   const t=audType(code);toast(`Marked ${t?t.label:code}${asins.length>1?' on '+asins.length+' products':''} — press U to undo`);

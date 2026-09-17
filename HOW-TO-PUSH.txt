@@ -1,4 +1,4 @@
-BDL SOURCING — b96 · 17 Sep 2026
+BDL SOURCING — b97 · 17 Sep 2026
 YOU ARE STILL ON b73. This folder is everything since, in one upload.
 
 1. UPLOAD
@@ -11,7 +11,12 @@ YOU ARE STILL ON b73. This folder is everything since, in one upload.
    Then every lead says "1 of 24" beside its sales figure. Free, no tokens. Tell the VAs too.
 
 WHAT LANDS, NEWEST FIRST
-   b96  DISCORD'S SECOND CLICK. It worked in every test and not on your machine, and the reason is
+   b97  DISCORD, THE ACTUAL BUG. Marking a row with the verdict it ALREADY has is a no-op inside -
+        there is nothing to save - and the code bailed out at that point before redrawing anything.
+        So on any row you had already pressed Discord on, pressing 3 again did literally nothing:
+        no picker, no message, no clue. Pressing it again is exactly how you reach or change the
+        destination, so it redraws now even when the verdict itself has not moved.
+   b96  DISCORD'S SECOND CLICK, part one. It worked in every test and not on your machine, and the reason is
         a list of the six verdicts saved in your browser. Nothing in the app ever writes it, but if
         one is there it used to win outright - and yours was saved before PS/THC/FFB existed, so
         your Discord had no second step at all. A saved list can still say which verdicts exist and
@@ -98,4 +103,4 @@ WHAT LANDS, NEWEST FIRST
 ROLLBACK
    Upload the previous files over the top. GitHub keeps every version.
 
-128 checks, all green.
+129 checks, all green.
