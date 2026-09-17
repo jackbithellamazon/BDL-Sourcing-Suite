@@ -1146,9 +1146,9 @@ html[data-theme="light"] .rl.r2{color:#0b6fb8;background:rgba(11,111,184,.1)}
 .aub.on{background:var(--c);color:#08101a}
 .aub.auto{border-style:dashed}
 .aureasons{grid-column:2/4;display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:12px;color:var(--muted)}
-.aurs{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px 0 5px;border-radius:9px;border:1px solid rgba(255,138,61,.45);background:transparent;color:#FF8A3D;font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer}
-.aurs.on{background:rgba(255,138,61,.18)}
-.aurs kbd{border:1px solid rgba(255,138,61,.5);color:#FF8A3D;background:transparent;min-width:16px;height:16px;border-radius:4px;display:inline-grid;place-items:center;font-family:var(--sans);font-size:10.5px}
+.aurs{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px 0 5px;border-radius:9px;border:1px solid color-mix(in srgb,var(--c,#FF8A3D) 45%,transparent);background:transparent;color:var(--c,#FF8A3D);font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer}
+.aurs.on{background:color-mix(in srgb,var(--c,#FF8A3D) 18%,transparent)}
+.aurs kbd{border:1px solid color-mix(in srgb,var(--c,#FF8A3D) 50%,transparent);color:var(--c,#FF8A3D);background:transparent;min-width:16px;height:16px;border-radius:4px;display:inline-grid;place-items:center;font-family:var(--sans);font-size:10.5px}
 .aumore{padding:14px;text-align:center;color:var(--faint);font-size:12.5px}
 .aupanel{position:sticky;top:52px;border-radius:14px;background:var(--surface2);border:1px solid var(--line);padding:14px 16px;max-height:calc(100vh - 70px);overflow-y:auto}
 .aupimg{height:170px;border-radius:12px;background:#fff;display:grid;grid-template-rows:100%;place-items:center;overflow:hidden}
@@ -1389,8 +1389,8 @@ html[data-theme="light"] .rl.r2{color:#0b6fb8;background:rgba(11,111,184,.1)}
 .aulinksbig .aulk{height:42px;font-size:13.5px;flex:1;justify-content:center}
 /* the why-missed chips */
 .aulist .aurow .aurs{height:32px;font-size:12.5px;font-weight:600;border-width:1.5px;background:var(--ink);color:#FFB380}
-.aulist .aurow .aurs kbd{width:19px;height:19px;border-radius:6px;font-size:11px;font-weight:800;background:rgba(255,138,61,.16)}
-.aulist .aurow .aurs.on{background:#FF8A3D;color:#08101a;border-color:#FF8A3D}
+.aulist .aurow .aurs kbd{width:19px;height:19px;border-radius:6px;font-size:11px;font-weight:800;background:color-mix(in srgb,var(--c,#FF8A3D) 16%,transparent)}
+.aulist .aurow .aurs.on{background:var(--c,#FF8A3D);color:#08101a;border-color:var(--c,#FF8A3D)}
 .aulist .aurow .aurs.on kbd{background:rgba(0,0,0,.22);color:#08101a}
 .aureasons{font-size:12.5px;color:#AEB6C6;gap:6px}
 /* the graph */
@@ -1431,3 +1431,19 @@ html{scroll-behavior:smooth}
 /* anything the app scrolls to clears the sticky bar instead of hiding under it */
 #leadResults .ltbl,#leadResults .tablewrap,.aurow{scroll-margin-top:72px}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* b81 — the mini tile that names the filter or brand that found it. The dot is the owner's colour
+   (purple Mera, yellow Suz…), so a shelf reads as "who found this" before you read a word. */
+.aupill.src{gap:6px;padding-left:7px;font-weight:650;letter-spacing:.005em}
+.aupill.src .sq{width:7px;height:7px;border-radius:2px;flex:none}
+.aulist .aurow .aupill.src{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* b82 — marking our own homework: the sell price the rule promised, against what it really goes for */
+.aurev{margin-top:9px;padding:9px 11px;border-radius:10px;border:1px solid var(--line);
+  background:var(--ink);display:flex;flex-direction:column;gap:3px}
+.aurev b{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);color:var(--faint)}
+.aurev span{font-size:12.5px;line-height:1.45;color:var(--text)}
+.aurev.good{border-color:rgba(44,227,139,.38);background:rgba(44,227,139,.07)}
+.aurev.warn{border-color:rgba(255,178,36,.38);background:rgba(255,178,36,.07)}
+.aurev.bad{border-color:rgba(255,92,108,.38);background:rgba(255,92,108,.07)}
+.aurev.flat{color:var(--muted)}

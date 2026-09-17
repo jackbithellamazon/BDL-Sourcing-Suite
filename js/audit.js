@@ -18,10 +18,10 @@ const AUD={V:'bdl-sourcing-audit-v',OUT:'bdl-sourcing-audit-out',SHELF:'bdl-sour
 const AUDIT_TYPES=[
   {code:'not',label:'Not lead',short:'Not lead',hex:'#FF5C6C',icon:'x'},
   {code:'unsure',label:"Can't find / unsure",short:'Unsure',hex:'#FFB224',icon:'help'},
-  {code:'discord',label:'Discord',short:'Discord',hex:'#8C95FF',icon:'msg'},
+  {code:'discord',label:'Discord',short:'Discord',hex:'#8C95FF',icon:'msg',prompt:'Which Discord?',reasons:['PS','THC','FFB']},
   {code:'ws',label:'WS',short:'WS',hex:'#22D3EE',icon:'box'},
   {code:'joint',label:'Joint lead',short:'Joint',hex:'#2CE38B',icon:'check'},
-  {code:'missed',label:'Missed it',short:'Missed it',hex:'#FF8A3D',icon:'clock',reasons:['Out of stock','Passed on it','Too slow','Price gone','Never looked at','Other']}];
+  {code:'missed',label:'Missed it',short:'Missed it',hex:'#FF8A3D',icon:'clock',prompt:'Why missed?',reasons:['Out of stock','Passed on it','Too slow','Price gone','Never looked at','Other']}];
 const AU_RKEYS=['q','w','e','r','t','y'];
 function audTypes(){const v=lsGet('bdl-sourcing-audit-types',null);return Array.isArray(v)&&v.length?v:AUDIT_TYPES;}
 function audType(code){return audTypes().find(t=>t.code===code)||null;}
@@ -285,6 +285,36 @@ function auVisible(sh){const V=audAll();const q=auView.q.toLowerCase();const tab
 const AU_LINK_ICON={amazon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h2l2.4 10.5a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 9H7"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>',
   keepa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 4-6 5 4"/><path d="M3 21h18"/></svg>',
   sas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M9 11h4M11 9v4"/></svg>'};
+/* b81 (Jack, 17 Sep): "can we have a mini tile for if things were found via our brand or filter thingy".
+   The chip already knew it was ours; it just would not say WHICH of ours. Now it names the source and
+   wears that person's colour, so a shelf reads at a glance: purple dot = Mera found it, yellow = Suz.
+   Source names are long ("Mera · electricals £60+"), so the owner half is dropped — the dot says who. */
+function auSrcShort(name){const s=String(name||'').trim();
+  const i=s.indexOf('\u00b7');                       /* "Suz · A2A £10-40" -> "A2A £10-40" */
+  let out=(i>=0?s.slice(i+1):s).trim();
+  out=out.replace(/\s*\((retired|weak|dead)\)\s*$/i,'').trim();
+  return out.length>22?out.slice(0,21).trim()+'\u2026':out;}
+/* b82 (Jack, 17 Sep): "what if it was on the filter or brands that was ran and stored as being a lead but
+   we haven't sold it or bought it — that way i can see how and why the analysis was right or wrong".
+   This is the feedback loop the app never had. A rival is selling the thing we found and passed on, so the
+   one number that settles it is TODAY'S price against the sell price the rule promised at the time.
+   Nothing here is a rule. It reports, it does not judge, and it never changes a lead. */
+function auReview(o,nowPrice){
+  if(!o||!o.sell)return null;
+  if(!(nowPrice>0))return{tone:'flat',line:'No price on their shelf yet, so there is nothing to check it against.'};
+  const sell=+o.sell,buy=+o.buy||0,gap=nowPrice/sell;
+  const spread=buy?r2(nowPrice-buy):null;
+  const over=Math.round((1-gap)*100);        /* + = our sell was above today */
+  let tone,line;
+  if(gap>=0.95&&gap<=1.15){tone='good';line=`The rule said sell ${gbp(sell)} and it is ${gbp(nowPrice)} today — that call held.`;}
+  else if(gap>1.15){tone='good';line=`The rule said sell ${gbp(sell)} and it is ${gbp(nowPrice)} today — we were ${Math.round((gap-1)*100)}% UNDER, the lead was better than we scored it.`;}
+  else if(gap>=0.5){tone='warn';line=`The rule said sell ${gbp(sell)} and it is ${gbp(nowPrice)} today — ${over}% high, so the ROI we quoted was flattering.`;}
+  else {tone='bad';line=`The rule said sell ${gbp(sell)} and it is ${gbp(nowPrice)} today — ${gap?(1/gap).toFixed(1):'?'}\u00d7 out. That ROI never existed.`;}
+  const now=buy?(spread>0
+      ?`At ${gbp(buy)} buy and ${gbp(nowPrice)} sell that is ${gbp(spread)} gross a unit before fees.`
+      :`At ${gbp(buy)} buy it loses ${gbp(Math.abs(spread))} a unit at today's price before any fees — passing was right.`):'';
+  return{tone,line,now};
+}
 function auLinks(asin){return[['Amazon','https://www.amazon.co.uk/dp/'+asin,'O','amazon'],['Keepa','https://keepa.com/#!product/2-'+asin,'K','keepa'],['SellerAmp','https://sas.selleramp.com/sas/lookup?search_term='+asin,'S','sas']]
     .map(([l,h,key,ic])=>`<a class="aulk ${ic}" href="${h}" target="_blank" rel="noopener" title="Open on ${l} · key ${key}" data-stop>${AU_LINK_ICON[ic]}<span>${l}</span></a>`).join('');}
 function auRow(it,i,sh){const V=audAll();const v=V[it.a];const p=audState.prod[it.a]||{};const sells=audSells(sh.id,it.a);const st=audStatus(v,sells);
@@ -292,9 +322,9 @@ function auRow(it,i,sh){const V=audAll();const v=V[it.a];const p=audState.prod[i
   const btns=audTypes().map((x,n)=>{const on=(v&&v.verdict===x.code)||(st==='jointauto'&&x.code==='joint');
     return`<button type="button" class="aub ${on?'on':''}${st==='jointauto'&&x.code==='joint'?' auto':''}" style="--c:${x.hex}" data-v="${x.code}" data-a="${it.a}" title="${escapeHtml(x.label)} · key ${n+1}"><kbd>${n+1}</kbd>${AU_ICON[x.icon]||''}<span class="lab">${escapeHtml(x.short||x.label)}</span></button>`;}).join('');
   const reasons=v&&audType(v.verdict)&&audType(v.verdict).reasons&&(i===auView.focus||!v.reason)
-    ?`<div class="aureasons">Why missed?${audType(v.verdict).reasons.map((x,n)=>`<button type="button" class="aurs ${v.reason===x?'on':''}" data-r="${escapeHtml(x)}" data-a="${it.a}"><kbd>${AU_RKEYS[n].toUpperCase()}</kbd>${escapeHtml(x)}</button>`).join('')}</div>`:'';
-  const ourChip=o?(o.said==='Yes'?`<span class="aupill p-yes" title="${escapeHtml(o.src+' · '+o.day+' · score '+(o.score||0))}">${escapeHtml(o.saidBy||'we')} said Yes</span>`
-      :`<span class="aupill p-had" title="${escapeHtml(o.src+' · '+o.owner+' · '+o.day+' · score '+(o.score||0)+' · buy '+gbp(o.buy)+' → sell '+gbp(o.sell)+' · '+(o.roi||0)+'% ROI')}">Our lead${o.said?' · they said '+escapeHtml(o.said):''}</span>`):'';
+    ?`<div class="aureasons" style="--c:${audType(v.verdict).hex}">${audType(v.verdict).prompt||'Why?'}${audType(v.verdict).reasons.map((x,n)=>`<button type="button" class="aurs ${v.reason===x?'on':''}" data-r="${escapeHtml(x)}" data-a="${it.a}"><kbd>${AU_RKEYS[n].toUpperCase()}</kbd>${escapeHtml(x)}</button>`).join('')}</div>`:'';
+  const ourChip=o?(o.said==='Yes'?`<span class="aupill p-yes src" title="${escapeHtml('Found by '+o.src+' · '+o.day+' · score '+(o.score||0))}"><i class="sq" style="background:${auAv(o.owner||o.saidBy||'VAs')}"></i>${escapeHtml(auSrcShort(o.src))} · ${escapeHtml(o.saidBy||'we')} said Yes</span>`
+      :`<span class="aupill p-had src" title="${escapeHtml('Found by '+o.src+' · '+o.owner+' · '+o.day+' · score '+(o.score||0)+' · buy '+gbp(o.buy)+' → sell '+gbp(o.sell)+' · '+(o.roi||0)+'% ROI'+(o.runs>1?' · seen on '+o.runs+' runs':''))}"><i class="sq" style="background:${auAv(o.owner||'VAs')}"></i>${escapeHtml(auSrcShort(o.src))}${o.roi!=null&&o.roi!==''?' · '+o.roi+'%':''}${o.said?' · they said '+escapeHtml(o.said):' · nobody said Yes'}</span>`):'';
   const judged=v?`<span class="aupill p-muted" title="${escapeHtml((audType(v.verdict)||{}).label+' · '+v.who+' · '+auUk(v.at)+(v.reason?' · '+v.reason:'')+(v.note?' · '+v.note:''))}"><i class="sq" style="background:${(audType(v.verdict)||{}).hex||'#888'}"></i>${v.who==='auto'?'marked for you':escapeHtml(v.who)+' · '+auUk(v.at)}${v.reason?' · '+escapeHtml(v.reason):''}</span>`:'';
   const links=auLinks(it.a);
   const sellers=+p.fba||+p.offers||0;
@@ -393,7 +423,8 @@ function auPanel(it,sh){if(!it)return'<div class="empty"><span>Pick a product.</
     <div class="aulinksbig sticky">${auLinks(it.a)}</div>
     <div class="ausec"><div class="h">Price history · 90 days</div><div class="augraph" id="auGraph" data-a="${it.a}"></div></div>
     <div class="ausec"><div class="h">On our filters</div>${o?`<div class="auours ${o.said==='Yes'?'yes':''}"><b>${o.said?escapeHtml((o.saidBy||'we')+' said '+o.said):'Was a lead · nobody said Yes'}</b>
-      <div>${escapeHtml(o.src||'')} · ${escapeHtml(o.owner||'')} · ${auUk(o.day)} · ${o.runs} run${o.runs===1?'':'s'}${o.score?' · score '+o.score:''}${o.buy?' · buy '+gbp(o.buy)+' → sell '+gbp(o.sell)+' · '+o.roi+'% ROI':''}</div></div>`
+      <div>${escapeHtml(o.src||'')} · ${escapeHtml(o.owner||'')} · ${auUk(o.day)} · ${o.runs} run${o.runs===1?'':'s'}${o.score?' · score '+o.score:''}${o.buy?' · buy '+gbp(o.buy)+' → sell '+gbp(o.sell)+' · '+o.roi+'% ROI':''}</div>
+      ${(()=>{const rv=auReview(o,+p.price);return rv?`<div class="aurev ${rv.tone}"><b>Marking our own homework</b><span>${escapeHtml(rv.line)}</span>${rv.now?`<span>${escapeHtml(rv.now)}</span>`:''}</div>`:'';})()}</div>`
       :'<div class="auours none">Never a lead on our filters. Only leads the rules kept are remembered, not rows they cut.</div>'}</div>
     ${also.length?`<div class="ausec"><div class="h">Also sold by</div><div class="ssub">${also.map(escapeHtml).join(', ')}</div></div>`:''}
     <div class="ausec"><div class="h">Note</div><input class="txt" id="auNote" placeholder="${v?'one line, saved with the answer':'judge it first, then add a note'}" value="${escapeHtml(v&&v.note||'')}" ${v?'':'disabled'} data-a="${it.a}"></div>`;}

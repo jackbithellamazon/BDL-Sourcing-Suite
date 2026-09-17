@@ -275,6 +275,37 @@ window.SourcingChecks=(function(){
         return [out[0].Options,out[0].Flags.includes('1 of 92 options'),out[0].Flags.startsWith('sell price volatile'),
                 out[1].Options,out[2].Options];
       })(),[92,true,true,undefined,undefined]);
+      /* b80 (Jack, 17 Sep): "discord - 3 drop downs - ps, thc, ffb". Same picker Missed it already uses,
+         so pressing 3 waits for the destination instead of jumping on, and it wears Discord's own violet —
+         orange still means Missed it and nothing else. */
+      ok('Audit · Discord asks which one, and Missed it still asks why',(()=>{
+        const d=AUDIT_TYPES.find(t=>t.code==='discord'),m=AUDIT_TYPES.find(t=>t.code==='missed');
+        return [d.reasons.join('/'),d.prompt,d.hex,m.prompt,m.reasons.length];
+      })(),['PS/THC/FFB','Which Discord?','#8C95FF','Why missed?',6]);
+      ok('Audit · a verdict with a picker does not skip ahead before you answer',(()=>{
+        const withPicker=AUDIT_TYPES.filter(t=>t.reasons).map(t=>t.code);
+        return [withPicker.join(','),AU_RKEYS.length>=3];
+      })(),['discord,missed',true]);
+      /* b81: the mini tile names the filter or brand that found it. Owner half dropped (the dot says who),
+         retired/weak/dead suffixes dropped, long names cut — it has to sit on one line of a shelf row. */
+      ok('Audit · the tile names the filter that found it',
+        ['Mera · electricals £60+','Logitech','Suz · A2A £10–40','Suz · "20+" (retired)',
+         'Mera · 7-Day Drops £20+ all lines 20%'].map(auSrcShort),
+        ['electricals £60+','Logitech','A2A £10–40','"20+"','7-Day Drops £20+ all…']);
+      ok('Audit · every name fits one line',
+        SRC_SEED.map(s=>auSrcShort(s.name).length).every(n=>n<=22),true);
+      /* b82: the feedback loop. A rival is selling something our rules found and we passed on, so today's
+         price is the honest mark against the sell price the rule promised. Reports, never re-judges. */
+      ok('Audit · marking our own homework reads today\u2019s price against the rule\u2019s sell',(()=>{
+        const held=auReview({buy:40,sell:52.49,roi:12},54.99);          /* close enough */
+        const under=auReview({buy:40,sell:52.49,roi:12},80);            /* we undersold it */
+        const flat=auReview({buy:67.99,sell:89.94,roi:12},70);          /* flattering */
+        const wild=auReview({buy:67.99,sell:89.94,roi:12},20);          /* the Nicorette case */
+        return [held.tone,under.tone,flat.tone,wild.tone,
+                wild.line.includes('4.5'),wild.now.includes('passing was right')];
+      })(),['good','good','warn','bad',true,true]);
+      ok('Audit · no stored sell, or no price yet, says so instead of inventing one',
+        [auReview(null,20),auReview({buy:1},20),(auReview({buy:1,sell:9},0)||{}).tone],[null,null,'flat']);
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */

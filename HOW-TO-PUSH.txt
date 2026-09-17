@@ -1,33 +1,36 @@
-BDL SOURCING — b79 · 17 Sep 2026
+BDL SOURCING — b82 · 17 Sep 2026
+YOU ARE STILL ON b73. This folder is everything since, in one upload.
 
-1. UPLOAD THE APP
+1. UPLOAD
    GitHub → Add file → Upload files. Drag in index.html, css, js, tests, README-DEPLOY.txt.
    js/ has a NEW file — euprice.js. It must go up or the EU button does nothing.
    Commit, hard-refresh once (Cmd+Shift+R).
 
 2. ONE THING IN KEEPA, ONCE
-   In the Product Viewer column picker tick: Variation Count, Variation ASINs, Variation Attributes.
-   Then export as normal (All active columns → CSV, no currency symbols).
-   Every lead then says "1 of N" beside its sales figure. Costs nothing, no tokens.
-   Tell Suz and Mera to tick them too — the step-by-step in the app now says so.
+   Product Viewer column picker → tick Variation Count, Variation ASINs, Variation Attributes.
+   Then every lead says "1 of 24" beside its sales figure. Free, no tokens. Tell the VAs too.
 
-WHY IT MATTERS (you spotted this)
-   "Bought in past month" and the sales rank belong to the WHOLE listing, shared by every colour
-   and size on it. Of your 100 alert ASINs, 88 were one option among many — the Berkley braid
-   shares its number with 91 others, the Starrett hole saw with 60, Lavazza with 40.
-   So a "23 a month" listing can be well under one a month for the exact option you would buy.
-   The app now says so on the row and in the sheet. It does NOT drop them: which option actually
-   sells is something you read off the graph, and that is your call, not a rule's.
-
-ALSO IN THIS BUILD
-   · Currency fix — EU prices from the API are euros; they are converted before Rule 1 sees them.
-     (Your Braun: £66.37 landed, 18.1% ROI, against the £68.91 basket you sent.) 46 leads became 62.
-   · Copy KPV link on the run toolbar; that toolbar is sticky now and the page glides.
-   · Ultimate Ears added to the Logitech brand run.
-   · New source "EU alerts · price check".
-   · Mera high-ticket → Mera · electricals £60+ / £150+.
+WHAT LANDS, NEWEST FIRST
+   b82  MARKING OUR OWN HOMEWORK. When a rival is selling something our own filters found and we
+        never bought, the panel now puts the sell price the rule promised against what it really
+        goes for today: green = the call held, amber = the ROI was flattering, red = that ROI never
+        existed. It also works out what that buy would gross at today's price, so you can see
+        whether passing was right. It reports — it never re-judges a lead or changes a rule.
+   b81  The "our lead" tile names the filter or brand that found it — "electricals GBP 60+",
+        "Logitech", "A2A GBP 10-40" — with a dot in that person's colour. Hover for the full
+        source, date, score, buy, sell and ROI.
+   b80  Discord asks WHICH one — PS / THC / FFB, keys Q W E. Same picker as Missed it, so
+        pressing 3 waits for your answer. The picker is Discord violet, not Missed-it orange.
+   b79  "1 of N" beside every lead's sales figure, from the Keepa column above. UK side only,
+        which is the side that matters — a German listing splitting into 92 sizes tells you nothing.
+   b78  CURRENCY FIX. The API answers EU prices in euros; a CSV export is already in pounds.
+        They are converted now. Your Braun: GBP 66.37 landed, 18.1% ROI. 46 leads became 62.
+   b77  Copy KPV link on the run toolbar · that toolbar is sticky · Ultimate Ears on the Logitech run.
+   b76  New source "EU alerts · price check" — drop a Viewer export, press Get EU prices.
+   b75  Mera high-ticket → Mera · electricals GBP 60+ / GBP 150+.
+   b74  The audit panel picture fits its box. Orange means Missed it and nothing else.
 
 ROLLBACK
    Upload the previous files over the top. GitHub keeps every version.
 
-107 checks, all green.
+113 checks, all green.
