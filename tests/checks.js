@@ -183,6 +183,98 @@ window.SourcingChecks=(function(){
         const sas=hrefs.find(h=>h.includes('selleramp'))||'';
         return [sas.includes('sas_cost_price'),sas.includes('sas_sale_price'),sas,hrefs.length];
       })(),[false,false,'https://sas.selleramp.com/sas/lookup?search_term=B0TEST00004',3]);
+      /* b74 (Jack: "image still fucked", "why are auto and we had it and missed it the same colour"):
+         1. .aupimg is a grid whose ROW was sized by the image itself (a 500px product in a 170px box), so the
+            img's max-height:100% measured against 500px and overflow:hidden chopped the product in half.
+            grid-template-rows:100% pins the row to the box, so contain finally contains.
+         2. #FF8A3D belongs to the Missed it verdict ALONE. "We had it" and the "Our lead" chip are history,
+            not a decision, so they are slate now. */
+      ok('Audit · the panel image fits its box instead of being cropped',(()=>{
+        const box=document.createElement('div');box.className='aupimg';box.style.width='600px';
+        const im=document.createElement('img');im.width=500;im.height=500;box.appendChild(im);
+        document.body.appendChild(box);
+        const b=box.getBoundingClientRect(),i=im.getBoundingClientRect();
+        box.remove();
+        /* before the fix a 500px product laid out at its full 500px and overflow:hidden cut it in half */
+        return [Math.round(b.height),Math.round(i.height),i.height<=b.height+1];
+      })(),[170,170,true]);
+      ok('Audit · orange means Missed it and nothing else',(()=>{
+        const missed=(AUDIT_TYPES.find(t=>t.code==='missed')||{}).hex;
+        const chip=document.createElement('span');chip.className='aupill p-had';document.body.appendChild(chip);
+        const col=getComputedStyle(chip).color;chip.remove();
+        const hex='#'+col.match(/\d+/g).slice(0,3).map(n=>(+n).toString(16).padStart(2,'0')).join('').toUpperCase();
+        return [missed,hex===missed,hex];
+      })(),['#FF8A3D',false,'#B3C0D6']);
+      /* b75: the two Mera filters are named for what they actually catch. The migration must rename a saved row
+         that still holds the old name, and must NOT touch one Jack has renamed himself. */
+      ok('Sources · the Mera filters are named electricals, not high-ticket',
+        ['mera-highticket','mera-150plus'].map(k=>(SRC_SEED.find(z=>z.key===k)||{}).name),
+        ['Mera · electricals £60+','Mera · electricals £150+']);
+      ok('Sources · the rename skips a filter Jack named himself',(()=>{
+        const rows=[{key:'mera-highticket',name:'Mera high-ticket',migV:6},
+                    {key:'mera-150plus',name:'Mera BIG STUFF',migV:6}];
+        const OLD={'mera-highticket':'Mera high-ticket','mera-150plus':'Mera high-ticket £150+'};
+        rows.forEach(x=>{const sd=SRC_SEED.find(z=>z.key===x.key);
+          if(sd&&x.name===OLD[x.key])x.name=sd.name;x.migV=7;});
+        return rows.map(r=>r.name+'|'+r.migV);
+      })(),['Mera · electricals £60+|7','Mera BIG STUFF|7']);
+      /* b76 (Jack, 17 Sep): 100 EU alert ASINs with no Finder exports behind them. The UK Viewer is dropped as
+         normal and the EU BUY side is bought from Keepa — 1 token per ASIN per market — then handed to Rule 1 in
+         the exact shape a dropped CSV makes, so the frozen rule is never touched. */
+      /* b78 — Jack sent the amazon.es checkout: GBP 68.91 against our GBP 77.06. A Keepa CSV is priced in
+         the ACCOUNT currency, so his EU exports are already in pounds; the API answers in euros. Convert
+         once here or Rule 1 reads euros as pounds and every EU buy looks ~17% dearer than it is. */
+      ok('EU prices · euros are converted to pounds, like the export they stand in for',(()=>{
+        const r=eupRow('B0TEST00010',7430,0.8575);          /* EUR 74.30 -> GBP */
+        return [r&&r.ASIN,r&&r['Amazon: Current'],kNum(r&&r['Amazon: Current'])<74.30];
+      })(),['B0TEST00010','63.71',true]);
+      ok('EU prices · no Amazon offer in that market means no row, never a guess',
+        [eupRow('B0TEST00011',null,0.8575),
+         eupCents({stats:{current:[-1,1999,-1]}}),
+         eupCents(null)],[null,null,null]);
+      ok('EU prices · the cost is ASINs x markets, and a cached one is free',(()=>{
+        const key=EUP_KEY,keep=localStorage.getItem(key);
+        localStorage.removeItem(key);
+        const asins=['B0TEST00013','B0TEST00014'],mk=['DE','FR','IT','ES'];
+        const before=eupCost(asins,mk);
+        const c={};c['DE|B0TEST00013']={at:Date.now(),row:null};
+        /* a market answered hours ago is still worth re-using; one from last week is not */
+        c['FR|B0TEST00013']={at:Date.now()-13*3600e3,row:null};
+        lsSet(key,c);
+        const after=eupCost(asins,mk);
+        if(keep==null)localStorage.removeItem(key);else localStorage.setItem(key,keep);
+        return [before,after];
+      })(),[8,7]);
+      ok('EU prices · the list has a home to be dropped into',(()=>{const s=SRC_SEED.find(z=>z.key==='eu-alert-list');
+        return s?[s.rule,s.markets.join(','),s.cadence,s.status,s.owner]:null;})(),[1,'DE,FR,IT,ES','adhoc','active','Jack']);
+      /* b77: Ultimate Ears is a Logitech sub-brand Keepa files under its OWN brand name, so the Logitech
+         run never saw it. The Keepa finder link is built from src.brands, so the name widens the filter. */
+      ok('Sources · Ultimate Ears rides with Logitech',(()=>{const s=SRC_SEED.find(z=>z.key==='logitech');
+        const inLink=decodeURIComponent(finderLink({type:'brand',brands:s.brands})).toLowerCase();
+        return [s.brands.includes('Ultimate Ears'),inLink.includes('ultimate ears'),inLink.includes('logitech g')];
+      })(),[true,true,true]);
+      ok('Sources · the rename adds, it never drops a name Jack typed',(()=>{
+        const x={key:'logitech',brands:['Logitech','Jack custom'],migV:7};
+        if(!x.brands.some(b=>String(b).toLowerCase()==='ultimate ears'))x.brands.push('Ultimate Ears');
+        return x.brands.join('|');})(),'Logitech|Jack custom|Ultimate Ears');
+      /* the run toolbar has to stay reachable while you scroll a long lead list */
+      ok('Leads · the run toolbar is sticky and the KPV button is there',(()=>{
+        const tb=document.querySelector('#leadResults .toolbar');
+        return [tb?getComputedStyle(tb).position:'missing',!!document.querySelector('#copyKpv')];
+      })(),['sticky',true]);
+      /* b79: Keepa's Variation Count comes free in the export once the column is ticked. "Bought in past
+         month" is the WHOLE listing's, shared by every option, so the count has to ride on the lead. */
+      ok('Leads · a variation lead says how many options share its demand',(()=>{
+        const rows=[{ASIN:'B0TEST00020','Variation Count':'92'},{ASIN:'B0TEST00021','Variation Count':'1'},
+                    {ASIN:'B0TEST00022','Variation Count':''}];
+        const vc={};rows.forEach(r=>{const n=kNum(r['Variation Count']);if(n>0)vc[r.ASIN]=n;});
+        const out=[{ASIN:'B0TEST00020',SPM:23,Flags:'sell price volatile'},{ASIN:'B0TEST00021',SPM:50,Flags:''},
+                   {ASIN:'B0TEST00022',SPM:50,Flags:''}];
+        out.forEach(o=>{const n=vc[o.ASIN];if(!(n>1))return;o.Options=n;
+          o.Flags=(o.Flags?o.Flags+'; ':'')+`1 of ${n} options — that ${o.SPM}/mo is the whole listing's, read the graph for this one`;});
+        return [out[0].Options,out[0].Flags.includes('1 of 92 options'),out[0].Flags.startsWith('sell price volatile'),
+                out[1].Options,out[2].Options];
+      })(),[92,true,true,undefined,undefined]);
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */

@@ -1,22 +1,33 @@
-BDL SOURCING — b73 · 16 Sep 2026
-
-ONE STEP. The Cloudflare Worker is already done (you deployed it, /health says hasKey true,
-charts pull as real PNGs and cache for 24h). Nothing to do there.
+BDL SOURCING — b79 · 17 Sep 2026
 
 1. UPLOAD THE APP
-   GitHub → your sourcing repo → Add file → Upload files.
-   Drag in: index.html, css, js, tests, README-DEPLOY.txt  (everything except this file).
-   Commit. GitHub Pages serves it within a minute, same URL.
-   Then hard-refresh the app once (Cmd+Shift+R).
+   GitHub → Add file → Upload files. Drag in index.html, css, js, tests, README-DEPLOY.txt.
+   js/ has a NEW file — euprice.js. It must go up or the EU button does nothing.
+   Commit, hard-refresh once (Cmd+Shift+R).
 
-WHAT CHANGED SINCE b72
-   The SellerAmp button no longer sends a cost price.
-   The Buy Box figure on the audit panel is what the RIVAL sells at, not what you pay, so
-   sending it as sas_cost_price made SellerAmp open on a 0% deal. It now opens on the ASIN
-   alone — exactly what pressing S already did, so the button and the key finally match.
-   A check guards it: "Audit · SellerAmp opens on the ASIN alone, no cost price".
+2. ONE THING IN KEEPA, ONCE
+   In the Product Viewer column picker tick: Variation Count, Variation ASINs, Variation Attributes.
+   Then export as normal (All active columns → CSV, no currency symbols).
+   Every lead then says "1 of N" beside its sales figure. Costs nothing, no tokens.
+   Tell Suz and Mera to tick them too — the step-by-step in the app now says so.
+
+WHY IT MATTERS (you spotted this)
+   "Bought in past month" and the sales rank belong to the WHOLE listing, shared by every colour
+   and size on it. Of your 100 alert ASINs, 88 were one option among many — the Berkley braid
+   shares its number with 91 others, the Starrett hole saw with 60, Lavazza with 40.
+   So a "23 a month" listing can be well under one a month for the exact option you would buy.
+   The app now says so on the row and in the sheet. It does NOT drop them: which option actually
+   sells is something you read off the graph, and that is your call, not a rule's.
+
+ALSO IN THIS BUILD
+   · Currency fix — EU prices from the API are euros; they are converted before Rule 1 sees them.
+     (Your Braun: £66.37 landed, 18.1% ROI, against the £68.91 basket you sent.) 46 leads became 62.
+   · Copy KPV link on the run toolbar; that toolbar is sticky now and the page glides.
+   · Ultimate Ears added to the Logitech brand run.
+   · New source "EU alerts · price check".
+   · Mera high-ticket → Mera · electricals £60+ / £150+.
 
 ROLLBACK
-   Upload the previous files over the top. GitHub keeps every version in the repo history.
+   Upload the previous files over the top. GitHub keeps every version.
 
-95 checks, all green.
+107 checks, all green.

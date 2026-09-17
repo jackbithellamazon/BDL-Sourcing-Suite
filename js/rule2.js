@@ -115,7 +115,7 @@ function r2sell(r){
 /* rows = array of {Header:value} from ONE UK Product Finder export.
    facts = {ASIN:{pm:['Currys',...], sell:123, vat:0}} — what the VAs have confirmed (optional).
    opts = {vatFor:(row,fact)=>{rate,why,src}} — Rule 4 hook (b10). Without it every row is 20% VAT, as before.
-   Every UK filter (Mera's high-ticket, Suz's S&S / Business / tea & coffee) runs this same maths — the filter never changes the rule;
+   Every UK filter (Mera's electricals, Suz's S&S / Business / tea & coffee) runs this same maths — the filter never changes the rule;
    the row does: price band picks the sell model, Rule 4 picks the VAT, S&S / Business / coupons adjust the buy price when Keepa shows them.
    Returns {out:[qualifying, sorted by score], all:[every priced row], st:{...}} */
 function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};

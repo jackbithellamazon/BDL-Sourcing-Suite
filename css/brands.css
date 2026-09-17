@@ -1082,7 +1082,7 @@ html[data-theme="light"] .rl.r2{color:#0b6fb8;background:rgba(11,111,184,.1)}
 .aupill .sq{width:8px;height:8px;border-radius:2px;flex:none}
 .p-todo{color:var(--iris);background:rgba(110,123,255,.14);border-color:rgba(110,123,255,.4)}
 .p-joint{color:var(--jade);background:var(--jade-dim);border-color:rgba(54,214,164,.4)}
-.p-had{color:#FF8A3D;background:rgba(255,138,61,.10);border-color:rgba(255,138,61,.45)}
+.p-had{color:#B3C0D6;background:rgba(147,163,188,.12);border-color:rgba(147,163,188,.42)}
 .p-yes{color:var(--jade);border-color:rgba(54,214,164,.5)}
 .p-muted{color:var(--muted);background:var(--ink);border-color:var(--line2)}
 .ausplit{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
@@ -1151,7 +1151,7 @@ html[data-theme="light"] .rl.r2{color:#0b6fb8;background:rgba(11,111,184,.1)}
 .aurs kbd{border:1px solid rgba(255,138,61,.5);color:#FF8A3D;background:transparent;min-width:16px;height:16px;border-radius:4px;display:inline-grid;place-items:center;font-family:var(--sans);font-size:10.5px}
 .aumore{padding:14px;text-align:center;color:var(--faint);font-size:12.5px}
 .aupanel{position:sticky;top:52px;border-radius:14px;background:var(--surface2);border:1px solid var(--line);padding:14px 16px;max-height:calc(100vh - 70px);overflow-y:auto}
-.aupimg{height:170px;border-radius:12px;background:#fff;display:grid;place-items:center;overflow:hidden}
+.aupimg{height:170px;border-radius:12px;background:#fff;display:grid;grid-template-rows:100%;place-items:center;overflow:hidden}
 .aupimg.none{background:var(--ink);color:var(--faint);font-family:var(--mono);font-weight:700;font-size:22px}
 .aupimg img{max-width:100%;max-height:100%;object-fit:contain}
 .aupanel h3{font-size:14.5px;margin:12px 0 4px;line-height:1.35}
@@ -1164,7 +1164,7 @@ html[data-theme="light"] .rl.r2{color:#0b6fb8;background:rgba(11,111,184,.1)}
 .aulinksbig a:hover{border-color:var(--iris)}
 .ausec{margin-top:14px}
 .ausec .h{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
-.auours{padding:10px 12px;border-radius:11px;border:1px solid rgba(255,138,61,.45);background:rgba(255,138,61,.07);font-size:12.5px;color:var(--muted)}
+.auours{padding:10px 12px;border-radius:11px;border:1px solid rgba(147,163,188,.42);background:rgba(147,163,188,.09);font-size:12.5px;color:var(--muted)}
 .auours b{color:var(--text);font-size:13px}
 .auours.yes{border-color:rgba(54,214,164,.45);background:var(--jade-dim)}
 .auours.none{border-color:var(--line);background:var(--ink)}
@@ -1410,3 +1410,24 @@ html[data-theme="light"] .rl.r2{color:#0b6fb8;background:rgba(11,111,184,.1)}
 .aunext svg{width:14px;height:14px}
 .aunext:hover{color:var(--text);border-color:var(--iris);background:rgba(110,123,255,.10)}
 .aulinksbig.sticky{position:sticky;top:0;z-index:3;background:var(--surface2);padding:8px 0;margin-top:0}
+
+/* b76 — buy the EU buy-side from Keepa when there are no Finder exports behind a list */
+.eubar{display:flex;align-items:center;gap:14px;margin-top:8px;padding:10px 12px;border-radius:12px;
+  border:1px solid var(--line);background:var(--surface2)}
+.eubar .eutext{min-width:0;display:flex;flex-direction:column;gap:2px}
+.eubar .eutext b{font-size:13.5px;color:var(--text)}
+.eubar .eutext span{font-size:12px;color:var(--muted)}
+.eubar button{margin-left:auto;flex:none}
+.eubar button[disabled]{opacity:.6;cursor:default}
+
+/* b77 (Jack: "improve scrolling, just overall user experience"). Two things, both about not losing
+   your place: the run toolbar rides down the leads with you so Open in Keepa / Copy KPV / Mark all
+   seen are always one click away, and the page glides instead of jumping when it moves you. */
+#leadResults .toolbar{position:sticky;top:0;z-index:6;margin-top:0;padding:12px 0 10px;
+  background:var(--surface);border-bottom:1px solid var(--line)}
+#leadResults .toolbar::before{content:"";position:absolute;left:-24px;right:-24px;top:0;bottom:0;
+  background:var(--surface);z-index:-1}
+html{scroll-behavior:smooth}
+/* anything the app scrolls to clears the sticky bar instead of hiding under it */
+#leadResults .ltbl,#leadResults .tablewrap,.aurow{scroll-margin-top:72px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}

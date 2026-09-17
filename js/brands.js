@@ -284,6 +284,8 @@ function renderGuide(){const g=$('#guide');if(!g||!cur)return;const r1=cur.rule=
   const bar=$('#asinBar'),merged=(bar&&bar._all)?bar._all.length:0;
   const rev=result?result.out.filter(o=>o.QUEUE).length:0;
   const EXPORT=['At the bottom of the Keepa table, set rows per page to the biggest number, so every result is on one page. Keepa only exports the page you can see.',
+    'One-off, once per browser: open the column picker and tick Variation Count, Variation ASINs and Variation Attributes. '
+      +'Without them we cannot tell a listing with one option from one with ninety, and the sales figure belongs to the whole listing.',
     'Click Export (top right of the table). In the Export Data box choose: What to export → All active columns. Format → CSV. Leave "Include currency symbols" unticked. Press Export.',
     'The file lands in your Downloads. Do not open or rename it.'];
   const HOW={open:['Click the 🇬🇧 the filter button under step 1. Keepa opens with this saved search loaded.','Wait until the table has finished filling.'],
@@ -373,7 +375,40 @@ function paintSlots(){if(!cur)return;const r1=cur.rule===1;
       :`<b>${merged.size.toLocaleString()}</b> ASINs merged and de-duplicated from ${MARKETS.filter(k=>files[k]).length} file${MARKETS.filter(k=>files[k]).length===1?'':'s'} — now open the UK Product Viewer with them loaded, export all columns, drop that here`;
     $('#asinN').textContent=merged.size.toLocaleString();bar._all=[...merged];}
   else if(bar)bar._all=[];
+  paintEu();
   const since=files.viewer?files.viewer.hasSince:(files.one?files.one.hasSince:true);$('#sinceNote').hidden=since;}
+/* b76 (Jack, 17 Sep): a list of EU alert ASINs has no Finder exports behind it. Drop the UK Viewer
+   and buy the EU buy-side from Keepa instead — 1 token per ASIN per market, measured on his account.
+   The cost is shown BEFORE anything is spent, and a cached market costs nothing to run again. */
+function euWant(){if(!cur||cur.rule!==1||!files.viewer)return[];
+  return (cur.markets||[]).filter(m=>m!=='UK'&&!files[m]);}
+function paintEu(){const bar=$('#euBar');if(!bar)return;
+  const want=euWant(),asins=files.viewer?files.viewer.asins:[];
+  bar.hidden=!want.length||!asins.length;
+  if(bar.hidden)return;
+  const cost=eupCost(asins,want),free=asins.length*want.length-cost;
+  $('#euHead').textContent=cost?`Buy the EU prices · ${cost.toLocaleString()} token${cost===1?'':'s'}`:'EU prices are already cached';
+  $('#euMsg').innerHTML=`${asins.length.toLocaleString()} ASINs × ${want.length} market${want.length===1?'':'s'} (${want.join(', ')})`
+    +(free?` · ${free.toLocaleString()} already cached, free`:'')
+    +` — Amazon's own price only, no Subscribe &amp; Save, so profit is never flattered`;
+  const b=$('#euGo');b.disabled=false;b.querySelector('.lab').textContent=cost?'Get EU prices':'Load from cache';}
+
+async function euRun(){const want=euWant(),asins=files.viewer?files.viewer.asins:[];
+  if(!want.length||!asins.length)return;
+  const cost=eupCost(asins,want),b=$('#euGo'),lab=b.querySelector('.lab');
+  if(cost){const left=await eupBalance();
+    if(left!=null&&left<cost){toast(`Only ${left} Keepa tokens left, this needs ${cost}`,true);return;}
+    if(!confirm(`Buy EU prices for ${asins.length} ASINs across ${want.join(', ')}?\n\n`
+      +`${cost} Keepa tokens${left!=null?` · ${left} left, ${left-cost} after`:''}.\n`
+      +`Cached for 12 hours, so running this again today is free.`))return;}
+  b.disabled=true;
+  try{
+    const got=await eupFetch(asins,want,(done,total,mk)=>{lab.textContent=`${mk} · ${done}/${total}`;},rate());
+    let rows=0;want.forEach(m=>{files[m]=got[m];rows+=got[m].rows.length;});
+    toast(`${rows.toLocaleString()} EU prices in — ${(asins.length*want.length-rows).toLocaleString()} had no Amazon offer`);
+    paintSlots();run();
+  }catch(e){toast('Keepa did not answer — nothing was spent on the failed part',true);}
+  finally{b.disabled=false;lab.textContent='Get EU prices';}}
 /* b29 (Jack, 15 Sep 00:50: "if it's done today and I press run surely I should see what it should be today"): a source that has been
    run opens on its saved leads — every number, the Keepa inputs and the compare status come from src_leads — and a fresh export on
    top re-runs it. Verdicts, prices and the Keepa/SAS links work exactly as on a live run. */
@@ -427,6 +462,20 @@ function run(){if(!cur)return;
     R.dropped=noM.map(o=>[o.ASIN,o.Product,`needs ${o['Needs % off']}% off Amazon to reach ${R2.TARGET_ROI}% ROI (brand allows ${o['Brand discount %']||R2.DEFAULT_ALLOW}%)`])
       .concat(lowS.map(o=>[o.ASIN,o.Product,o.lowRoi?`ROI ${o['ROI %']}% — under ${R2.MIN_ROI_LOW}% even with a code`:`scored ${o.Score}${o['Potential score']>o.Score?' ('+o['Potential score']+' with a code)':''} — under ${R2.MIN_SCORE}, not worth a look`]));
     R.reasons={'Needs more discount than the brand gives':noM.length};const lr=lowS.filter(o=>o.lowRoi).length,ls=lowS.length-lr;if(lr)R.reasons['ROI under '+R2.MIN_ROI_LOW+'% even with a code']=lr;if(ls)R.reasons['Scored under '+R2.MIN_SCORE+' even with a code']=ls;}
+  /* b79 (Jack, 17 Sep: "some spm are well off — if they are a var they aren't selling when we look").
+     He is right, and Keepa can prove it for free: tick Variation Count / Variation ASINs / Variation
+     Attributes in the Viewer and the export carries them. "Bought in past month" and the rank are the
+     WHOLE LISTING's, shared by every option — 88 of his 100 alert ASINs were one option of many, one
+     of them a family of 92. So the count rides on the lead and the demand figure says whose it is.
+     Nothing is dropped for it: which option sells is a thing you read off the graph, not a rule. */
+  (()=>{const src=(cur.rule===1?(files.viewer&&files.viewer.rows):(files.one&&files.one.rows))||[];
+    const vc={};src.forEach(r=>{const n=kNum(r['Variation Count']);if(n>0)vc[(r.ASIN||'').trim()]=n;});
+    if(!Object.keys(vc).length)return;
+    R.out.forEach(o=>{const n=vc[o.ASIN];if(!(n>1))return;o.Options=n;
+      const dem=o.SPM||o['Sells /mo']||'';
+      const why=`1 of ${n} options — that ${dem}/mo is the whole listing's, read the graph for this one`;
+      o['Options on the listing']=n;
+      if('Flags' in o)o.Flags=(o.Flags?o.Flags+'; ':'')+why;else o.Flags=why;});})();
   /* the central blacklists: an ASIN, or an approved brand, never shows — on any rule, any run, whatever Keepa filter found it */
   const B=blAll(),bl=[];R.out=R.out.filter(o=>{const b=B[o.ASIN];const bb=bbStatusFor(o.Brand||(cur.type==='brand'?cur.name:''));
     if(b){bl.push([o.ASIN,o.Title||o.Product||'','BLACKLISTED · '+b.reason+(b.note?' — '+b.note:'')+(b.who?' · '+b.who:'')]);return false;}
@@ -608,7 +657,7 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
       <td class="num r buyc">${mk(o['Buy market'])} <b>${gbp(o['Landed £'])}</b>${o['Discount applied']?`<span class="sub">${escapeHtml(o['Discount applied'])}</span>`:''}</td>
       <td class="num r">${gbp(o['Sell £ used'])}${(o['Sell low £']||0)>0&&(o['Sell low £']||0)<(o['Sell £ used']||0)-0.005?`<span class="sub" title="If it only ever fetches the Buy Box 90d average">worst £${(o['Sell low £']).toFixed(2)}</span>`:''}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
-      <td class="num r">${o.SPM}<span class="sub">${o['SPM from']}</span></td>
+      <td class="num r">${o.SPM}<span class="sub">${o['SPM from']}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
       <td class="flagc">${(()=>{const oa=oaChip(o),fx=flagPick(fl);return`<span class="chips">${oa}${fx.show.map(flagChip).join('')}${fx.rest.length?`<i class="ch more" title="${escapeHtml(fx.rest.join(' · '))}">+${fx.rest.length}</i>`:''}</span>`;})()}${pmRow(o)}</td></tr>`;});}
   else{h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Product</th><th>Verdict</th><th class="r">Buy £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">Demand</th><th title="We cannot see other retailers' prices. These are the ones worth checking for this product — tick what you confirm.">OA check · you check</th></tr></thead><tbody>`;
     rows.forEach(o=>{const pot=o['Potential score']>o.Score+5?o['Potential score']:0;const band=bandOf(Math.max(o.Score,pot));
@@ -621,7 +670,7 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
       <td class="num r buyc"><b>${gbp(o['After discount £'])}</b><span class="sub">${o['Discount applied']?'Amazon '+gbp(o['Buy at £'])+' · '+escapeHtml(o['Discount applied']):(o['Amazon 90d drop %']!==''&&o['Amazon 90d drop %']!=null?o['Amazon 90d drop %']+'% under 90d avg':'')}</span></td>
       <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(o['Sell from']+' — '+alt)}">${escapeHtml(shortSell(o['Sell from']))}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit"></td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
-      <td class="num r">${o['Sells /mo']}<span class="sub">/mo${o['Demand from']?' · '+escapeHtml(o['Demand from']):''}</span></td>
+      <td class="num r">${o['Sells /mo']}<span class="sub">/mo${o['Demand from']?' · '+escapeHtml(o['Demand from']):''}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
       <td class="pmc">${oaCell(o)}</td></tr>`;});}
   $('#leads').innerHTML=h+'</tbody>';
   const from=all.length?(view.page-1)*PAGEN()+1:0,to=Math.min(all.length,view.page*PAGEN());
@@ -875,10 +924,16 @@ function brandsInit(){if(typeof bbSeed==='function')bbSeed();paintJackOnly();ren
   inp.addEventListener('change',e=>{handleFiles(e.target.files);e.target.value='';});
   zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('over');handleFiles(e.dataTransfer.files);});
   $('#fileChips').addEventListener('click',e=>{const b=e.target.closest('button[data-rm]');if(b)removeFile(b.dataset.rm);});
+  $('#euGo').addEventListener('click',euRun);
   $('#asinCopy').addEventListener('click',e=>{const a=$('#asinBar')._all||[];copy(a.join(', '),a.length+' ASINs copied — paste into the UK Product Viewer',e.currentTarget,'Copied');});
   $('#asinOpen').addEventListener('click',()=>{const a=$('#asinBar')._all||[];if(!a.length){toast('Drop the Finder exports first',true);return;}window.open(keepaLink(a,'2'),'_blank');});
   $('#dlSheet').addEventListener('click',dlSheet);$('#dlCsv').addEventListener('click',dlCsv);$('#dlDropped').addEventListener('click',dlDropped);
   $('#seenAll').addEventListener('click',markAllSeen);
+  /* b77 (Jack, 17 Sep): "add a copy kpv link here". The ASIN list is only half a hand-off — the
+     Viewer link opens Keepa with every lead already loaded, which is what he actually sends people. */
+  $('#copyKpv').addEventListener('click',e=>{if(!result||!result.out.length){toast('No leads to link to',true);return;}
+    const a=result.out.map(o=>o.ASIN);
+    copy(keepaLink(a,'2'),`Keepa Viewer link copied · ${a.length} lead${a.length===1?'':'s'}`,e.currentTarget,'Copied');});
   $('#copyKept').addEventListener('click',e=>{if(!result||!result.out.length){toast('Nothing to copy',true);return;}copy(result.out.map(o=>o.ASIN).join(', '),result.out.length+' ASINs copied',e.currentTarget,'Copied');});
   $('#openSel').addEventListener('click',openInKeepa);
   $('#leads').addEventListener('click',onTableClick);$('#leads').addEventListener('change',onTableChange);$('#leads').addEventListener('input',onTableInput);
