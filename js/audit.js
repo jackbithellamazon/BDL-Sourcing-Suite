@@ -51,7 +51,11 @@ function audFromKeepa(p){if(!p||!p.asin)return null;const st=(p.stats&&p.stats.c
   return{asin:p.asin,domain:2,title:(p.title||'').slice(0,300),brand:(p.brand||'').slice(0,80),
     image:img?('https://m.media-amazon.com/images/I/'+img):'',price:cents(st[18]!=null&&st[18]>0?st[18]:st[0]),
     rank:st[3]!=null&&st[3]>0?st[3]:null,root:(p.categoryTree&&p.categoryTree[0]&&p.categoryTree[0].name)||'',
-    mo:p.monthlySold||null,fba:null,offers:st[11]!=null&&st[11]>0?st[11]:null,source:'keepa',fetched_at:nowIso()};}
+    mo:p.monthlySold||null,fba:null,offers:st[11]!=null&&st[11]>0?st[11]:null,
+    /* b88 (Jack: "sellers on it is — why tho"). A dash meant two different things: Keepa says nobody is
+       listed, and we never asked. Records written before the offer count existed fell in the second camp
+       and counted as loaded forever, so the dash never cleared. asked:1 says we have been. */
+    asked:1,source:'keepa',fetched_at:nowIso()};}
 /* a Keepa CSV export row → the same shape, free */
 function audFromCsv(r){const a=(r.ASIN||'').trim();if(!/^B[0-9A-Z]{9}$/.test(a))return null;
   const img=((r.Image||'').split(';')[0]||'').trim();
@@ -133,7 +137,7 @@ function audFillFromOurs(asins){const LA=leadAll();const have=new Set(asins);con
   return add.length;}
 async function audTokensLeft(){try{const r=await fetch(WORKER+'/health');const j=await r.json();return j&&j.tokensLeft!=null?j.tokensLeft:null;}catch(e){return null;}}
 /* returns how many it loaded. quiet:true = no confirm, used by the automatic pass */
-async function audLoadDetails(asins,quiet,onBatch){const need=asins.filter(a=>!audState.prod[a]||audState.prod[a].source==='ours');
+async function audLoadDetails(asins,quiet,onBatch){const need=asins.filter(a=>!audState.prod[a]||audState.prod[a].source==='ours'||!audState.prod[a].asked);
   if(!need.length)return 0;let got=0;
   for(let i=0;i<need.length;i+=100){const part=need.slice(i,i+100);
     try{const r=await fetch(WORKER+'/keepa?path=product&domain=2&stats=30&asin='+part.join(','));const j=await r.json();
@@ -347,7 +351,13 @@ function auRenderOne(){const sh=audShelf(auView.shelf);const c=auCounts(sh);cons
   if(auView.focus>=vis.length)auView.focus=Math.max(0,vis.length-1);
   const secs=auView.secs.length?auView.secs.reduce((a,b)=>a+b,0)/auView.secs.length:6;
   const la=auLastAudit(sh);const loaded=sh.items.filter(it=>audState.prod[it.a]).length;
-  const tb=(key,label,n,col)=>`<button type="button" class="${tab===key?'on':''}" data-tab="${key}">${label} <b style="color:${col||'var(--text)'}">${n}</b></button>`;
+  /* b87 (Jack: "improve these buttons"). Three jobs the old strip did badly: an empty verdict looked
+     the same as a full one, the strip read as ten equal things when it is really three groups, and the
+     one you are on barely stood out. Now: a colour dot only where the count means something, empty ones
+     fade back, the count is a proper badge, and thin rules separate where you are / what we know / what
+     you decided. The dot colour is the verdict's own, matching the 1-6 buttons on the row. */
+  const tb=(key,label,n,col,dot)=>`<button type="button" class="${tab===key?'on':''}${n?'':' zero'}" data-tab="${key}" style="--c:${col||'var(--muted)'}" title="${escapeHtml(label+' · '+n)}">`
+    +`${dot?'<i class="d"></i>':''}<span>${label}</span><b>${n}</b></button>`;
   const page=vis.slice(0,AUD.PAGE);
   $('#page-audit').innerHTML=`<div class="card">
     <div class="auhead"><button class="back" id="auBack" type="button" aria-label="Back to audits">${ICONS.back}</button>
@@ -361,7 +371,7 @@ function auRenderOne(){const sh=audShelf(auView.shelf);const c=auCounts(sh);cons
       <div class="aupline"><b>${c.todo.toLocaleString()} left of ${c.all.toLocaleString()}</b><span>${c.todo?`about ${Math.max(1,Math.round(c.todo*secs/60))} min · ${c.byHand.toLocaleString()} judged${c.auto?` · ${c.auto.toLocaleString()} marked for you`:''}`:'all done'}</span>
         <span class="audet">${loaded} of ${sh.items.length} have pictures${loaded<sh.items.length?` · <button type="button" class="linkbtn" id="auViewer">Keepa Viewer (free)</button> · <button type="button" class="linkbtn" id="auTokens">load with tokens</button>`:''}</span></div>
       <div class="aunote" id="auNote2"></div></div>
-    <div class="autabs">${tb('todo','To do',c.todo,'var(--iris)')}${tb('had','We had it',c.had,'#93A3BC')}${tb('sell','You sell',c.sell,'#2CE38B')}${audTypes().map(t=>tb(t.code,t.short||t.label,c[t.code],t.hex)).join('')}${tb('all','All',c.all)}
+    <div class="autabs">${tb('todo','To do',c.todo,'var(--iris)')}<i class="sep"></i>${tb('had','We had it',c.had,'#93A3BC',1)}${tb('sell','You sell',c.sell,'#2CE38B',1)}<i class="sep"></i>${audTypes().map(t=>tb(t.code,t.short||t.label,c[t.code],t.hex,1)).join('')}<i class="sep"></i>${tb('all','All',c.all)}
       <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="auQ" placeholder="Search title or ASIN" value="${escapeHtml(auView.q)}" autocomplete="off"><kbd>/</kbd></label></div>
     <div class="autools"><span class="l">Order</span><select id="auSort">${AU_SORTS.map(([v,l])=>`<option value="${v}"${auView.sort===v?' selected':''}>${l}</option>`).join('')}</select>
       <span class="l">Price</span><select id="auBand"><option value="ALL"${auView.band==='ALL'?' selected':''}>Any</option><option value="a"${auView.band==='a'?' selected':''}>Under £20</option><option value="b"${auView.band==='b'?' selected':''}>£20 – £60</option><option value="c"${auView.band==='c'?' selected':''}>£60+</option></select>
@@ -419,7 +429,7 @@ function auPanel(it,sh){if(!it)return'<div class="empty"><span>Pick a product.</
   return`<div class="aupimg ${p.image?'':'none'}">${p.image?`<img src="${escapeHtml(p.image)}" alt="">`:escapeHtml(it.a.slice(0,2))}</div>
     <h3>${escapeHtml(p.title||it.a)}</h3><div class="ssub">${escapeHtml(p.brand||'')}${p.root?' · '+escapeHtml(p.root):''} · ${it.a}</div>
     <div class="aufgrid">${fact('Buy Box',gbp(p.price))}${fact('Sales rank',p.rank?'#'+(+p.rank).toLocaleString():'—')}${fact('Bought / month',p.mo?(+p.mo).toLocaleString():'—')}
-      ${fact('Sellers on it',p.fba||p.offers||'—')}${fact('On their shelf',it.base?'before':auDays(it.first)+'d')}${fact('Other shelves',also.length)}</div>
+      ${fact('Sellers on it',(p.fba||p.offers)||(p.asked?'none listed':'<span class="pend">loading\u2026</span>'))}${fact('On their shelf',it.base?'Already there':auDays(it.first)+'d')}${fact('Other shelves',also.length)}</div>
     <div class="aulinksbig sticky">${auLinks(it.a)}</div>
     <div class="ausec"><div class="h">Price history · 90 days</div><div class="augraph" id="auGraph" data-a="${it.a}"></div></div>
     <div class="ausec"><div class="h">On our filters</div>${o?`<div class="auours ${o.said==='Yes'?'yes':''}"><b>${o.said?escapeHtml((o.saidBy||'we')+' said '+o.said):'Was a lead · nobody said Yes'}</b>
@@ -445,7 +455,7 @@ function auOpen(id){auView.mode='audit';auView.shelf=id;auView.q='';auView.order
     if(audFillFromOurs(asins))if(auView.shelf===id)renderAudit();   /* titles from our own runs, free */
     if(auView.shelf===id)renderAudit();
     if(!audAuto())return;
-    const need=asins.filter(a=>!audState.prod[a]||audState.prod[a].source==='ours');
+    const need=asins.filter(a=>!audState.prod[a]||audState.prod[a].source==='ours'||!audState.prod[a].asked);
     if(!need.length)return;
     const left=await audTokensLeft();
     if(left==null){auNote('Could not reach the Keepa Worker, so the details are not loading by themselves.');return;}
@@ -470,7 +480,7 @@ function auOpenKeepaViewer(){const sh=audShelf(auView.shelf);if(!sh)return;const
   copy(need.join(', '),need.length+' ASINs copied — they are also loading in the Viewer');window.open(keepaLink(need,'2'),'_blank');
   toast('Export ALL columns from the Viewer, then drop the file on this page');}
 async function auLoadTokens(){const sh=audShelf(auView.shelf);if(!sh)return;
-  const need=sh.items.map(it=>it.a).filter(a=>!audState.prod[a]||audState.prod[a].source==='ours');
+  const need=sh.items.map(it=>it.a).filter(a=>!audState.prod[a]||audState.prod[a].source==='ours'||!audState.prod[a].asked);
   if(!need.length){toast('Every product already has its details');return;}
   if(!confirm(`Load titles, pictures and prices for ${need.length} product${need.length===1?'':'s'}?\n\nThat costs about ${need.length} Keepa tokens, once. They are saved for good.`))return;
   auNote('Loading details…');const got=await audLoadDetails(need,true,(n,t)=>auNote(`Loading details… ${n} of ${t}`));

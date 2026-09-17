@@ -468,14 +468,72 @@ function run(){if(!cur)return;
      WHOLE LISTING's, shared by every option — 88 of his 100 alert ASINs were one option of many, one
      of them a family of 92. So the count rides on the lead and the demand figure says whose it is.
      Nothing is dropped for it: which option sells is a thing you read off the graph, not a rule. */
+  /* b84 (Jack, 17 Sep): "confirmed sales > everything — confirmed sales is sales from Amazon themselves
+     and confirmed a minimum of 50". So demand has an order of resort, and it is written down here once:
+
+       1. CONFIRMED  Amazon's own "bought in past month". Per option, never below 50, always believed.
+       2. SHARE      no confirmed figure: this option's share of the family's reviews. PROVEN on the
+                     Logitech Lift family, 17 Sep — real sales 1000/300/200/100/100 against review
+                     shares 68.7/13.9/10.5/6.7/0.3%. Same order, one miss: the Sand, listed in March,
+                     has 11 reviews because it is new, not because nobody buys it.
+       3. DROPS      nothing else: the rank, which every option on the listing shares. Weakest.
+
+     The share needs the whole family in the same export, so it only appears when the siblings are
+     there. Nothing is dropped or rescored — this labels the number, it does not change it. */
   (()=>{const src=(cur.rule===1?(files.viewer&&files.viewer.rows):(files.one&&files.one.rows))||[];
-    const vc={};src.forEach(r=>{const n=kNum(r['Variation Count']);if(n>0)vc[(r.ASIN||'').trim()]=n;});
-    if(!Object.keys(vc).length)return;
-    R.out.forEach(o=>{const n=vc[o.ASIN];if(!(n>1))return;o.Options=n;
-      const dem=o.SPM||o['Sells /mo']||'';
-      const why=`1 of ${n} options — that ${dem}/mo is the whole listing's, read the graph for this one`;
-      o['Options on the listing']=n;
-      if('Flags' in o)o.Flags=(o.Flags?o.Flags+'; ':'')+why;else o.Flags=why;});})();
+    if(!src.length)return;
+    const byAsin={},vc={},rev={},listed={};
+    src.forEach(r=>{const a=(r.ASIN||'').trim();if(!a)return;byAsin[a]=r;
+      const n=kNum(r['Variation Count']);if(n>0)vc[a]=n;
+      const rv=kNum(r['Reviews: Review Count - Format Specific']);rev[a]=rv>0?rv:0;
+      listed[a]=r['Listed since']||'';});
+    const sibsOf=a=>String((byAsin[a]||{})['Variation ASINs']||'').split(',').map(x=>x.trim()).filter(Boolean);
+    const sixMonths=Date.now()-182*864e5;
+    R.out.forEach(o=>{
+      const a=o.ASIN,n=vc[a];
+      const bought=kNum(o['Bought /mo'])||((o['SPM from']==='bought'||o['Demand from']==='confirmed')?(o.SPM||o['Sells /mo']):null);
+      if(n>1){o.Options=n;o['Options on the listing']=n;}
+      if(rev[a])o['Option reviews']=rev[a];
+      /* 1 — Amazon said so. Nothing beats it. */
+      if(bought>=50){o['Demand basis']='confirmed by Amazon';o['Demand belongs to']='this option';
+        if(n>1)o.Flags=(o.Flags?o.Flags+'; ':'')+`1 of ${n} options, and the ${bought}/mo is Amazon's own confirmed figure for this one`;
+        return;}
+      /* b85 (Jack, 17 Sep): "something that doesn't even show 50 spm by amazon even if it says 40 drops —
+         it isn't over 50 sales, and anything over 50 sales a month is confirmed via amazon themselves."
+         So a missing figure is not missing information. It is a CEILING: under 50 a month, whatever the
+         rank says. Drops are the backup for ordering them, never evidence of volume. */
+      const dr=kNum(o.SPM)||kNum(o['Sells /mo'])||0;
+      const lost=dr>LOST_FIGURE_DROPS;
+      o['Under 50 a month']=lost?'probably not - see below':'yes';
+      if(lost)o.Flags=(o.Flags?o.Flags+'; ':'')+`${dr} rank drops with no confirmed figure — Amazon's number has dropped off rather than this being a small seller, so treat it as 50+`;
+      if(!(n>1)){o['Demand basis']=lost?'confirmed figure lost \u00b7 '+dr+' drops says 50+':'under 50 a month \u00b7 rank drops only';return;}
+      /* 2 — no confirmed figure: split the family by its reviews, if the family is in this export */
+      const sibs=sibsOf(a).filter(x=>byAsin[x]);
+      const fam=sibs.reduce((t,x)=>t+(rev[x]||0),0);
+      if(fam>0&&rev[a]!=null){
+        const share=rev[a]/fam;
+        o['Option share %']=r1(share*100);o['Demand basis']='under 50 a month \u00b7 '+r1(share*100)+'% of the family reviews';
+        o['Demand belongs to']='this option (estimated)';
+        /* Jack's call, 17 Sep: "anything with 10 keepa drops and a 50% or under % shouldn't be sold unless
+           its profit and roi is really really good, where i'd buy 1 unit." So it is not binned - it is
+           marked ONE UNIT, and only stays worth anything when the money is exceptional. */
+        const spm=dr, roi=kNum(o['ROI %'])||0, prof=kNum(o['Profit \u00a3'])||0;
+        if(!lost&&share<=ONE_UNIT.share&&spm<=ONE_UNIT.drops){
+          o['Buy how many']=(roi>=ONE_UNIT.roi&&prof>=ONE_UNIT.profit)?'1 unit only':'leave it';
+          o.Flags=(o.Flags?o.Flags+'; ':'')+(o['Buy how many']==='1 unit only'
+            ?'ONE UNIT ONLY \u2014 under 50 a month and only '+r1(share*100)+'% of the listing, but '+roi+'% ROI at '+gbp(prof)+' a unit'
+            :'LEAVE IT \u2014 under 50 a month, only '+r1(share*100)+'% of the listing, and '+roi+'% ROI is not enough to risk it');
+        }
+        const dt=Date.parse(String(listed[a]||'').replace(/\//g,'-'));
+        const isNew=dt&&dt>sixMonths;
+        o.Flags=(o.Flags?o.Flags+'; ':'')
+          +`1 of ${n} options and no confirmed sales — this one holds ${r1(share*100)}% of the family's reviews`
+          +(isNew?`, but it only went live ${listed[a]} so that share understates it`:'');
+        return;}
+      /* 3 — nothing to split it with */
+      o['Demand basis']=lost?'confirmed figure lost \u00b7 '+dr+' drops says 50+':'under 50 a month \u00b7 rank drops only';o['Demand belongs to']='the whole listing';
+      o.Flags=(o.Flags?o.Flags+'; ':'')+`1 of ${n} options, no confirmed sales, and no family reviews in this export — the ${o.SPM||o['Sells /mo']||''}/mo is the whole listing's rank`;
+    });})();
   /* the central blacklists: an ASIN, or an approved brand, never shows — on any rule, any run, whatever Keepa filter found it */
   const B=blAll(),bl=[];R.out=R.out.filter(o=>{const b=B[o.ASIN];const bb=bbStatusFor(o.Brand||(cur.type==='brand'?cur.name:''));
     if(b){bl.push([o.ASIN,o.Title||o.Product||'','BLACKLISTED · '+b.reason+(b.note?' — '+b.note:'')+(b.who?' · '+b.who:'')]);return false;}
@@ -880,6 +938,17 @@ function onCloudPulled(ok){whoPaint();renderList();renderLog();renderSettings();
 /* ============ wiring ============ */
 /* b31 (15 Sep 02:20): the Keepa key lives in Jack's Cloudflare Worker; the app only ever asks it for the token balance (free) —
    automation proper waits until the trial week is done */
+/* Jack's one-unit rule, 17 Sep 2026. These four numbers are the whole of it - change them here.
+     share  : this option holds this much of the family's reviews, or less
+     drops  : and the listing only manages this many rank drops a month, or fewer
+     roi    : then it is worth a single unit only if the ROI is at least this
+     profit : and it clears at least this much a unit. Below either, leave it. */
+const ONE_UNIT={share:0.50,drops:10,roi:50,profit:10};
+/* The exception, Jack 17 Sep: "the odd one will still sell 50+ and slipped through as a bug... as a
+   general rule, anything over 50 keepa drops though, sales over 50 times a month — those are the buggy
+   ones, and it's not a lot of them." Measured on his own 1,404-row no-figure export: 60 of them, 4%.
+   Above this many drops a missing figure is treated as LOST, not as proof of a small seller. */
+const LOST_FIGURE_DROPS=50;
 const WORKER='https://bdl-sourcing.jackbithellbusiness.workers.dev';
 async function paintTokens(){let el=$('#tokPill');const cp=$('#cloudPill');if(!cp)return;if(!el){el=document.createElement('span');el.id='tokPill';el.className='pill tok';cp.parentNode.insertBefore(el,cp);}
   try{const r=await fetch(WORKER+'/health');const t=await r.json();if(t.ok&&t.tokensLeft!=null){el.textContent='Keepa · '+t.tokensLeft.toLocaleString()+' tokens';el.title=`Keepa API balance via the Worker · refills ${t.refillRate}/min · nothing runs automatically yet`;el.classList.remove('bad');}

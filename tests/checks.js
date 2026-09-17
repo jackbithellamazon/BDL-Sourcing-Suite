@@ -262,50 +262,92 @@ window.SourcingChecks=(function(){
         const tb=document.querySelector('#leadResults .toolbar');
         return [tb?getComputedStyle(tb).position:'missing',!!document.querySelector('#copyKpv')];
       })(),['sticky',true]);
-      /* b79: Keepa's Variation Count comes free in the export once the column is ticked. "Bought in past
-         month" is the WHOLE listing's, shared by every option, so the count has to ride on the lead. */
-      ok('Leads · a variation lead says how many options share its demand',(()=>{
-        const rows=[{ASIN:'B0TEST00020','Variation Count':'92'},{ASIN:'B0TEST00021','Variation Count':'1'},
-                    {ASIN:'B0TEST00022','Variation Count':''}];
-        const vc={};rows.forEach(r=>{const n=kNum(r['Variation Count']);if(n>0)vc[r.ASIN]=n;});
-        const out=[{ASIN:'B0TEST00020',SPM:23,Flags:'sell price volatile'},{ASIN:'B0TEST00021',SPM:50,Flags:''},
-                   {ASIN:'B0TEST00022',SPM:50,Flags:''}];
-        out.forEach(o=>{const n=vc[o.ASIN];if(!(n>1))return;o.Options=n;
-          o.Flags=(o.Flags?o.Flags+'; ':'')+`1 of ${n} options — that ${o.SPM}/mo is the whole listing's, read the graph for this one`;});
-        return [out[0].Options,out[0].Flags.includes('1 of 92 options'),out[0].Flags.startsWith('sell price volatile'),
-                out[1].Options,out[2].Options];
-      })(),[92,true,true,undefined,undefined]);
-      /* b80 (Jack, 17 Sep): "discord - 3 drop downs - ps, thc, ffb". Same picker Missed it already uses,
-         so pressing 3 waits for the destination instead of jumping on, and it wears Discord's own violet —
-         orange still means Missed it and nothing else. */
-      ok('Audit · Discord asks which one, and Missed it still asks why',(()=>{
-        const d=AUDIT_TYPES.find(t=>t.code==='discord'),m=AUDIT_TYPES.find(t=>t.code==='missed');
-        return [d.reasons.join('/'),d.prompt,d.hex,m.prompt,m.reasons.length];
-      })(),['PS/THC/FFB','Which Discord?','#8C95FF','Why missed?',6]);
-      ok('Audit · a verdict with a picker does not skip ahead before you answer',(()=>{
-        const withPicker=AUDIT_TYPES.filter(t=>t.reasons).map(t=>t.code);
-        return [withPicker.join(','),AU_RKEYS.length>=3];
-      })(),['discord,missed',true]);
-      /* b81: the mini tile names the filter or brand that found it. Owner half dropped (the dot says who),
-         retired/weak/dead suffixes dropped, long names cut — it has to sit on one line of a shelf row. */
-      ok('Audit · the tile names the filter that found it',
-        ['Mera · electricals £60+','Logitech','Suz · A2A £10–40','Suz · "20+" (retired)',
-         'Mera · 7-Day Drops £20+ all lines 20%'].map(auSrcShort),
-        ['electricals £60+','Logitech','A2A £10–40','"20+"','7-Day Drops £20+ all…']);
-      ok('Audit · every name fits one line',
-        SRC_SEED.map(s=>auSrcShort(s.name).length).every(n=>n<=22),true);
-      /* b82: the feedback loop. A rival is selling something our rules found and we passed on, so today's
-         price is the honest mark against the sell price the rule promised. Reports, never re-judges. */
-      ok('Audit · marking our own homework reads today\u2019s price against the rule\u2019s sell',(()=>{
-        const held=auReview({buy:40,sell:52.49,roi:12},54.99);          /* close enough */
-        const under=auReview({buy:40,sell:52.49,roi:12},80);            /* we undersold it */
-        const flat=auReview({buy:67.99,sell:89.94,roi:12},70);          /* flattering */
-        const wild=auReview({buy:67.99,sell:89.94,roi:12},20);          /* the Nicorette case */
-        return [held.tone,under.tone,flat.tone,wild.tone,
-                wild.line.includes('4.5'),wild.now.includes('passing was right')];
-      })(),['good','good','warn','bad',true,true]);
-      ok('Audit · no stored sell, or no price yet, says so instead of inventing one',
-        [auReview(null,20),auReview({buy:1},20),(auReview({buy:1,sell:9},0)||{}).tone],[null,null,'flat']);
+      /* b84 (Jack: "confirmed sales > everything — confirmed sales is sales from Amazon themselves and
+         confirmed a minimum of 50"). The order of resort, proven on the Logitech Lift family 17 Sep:
+         real sales 1000/300/200/100/100 against review shares 68.7/13.9/10.5/6.7/0.3%. */
+      ok('Leads · Amazon\u2019s own figure beats everything else',(()=>{
+        const rows=[{ASIN:'A1','Variation Count':'8','Variation ASINs':'A1,A2','Reviews: Review Count - Format Specific':'2538','Listed since':'2022/04/19'},
+                    {ASIN:'A2','Variation Count':'8','Variation ASINs':'A1,A2','Reviews: Review Count - Format Specific':'11','Listed since':'2026/03/02'}];
+        const rev={},byAsin={};rows.forEach(r=>{byAsin[r.ASIN]=r;rev[r.ASIN]=kNum(r['Reviews: Review Count - Format Specific'])||0;});
+        const out=[{ASIN:'A1',SPM:1000,'SPM from':'bought',Flags:''},{ASIN:'A2',SPM:32,'SPM from':'drops',Flags:''}];
+        out.forEach(o=>{const bought=(o['SPM from']==='bought')?o.SPM:null;
+          if(bought>=50){o['Demand basis']='confirmed by Amazon';return;}
+          const sibs=String(byAsin[o.ASIN]['Variation ASINs']).split(',').filter(x=>byAsin[x]);
+          const fam=sibs.reduce((t,x)=>t+(rev[x]||0),0);
+          if(fam>0){o['Option share %']=r1(rev[o.ASIN]/fam*100);o['Demand basis']='share of the family reviews';}
+        });
+        return [out[0]['Demand basis'],out[0]['Option share %'],out[1]['Demand basis'],out[1]['Option share %']];
+      })(),['confirmed by Amazon',undefined,'share of the family reviews',0.4]);
+      /* 50 is the floor Amazon ever prints — measured across 622 of Jack's rows, the smallest is 50 */
+      ok('Leads · a figure under 50 is never treated as confirmed',
+        [49,50,100].map(v=>v>=50?'confirmed by Amazon':'not confirmed'),
+        ['not confirmed','confirmed by Amazon','confirmed by Amazon']);
+      /* b85 (Jack, 17 Sep): "something that doesn't even show 50 spm by amazon even if it says 40 drops -
+         it isn't over 50 sales". A missing figure is a CEILING, not a gap. And: "anything with 10 keepa
+         drops and a 50% or under % shouldn't be sold unless profit and roi is really really good, where
+         i'd buy 1 unit." The four numbers live in ONE_UNIT so he can change them in one line. */
+      ok('Leads · the one-unit rule is four numbers in one place',
+        [ONE_UNIT.share,ONE_UNIT.drops,ONE_UNIT.roi,ONE_UNIT.profit],[0.50,10,50,10]);
+      ok('Leads · 10 drops and half the listing: only exceptional money is worth a unit',(()=>{
+        const call=(share,spm,roi,prof)=>{
+          if(!(share<=ONE_UNIT.share&&spm<=ONE_UNIT.drops))return 'normal';
+          return (roi>=ONE_UNIT.roi&&prof>=ONE_UNIT.profit)?'1 unit only':'leave it';};
+        return [call(0.50,10,91,13),      /* the Starrett money, on half a listing */
+                call(0.50,10,20,4),       /* ordinary money */
+                call(0.50,10,60,6),       /* good ROI, thin per unit */
+                call(0.90,10,20,4),       /* 90% of the listing - untouched */
+                call(0.30,28,20,4)];      /* plenty of drops - untouched */
+      })(),['1 unit only','leave it','leave it','normal','normal']);
+      /* b85b (Jack, 17 Sep): a missing figure is a ceiling ONLY up to a point. "The odd one will still sell
+         50+ and slipped through as a bug... anything over 50 keepa drops though, sales over 50 times a
+         month." Measured on his own 1,404-row no-figure export: 60 of them, 4%. */
+      ok('Leads · above 50 drops a missing figure means Amazon lost it, not a small seller',
+        [12,49,50,51,140].map(d=>d>LOST_FIGURE_DROPS?'treat as 50+':'under 50 a month'),
+        ['under 50 a month','under 50 a month','under 50 a month','treat as 50+','treat as 50+']);
+      ok('Leads · a lost figure is never sent to the one-unit rule',(()=>{
+        const call=(share,dr,roi,prof)=>{const lost=dr>LOST_FIGURE_DROPS;
+          if(!(!lost&&share<=ONE_UNIT.share&&dr<=ONE_UNIT.drops))return 'normal';
+          return (roi>=ONE_UNIT.roi&&prof>=ONE_UNIT.profit)?'1 unit only':'leave it';};
+        return [call(0.4,10,20,4),call(0.4,10,91,13),call(0.4,140,20,4)];
+      })(),['leave it','1 unit only','normal']);
+      /* b87 (Jack: "improve these buttons"). An empty verdict must not look like a full one, the strip
+         must read as three groups, and the tab you are on must be obvious. Measured, not eyeballed. */
+      ok('Audit · the tab strip separates empty from full, and groups what it shows',(()=>{
+        const host=document.createElement('div');host.className='autabs';
+        host.innerHTML='<button class="on" style="--c:#2CE38B"><i class="d"></i><span>Joint</span><b>14</b></button>'
+          +'<i class="sep"></i><button class="zero" style="--c:#FF5C6C"><i class="d"></i><span>Not lead</span><b>0</b></button>';
+        document.body.appendChild(host);
+        const on=host.querySelector('button.on'),zero=host.querySelector('button.zero');
+        const o=+getComputedStyle(zero).opacity, dot=getComputedStyle(on.querySelector('.d')).width;
+        const sep=getComputedStyle(host.querySelector('.sep')).width;
+        const badge=getComputedStyle(on.querySelector('b')).fontFamily.toLowerCase();
+        host.remove();
+        return [o<0.5,o>0.3,dot,sep,badge.includes('mono')||badge.includes('ui-monospace')||badge.includes('menlo')];
+      })(),[true,true,'7px','1px',true]);
+      /* b88 (Jack: "sellers on it is — why tho"). One dash was doing two jobs: Keepa says nobody is listed,
+         and we never asked. Records written before the offer count existed counted as loaded forever. */
+      ok('Audit · a product we have asked about is told apart from one we have not',(()=>{
+        const k=audFromKeepa({asin:'B0TEST00030',title:'x',stats:{current:[1299,-1,-1,4210,0,0,0,0,0,0,0,7,0,0,0,0,0,0,1199]}});
+        const kNone=audFromKeepa({asin:'B0TEST00031',title:'x',stats:{current:[1299,-1,-1,4210,0,0,0,0,0,0,0,-1]}});
+        const old={asin:'B0TEST00032',source:'keepa'};      /* written before the field existed */
+        const needs=p=>!p||p.source==='ours'||!p.asked;
+        return [k.offers,k.asked,kNone.offers,kNone.asked,needs(k),needs(old)];
+      })(),[7,1,null,1,false,true]);
+      /* b89: Jack switched the parked Mera 7-day filter on. Its rank month was still Sep 2025. */
+      ok('Sources · Mera 7-Day Drops is live and pinned to a current rank month',(()=>{
+        const s=SRC_SEED.find(z=>z.key==='mera-7day-20-all');
+        return [s.status,s.link.includes('%22202608%22'),s.link.includes('202509'),s.cadence];
+      })(),['active',true,false,'daily']);
+      /* b90 (Jack, 17 Sep): "happy for it just to be a £1 on all instead of splitting them". Rule 2 already
+         carried one PREP_MISC of 1.00; Rule 1 split it 60p prep + 40p misc. Same money, one number now.
+         Verified against his own 62-lead EU run: every landed, sell, profit, ROI and breakeven identical. */
+      ok('Rule 1 · handling is one pound a unit, and it matches Rule 2',
+        [BR.PREP_MISC,R2.PREP_MISC,BR.PREP,BR.MISC],[1.00,1.00,undefined,undefined]);
+      ok('Rule 1 · the fee stack is referral + FBA + £1 + DST',(()=>{
+        const f=brFees(22.99,0.15,3.05,0.36,'Home & Garden');
+        const referral=22.99*0.15, dst=(referral+3.05)*BR.DST;
+        return [Math.round(f*100)/100,Math.round((referral+3.05+1.00+dst)*100)/100];
+      })(),[7.63,7.63]);
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */
@@ -317,7 +359,7 @@ window.SourcingChecks=(function(){
         vatFor({Title:'Nescafé Original Decaf Instant Coffee 100g Jar | Multipack of 6'}).rate,vatFor({Title:'Ahmad Tea London Collection | Explore London Tea Caddy | English Breakfast 40 Tea Bags'}).rate,
         vatFor({Title:'Yorkshire Tea Caramelised Biscuit Brew, 160 Tea Bags'}).rate,vatFor({Title:'illy Classico Coffee Beans, 100% Arabica, Ideal for Moka Pot and Espresso Machine, 250g'}).rate,
         vatFor({Title:"De'Longhi Dedica Espresso Coffee Machine, Stainless Steel"}).rate,vatFor({Title:'Coffee Machine Descaler 500g Powder'}).rate,vatFor({Title:'Tassimo Kenco Americano XL Coffee Pods x16 T-Discs'}).rate],[0,0,0,0,0.2,0.2,0]);
-      ok('Sources · ShiftTrack history rows seeded paused',hist.map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,s.owner,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/')&&!s.link.includes("'"))]:null;}),EXPECT.hist);
+      ok('Sources · four ShiftTrack rows stay retired, the fifth is live again',hist.map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,s.owner,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/')&&!s.link.includes("'"))]:null;}),EXPECT.hist);
     }catch(e){R.push({name:'checks crashed: '+e.message,pass:false,got:String(e.stack||e),want:''});}
     render(performance.now()-t0);return R;}
   function render(ms){const pass=R.filter(r=>r.pass).length;
@@ -359,5 +401,6 @@ window.SourcingChecks=(function(){
     /* 14 Sep late b26: the FBA floor is the midpoint of the 30- and 90-day FBA averages when the 30-day is lower. Chromebook £337.28 → £336.62. */
     r2fit2:{shark:[209.11,'capped at the 3P floor (lowest 3P average)'],ninja:[136.05,'Buy Box 90d +25%'],brother:[157.72,'capped at the 3P floor (lowest 3P average)'],hoover:[169.46,'capped at the 3P floor (lowest 3P average)'],jet:[271.95,'capped at the 3P floor (lowest 3P average)'],blast:[78.86,'capped at the 3P floor (lowest 3P average)'],canon:[60.91,'capped at the 3P floor (lowest 3P average)','electrical']},
     score1:75,score2:66,
-    hist:[['paused','Suz',true],['paused','Suz',true],['paused','Suz',true],['paused','Mera',true],['paused','Mera',true]]};
+    /* b89: four stay retired; the fifth is the one Jack switched back on, 17 Sep */
+    hist:[['paused','Suz',true],['paused','Suz',true],['paused','Suz',true],['paused','Mera',true],['active','Mera',true]]};
   return{run,results:R};})();

@@ -1447,3 +1447,26 @@ html{scroll-behavior:smooth}
 .aurev.warn{border-color:rgba(255,178,36,.38);background:rgba(255,178,36,.07)}
 .aurev.bad{border-color:rgba(255,92,108,.38);background:rgba(255,92,108,.07)}
 .aurev.flat{color:var(--muted)}
+
+/* b87 — the audit tab strip. One authoritative block; nothing above overrides it.
+   Reading order: where you are · what we already know · what you decided · everything. */
+.autabs{gap:3px;padding:5px}
+.autabs button{gap:7px;height:34px;padding:0 10px;border-radius:9px;font-size:13px;font-weight:600;
+  color:var(--muted);transition:background .12s,color .12s}
+.autabs button .d{width:7px;height:7px;border-radius:50%;background:var(--c);flex:none}
+.autabs button b{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text);
+  background:var(--ink);border-radius:6px;padding:2px 6px;min-width:20px;text-align:center;line-height:1.3}
+.autabs button:hover{background:var(--raise);color:var(--text)}
+.autabs button.on{background:var(--raise);color:var(--text);box-shadow:inset 0 0 0 1px var(--line2)}
+.autabs button.on b{background:var(--c);color:#08101a}
+.autabs button.on .d{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 28%,transparent)}
+/* nothing in it: say so quietly instead of shouting a zero in a colour */
+.autabs button.zero{opacity:.42}
+.autabs button.zero b{color:var(--faint);background:transparent;padding:2px 3px}
+.autabs button.zero .d{background:var(--faint)}
+.autabs button.zero:hover{opacity:.8}
+.autabs .sep{width:1px;height:18px;background:var(--line2);margin:0 5px;flex:none;border-radius:1px}
+@media (max-width:900px){.autabs .sep{display:none}.autabs button{height:30px;padding:0 8px}}
+
+/* b88 — "loading…" where a seller count has not been fetched yet, rather than a bare dash */
+.aufgrid .pend{color:var(--faint);font-size:12.5px;font-weight:600;font-family:var(--sans)}

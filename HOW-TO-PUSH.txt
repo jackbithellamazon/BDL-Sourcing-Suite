@@ -1,4 +1,4 @@
-BDL SOURCING — b82 · 17 Sep 2026
+BDL SOURCING — b90 · 17 Sep 2026
 YOU ARE STILL ON b73. This folder is everything since, in one upload.
 
 1. UPLOAD
@@ -11,6 +11,42 @@ YOU ARE STILL ON b73. This folder is everything since, in one upload.
    Then every lead says "1 of 24" beside its sales figure. Free, no tokens. Tell the VAs too.
 
 WHAT LANDS, NEWEST FIRST
+   b90  Handling is one number: PREP_MISC GBP 1.00 a unit in Rule 1, instead of 60p prep + 40p misc.
+        Rule 2 already worked that way. Same money either way - checked against your own 62-lead EU
+        run and every landed cost, sell price, profit, ROI and breakeven came out identical.
+        (The weight fee, INBOUND_KG, is still GBP 0 - that one was switched off before today.)
+   b89  MERA - 7-DAY DROPS GBP 20+ ALL LINES 20% IS LIVE. Your note said WORTH RUNNING once the rank
+        month was re-pinned - it was still on Sep 2025, a year stale. Re-pinned to Aug 2026, the last
+        complete month, and switched on daily. If you would rather it ran on Sep 2026, open the filter
+        and change the month there, then paste the new link into the source.
+   b88  "Sellers on it" no longer sticks on a dash. That dash was doing two jobs - Keepa says nobody
+        is listed, and we never asked - and products saved before the seller count existed counted as
+        loaded forever, so it never cleared. They refetch themselves now and read "loading..." until
+        they do, or "none listed" when Keepa really has none.
+        "On their shelf: before" now reads "Already there".
+   b87  The audit tab strip. A coloured dot only where the count means something, empty verdicts
+        fade back instead of shouting a coloured zero, the count is a badge that fills with the
+        verdict's colour on the tab you are on, and thin rules group it: where you are | what we
+        already know | what you decided | everything.
+   b86  NO CONFIRMED FIGURE = UNDER 50 A MONTH. Not unknown - Amazon publishes the figure above 50,
+        so its absence is a ceiling. WITH YOUR EXCEPTION: above 50 rank drops the figure has been
+        LOST, not earned - your 1,404-row export had 60 like that, 4%. Those are treated as 50+.
+        And your one-unit rule: under 50 a month, 10 drops or fewer, half the listing or less -
+        marked "1 unit only" if ROI is 50%+ AND it clears GBP 10 a unit, otherwise "leave it".
+        Those four numbers sit together in ONE_UNIT at the top of js/brands.js. One line to change.
+   b84  DEMAND NOW HAS AN ORDER OF RESORT, your rule, written into the app:
+          1. CONFIRMED  Amazon's own bought-in-past-month. Per option, never under 50, believed.
+          2. SHARE      no confirmed figure - this option's share of the family's reviews.
+          3. DROPS      nothing else - the rank, which every option on the listing shares.
+        Proven on the Logitech Lift family: real sales 1000/300/200/100/100 against review shares
+        68.7/13.9/10.5/6.7/0.3%. Same order. The only miss is the Sand, listed in March - 11
+        reviews because it is new, and the app says so instead of writing it off.
+        New sheet columns: Option reviews, Option share %, Demand basis, Demand belongs to.
+        The share needs the family in the same export, so tick the Reviews columns.
+   b83  Variations, corrected: "bought in past month" IS each option's own sales — measured on the
+        Logitech Lift family, grey 1,000 a month, pink 300, left-handed 200, yours 100. The SALES
+        RANK is the parent's though, one number shared by all of them. So a lead whose demand came
+        from a bought figure is left alone, and only a rank-fed one is flagged as the listing's.
    b82  MARKING OUR OWN HOMEWORK. When a rival is selling something our own filters found and we
         never bought, the panel now puts the sell price the rule promised against what it really
         goes for today: green = the call held, amber = the ROI was flattering, red = that ROI never
@@ -33,4 +69,4 @@ WHAT LANDS, NEWEST FIRST
 ROLLBACK
    Upload the previous files over the top. GitHub keeps every version.
 
-113 checks, all green.
+117 checks, all green.

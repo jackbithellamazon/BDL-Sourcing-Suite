@@ -6,9 +6,9 @@
    DOM-free: rule1Compute(files, brand, rate, prevRun) -> result. The page never reaches in.
    ============================================================================ */
 const BR={
-  VAT:0.20, PREP:0.60, INBOUND_KG:0.00, CARD_FEE:0.01, BASKET_CAP:175, BASKET_MAX:5,
+  VAT:0.20, PREP_MISC:1.00, INBOUND_KG:0.00,   /* b90 (Jack, 17 Sep): one pound a unit for handling, not 60p prep + 40p misc. Same money, one number. */ CARD_FEE:0.01, BASKET_CAP:175, BASKET_MAX:5,
   SHIP_BASE:3.99, SHIP_KG:0.83, SS_UK:0.15, SS_EU:0.05, MIN_ROI:0, MIN_ROI_WIDE:-15, WIDE_GAP:1.25, SELL_UPLIFT:1.08, SELL_HAIRCUT_AMZ90:0.80,
-  NOT_A_DROP:0.08, MOVE_GBP:0.10, MOVE_PCT:0.005, DST:0.02, MISC:0.40,
+  NOT_A_DROP:0.08, MOVE_GBP:0.10, MOVE_PCT:0.005, DST:0.02,
   REF_LOW:0.08, REF_LOW_AT:10, REF_UPLIFT:1.0053, CLOSING:0.50, CLOSING_CATS:['pc & video games','video games'],
   SLOW_SPM:50, SLOW_ROI:15, SLOW_PROFIT:5.00, SPM_BANDS:[300,100,50,30,10],
   DEF_REF:0.15, DEF_FBA:3.50, DEF_KG:0.5, FX_FALLBACK:0.86, FX_TTL_H:6,
@@ -63,7 +63,7 @@ const brNum=kNum;
 function brMedian(a){const s=[...a].sort((x,y)=>x-y),n=s.length;return n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2;}
 function brFees(sale,ref,fba,kg,cat){const referral=sale*(sale<BR.REF_LOW_AT?BR.REF_LOW:ref*(ref<0.10?BR.REF_UPLIFT:1));
   const c=(cat||'').toLowerCase();const closing=BR.CLOSING_CATS.some(x=>c.includes(x))?BR.CLOSING:0;
-  const dst=(referral+fba+closing)*BR.DST;return referral+fba+closing+BR.PREP+BR.INBOUND_KG*kg+dst+BR.MISC;}
+  const dst=(referral+fba+closing)*BR.DST;return referral+fba+closing+BR.PREP_MISC+BR.INBOUND_KG*kg+dst;}
 function brProfit(sale,cost,ref,fba,kg,vat,cat){const Vs=1+(vat==null?BR.VAT:vat);
   const p=sale/Vs-cost/Vs-brFees(sale,ref,fba,kg,cat);return[r2(p),cost?r1(100*p/cost):0];}
 function brBreakeven(cost,ref,fba,kg,cat){let lo=0.01,hi=100000;
