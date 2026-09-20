@@ -1,5 +1,5 @@
 /* BDL Sourcing — boot. Bump BUILD every ship. */
-const BUILD={version:'1.2',date:'2026-09-17',n:98};
+const BUILD={version:'1.2',date:'2026-09-20',n:127};
 const THEME_KEY='sourcing-suite-theme';
 function setTheme(theme){const mode=theme==='dark'?'dark':'light';document.documentElement.dataset.theme=mode;
   $('#themeLabel').textContent=mode==='dark'?'Dark':'Light';
@@ -8,6 +8,7 @@ function setTheme(theme){const mode=theme==='dark'?'dark':'light';document.docum
   try{localStorage.setItem(THEME_KEY,mode);}catch(e){}}
 document.addEventListener('DOMContentLoaded',()=>{
   $('#buildTag').textContent=`v${BUILD.version} · ${BUILD.date} · b${BUILD.n}`;
+  if(typeof authBoot==='function')authBoot().catch(()=>{});   /* b126: take a sign-in link if one just arrived, keep the session fresh */
   setTheme(document.documentElement.dataset.theme);
   $('#themeToggle').addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
   document.querySelectorAll('.pagebtn').forEach(b=>b.addEventListener('click',()=>{

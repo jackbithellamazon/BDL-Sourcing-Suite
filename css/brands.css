@@ -1518,3 +1518,67 @@ body.auditing .aulist{scroll-behavior:auto}
 .aulist .aurow.judged:not(.focus):hover .aulk,.aulist .aurow.judged:not(.focus):hover .aut{opacity:1;color:var(--text)}
 /* the verdict chip is the loudest thing on a finished row — that is the one fact worth reading */
 .aulist .aurow.judged .aupill.big{font-weight:750}
+
+/* b100 — the rival order control, same shape as the ORDER control on a shelf so it reads as the same thing */
+.ausortby{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 4px 0 10px;border-radius:9px;
+  background:var(--ink);border:1px solid var(--line2)}
+.ausortby>span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);color:var(--faint)}
+.ausortby select{border:0;background:none;color:var(--text);font-family:var(--sans);font-size:12.5px;
+  font-weight:600;outline:none;cursor:pointer;padding:0 4px;max-width:210px}
+
+/* b101 — an export that stopped on exactly one Keepa page size */
+.fchip.cut{border-color:rgba(255,178,36,.55);background:rgba(255,178,36,.08)}
+.fchip.cut .r{color:#FFB224;font-weight:700}
+.cutwarn{margin:6px 0 2px;padding:8px 11px;border-radius:10px;border:1px solid rgba(255,178,36,.4);
+  background:rgba(255,178,36,.07);font-size:12.5px;line-height:1.45;color:var(--text)}
+.cutwarn b{color:#FFB224;display:block;margin-bottom:2px}
+
+/* b102 — a sell price someone typed after reading the graph */
+.sellc b.yours{color:#8C95FF}
+.sellc .ysell{display:block;width:84px;margin:4px 0 0 auto;height:24px;padding:0 6px;border-radius:7px;
+  border:1px solid var(--line2);background:var(--ink);color:var(--text);font-family:var(--mono);font-size:12px;text-align:right}
+.sellc .ysell:focus{outline:none;border-color:#8C95FF}
+.sellc .ysell::placeholder{color:var(--faint)}
+
+/* b111: an export that cannot run — red, not amber */
+.cutwarn.err{border-color:rgba(255,92,92,.55);background:rgba(255,92,92,.08)}
+.cutwarn.err b{color:#FF6B6B}
+.emptysum.err{color:var(--text);text-align:left;border:1px solid rgba(255,92,92,.55);background:rgba(255,92,92,.08);border-radius:12px;padding:14px 16px;line-height:1.5}
+.emptysum.err b{color:#FF6B6B;display:block;margin-bottom:4px}
+
+/* b116: the levels under the sell price */
+.lvls{display:flex;flex-wrap:wrap;gap:3px;justify-content:flex-end;margin-top:5px;max-width:190px;margin-left:auto}
+.lv{font-family:var(--mono);font-size:9.5px;line-height:1;padding:4px 6px;border-radius:6px;border:1px solid var(--line2);background:transparent;color:var(--faint);cursor:pointer;white-space:nowrap}
+.lv b{color:var(--text);font-weight:600;margin-left:2px}.lv i{font-style:normal;margin-left:4px;padding:0 3px;border-radius:4px;background:rgba(255,255,255,.06);color:var(--faint)}
+.lv:hover{border-color:var(--iris);color:var(--text)}.lv.on{border-color:var(--iris);background:rgba(124,120,255,.14);color:var(--text)}
+.lvlearn{flex-basis:100%;text-align:right;font-size:9.5px;color:var(--iris);margin-top:1px}
+.lvstale{flex-basis:100%;text-align:right;font-size:9.5px;color:var(--amber);margin-top:1px}
+
+/* b117: the levels stay tucked away until you are on the row, so the table keeps its rhythm */
+.ltbl tr .lvls{display:none}
+.ltbl tr:hover .lvls,.ltbl tr.lvopen .lvls,.ltbl tr:focus-within .lvls{display:flex}
+.ltbl td.sellc{min-width:150px}
+
+/* b123: the active row, the judged pill, the option-check bar */
+.ltbl tbody tr.active td{background:rgba(124,120,255,.07)}
+.ltbl tbody tr.active td:first-child{box-shadow:inset 3px 0 0 var(--iris)}
+.judged{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--faint);display:inline-flex;align-items:center;gap:8px}
+.judged b{color:var(--text)}.judged i{font-style:normal;padding:2px 7px;border-radius:6px;border:1px solid var(--line2);color:var(--faint)}
+.optbar{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:9px 12px;margin:0 0 10px;border-radius:10px;border:1px solid rgba(255,178,36,.35);background:rgba(255,178,36,.06);font-size:12.5px;color:var(--text)}
+.optbar b{color:#FFB224}
+
+/* b126: signing in */
+.wgmail{display:flex;gap:8px;margin:14px 0 6px}
+.wgmail input{flex:1;height:38px;border-radius:9px;border:1px solid var(--line2);background:var(--bg2);color:var(--text);padding:0 12px;font-size:13px}
+.wgmail input:focus{outline:none;border-color:var(--iris)}
+.wgmsg{min-height:16px;font-size:11.5px;color:var(--faint);line-height:1.5}
+.wgmsg.good{color:var(--jade)}.wgmsg.bad{color:#FF6B6B}
+.wgor{margin:14px 0 8px;font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em}
+.authpill{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--line2);background:var(--bg2);color:var(--text);font-size:12px;cursor:pointer}
+.authpill i{width:6px;height:6px;border-radius:50%;background:var(--jade)}
+.authpill:hover{border-color:var(--iris)}
+
+/* b127: looking at a past run */
+.pastbar{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:9px 12px;margin:0 0 10px;border-radius:10px;border:1px solid var(--line2);background:var(--bg2);font-size:12.5px;color:var(--faint)}
+.pastbar b{color:var(--text)}
+.rchip{cursor:pointer}

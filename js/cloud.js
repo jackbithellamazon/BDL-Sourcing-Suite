@@ -19,7 +19,13 @@ async function cloudGetAll(table,query){const out=[];let from=0;const page=1000;
     if(!r.ok){const t=await r.text();const e=new Error('GET '+table+' → '+r.status+' '+t.slice(0,160));e.status=r.status;e.body=t;throw e;}
     const rows=await r.json();out.push(...rows);if(rows.length<page)break;from+=page;}
   return out;}
-function missingTables(e){return e&&(e.status===404||/PGRST205|does not exist|schema cache/i.test(e.body||''));}
+/* b106. "Could not find the 'asked' column of 'src_products' in the schema cache" is a missing COLUMN (PGRST204,
+   HTTP 400) — the table is there. Matching 'schema cache' alone read that as a missing TABLE, switched the whole
+   audit sync off, and left every verdict queued behind a row that could never send. Only a missing table
+   (404 / PGRST205 / relation does not exist) counts now. */
+function missingTables(e){if(!e)return false;const b=e.body||'';
+  if(/PGRST204|column/i.test(b)&&!/PGRST205|relation .* does not exist/i.test(b))return false;
+  return e.status===404||/PGRST205|does not exist|schema cache/i.test(b);}
 /* ---- outbox ---- */
 function outbox(){return lsGet(OUTBOX_KEY,[]);}
 /* op 'upsert' → payload = rows[] · op 'delete' → payload = {col, vals[]} */

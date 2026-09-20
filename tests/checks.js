@@ -31,9 +31,9 @@ window.SourcingChecks=(function(){
       const SC=describeExport(parseCSV(tabC.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n')));
       const C=rule1Compute({UK:SC,viewer:SC,DE:null,FR:null,IT:null,ES:null},'Lenovo',0.86,null);
       const tabl=C.out.find(o=>o.ASIN==='B0GT2CJRP6'),mon=C.out.find(o=>o.ASIN==='B0FXXRHY49'),noc=C.out.find(o=>o.ASIN==='B0NOCAP000');
-      ok('R1 cap · Idea Tab sells at the Buy Box high',tabl?[tabl['Sell £ used'],tabl['Sell used'],tabl['Sell high £']]:null,[509.99,'Buy Box 90d +8%, capped at the Buy Box high',509.99]);
+      ok('R1 cap · Idea Tab sells at the Buy Box high',tabl?[tabl['Sell £ used'],tabl['Sell used'],tabl['Sell high £']]:null,[509.99,'Amazon owns the Buy Box · Buy Box 90d +8%, capped at the Buy Box high',509.99]);
       ok('R1 cap · monitor: sell £98.61 stands, best case capped at £109',mon?[mon['Sell £ used'],mon['Sell high £'],mon['Sell range']]:null,[98.61,109,'£91.31-£109.00']);
-      ok('R1 cap · untouched when under the high',noc?[noc['Sell £ used'],noc['Sell used']]:null,[86.4,'Buy Box 90d +8%']);
+      ok('R1 cap · untouched when under the high',noc?[noc['Sell £ used'],noc['Sell used']]:null,[86.4,'Amazon owns the Buy Box · Buy Box 90d +8%']);
       ok('R1 cap · column seen / rows capped',[C.st.bbHiCol,C.st.capped],[true,1]);
       ok('R1 cap · Logitech export has no column',L.st.bbHiCol,false);
       const M12r=await csv('mera-2026-09-12b.csv');const MR=rule1Compute({UK:M12r,viewer:M12r,DE:null,FR:null,IT:null,ES:null},'Mera',0.86,null);
@@ -207,9 +207,10 @@ window.SourcingChecks=(function(){
       })(),['#FF8A3D',false,'#B3C0D6']);
       /* b75: the two Mera filters are named for what they actually catch. The migration must rename a saved row
          that still holds the old name, and must NOT touch one Jack has renamed himself. */
-      ok('Sources · the Mera filters are named electricals, not high-ticket',
+      /* b126 (Jack: "improve names, electricals + look like the same for me"): named for what each one catches */
+      ok('Sources · the two Mera filters cannot be mistaken for each other',
         ['mera-highticket','mera-150plus'].map(k=>(SRC_SEED.find(z=>z.key===k)||{}).name),
-        ['Mera · electricals £60+','Mera · electricals £150+']);
+        ['Mera · everyday £60–£150','Mera · big-ticket £150+']);
       ok('Sources · the rename skips a filter Jack named himself',(()=>{
         const rows=[{key:'mera-highticket',name:'Mera high-ticket',migV:6},
                     {key:'mera-150plus',name:'Mera BIG STUFF',migV:6}];
@@ -217,7 +218,7 @@ window.SourcingChecks=(function(){
         rows.forEach(x=>{const sd=SRC_SEED.find(z=>z.key===x.key);
           if(sd&&x.name===OLD[x.key])x.name=sd.name;x.migV=7;});
         return rows.map(r=>r.name+'|'+r.migV);
-      })(),['Mera · electricals £60+|7','Mera BIG STUFF|7']);
+      })(),['Mera · everyday £60–£150|7','Mera BIG STUFF|7']);
       /* b76 (Jack, 17 Sep): 100 EU alert ASINs with no Finder exports behind them. The UK Viewer is dropped as
          normal and the EU BUY side is bought from Keepa — 1 token per ASIN per market — then handed to Rule 1 in
          the exact shape a dropped CSV makes, so the frozen rule is never touched. */
@@ -360,15 +361,21 @@ window.SourcingChecks=(function(){
       /* b92 (Jack: "isn't smooth at all - very very jumpy"). Judging changes a row's height, the list is
          re-rendered whole, and everything below jumped. The row you are ON is now pinned: measure where it
          sits before the render, scroll by the difference after. And the picker only ever opens on that row. */
-      ok('Audit · the row you are on is pinned across a re-render',(()=>{
-        const A={top:null,key:null};
-        const render=(before,after,key)=>{A.top=before;
-          const drift=after-A.top; const moved=(A.key===key&&Math.abs(drift)>1)?drift:0;
-          A.key=key; return moved;};
-        return [render(200,264,'s|3'),      /* first render on this row: nothing to correct against yet */
-                render(200,264,'s|3'),      /* same row grew 64px: scroll by exactly 64 so it does not move */
-                render(200,200,'s|3')];     /* nothing moved: no scroll at all */
-      })(),[0,64,0]);
+      /* b99: the correction is armed by a press, fires once, then disarms. A render nobody asked for -
+         the Keepa graph landing in the panel, say - must never move the page, which is what jittered. */
+      ok('Audit · the page is pinned by a press, once, and not by anything else',(()=>{
+        const A={top:null,want:false};
+        const pin=(top)=>{A.top=top;A.want=true;};
+        const render=(after)=>{if(!(A.want&&A.top!=null))return 0;
+          A.want=false;const drift=after-A.top;A.top=null;
+          return (Math.abs(drift)>1&&Math.abs(drift)<600)?drift:0;};
+        pin(200);
+        const a=render(264);        /* the press: row grew 64px, scroll 64 so it stays put */
+        const b=render(320);        /* graph lands after it: disarmed, so nothing moves */
+        pin(200);
+        const c=render(1400);       /* a wild jump is not a layout shift, leave it alone */
+        return [a,b,c];
+      })(),[64,0,0]);
       ok('Audit · the reason picker belongs to the focused row alone',(()=>{
         const shows=(i,focus)=>i===focus;
         return [shows(1,1),shows(0,1),shows(5,1)];})(),[true,false,false]);
@@ -469,11 +476,188 @@ window.SourcingChecks=(function(){
         const mark=(asins)=>{v.landed={a:asins[0],at:Date.now()};};
         mark(['B0TEST00060','B0TEST00061']);
         return [v.landed.a,typeof v.landed.a];})(),['B0TEST00060','string']);
+      /* b100 (Jack: "add a sort by"). 39 rivals had one fixed order. Each option answers a different
+         question, so each is tested against the same set of rivals. */
+      ok('Audits · the rival list can be asked seven different questions',(()=>{
+        const mk=(name,all,sell,had,todo,la)=>({sh:{name},c:{all,sell,had,todo},la});
+        const rows=[mk('Alpha',100,10,2,90,'2026-09-16'),
+                    mk('Bravo',200,60,9,20,''),           /* never audited */
+                    mk('Charlie',50,5,1,5,'2026-09-01')];
+        const order=k=>{auView.rsort=k;return auRankRivals(rows.slice()).map(r=>r.sh.name).join(',');};
+        return [order('overlap'),order('leads'),order('todo'),order('most'),order('size'),order('done'),order('name')];
+      })(),['Bravo,Alpha,Charlie','Bravo,Alpha,Charlie','Charlie,Bravo,Alpha','Alpha,Bravo,Charlie',
+            'Bravo,Alpha,Charlie','Bravo,Charlie,Alpha','Alpha,Bravo,Charlie']);
+      ok('Audits · an order it does not know falls back to the useful one',(()=>{
+        auView.rsort='nonsense';const a=auRsort();auView.rsort='leads';const b=auRsort();
+        auView.rsort=null;return [a,b,auRsort()];})(),['overlap','leads','overlap']);
+      /* b101: Keepa exports only the page on screen. Two of his ~150 exports stopped on exactly a page size
+         (a mixed filter at 100, the SanDisk/Seagate brand run at 50). Real ones never land on those numbers
+         by chance often enough to matter; these did, and nobody could tell. */
+      ok('Import · an export that stops on a Keepa page size is flagged',
+        [20,50,99,100,101,250,500,1000,2520,2965].map(onePage),
+        [true,true,false,true,false,true,true,true,false,false]);
+      /* b102: Rule 1 rows now take a typed sell price, re-priced through Rule 1's OWN fee maths. Measured on
+         the G321 White from his 18 Sep Logitech run: France £29.74, landed £31.00. Rule 1 sold it at £47.51
+         (7.2% ROI); Jack reads £51.50 off the graph. The formula is not touched. */
+      ok('Rule 1 · a sell price typed off the graph re-works the profit with the same fees',(()=>{
+        const landed=31.00,ref=0.15,fba=3.19,kg=0.4,cat='Computers & Accessories';
+        const rule=brProfit(47.51,landed,ref,fba,kg,null,cat), yours=brProfit(51.50,landed,ref,fba,kg,null,cat);
+        return [rule[0],rule[1],yours[0],yours[1],brBreakeven(landed,ref,fba,kg,cat)];
+      })(),[2.24,7.2,4.95,16,44.22]);
+      /* b103 (Jack, 18 Sep): "under 50spm need a minimum of £3 profit per unit or 20% roi" - literally, £3 OR 20%
+         (was £5 OR 15%). A stricter "£3 AND 10%" was tried and rejected: it removed £90-£153/unit high-ticket leads.
+         On his 18 Sep Logitech run the literal rule brings back one lead - the G321 Black - and loses none. */
+      ok('Rule 1 · a slow seller needs £3 a unit or 20% ROI',[BR.SLOW_SPM,BR.SLOW_PROFIT,BR.SLOW_ROI],[50,3,20]);
+      ok('Rule 1 · the G321 Black clears the slow-seller bar at the rule\u2019s own price',(()=>{
+        const spm=49,roi=10.3,profit=3.22;
+        return !(spm<BR.SLOW_SPM&&roi<BR.SLOW_ROI&&profit<BR.SLOW_PROFIT);})(),true);
+      /* b103: "all 3 rules need to be super interlinkable". Rule 1 had its own seven-word VAT list and never
+         asked Rule 3, so the same coffee could be taxed differently on a brand run and on Suz's filter. */
+      ok('Rule 1 · VAT comes from Rule 3, the same engine as everywhere else',
+        /vatFor\(r,null\)/.test(rule1Compute.toString()),true);
+      ok('Rule 3 · the answers Rule 1 now gets are the refined ones',
+        ['Lavazza Qualita Oro Coffee Beans 1kg','De\'Longhi Dedica Espresso Coffee Machine','Twinings English Breakfast 80 Tea Bags',
+         'Coffee Machine Descaler Tablets'].map(t=>Math.round(vatFor({Title:t},null).rate*100)),[0,20,0,20]);
+      /* b104: a variation with no figure names the sibling that actually sells - measured on the real ASUS
+         Chromebook 15 family, 18 Sep: the lead (Misty Green 128GB) has none, Fabric Blue 64GB sells 1,000. */
+      ok('Variations · a lead with no figure names the sibling that really sells',(()=>{
+        const by={
+          B0GNSHN79M:{'Monthly Sales Trends: Bought in past month':'','Variation Attributes':'Color: Misty Green; Size: 4GB RAM + 128GB eMMC;'},
+          B0FL2CV8N2:{'Monthly Sales Trends: Bought in past month':'1000','Variation Attributes':'Color: Fabric Blue; Size: 4GB RAM + 64GB eMMC;'},
+          B09C26SKX1:{'Monthly Sales Trends: Bought in past month':'100','Variation Attributes':'Color: Silver; Size: 4GB RAM + 64GB eMMC;'}};
+        const a='B0GNSHN79M',sibs=Object.keys(by);
+        const seller=sibs.map(x=>({x,b:kNum(by[x]['Monthly Sales Trends: Bought in past month'])||0}))
+          .filter(z=>z.x!==a&&z.b>=50).sort((p,q)=>q.b-p.b)[0];
+        return [seller&&seller.x,seller&&seller.b];})(),['B0FL2CV8N2',1000]);
+      /* b105 (Jack: "it needs to see if it actually sells - this should check the reviews"). With no confirmed
+         figure, an option's demand is the family's drops x its share of the family's reviews. */
+      ok('Variations · an option is judged on its own share of the family, not the family',(()=>{
+        const rows=[
+          {ASIN:'B0FL7NNGRG','Variation ASINs':'B0FL7NNGRG,B0FL7QLH89','Reviews: Rating Count':'398','Reviews: Review Count - Format Specific':'130','Listed since':'2025/08/01'},
+          {ASIN:'B0FL7QLH89','Variation ASINs':'B0FL7NNGRG,B0FL7QLH89','Reviews: Rating Count':'398','Reviews: Review Count - Format Specific':'54','Listed since':'2025/08/01'}];
+        stampShares(rows);
+        const spm=(r,drops,bought)=>bought||(r.__share!=null&&!r.__new?drops*r.__share:drops);
+        return [Math.round(rows[0].__share*100),Math.round(spm(rows[0],49,0)),Math.round(spm(rows[1],53,300))];
+      })(),[71,35,300]);
+      ok('Variations · a new option keeps the family\u2019s drops (its reviews have not caught up)',(()=>{
+        const recent=new Date(Date.now()-40*864e5).toISOString().slice(0,10).replace(/-/g,'/');
+        const rows=[{ASIN:'A1','Variation ASINs':'A1,A2','Reviews: Rating Count':'10','Reviews: Review Count - Format Specific':'1','Listed since':recent},
+                    {ASIN:'A2','Variation ASINs':'A1,A2','Reviews: Rating Count':'10','Reviews: Review Count - Format Specific':'99','Listed since':'2022/01/01'}];
+        stampShares(rows);return [!!rows[0].__new,!!rows[1].__new];})(),[true,false]);
+      /* b106 — the amber "Audit tables not created yet" banner, with the tables sitting right there. Product rows
+         carried two columns src_products does not have; Supabase said "Could not find the 'asked' column ... in the
+         schema cache" (HTTP 400, PGRST204); the app read "schema cache" as MISSING TABLES, stopped the sync, and
+         every verdict queued behind that row stayed on his machine. Both ends are pinned here. */
+      ok('Sync · a missing column is not a missing table',[
+        missingTables({status:400,body:'{"code":"PGRST204","message":"Could not find the \'asked\' column of \'src_products\' in the schema cache"}'}),
+        missingTables({status:404,body:'{"code":"PGRST205","message":"Could not find the table \'public.src_audit_verdicts\' in the schema cache"}'}),
+        missingTables({status:404,body:''}),
+        missingTables({status:500,body:'boom'})],[false,true,true,false]);
+      ok('Sync · each audit table is sent only the columns it was built with',(()=>{
+        const p=audShape('src_products',[{asin:'B0TEST00070',title:'x',price:9.99,offers:7,asked:1,fba:null,source:'keepa'}])[0];
+        const v=audShape('src_audit_verdicts',[{id:'a|b|c',asin:'B0TEST00070',verdict:'discord',reason:'PS',extra:'nope'}])[0];
+        return [Object.keys(p).sort().join(','),p.fba,Object.keys(v).sort().join(',')];
+      })(),['asin,fba,price,source,title',7,'asin,id,reason,verdict']);
+      /* b107 (Jack: "var from reviews should be on all of them"). Rule 2 gets the same demand as Rule 1 since b105:
+         no confirmed figure = family drops x this option's review share; confirmed beats everything. */
+      ok('Rule 2 · a variation is judged on its own share of the reviews, same as Rule 1',
+        /r\.__share/.test(rule2Compute.toString())&&/r\.__share/.test(rule1Compute.toString()),true);
+      /* b108 (Jack: "if it's had monthly sales it should stay"). The Shark Matrix Plus (B0G451ZTHV) showed a confirmed
+         50-100 a month from May to 28 Aug 2026, then a blank - Amazon's number lapsed, the product did not stop selling. */
+      ok('Demand · a figure Amazon confirmed recently still counts when today\u2019s is blank',(()=>{
+        const iso=d=>new Date(Date.now()-d*864e5).toISOString().slice(0,10).replace(/-/g,'/');
+        const base={'Monthly Sales Trends: Bought in past month':'','Monthly Sales Trends: Monthly Sold (Last Known)':'50'};
+        const recent=confirmedSales(Object.assign({},base,{'Monthly Sales Trends: Monthly Sold Date (Last Known)':iso(21)}));
+        const stale=confirmedSales(Object.assign({},base,{'Monthly Sales Trends: Monthly Sold Date (Last Known)':iso(200)}));
+        const today=confirmedSales({'Monthly Sales Trends: Bought in past month':'300'});
+        const none=confirmedSales({'Monthly Sales Trends: Bought in past month':''});
+        return [recent&&recent.n,recent&&recent.lapsed,stale,today&&today.n,today&&today.lapsed,none];
+      })(),[50,true,null,300,false,null]);
+      /* b109 (Jack: "has to have a confirmed spm in the last 365 days if the review % puts it under 10 spm").
+         The share is an estimate; one confirmed figure in the past year is proof, and proof wins. Keeps only. */
+      ok('Demand · a confirmed figure in the last year overrules a low review share',(()=>{
+        const iso=d=>new Date(Date.now()-d*864e5).toISOString().slice(0,10).replace(/-/g,'/');
+        const row=d=>({'Monthly Sales Trends: Monthly Sold (Last Known)':'50','Monthly Sales Trends: Monthly Sold Date (Last Known)':iso(d)});
+        const keep=(share,drops,r)=>{const spm=drops*share;
+          const yearOk=spm<10?confirmedWithin(r,CONFIRMED_RESCUE_DAYS):null;return spm>=10||!!yearOk;};
+        return [keep(0.10,49,row(200)),   /* reviews say 5/mo, confirmed 200 days ago: kept */
+                keep(0.10,49,row(400)),   /* confirmed over a year ago: out */
+                keep(0.10,49,{}),         /* never confirmed: out */
+                keep(0.50,49,{})];        /* reviews already say 25/mo: kept on its own */
+      })(),[true,false,false,true]);
+      ok('Demand · the rescue only applies where the review share caused the drop',
+        [/share!=null&&spm<10/.test(rule1Compute.toString()),/share!=null&&spm<R2\.MIN_SPM/.test(rule2Compute.toString())],[true,true]);
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */
       ok('Blacklist · Jack-approved brand bans seeded',BB_SEED.map(([k])=>k),['microsoft','staub','xiaomi']);
       /* b58: the Lead history view builds from whatever lead states this browser holds, without throwing */
+      /* b110: the export says what it is missing; the rank month rolls on open; the API route is parked but its translator is real */
+      ok('Export · lists the ladder columns a file is missing',missingLadderCols([{ASIN:'B0',Title:'x','Variation Count':'2','Reviews: Rating Count':'10'}]).length,4);
+      ok('Export · a full file is missing nothing',missingLadderCols([Object.fromEntries(LADDER_COLS.map(c=>[c,'1']))]),[]);
+      ok('Sources · last full month, on the 1st and mid-month',[lastFullMonth(new Date(2026,0,1)),lastFullMonth(new Date(2026,8,18))],['202512','202608']);
+      {const suz=SRC_SEED.find(z=>z.key==='suz-deep-drops');const opened=rollRankMonth(suz.link,new Date(2026,8,18));
+        ok('Sources · Suz A2A opens on Aug 2026, not Sep 2025',[suz.link.includes('%22202509%22'),opened.includes('%22202608%22'),opened.includes('202509')],[true,true,false]);
+        ok('Sources · finderLink hands out the rolled link',finderLink(suz)===rollRankMonth(suz.link),true);
+        const t=apiSelection(suz);
+        ok('API · Suz A2A translates to the Product Finder API',[t.selection.avg90_AMAZON_gte,t.selection.avg90_AMAZON_lte,t.selection.deltaPercent90_AMAZON_gte,t.selection.current_AMAZON_gte,t.selection.totalOfferCount_gte,t.selection.monthlySold_gte,t.selection.productType,t.selection.categories_exclude.length,t.selection.perPage],[1000,4000,27,400,3,100,[0],2,50]);
+        ok('API · what the API cannot do comes back as after-filters',[t.after.brandNot.includes('amazon'),t.after.rootNot.length,t.skipped],[true,6,['rank month (website only)']]);
+        ok('API · after-filters drop a blocked brand and keep the rest',[apiKeep({brand:'Amazon',rootCategory:1},t.after),apiKeep({brand:'Tefal',rootCategory:1},t.after),apiKeep({brand:'Tefal',rootCategory:t.after.rootNot[0]},t.after)],[false,true,false]);
+        ok('API · parked',APIRUN.on,false);}
+      /* b111: a file without the ladder columns stops the run with a message that names them */
+      ok('Export · missing columns block the run and are named',(m=>[!!m,/Export error/.test(m),/Variation ASINs/.test(m),/does not start/.test(m)])(ladderBlock({name:'x.csv',rows:[],missing:['Variation ASINs','Variation Count']})),[true,true,true,true]);
+      ok('Export · a full file, or one built from the API, never blocks',[ladderBlock({name:'x.csv',missing:[]}),ladderBlock({name:'api',fromKeepa:true,missing:['Variation ASINs']}),ladderBlock(null)],[null,null,null]);
+      /* b112: one discount list for both rules */
+      ok('Discounts · Rule 1 and Rule 2 read the same list (Tefal full-price-only = 0 on a match, Hoover Direct 15%)',[discBrandPair('Tefal',100),discBrandPair('Hoover',100),brPmScenarios('Hoover',100,'Home & Kitchen').some(x=>x[0]==='Hoover Direct'&&x[1]===15)],[null,['Hoover Direct',15],true]);
+      ok('Discounts · matchers by category (computers get Marks Electrical once confirmed, grocery gets Boots, not Currys)',[discMatchersFor('Computers & Accessories',500,['Marks Electrical']).some(x=>/marks/i.test(x[0])),discMatchersFor('Grocery',20).some(x=>/currys/i.test(x[0])),discMatchersFor('Grocery',20).some(x=>/boots/i.test(x[0]))],[true,false,true]);
+      /* b113: unconfirmed retailers are assumed at 5%, confirmed ones at their rate; Business entries are not codes; Dell is on the list */
+      ok('Discounts · Marks Electrical 8% is assumed at Currys / Argos 5% until a VA confirms it',[discMatchersFor('Computers & Accessories',500),discMatchersFor('Computers & Accessories',500,['Marks Electrical']).some(x=>x[0]==='Marks Electrical'&&x[1]===8)],[[['Currys / Argos (assumed)',5]],true]);
+      ok('Discounts · Gtech (Business tiers) is not a price-match scenario; Dell is listed with no rate',[discBrandPair('Gtech',250),r2brate('Gtech',250),!!discForBrand('Dell'),discBrandPair('Dell',250)],[null,null,true,null]);
+      /* b115: one sell price + the £100 bar, both switched off; scored against Jack's 23 graph calls of 18-19 Sep */
+      {const LV=await csv('logitech-2026-09-18-viewer.csv'),SZ=await csv('suz-a2a-2026-09-19.csv'),ME=await csv('mera-electricals-2026-09-19.csv'),RD=await csv('random-2026-09-19.csv'),LP=await csv('laptops-2026-09-19.csv');
+        const SETS={logiV:LV.rows,suz:SZ.rows,meraE:ME.rows,mera12:M12r.rows,rand:RD.rows,lap:LP.rows};
+        const CALLS=[['logiV','B07W6H9L5G',253],['logiV','B0D3HJ7T18',108],['logiV','B0GGC3F6NS',67],['logiV','B07W6JP28L',88],['suz','B0D5CZ1XGQ',29],['suz','B07CGPZ3ZQ',40],['suz','B0GR4VR1C9',15.5],['suz','B0DWS969V4',14.5],['suz','B0DN93PF5Z',39],['suz','B00MW79OJC',21],['suz','B00014WXQO',31],['suz','B0BRK74S9Z',22.5],['meraE','B08F7V27DX',487],['meraE','B0DGXNP9ZH',530],['meraE','B09X7MPX8L',230],['meraE','B0CVXXDFLQ',600],['mera12','B07WQH7TJ4',265],['mera12','B08CKWG1L9',202.5],['mera12','B0D8QP7NWR',130],['mera12','B0CJV7P1C2',155.99],['mera12','B0H4TMTMG8',169.5],['mera12','B0CGXQG4M4',249.99],['mera12','B0DNR78C5J',82],
+          /* 20 Sep, the random set: Instax £122, Skullcandy £25, Legion £130, Woofbrush £37, H115i £75 minimum, Superlight £92, Odyssey £375 */
+          ['rand','B0C5JPYF86',122],['rand','B0CQKMWNHQ',25],['rand','B0FXXZDDMJ',130],['rand','B0H263L5TK',37],['rand','B0C6Q25HTR',75],['rand','B0F1YT51FQ',92],['rand','B0DP2ZSB33',375],
+          /* 20 Sep: G PRO X headset £115 (Amazon holds the box 32%), GilletteLabs £29 (under £60, box out of stock 29%, sellers at £28) */
+          ['logiV','B07W5JKB8Z',115],['suz','B0DY7SV4VC',29],
+          /* 20 Sep, laptops: Book3 Pro £726, Chromebook 14 £260, Vivobook 400/mo £400, Chromebook Plus 514 £400, CX1505 £305, Chromebook Plus 516 £399 */
+          ['lap','B0BQRQTV46',726],['lap','B0GNST9HPY',260],['lap','B0GTWMRV87',400],['lap','B0B8H4B2QJ',400],['lap','B0F24WGB75',305],['lap','B0B8H5ZF2N',399]];
+        let within=0,n=0;CALLS.forEach(([set,a,jack])=>{const r=SETS[set].find(x=>(x.ASIN||'').trim()===a);if(!r)return;n++;const P=sellPick(r);if(P&&Math.abs(P.sell-jack)/jack<=0.10)within++;});
+        ok('One sell · within 10% of Jack on 37 of his 38 graph calls',[n,within],[38,37]);
+        const g305=sellPick(SZ.rows.find(x=>x.ASIN.trim()==='B07CGPZ3ZQ')),g923=sellPick(LV.rows.find(x=>x.ASIN.trim()==='B07W6H9L5G')),siem=sellPick(ME.rows.find(x=>x.ASIN.trim()==='B0CVXXDFLQ')),tom=sellPick(SZ.rows.find(x=>x.ASIN.trim()==='B0D5CZ1XGQ'));
+        ok('One sell · the four shapes pick the right level',[g305.shape,g305.sell,g923.shape,g923.sell,siem.shape,siem.sell,tom.shape,tom.sell],['big-pack',39.71,'amazon-owns',269.86,'amazon-dips',560.71,'small-pack',26.72]);
+        ok('One sell + £100 bar · both switched ON (b117), the b114 swap stays off',[UNIFIED_SELL.on,BAR100.on,BR.UNIFIED_SELL_60],[true,true,false]);
+        UNIFIED_SELL.on=false;BAR100.on=false;const MEa=rule2Compute(ME.rows,{},{});UNIFIED_SELL.on=true;BAR100.on=true;const MEb=rule2Compute(ME.rows,{},{});
+        ok('One sell + £100 bar · Mera electricals 19 Sep: 272 -> 237 with both on',[MEa.out.length,MEb.out.length],[272,237]);}
+      /* b116: the levels on the row, the stale-FBA note, and what the app learns from Jack's picks */
+      {const LP=await csv('laptops-2026-09-19.csv'),SZ=await csv('suz-a2a-2026-09-19.csv');const dell=LP.rows.find(x=>x.ASIN.trim()==='B0GK33PJTK'),g305=SZ.rows.find(x=>x.ASIN.trim()==='B07CGPZ3ZQ');
+        ok('Levels · six levels with seller counts on the G305',sellLevels(g305).map(x=>[x.key,x.value,x.n]),[['bb90',33.2,null],['bb180',32.03,null],['fba30',39.71,10],['fba90',43.11,10],['fbm90',42.05,15],['hi',96.24,null]]);
+        ok('Levels · the Dell 15 FBA average is flagged stale, the G305 is not',[staleFba(dell),staleFba(g305)],[true,false]);
+        const facts={a:{lvl:'fba30',shape:'big-pack',who:'Jack'},b:{lvl:'fba30',shape:'big-pack',who:'Jack'},c:{lvl:'fba30',shape:'big-pack',who:'Jack'},d:{lvl:'fba30',shape:'big-pack',who:'Jack'},e:{lvl:'bb90',shape:'big-pack',who:'Jack'},f:{lvl:'bb90',shape:'amazon-owns',who:'Jack'},g:{lvl:'bb90',shape:'big-pack',who:'Suz'},h:{lvl:'bb90',shape:'big-pack',who:'Mera'}};
+        ok('Levels · learns a shape only after 5 of Jack\'s picks at 70% (the VAs\' two taps do not count)',[lvlStats(facts,'big-pack').n,lvlStats(facts,'big-pack').top.lvl,Object.keys(learnedLevels(facts))],[5,'fba30',['big-pack']]);
+        UNIFIED_SELL.learned=learnedLevels(facts);const P=sellPick(g305);UNIFIED_SELL.learned=null;
+        ok('Levels · a learned level becomes the pick for that shape',[P.learned,P.sell,P.shape],[true,39.71,'big-pack']);}
+      /* b119: the velocity bar, from Jack's six calls on 20 Sep */
+      ok('Velocity bar · CanesMeno / Chicnutrix / Moleskine show, Epson / Nutriburst / Perfectil do not',[passesVelocity(1000,9.3,0.66),passesVelocity(300,7.2,0.98),passesVelocity(100,9.4,1.12),passesVelocity(100,8.1,2.25),passesVelocity(100,7.4,0.47),passesVelocity(50,8.8,1.53)],[true,true,true,false,false,false]);
+      ok('Velocity bar · under 50/mo it is the b103 slow-seller rule',[velocityBar(49),passesVelocity(49,10.3,3.22),passesVelocity(49,19,2.9)],[{min:0,roi:20,profit:3},true,false]);
+      ok('Velocity bar · slides with pace: 200/mo needs 7.5% or £1, 150/mo 8.3% or £2, 1000/mo 6% or £1',[velocityBar(200),velocityBar(150),velocityBar(1000),passesVelocity(200,5,0.95),passesVelocity(200,8,0.5)],[{min:200,roi:7.5,profit:1},{min:100,roi:8.3,profit:2},{min:300,roi:6,profit:1},false,true]);
+      /* b122: a variation whose own share is unknown is not handed the family's drops */
+      {const LP=await csv('laptops-2026-09-19.csv'),ME=await csv('mera-electricals-2026-09-19.csv');stampShares(LP.rows);stampShares(ME.rows);
+        const spin=LP.rows.find(x=>x.ASIN.trim()==='B0BTCNN3TS'),cb=LP.rows.find(x=>x.ASIN.trim()==='B0GNST9HPY');
+        ok('Share unknown · the 3-option Acer Spin with no reviews of its own is unknown, the confirmed Chromebook 14 is not',[shareUnknown(spin),shareUnknown(cb)],[true,false]);
+        const b=rule2Compute(LP.rows,{},{});
+        ok('Share unknown · laptops 19 Sep: 50 leads, 21 of them on the family drops with the share unknown and flagged (b123: under 50 confirmed we use Keepa drops)',[b.out.length,b.st.unknown,b.unknown.length,b.all.filter(o=>o.chips.some(c=>/OWN SHARE UNKNOWN/.test(c[0]))).length>0],[50,21,21,true]);
+        const ck={n:60,last:null,at:Date.now()};optionStamp(spin,ck);
+        ok('Share unknown · a confirmed figure from Keepa clears it',[shareUnknown(spin),spin['Monthly Sales Trends: Bought in past month']],[false,'60']);
+        ok('Share unknown · Keepa history turns into the Last Known columns',optionFromKeepa({monthlySold:0,monthlySoldHistory:[7263000,50,7300000,0]}).last,{n:50,date:'2024/10/22'});}
+      /* b126: brand runs belong to nobody until Jack hands them out, and signing in names you */
+      ok('Sources · every brand run is unassigned in a fresh list',[...new Set(SRC_SEED.filter(s=>s.type==='brand').map(s=>s.owner||'(none)'))],['(none)']);
+      ok('Sources · unassigned is an owner you can pick, and it is not VAs',[OWNER_OPTS,NO_OWNER!=='VAs'],[['Jack','Mera','Suz','VAs','—'],true]);
+      ok('Sign in · a name is read from the address, and Jack is known',[authNameFor('jackbithellamazon@gmail.com'),authNameFor('suz@bdl.co.uk'),authNameFor('mera.k@bdl.co.uk'),authNameFor('a@b.com',{name:'Given Name'})],['Jack','Suz','Mera','Given Name']);
+      ok('Sign in · no session means the name picker still runs everything',[authSession(),authedName(),authUser()],[null,'',null]);
+      /* b127: a past run shows what it recorded, and never prints NaN for a figure it never had */
+      ok('Past runs · a missing count reads as a dash, not NaN',[numOrDash(35),numOrDash('—'),numOrDash(undefined),numOrDash(0)],['<b>35</b>','<b>—</b>','<b>—</b>','<b>0</b>']);
       ok('History · builds from stored leads',typeof hsRows==='function'&&Array.isArray(hsRows())&&Array.isArray(hsFiltered()),true);
       /* b59: Rule 3 keyword fix — the drink's form wins over incidental words (tea & coffee export 15 Sep: 14 of 84 rows went 20%) */
       ok('R3 VAT · jar / caddy / biscuit / "espresso machine" in a coffee title stay 0%',[
@@ -494,15 +678,21 @@ window.SourcingChecks=(function(){
      Mera 11 Sep under Rule 2 v2 + the Settings discount list (Acer full-price-only → 5% on sale): 525 rows → 366 qualify; Siemens sells at £596 (was £698 under v1's lone-FBA hole).
      Mera 12 Sep (extra columns): 376 qualify (390 before the FBM-only fix), Vax £176.64 vs Jack's £180, 139 with no 3P history. */
   const EXPECT=window.SOURCING_EXPECT||{
-    logitech:{demand:241,leads:88,first:'B07MTXLFXV'},
-    asus:{demand:114,leads:50,mb:[80.04,89.3]},
+    /* b103: Jack's slow-seller bar moved from £5 OR 15% to £3 OR 20%. Only adds: +8 Logitech, +5 ASUS, +9 Mera, nothing removed. */
+    /* b112/b113: one discount list; unconfirmed retailers assumed at 5%, so the K950 (Marks Electrical 8%) stays out */
+    /* b117 (Jack, 20 Sep: "just improve the rules"): one sell + the £100 bar switched ON. Logitech 96 -> 86, ASUS 55 -> 34 (20 of the 21 under the bar at their best), Mera UK-only 310 -> 266 */
+    /* b119 (Jack, 20 Sep: "the faster the spm the more I am happy with a low profit"): the velocity bar on both rules, judged on the best of headline / high-end / price match. Logitech 86 -> 77 (M240 £0.17 at 1000/mo, G203 £1.24 at 50/mo …), ASUS 34 -> 38 and Mera UK-only 266 -> 269 because the high-end sell now counts for the slow-seller test too */
+    /* b120: the bar slides between the points (200/mo = 7.5% or £1): +1 Logitech, +2 Mera UK-only, +1 / +2 Mera lists, +1 S&S */
+    logitech:{demand:241,leads:78,first:'B07MTXLFXV'},
+    asus:{demand:114,leads:38,mb:[46.46,51.8]},   /* B550M: Amazon out of stock 53%, a 3P holds the box at £164 - the market today, not the £192 average */
     /* 14 Sep evening b25: 366 → 364 (STATUS toaster + BELLA air fryer: a month flat 30%+ under the 90-day average = the price moved). */
     /* b26: 364 → 356 (FBA 30/90d midpoint floor). */
     /* b44: the score-35 floor is under-£60 only — Mera 11 Sep 355 (one sub-£60 row), 12 Sep back to 346. */
-    mera:{rows:525,leads:355,lenovo:[69,37.67,31.4],siemens:[77,107.12,30.7,100]},
+    /* b113: 355 -> 354 and 346 -> 345 — the Gtech Duo bundle (needs 13.9% off) only ever stayed because Gtech's 19% Business tier was read as a code */
+    mera:{rows:525,leads:231,lenovo:[72,41.73,34.8],siemens:[77,107.12,30.7,100]},
     /* 14 Sep: FBM-only history no longer proves a plateau (Galaxy Book4 Pro: Jack £1,700–1,800 max, was £2,207) → 12 Sep 390 → 376. */
     /* b25: 376 → 355 (every change a cut: lowest 3P channel caps, FBM at +10%); Vivobook no longer first; Vax £172.50 vs Jack's £180 (was £176.64). */
-    mera12:{leads:346,first:'B0G53YPLW6',vaxSell:172.5,vaxScore:[58,75],no3p:139,withVat:[346,0],book4:[1788.23,'Buy Box 90d +5%'],phone:1393.96},
+    mera12:{leads:260,first:'B0G53YPLW6',vaxSell:172.5,vaxScore:[58,75],no3p:136,withVat:[260,0],book4:[1839.33,'Amazon owns the Buy Box (out of stock 0%) · Buy Box 90d +8%'],phone:1393.96},
     /* Suz 13 Sep (b19): S&S 2,520 rows → 136 qualify (66 zero-rated, 7 kept); Business 179 → 10. Ecover £9.05 after 12% + 15%, sells £19.86, scores 53 on the low-ticket scale. */
     /* 14 Sep b19: under £60 sell = higher Buy Box 90/180d average unless the 180d is an old price regime (>1.35×: L'OR pods £34 launch vs
        £10.82 now), no uplift, capped at FBA 90d avg; low-ticket score scale £1,500/mo · £6/unit (WoodWick 28 → 51). S&S 2,520 → 136. */
@@ -511,16 +701,19 @@ window.SourcingChecks=(function(){
        Biscuit Brew, White Cup, in Caddy, Liquorice Root, Herbal). Nothing moved the other way (Pro Plus capsules, diffuser refill stay 20%). */
     /* b62 (Jack, 16 Sep): under £60 the sell is never capped below the cheapest FBA offer live now → the Nescafé Decaf 100g x6 jar
        (B000TCPV30, sell £18.96 → £19.80, ROI 8.8% → 15.8%) becomes the 52nd lead here. It is the only row the change adds. */
-    sns:{counts:[2520,52],first:'B000JPQR30',vat0:[74,2],ecover:[68,9.05,19.86,18.7,20],starbucks:32.48,shark:25.22,febreze:18.29,lor:[10.82,false],woodwick:69},
+    sns:{counts:[2520,47],first:'B0B8SH13KP',vat0:[74,2],ecover:[75,9.05,20.86,26.5,20],starbucks:31.94,shark:26.73,febreze:18.15,lor:[11.47,false],woodwick:69},
     /* b39: Ecover (£1.59, 18%, 1,000/mo) now outscores the Philips shaver on Suz's Business list. */
-    biz:{counts:[179,8],first:'B0D1HBH6FN',lg:[44,403.73,496.75,8.5]},
+    biz:{counts:[179,4],first:'B0D1HBH6FN',lg:[53,403.73,522.08,13.3]},
     /* 14 Sep b22: Rule 1 sell (and best case) capped at "Buy Box: Highest" when the export has it. Mera 12 Sep run as a UK-only Finder: leads / rows capped. */
-    r1cap:{mera:[298,59]},
+    /* b112/b113: one discount list — +6 Hoover (Hoover Direct 15%, a brand store), -2 Acer laptops (15% is full-price only; 5% on a match), -1 AOC monitor (Argos 6% now assumed at 5%) */
+    /* b123: an option with an unknown share stays on the family's drops (Jack: under 50 confirmed we use Keepa drops) - flagged, and the page's Keepa check can upgrade it */
+    /* b123: the rules stamp the review shares themselves now (b122), so these fixtures finally get the b105 share ladder the page always applied: Mera 11 Sep 272 -> 231, 12 Sep 269 -> 260, UK-only 271 -> 262 */
+    r1cap:{mera:[262,42]},
     /* 14 Sep evening b25: £60+ base = BB 90d; 30d base when the price moved 30%+ (and FBA fell or is absent); plateau proven by FBA
        and capped at the LOWEST 3P channel. Vivobook £599.99 → £443.40, Chromebook £354.94 → £337.28, Siemens £597.16 → £591.65, toaster gone. */
-    r2fit:{vivobook:[438.9,'capped at the 3P floor (lowest 3P average)'],chromebook:[336.62,'capped at the 3P floor (lowest 3P average)'],siemens:[591.65,'Buy Box 90d +25%'],toaster:[25.15,'Buy Box 30d (price moved down) +5%',false],keepa:[422.29,314.06,599.99,399,'string']},
+    r2fit:{vivobook:[456.07,'Amazon owns the Buy Box (out of stock 0%) · Buy Box 90d +8%'],chromebook:[336.62,'Amazon dips (out of stock 12%) · capped at the 3P floor (lowest 3P average)'],siemens:[591.65,'Amazon dips (out of stock 8%) · Buy Box 90d +25%'],toaster:[25.15,'Amazon dips (out of stock 6%) · Buy Box 30d (price moved down) +5%',false],keepa:[422.29,314.06,599.99,399,'string']},
     /* 14 Sep late b26: the FBA floor is the midpoint of the 30- and 90-day FBA averages when the 30-day is lower. Chromebook £337.28 → £336.62. */
-    r2fit2:{shark:[209.11,'capped at the 3P floor (lowest 3P average)'],ninja:[136.05,'Buy Box 90d +25%'],brother:[157.72,'capped at the 3P floor (lowest 3P average)'],hoover:[169.46,'capped at the 3P floor (lowest 3P average)'],jet:[271.95,'capped at the 3P floor (lowest 3P average)'],blast:[78.86,'capped at the 3P floor (lowest 3P average)'],canon:[60.91,'capped at the 3P floor (lowest 3P average)','electrical']},
+    r2fit2:{shark:[209.11,'Amazon dips (out of stock 11%) · capped at the 3P floor (lowest 3P average)'],ninja:[136.05,'Amazon dips (out of stock 21%) · Buy Box 90d +25%'],brother:[157.72,'Amazon owns the Buy Box (out of stock 0%) · Buy Box 90d +8%, capped at FBA 90d'],hoover:[163.88,'Amazon owns the Buy Box (out of stock 0%) · Buy Box 90d +8%'],jet:[271.95,'Amazon dips (out of stock 22%) · capped at the 3P floor (lowest 3P average)'],blast:[83.53,'Amazon owns the Buy Box (out of stock 1%) · Buy Box 90d +8%'],canon:[59.4,'Buy Box 90d +6% · 0 FBA sellers','electrical']},
     score1:75,score2:66,
     /* b89: four stay retired; the fifth is the one Jack switched back on, 17 Sep */
     hist:[['paused','Suz',true],['paused','Suz',true],['paused','Suz',true],['paused','Mera',true],['active','Mera',true]]};

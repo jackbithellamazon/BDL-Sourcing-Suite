@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b98">
-<link rel="stylesheet" href="css/brands.css?v=b98">
+<link rel="stylesheet" href="css/base.css?v=b127">
+<link rel="stylesheet" href="css/brands.css?v=b127">
 </head>
 <body>
 <div class="wrap">
@@ -273,7 +273,7 @@
         <div class="tb">
           <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="lq" placeholder="Search brands…" autocomplete="off"></div>
           <select id="lMarket"><option value="ALL">All markets</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
-          <select id="lOwner"><option value="ALL">All owners</option><option>Jack</option><option>Mera</option><option>Suz</option><option>VAs</option></select>
+          <select id="lOwner"><option value="ALL">All owners</option><option>Jack</option><option>Mera</option><option>Suz</option><option>VAs</option><option value="—">Unassigned</option></select>
           <select id="lRule"><option value="ALL">All rules</option><option value="1">Rule 1 · buy UK/EU, sell UK</option><option value="2">Rule 2 · UK Amazon-to-Amazon</option></select>
           <select id="lType"><option value="ALL">Filters + brands</option><option value="filter">Saved filters</option><option value="brand">Brands</option></select>
           <select id="lSort" title="Order of the list"><option value="due">Sort · due first</option><option value="name">Sort · name A–Z</option><option value="owner">Sort · owner</option><option value="last">Sort · last run, newest</option><option value="leads">Sort · most leads</option><option value="review">Sort · most to review</option><option value="cadence">Sort · cadence</option></select>
@@ -451,7 +451,7 @@
         <div class="sbox"><h3>Reasons for a No <span class="scope shared">shared</span></h3><p class="ssub">What a VA picks from when a lead is a No. Keep them short. The rules are refined from these after the trial.</p>
           <div class="chips" id="reasonChips"></div>
           <div class="row" style="margin-top:10px"><input class="txt" id="reasonIn" placeholder="add a reason…" autocomplete="off"><button class="btn solid sm" id="reasonAdd" type="button">Add</button></div></div>
-        <div class="sbox wide"><h3>Discounts · brand stores &amp; retailers <span class="scope shared">shared</span></h3><p class="ssub">What a brand's own store, or a retailer that price-matches Amazon, gives on top. The high-ticket rule uses this to show "→ score with Currys 5%" and to decide how much discount a brand can realistically give. <b>Full price only</b> means the code does not work on a sale item unless a sale rate is set.</p>
+        <div class="sbox wide"><h3>Discounts · brand stores &amp; retailers <span class="scope shared">shared</span></h3><p class="ssub">The one list every rule reads. A brand's own store, or a retailer that price-matches Amazon, and what it gives on top. Rule 2 uses it for "→ 20% ROI · £191 with Samsung 10%" and to decide whether a lead needs a code; Rule 1 (brand runs, EU alerts) uses the same rates for its "if Currys price-matches" line and the OA check. Which retailers show depends on the product's category: electricals get Currys, Argos, John Lewis, AO and Marks Electrical; grocery, health and beauty get Boots, Superdrug, Tesco and Holland &amp; Barrett. Full-price-only codes count at their sale rate on a price match. Edit here and every run uses it, for everyone.</p>
           <div class="disctb"><table class="dtbl" id="discTbl"></table></div>
           <div class="row" style="margin-top:10px">
             <input class="txt" id="dName" placeholder="Name (brand or retailer)" autocomplete="off" style="min-width:180px">
@@ -494,21 +494,23 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b98"></script>
-<script src="js/parse.js?v=b98"></script>
-<script src="js/rule1.js?v=b98"></script>
-<script src="js/rule2.js?v=b98"></script>
-<script src="js/export.js?v=b98"></script>
-<script src="js/rule4.js?v=b98"></script>
-<script src="js/queue.js?v=b98"></script>
-<script src="js/sources.js?v=b98"></script>
-<script src="js/cloud.js?v=b98"></script>
-<script src="js/leadtools.js?v=b98"></script>
-<script src="js/keepaconsole.js?v=b98"></script>
-<script src="js/euprice.js?v=b98"></script>
-<script src="js/brands.js?v=b98"></script>
-<script src="js/history.js?v=b98"></script>
-<script src="js/audit.js?v=b98"></script>
-<script src="js/boot.js?v=b98"></script>
+<script src="js/core.js?v=b127"></script>
+<script src="js/parse.js?v=b127"></script>
+<script src="js/rule1.js?v=b127"></script>
+<script src="js/rule2.js?v=b127"></script>
+<script src="js/export.js?v=b127"></script>
+<script src="js/rule4.js?v=b127"></script>
+<script src="js/queue.js?v=b127"></script>
+<script src="js/sources.js?v=b127"></script>
+<script src="js/cloud.js?v=b127"></script>
+<script src="js/auth.js?v=b127"></script>
+<script src="js/leadtools.js?v=b127"></script>
+<script src="js/keepaconsole.js?v=b127"></script>
+<script src="js/euprice.js?v=b127"></script>
+<script src="js/apirun.js?v=b127"></script>
+<script src="js/brands.js?v=b127"></script>
+<script src="js/history.js?v=b127"></script>
+<script src="js/audit.js?v=b127"></script>
+<script src="js/boot.js?v=b127"></script>
 </body>
 </html>

@@ -12,8 +12,9 @@ const LVIEW_KEY='bdl-sourcing-lview';
 const lview=Object.assign({q:'',market:'ALL',rule:'ALL',owner:'ALL',seg:'all',type:'ALL',sort:'due',tab:'brands'},lsGet(LVIEW_KEY,{})||{});
 function lviewSave(){const {q,...rest}=lview;lsSet(LVIEW_KEY,rest);}
 /* b58: one colour per person, used everywhere a name shows */
-const OWNER_CLS={Jack:'o-jack',Mera:'o-mera',Suz:'o-suz',VAs:'o-vas'};
+const OWNER_CLS={Jack:'o-jack',Mera:'o-mera',Suz:'o-suz',VAs:'o-vas','—':'o-none'};
 function ownCls(n){return OWNER_CLS[n]||'o-vas';}
+function ownLabel(n){return(!n||n===NO_OWNER)?'unassigned':n;}
 function whoChip(n){return n?`<span class="whochip ${ownCls(n)}">${escapeHtml(n)}</span>`:'<span class="whochip o-none">no name</span>';}
 const RULE_LABEL={1:'buy UK/EU · sell UK',2:'UK Amazon-to-Amazon'};
 const ICONS={
@@ -36,7 +37,14 @@ function avatar(s,big){const c=AV_COLORS[[...s.key].reduce((a,ch)=>a+ch.charCode
 const closeMenus=()=>document.querySelectorAll('.menu.open').forEach(m=>m.classList.remove('open'));
 
 /* ============ identity ============ */
-function whoPaint(){['#whoSel','#meIn'].forEach(id=>{const el=$(id);if(el&&el.value!==me())el.value=me();});}
+function whoPaint(){['#whoSel','#meIn'].forEach(id=>{const el=$(id);if(el&&el.value!==me())el.value=me();});
+  /* b126: when the person is signed in the picker is theirs, not a choice — swap it for their name and a way out */
+  const n=(typeof authedName==='function')?authedName():'';const sel=$('#whoSel');if(!sel)return;
+  let pill=$('#authPill');
+  if(n){sel.hidden=true;if(!pill){pill=document.createElement('button');pill.id='authPill';pill.type='button';pill.className='authpill';
+      pill.addEventListener('click',()=>{if(confirm('Sign out of '+authedName()+'?'))authSignOut();});sel.parentNode.insertBefore(pill,sel);}
+    pill.hidden=false;pill.innerHTML=`<i></i>${escapeHtml(n)}`;pill.title=(authUser()||{}).email+' — click to sign out';}
+  else{sel.hidden=false;if(pill)pill.hidden=true;}}
 /* the storefront audit is Jack's page — the tile is not there for anyone else */
 function paintJackOnly(){document.querySelectorAll('.jackonly').forEach(el=>{el.hidden=!isJack();});
   if(!isJack()){const p=$('#page-audit');if(p&&p.classList.contains('active')){document.querySelector('.pagebtn[data-page="page-brands"]').click();}}}
@@ -47,8 +55,21 @@ function whoSet(v){lsSet(ME_KEY,v);whoPaint();paintJackOnly();if(typeof renderAu
 let whoPending=null;
 function needMe(target){if(me())return true;whoPending=target||null;whoGate(true);return false;}
 function whoGate(show){let g=$('#whoGate');if(!g){g=document.createElement('div');g.id='whoGate';g.className='whogate';
-    g.innerHTML=`<div class="wg"><div class="wgt">Who are you?</div><div class="wgs">Every verdict, price and run carries your name so the others can see who judged what. Nothing you mark is saved until you pick.</div><div class="wgb">${USERS.map(u=>`<button type="button" data-who="${u}">${u}</button>`).join('')}</div></div>`;
-    g.addEventListener('click',e=>{const b=e.target.closest('button[data-who]');if(!b)return;whoSet(b.dataset.who);whoGate(false);const t=whoPending;whoPending=null;if(t)onTableClick({target:t});});
+    /* b126: sign in with a one-click email link. The name picker stays underneath, so nobody is ever locked out. */
+    g.innerHTML=`<div class="wg"><div class="wgt">Sign in</div><div class="wgs">Type your work email and we send a one-click link — no password to remember. It keeps you signed in on this browser, and every verdict then carries your real name.</div>
+      <div class="wgmail"><input type="email" id="wgEmail" placeholder="you@…" autocomplete="email" spellcheck="false"><button type="button" class="btn primary" id="wgSend">Send me a link</button></div>
+      <div class="wgmsg" id="wgMsg"></div>
+      <div class="wgor">or carry on without signing in</div>
+      <div class="wgb">${USERS.map(u=>`<button type="button" data-who="${u}">${u}</button>`).join('')}</div></div>`;
+    g.addEventListener('click',async e=>{
+      const send=e.target.closest('#wgSend');
+      if(send){const el=$('#wgEmail'),msg=$('#wgMsg'),v=(el.value||'').trim();
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){msg.textContent='That does not look like an email address.';msg.className='wgmsg bad';return;}
+        send.disabled=true;msg.textContent='Sending…';msg.className='wgmsg';
+        try{await authSendLink(v);msg.innerHTML='Sent. Open the email on <b>this</b> machine and click the link — you will land back here signed in.';msg.className='wgmsg good';}
+        catch(err){msg.textContent=String(err.message||err)+(/not found|signups|invalid/i.test(String(err.message||''))?' — ask Jack to invite this address.':'');msg.className='wgmsg bad';send.disabled=false;}
+        return;}
+      const b=e.target.closest('button[data-who]');if(!b)return;whoSet(b.dataset.who);whoGate(false);const t=whoPending;whoPending=null;if(t)onTableClick({target:t});});
     document.body.appendChild(g);}
   g.classList.toggle('open',!!show);}
 
@@ -111,14 +132,14 @@ function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay()
     if(lview.seg==='mine'&&!(me()&&s.owner===me())&&!(lockFresh(s)&&ownLock(s)))return false;
     if(lview.market!=='ALL'&&!s.markets.includes(lview.market))return false;
     if(lview.rule!=='ALL'&&String(s.rule)!==lview.rule)return false;
-    if(lview.owner!=='ALL'&&(s.owner||'VAs')!==lview.owner)return false;
+    if(lview.owner!=='ALL'&&(s.owner||NO_OWNER)!==lview.owner)return false;
     if(q&&!((s.name+' '+(s.note||'')).toLowerCase().includes(q)))return false;return true;});
   const tb=$('#brandTbl');
   if(!rows.length){tb.innerHTML=`<tbody><tr><td colspan="8" style="text-align:center;color:var(--faint);padding:22px">${lview.seg==='due'?'Nothing due — everything has been run inside its cadence.':lview.seg==='mine'?(me()?'Nothing is yours yet — Jack sets the owner in Edit.':'Pick who you are (top right) to see your list.'):'Nothing here.'}</td></tr></tbody>`;return;}
   const rowHtml=s=>{const d=dueState(s),last=runLast(s.key),nx=nextRun(s),tok=tokenEstimate(s),lk=lockFresh(s)?s.inProgress:null,mine=lk&&ownLock(s),tr=toReviewCount(last);
     return`<tr class="${s.status==='paused'?'paused':(d.cls==='due'?'isdue':d.cls==='done'?'isdone':'')}" data-key="${s.key}">
       <td class="namec"><div class="brandcell">${avatar(s)}<div class="ntext"><div class="nline"><span class="bname">${escapeHtml(s.name)}</span><span class="rl r${s.rule}" title="${RULE_LABEL[s.rule]||''}">Rule ${s.rule}</span></div><span class="note" title="${escapeHtml(s.note||'')}">${escapeHtml(s.note||(s.type==='filter'?'Saved Keepa filter':'Brand run · UK sell side'))}</span></div></div></td>
-      <td class="ownc">${isJack()?`<select class="inl ownsel ${ownCls(s.owner||'VAs')}" data-key="${s.key}" title="Who runs this — saves straight away">${['Jack','Mera','Suz','VAs'].map(u=>`<option${(s.owner||'VAs')===u?' selected':''}>${u}</option>`).join('')}</select>`:whoChip(s.owner||'VAs')}</td>
+      <td class="ownc">${isJack()?`<select class="inl ownsel ${ownCls(s.owner||NO_OWNER)}" data-key="${s.key}" title="Who runs this — saves straight away">${OWNER_OPTS.map(u=>`<option${(s.owner||'VAs')===u?' selected':''}>${u}</option>`).join('')}</select>`:whoChip(s.owner||'VAs')}</td>
       <td><div class="flags" title="${s.markets.join(' · ')}">${s.markets.map(m=>`<span class="f">${FLAG[m]}</span>`).join('')}</div></td>
       <td class="stc">${isJack()?`<select class="inl stsel s-${s.status}" data-key="${s.key}" title="Active runs on its cadence · Testing = trial · Paused = off the list — saves straight away">${Object.entries(STATUS_LABEL).map(([k,l])=>`<option value="${k}"${s.status===k?' selected':''}>${l}</option>`).join('')}</select><select class="inl cadsel" data-key="${s.key}" title="How often it should run — saves straight away">${Object.entries(CADENCE_LABEL).map(([k,l])=>`<option value="${k}"${s.cadence===k?' selected':''}>${l}</option>`).join('')}</select>`:`<span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span><span class="l2">${CADENCE_LABEL[s.cadence]||s.cadence}</span>`}${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
       <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` ${whoChip(last.who)}`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}</td>
@@ -262,7 +283,7 @@ function paintNext(){const nx=cur?nextDue(cur.key):null;['#runNext','#runNext2']
 function paintRunStrip(){const el=$('#runStrip');if(!el||!cur)return;const runs=runsFor(cur.key).slice().reverse();const V=verdAll();
   if(!runs.length){el.hidden=true;el.innerHTML='';return;}
   const chips=runs.slice(0,7).map(r=>{let y=0,j=0;(r.asins||[]).forEach(a=>{const v=V[a];if(!v)return;j++;if(v.v==='Yes')y++;});const tr=toReviewCount(r);
-    return`<button type="button" class="rchip${tr?'':' done'}" data-act="hist" title="${escapeHtml(r.name)} · ${fmtWhen(r.at)}${r.who?' · '+escapeHtml(r.who):''} · ${r.rowsIn||0} in → ${r.leads} leads · ${r.new} new · ${r.better||0} better · ${j} judged"><span class="d">${ukDate(r.at).replace(/^\w+ /,'').replace(/\/\d{4}/,'')}</span><b>${r.leads}</b><span class="s">leads</span>${y?`<span class="y">${y}Y</span>`:''}<span class="tr ${tr?'':'z'}">${tr?tr+' to review':'all judged'}</span></button>`;}).join('');
+    return`<button type="button" class="rchip${tr?'':' done'}" data-run="${r.day||r.at.slice(0,10)}" title="${escapeHtml(r.name)} · ${fmtWhen(r.at)}${r.who?' · '+escapeHtml(r.who):''} · ${r.rowsIn||0} in → ${r.leads} leads · ${r.new} new · ${r.better||0} better · ${j} judged"><span class="d">${ukDate(r.at).replace(/^\w+ /,'').replace(/\/\d{4}/,'')}</span><b>${r.leads}</b><span class="s">leads</span>${y?`<span class="y">${y}Y</span>`:''}<span class="tr ${tr?'':'z'}">${tr?tr+' to review':'all judged'}</span></button>`;}).join('');
   const tot=runs.reduce((n,r)=>n+(r.leads||0),0);
   el.innerHTML=`<span class="rl-lab">Last runs</span>${chips}${runs.length>7?`<button type="button" class="rchip more" data-act="hist">+${runs.length-7} more</button>`:''}<span class="rl-tot">${runs.length} run${runs.length===1?'':'s'} · ${tot.toLocaleString()} leads all time</span>`;el.hidden=false;}
 /* floors: the inputs ARE this source's floors — saved as you type, shared, applied to every run of it */
@@ -284,7 +305,7 @@ function renderGuide(){const g=$('#guide');if(!g||!cur)return;const r1=cur.rule=
   const bar=$('#asinBar'),merged=(bar&&bar._all)?bar._all.length:0;
   const rev=result?result.out.filter(o=>o.QUEUE).length:0;
   const EXPORT=['At the bottom of the Keepa table, set rows per page to the biggest number, so every result is on one page. Keepa only exports the page you can see.',
-    'One-off, once per browser: open the column picker and tick Variation Count, Variation ASINs and Variation Attributes. '
+    'One-off, once per browser: open the column picker and tick Variation Count, Variation ASINs and Variation Attributes; under Reviews tick Rating, Rating Count and Review Count - Format Specific; under Monthly Sales Trends tick Monthly Sold (Last Known) and Monthly Sold Date (Last Known). '
       +'Without them we cannot tell a listing with one option from one with ninety, and the sales figure belongs to the whole listing.',
     'Click Export (top right of the table). In the Export Data box choose: What to export → All active columns. Format → CSV. Leave "Include currency symbols" unticked. Press Export.',
     'The file lands in your Downloads. Do not open or rename it.'];
@@ -331,7 +352,7 @@ function sig(){return SLOTS.map(k=>files[k]?files[k].name+':'+files[k].rows.leng
 async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return;const notes=[];
   for(const file of arr){let d;try{d=describeExport(parseCSV(await readFileText(file)));}catch(e){d=null;}
     if(!d){notes.push(file.name+': no data rows');continue;}
-    const f={name:file.name,rows:d.rows,hasFees:d.hasFees,asins:d.asins,domain:d.domain,hasSince:d.hasSince};
+    const f={name:file.name,rows:d.rows,hasFees:d.hasFees,asins:d.asins,domain:d.domain,hasSince:d.hasSince,missing:d.missing||[]};
     if(!d.full&&!d.hasFees){notes.push(file.name+': not a full-column export — needs Title and the demand columns at minimum');continue;}
     if(cur.rule!==1){if(d.domain&&d.domain!=='UK')notes.push(file.name+': this is a '+d.domain+' export — Rule '+cur.rule+' is UK only');
       /* b37 (Jack, 15 Sep: two variants of Suz's filter, 17 leads shared, 23 not) — a second UK export merges into the first, de-duped by ASIN.
@@ -350,12 +371,98 @@ async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return
     else if(!v)files.viewer=f;
     else if(f.hasFees&&(!v.hasFees||f.rows.length>=v.rows.length)){files.UK=v;files.viewer=f;}
     else files.UK=f;}
-  touched.clear();paintSlots();warn(notes);run();}
+  touched.clear();paintSlots();warn(notes);
+  /* b123 (Jack: "we use exports so it should cost 0 tokens"): nothing is asked of Keepa on a drop — the option check is a button Jack presses */
+  run();}
+/* b127 (Jack, 20 Sep: "somewhere they should be able to view past ones"): click a date in Last runs and that day's run opens —
+   what went in, what came out, and what everyone decided. Read-only: the numbers are the ones recorded on the day. */
+function openPastRun(day){if(!cur)return;const r=runsFor(cur.key).find(x=>(x.day||x.at.slice(0,10))===day);if(!r)return;
+  const {rows}=storedRows(cur.key,cur.rule);const by={};rows.forEach(o=>by[o.ASIN]=o);const V=verdAll();
+  const out=(r.asins||[]).map((a,i)=>{const o=by[a];
+    if(o)return Object.assign({},o,{'#':i+1,QUEUE:'',STATUS:'',verdict:V[a]||null});
+    /* a lead that has since dropped off the list: the ASIN and what was decided is all that is left */
+    const blank=cur.rule===1?{ASIN:a,Title:'(no longer a lead — kept for the record)','Buy market':'UK','Landed £':0,'Sell £ used':0,'Profit £':0,'ROI %':0,SPM:0,Score:1,Flags:'',Keepa:`https://keepa.com/#!product/2-${a}`}
+      :{ASIN:a,Product:'(no longer a lead — kept for the record)',Score:1,'Buy at £':0,'After discount £':0,'Sell for £':0,'Profit £':0,'ROI %':0,'Sells /mo':0,chips:[],Keepa:`https://keepa.com/#!product/2-${a}`};
+    return Object.assign(blank,{'#':i+1,QUEUE:'',STATUS:'',verdict:V[a]||null,gone:true});});
+  const st=r.st||{};
+  result={rule:cur.rule,out,all:out,dropped:[],reasons:{},blacklisted:[],floored:0,stored:true,past:r,at:r.at,gone:[],prevMap:{},prevStamp:null,
+    st:cur.rule===1?{viewer:st.viewer==null?(r.rowsIn||'—'):st.viewer,demand:st.demand==null?'—':st.demand,sell:st.sell==null?'—':st.sell,buy:st.buy==null?'—':st.buy,kept:out.length,bbHiCol:true,capped:st.capped||0}
+      :{rows:st.rows==null?(r.rowsIn||'—'):st.rows,priced:st.priced==null?'—':st.priced,demand:st.demand==null?'—':st.demand,kept:out.length}};
+  view.page=1;view.sel.clear();renderResults();renderGuide();
+  const res=$('#results');if(res)res.scrollIntoView({behavior:'smooth',block:'start'});}
+function paintPastBar(){const res=$('#results');if(!res)return;let el=$('#pastBar');if(!el){el=document.createElement('div');el.id='pastBar';el.className='pastbar';res.insertBefore(el,res.firstChild);
+    el.addEventListener('click',e=>{if(e.target.closest('#pastBack')){result=null;if(!runStored())clearRun();}});}
+  const p=result&&result.past;if(!p){el.hidden=true;el.innerHTML='';return;}el.hidden=false;
+  const V=verdAll();let judged=0,yes=0;(p.asins||[]).forEach(a=>{const v=V[a];if(!v||!v.v)return;judged++;if(v.v==='Yes')yes++;});
+  el.innerHTML=`<span><b>The run from ${escapeHtml(ukDate(p.at))}</b>${p.who?' · '+escapeHtml(p.who):''} · ${(p.rowsIn||0).toLocaleString()} products in, <b>${p.leads}</b> leads out, ${p.new||0} new · ${judged} judged since${judged?` (${yes} Yes)`:''}. Nothing here changes what runs today.</span><button type="button" class="btn ghost sm" id="pastBack">Back to today</button>`;}
+/* b123: the option check is a button, Jack-only, and the run tells you what it would cost */
+function paintOptionBar(){const res=$('#results');if(!res)return;let el=$('#optBar');if(!el){el=document.createElement('div');el.id='optBar';el.className='optbar';res.insertBefore(el,res.firstChild);}
+  const sellF=cur?(cur.rule===1?files.viewer:files.one):null;if(!result||!sellF||sellF.fromKeepa||typeof shareUnknown!=='function'){el.hidden=true;el.innerHTML='';return;}
+  const by={};sellF.rows.forEach(r=>by[(r.ASIN||'').trim()]=r);const need=result.out.filter(o=>{const r=by[o.ASIN];return r&&shareUnknown(r);}).length;
+  if(!need){el.hidden=true;el.innerHTML='';return;}el.hidden=false;
+  el.innerHTML=`<span><b>${need} lead${need===1?'':'s'}</b> ${need===1?'is':'are'} on the family's drops with ${need===1?'its':'their'} own share unknown — siblings not in the export. Review them as they are, or ${isJack()?'':'ask Jack to '}have Keepa confirm each option's own sales.</span>${isJack()?`<button type="button" class="btn ghost sm" id="optAsk">Ask Keepa · ${need} token${need===1?'':'s'}</button>`:''}`;
+  const b=$('#optAsk');if(b)b.addEventListener('click',async()=>{b.disabled=true;b.textContent='Asking Keepa…';
+    try{const r=await fillUnknownShares(sellF);toast(`Keepa checked ${r.asked} option${r.asked===1?'':'s'} · ${r.asked} token${r.asked===1?'':'s'} · ${r.confirmed} confirmed`);run();}
+    catch(e){toast('Keepa did not answer — nothing was spent',true);paintOptionBar();}});}
+/* b123: judge with the keyboard. Click a row (or ↓ / ↑) to make it the active one; Y / N / M mark it and move to the next unjudged row. */
+function activeRow(){return document.querySelector('.ltbl tbody tr.active');}
+function setActive(tr,scroll){document.querySelectorAll('.ltbl tbody tr.active').forEach(x=>x.classList.remove('active'));if(!tr){view.active=null;return;}tr.classList.add('active');view.active=tr.dataset.asin;
+  if(scroll){const r=tr.getBoundingClientRect();if(r.top<90||r.bottom>window.innerHeight-40)tr.scrollIntoView({block:'center',behavior:'smooth'});}}
+function stepActive(dir,unjudgedOnly){const rows=[...document.querySelectorAll('.ltbl tbody tr[data-asin]')];if(!rows.length)return;const cur_=activeRow();let i=cur_?rows.indexOf(cur_):-1;
+  for(let k=0;k<rows.length;k++){i+=dir;if(i<0||i>=rows.length)break;const tr=rows[i];if(unjudgedOnly&&/\b(Yes|No|Maybe)\b/.test(tr.className))continue;setActive(tr,true);return;}}
+function paintJudged(){const tb=document.querySelector('#results .toolbar');if(!tb||!result)return;let el=$('#judgedPill');if(!el){el=document.createElement('span');el.id='judgedPill';el.className='judged';tb.appendChild(el);}
+  const all=visible();const done=all.filter(o=>(verdGet(o.ASIN)||{}).v).length;
+  el.innerHTML=`<b>${done}</b> of ${all.length} judged<i title="Click a row, then Y / N / M · ↓ ↑ move · Esc clears">Y · N · M · ↓ ↑</i>`;}
+let keysReady=false;
+function setupKeys(){if(keysReady)return;keysReady=true;
+  document.addEventListener('keydown',e=>{const t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;if(e.metaKey||e.ctrlKey||e.altKey)return;
+    const res=$('#results');if(!res||res.hidden||!result)return;const k=e.key.toLowerCase();
+    if(k==='arrowdown'||k==='j'){e.preventDefault();stepActive(1,false);return;}
+    if(k==='arrowup'||k==='k'){e.preventDefault();stepActive(-1,false);return;}
+    if(k==='escape'){setActive(null);return;}
+    const map={y:'Yes',n:'No',m:'Maybe'};if(!map[k])return;const tr=activeRow();if(!tr)return;
+    const b=tr.querySelector(`button.vb[data-v="${map[k]}"]`);if(!b)return;e.preventDefault();const a=tr.dataset.asin;b.click();
+    const again=document.querySelector(`.ltbl tbody tr[data-asin="${a}"]`);if(again){setActive(again,false);stepActive(1,true);}});
+  document.addEventListener('click',e=>{const tr=e.target.closest('.ltbl tbody tr[data-asin]');if(!tr)return;if(e.target.closest('button,a,input,select,label'))return;setActive(tr,false);});}
+/* b122: ask Keepa for the exact option's confirmed sales on every would-be lead whose share is unknown. One token each, cached a week. */
+const UNK_KEY='bdl-sourcing-option-sales',UNK_TTL_H=24*7;
+function optionStamp(r,c){if(!r||!c)return;if(c.n>=50)r['Monthly Sales Trends: Bought in past month']=String(c.n);
+  else if(c.last&&c.last.n>0){r['Monthly Sales Trends: Monthly Sold (Last Known)']=String(c.last.n);r['Monthly Sales Trends: Monthly Sold Date (Last Known)']=c.last.date;}
+  r.__optionChecked=true;}
+function optionFromKeepa(p){const h=p.monthlySoldHistory||[];let last=null;for(let i=h.length-2;i>=0;i-=2){if(h[i+1]>0){const d=new Date((h[i]+21564000)*60000);last={n:h[i+1],date:d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')};break;}}
+  return{n:p.monthlySold>0?p.monthlySold:0,last,at:Date.now()};}
+async function fillUnknownShares(f){if(!f||!f.rows||typeof shareUnknown!=='function'||!cur)return{asked:0,confirmed:0};
+  stampShares(f.rows);const by={};f.rows.forEach(r=>by[(r.ASIN||'').trim()]=r);const cache=lsGet(UNK_KEY,{}),now=Date.now();
+  /* which leads are standing on the family's drops with their own share unknown */
+  const R=cur.rule===1?rule1Compute(files,cur.name,rate(),null):rule2Compute(f.rows,factsAll(),{vatFor:vatFor,rule:cur.rule});   /* b123: the normal run — unknown-share options are leads on the family's drops */
+  const need=[];R.out.forEach(o=>{const r=by[o.ASIN];if(r&&shareUnknown(r)&&!need.includes(o.ASIN))need.push(o.ASIN);});
+  let asked=0,confirmed=0;const ask=[];
+  need.forEach(a=>{const c=cache[a];if(c&&now-c.at<UNK_TTL_H*3600e3){optionStamp(by[a],c);if(c.n>=50||(c.last&&c.last.n>0))confirmed++;}else ask.push(a);});
+  for(let i=0;i<ask.length;i+=100){const part=ask.slice(i,i+100);
+    const r=await fetch(WORKER+'/keepa?path=product&domain=2&stats=30&asin='+part.join(','));const j=await r.json();if(j.error)break;   /* history on: monthlySoldHistory only comes with it, same 1 token */
+    (j.products||[]).forEach(p=>{const c=optionFromKeepa(p);cache[p.asin]=c;optionStamp(by[p.asin],c);asked++;if(c.n>=50||(c.last&&c.last.n>0))confirmed++;});}
+  lsSet(UNK_KEY,cache);if(asked&&typeof paintTokens==='function')paintTokens();return{asked,confirmed,cached:need.length-ask.length};}
 function warn(lines){const w=$('#warnRun');if(!lines||!lines.length){w.classList.remove('show');w.innerHTML='';return;}
   w.innerHTML=lines.map(l=>'<div>⚠ '+escapeHtml(l)+'</div>').join('');w.classList.add('show');}
 function removeFile(k){files[k]=null;paintSlots();run();}
+/* b101 (Jack, 18 Sep, the Keepa export box: "is this worth checking?"). Keepa exports ONLY the page on
+   screen. Across his ~150 exports that had cut two short without anyone knowing — one a SanDisk/Seagate
+   brand run that stopped at exactly 50 rows when SanDisk alone has hundreds of UK listings. The step-by-step
+   already says to max out rows per page; nothing noticed when it was not done. A file that lands on exactly
+   one of Keepa's page sizes is almost always a single page, so it now says so on the file itself. */
+const KEEPA_PAGE_SIZES=[20,50,100,200,250,500,1000];
+function onePage(n){return KEEPA_PAGE_SIZES.includes(n);}
+/* b111 (Jack, 18 Sep: "should say error - pls tick these columns and name them"). The sell-side export must carry the six
+   demand-ladder columns or the run does not start. Pure: takes the file, returns the message or null. */
+function ladderBlock(f){if(!f||f.fromKeepa||!f.missing||!f.missing.length)return null;const n=f.missing.length;
+  return `<b>Export error — ${escapeHtml(f.name)} is missing ${n} column${n===1?'':'s'} the demand rules need.</b> In Keepa's column picker tick: ${f.missing.map(escapeHtml).join(' · ')}. Then export again and drop the new file here. Without them every variation would be judged on its family's figures, so the run does not start.`;}
 function paintSlots(){if(!cur)return;const r1=cur.rule===1;
-  const chip=(k,label,f,need)=>`<div class="fchip ${f?'ok':''}"><span class="dot"></span><span class="k">${label}</span><span class="n">${f?escapeHtml(f.name):need}</span><span class="r">${f?f.rows.length.toLocaleString()+' rows':''}</span>${f?`<button class="x" data-rm="${k}" title="Remove">×</button>`:''}</div>`;
+  const chip=(k,label,f,need)=>{const cut=f&&!f.fromKeepa&&onePage(f.rows.length);
+    /* b110: the UK sell-side file carries the variation / review / last-known columns the demand ladder needs. Say what is missing on the file. */
+    const ukSide=k==='viewer'||k==='one'||(k==='UK'&&ukOnly());const miss=(ukSide&&f&&!f.fromKeepa&&f.missing&&f.missing.length)?f.missing:null;
+    return `<div class="fchip ${f?'ok':''}${cut||miss?' cut':''}"><span class="dot"></span><span class="k">${label}</span><span class="n">${f?escapeHtml(f.name):need}</span><span class="r">${f?f.rows.length.toLocaleString()+' rows':''}</span>${f?`<button class="x" data-rm="${k}" title="Remove">×</button>`:''}</div>`
+      +(cut?`<div class="cutwarn"><b>Exactly ${f.rows.length} rows — this may be one page, not the whole search.</b> Keepa only exports the page on screen. Set rows per page to the maximum at the bottom of the Keepa table, then export again.</div>`:'')
+      +(miss?`<div class="cutwarn err"><b>Export error — missing ${miss.length} column${miss.length===1?'':'s'} the demand rules need. The run will not start.</b> In Keepa's column picker tick: ${miss.map(escapeHtml).join(' · ')}. Then export again.</div>`:'');};
   let h='';
   if(r1&&ukOnly()){h+=chip('viewer','🇬🇧 UK',files.viewer,'UK Product Finder export · required (no Viewer needed)');}
   else if(r1){cur.markets.forEach(m=>{h+=chip(m,FLAG[m]+' '+m,files[m],'Finder export · expected');});
@@ -422,9 +529,10 @@ function storedRows(key,rule){const m=leadMap(key)||{};const rows=[];let last=''
   rows.sort((a,b)=>(b.Score||0)-(a.Score||0));rows.forEach((o,i)=>o['#']=i+1);return{rows,last};}
 function runStored(){if(!cur)return false;const {rows,last}=storedRows(cur.key,cur.rule);if(!rows.length)return false;
   const prevMap={};rows.forEach(o=>{if(o._prev&&o._prev.state)prevMap[o.ASIN]={state:o._prev.state,stamp:o._prev.stamp};});
-  const rl=runLast(cur.key)||{};const n=rl.rowsIn||rows.length;
+  const rl=runLast(cur.key)||{};const n=rl.rowsIn||rows.length;const rst=rl.st||{};   /* b127: runs saved from now on carry their own counts */
   const R={rule:cur.rule,out:rows,all:rows,dropped:[],reasons:{},blacklisted:[],floored:0,stored:true,at:last,
-    st:cur.rule===1?{viewer:n,demand:'—',sell:'—',buy:'—',kept:rows.length,bbHiCol:true,capped:0}:{rows:n,priced:'—',demand:'—',kept:rows.length}};
+    st:cur.rule===1?{viewer:rst.viewer||n,demand:rst.demand==null?'—':rst.demand,sell:rst.sell==null?'—':rst.sell,buy:rst.buy==null?'—':rst.buy,kept:rows.length,bbHiCol:true,capped:rst.capped||0}
+      :{rows:rst.rows||n,priced:rst.priced==null?'—':rst.priced,demand:rst.demand==null?'—':rst.demand,kept:rows.length}};
   R.gone=applyQueue(R.out,R.rule,prevMap,verdAll()).filter(([a])=>!blAll()[a]);R.prevMap=prevMap;const pst=Object.values(prevMap).map(p=>p.stamp).filter(Boolean).sort();R.prevStamp=pst.length?pst[pst.length-1]:null;result=R;
   renderResults();renderGuide();return true;}
 function clearRun(){SLOTS.forEach(k=>files[k]=null);files.one=null;result=null;lastSig='';$('#fileIn').value='';view.sel.clear();view.page=1;touched.clear();blPick=null;
@@ -442,22 +550,43 @@ function paintFx(){const inp=$('#fxIn');if(inp&&document.activeElement!==inp)inp
   if(result)run();}
 function rate(){const inp=$('#fxIn');const v=inp?parseFloat(inp.value):NaN;return v>0.5&&v<1.5?v:fx.rate;}
 
+/* b105 — each variation option's share of its family's reviews, and whether it is new, stamped onto the Viewer
+   row before Rule 1 runs. A family = the options in Variation ASINs that share one Rating Count (one pool: the
+   Lavazza family showed a listing can hold several pools, and only inside one are reviews comparable). Only
+   stamped when the Reviews columns are in the export and the pool holds reviews; otherwise nothing changes. */
+/* b122: stampShares moved to parse.js so the rules can call it themselves (checks and page then agree) */
+/* b116: the levels under the sell price. rawRowOf finds the Keepa row behind a lead; lvlPicker draws the chips. */
+function rawRowOf(asin){const pools=[files.viewer,files.one,files.UK].filter(Boolean);for(const f of pools){const r=(f.rows||[]).find(x=>(x.ASIN||'').trim()===asin);if(r)return r;}return null;}
+function lvlPicker(asin,sellNow){if(typeof sellLevels!=='function')return'';const r=rawRowOf(asin);if(!r)return'';const lv=sellLevels(r);if(!lv.length)return'';
+  const fact=factGet(asin);const shape=sellShape(r);const st=shape?lvlStats(factsAll(),shape):{n:0};
+  const chips=lv.map(x=>{const on=fact.lvl===x.key||(!fact.lvl&&Math.abs(x.value-(sellNow||0))<0.005);
+    return `<button type="button" class="lv${on?' on':''}" data-lv="${x.key}" data-asin="${asin}" data-val="${x.value}" data-shape="${shape||''}" title="Sell at the ${x.label} level · £${x.value.toFixed(2)}${x.n!=null?` · ${x.n} seller${x.n===1?'':'s'}`:''}">${x.label} <b>£${x.value.toFixed(2)}</b>${x.n!=null?`<i>${x.n}</i>`:''}</button>`;}).join('');
+  const learn=(st.n>=2&&st.top)?`<span class="lvlearn" title="What you have picked on this shape before">on this shape you take ${(SELL_LEVELS.find(z=>z[0]===st.top.lvl)||[])[1]||st.top.lvl} ${st.top.count} of ${st.n}</span>`:'';
+  const stale=(typeof staleFba==='function'&&staleFba(r))?`<span class="lvstale" title="Keepa's FBA 90d average counts every FBA offer it tracked, including ones that vanished. On a thin listing it can be a ghost.">FBA avg may be stale · check the graph</span>`:'';
+  return `<div class="lvls">${chips}${learn}${stale}</div>`;}
+/* the app's pick becomes Jack's pick: hand the learned levels to sellPick before each run */
+function stampLearned(){if(typeof UNIFIED_SELL==='undefined'||typeof learnedLevels!=='function')return;UNIFIED_SELL.learned=learnedLevels(factsAll());}
 /* ============ the run ============ */
-function run(){if(!cur)return;
+function run(){if(!cur)return;stampLearned();
   /* UK-only brand with just the Finder export: the Finder carries the same columns, so it IS the sell side */
   if(cur.rule===1&&!files.viewer&&files.UK&&files.UK.hasFees&&cur.markets.every(m=>m==='UK')){files.viewer=files.UK;files.UK=null;paintSlots();}
   const ready=cur.rule===1?!!files.viewer:!!files.one;
   if(!ready){if(runStored())return;result=null;$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;
     ['#story','#statusRow','#sumDetail','#fell'].forEach(id=>{const e=$(id);if(e){e.innerHTML='';if(id==='#story')e.hidden=true;}});['#brandNote','#storedNote'].forEach(id=>{const e=$(id);if(e)e.hidden=true;});const fw=$('#feeWarn');if(fw)fw.classList.remove('show');
     $('#sumEmpty').textContent=cur.rule===1?(MARKETS.some(m=>files[m])?'Finder exports in — drop the UK Product Viewer export and the leads appear here.':'Drop the exports and the numbers appear here.'):'Drop the export and the numbers appear here.';renderGuide();return;}
+  /* b111: the file is in but lacks the ladder columns — say so where the numbers would be, and stop */
+  {const sellF=cur.rule===1?files.viewer:files.one;const blk=ladderBlock(sellF);
+    if(blk){result=null;$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;$('#sumEmpty').innerHTML=blk;$('#sumEmpty').classList.add('err');
+      ['#story','#statusRow','#sumDetail','#fell'].forEach(id=>{const e=$(id);if(e){e.innerHTML='';if(id==='#story')e.hidden=true;}});['#brandNote','#storedNote'].forEach(id=>{const e=$(id);if(e)e.hidden=true;});return;}
+    $('#sumEmpty').classList.remove('err');}
   const prevMap=baselineOf(leadMap(cur.key));
   let R;
-  if(cur.rule===1){R=rule1Compute(files,cur.name,rate(),null);R.rule=1;R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;o.Score=r2score(o['Profit £'],o['ROI %'],o.SPM,(o['Sell £ used']||0)<R2.LOW_TICKET);});}
+  if(cur.rule===1){if(files.viewer)stampShares(files.viewer.rows);R=rule1Compute(files,cur.name,rate(),null);R.rule=1;R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;o.Score=r2score(o['Profit £'],o['ROI %'],o.SPM,(o['Sell £ used']||0)<R2.LOW_TICKET);});}
   else{/* a tea & coffee filter: every row is 0% unless it reads like an appliance (machine, grinder…) or a VA has set it */
     const vf=cur.vat0?((row,fact)=>{if(fact&&fact.vat!=null&&fact.vat!=='')return vatFor(row,fact);
       const text=((row.Title||'')+' | '+(row['Categories: Sub']||'')).toLowerCase();if(r4isAppliance(text))return{rate:R4.STANDARD,why:'20% — reads like an appliance, not the drink',src:'rule'};
       return{rate:0,why:'0% VAT — everything on this filter is tea / coffee',src:'source'};}):vatFor;
-    R=rule2Compute(files.one.rows,factsAll(),{vatFor:vf,rule:cur.rule});R.rule=cur.rule;
+    stampShares(files.one.rows);R=rule2Compute(files.one.rows,factsAll(),{vatFor:vf,rule:cur.rule});R.rule=cur.rule;
     const lowS=R.all.filter(o=>o.lowScore),noM=R.all.filter(o=>!o.kept&&!o.lowScore);
     R.dropped=noM.map(o=>[o.ASIN,o.Product,`needs ${o['Needs % off']}% off Amazon to reach ${R2.TARGET_ROI}% ROI (brand allows ${o['Brand discount %']||R2.DEFAULT_ALLOW}%)`])
       .concat(lowS.map(o=>[o.ASIN,o.Product,o.lowRoi?`ROI ${o['ROI %']}% — under ${R2.MIN_ROI_LOW}% even with a code`:`scored ${o.Score}${o['Potential score']>o.Score?' ('+o['Potential score']+' with a code)':''} — under ${R2.MIN_SCORE}, not worth a look`]));
@@ -509,6 +638,16 @@ function run(){if(!cur)return;
       if(!(n>1)){o['Demand basis']=lost?'confirmed figure lost \u00b7 '+dr+' drops says 50+':'under 50 a month \u00b7 rank drops only';return;}
       /* 2 — no confirmed figure: split the family by its reviews, if the family is in this export */
       const sibs=sibsOf(a).filter(x=>byAsin[x]);
+      /* b104 (Jack, 18 Sep: "is the var thing fixed — I'm unsure if they sold due to var and reviews").
+         The single most telling fact about a variation with no figure is whether a SIBLING has one. The ASUS
+         Chromebook lead (Misty Green 128GB) had none, while the Fabric Blue 64GB beside it sold a confirmed
+         1,000 a month — so the family's drops were that one's, not ours. Said on the row, as a label: the
+         lesson of b103 is that this kind of thing informs a person and never gates on its own. */
+      const seller=sibs.map(x=>({x,b:kNum(byAsin[x]['Monthly Sales Trends: Bought in past month'])||0,
+          name:String(byAsin[x]['Variation Attributes']||'').replace(/[A-Za-z]+:\s*/g,'').replace(/;\s*$/,'').replace(/;\s*/g,', ').slice(0,40)}))
+        .filter(z=>z.x!==a&&z.b>=50).sort((p,q)=>q.b-p.b)[0];
+      if(seller){o['Family seller']=seller.name+' · '+seller.b+'/mo';
+        o.Flags=(o.Flags?o.Flags+'; ':'')+`the family's sales are ${seller.name||seller.x} (${seller.b}/mo confirmed) — this option has no figure of its own`;}
       const fam=sibs.reduce((t,x)=>t+(rev[x]||0),0);
       if(fam>0&&rev[a]!=null){
         const share=rev[a]/fam;
@@ -534,6 +673,19 @@ function run(){if(!cur)return;
       o['Demand basis']=lost?'confirmed figure lost \u00b7 '+dr+' drops says 50+':'under 50 a month \u00b7 rank drops only';o['Demand belongs to']='the whole listing';
       o.Flags=(o.Flags?o.Flags+'; ':'')+`1 of ${n} options, no confirmed sales, and no family reviews in this export — the ${o.SPM||o['Sells /mo']||''}/mo is the whole listing's rank`;
     });})();
+  /* b102 (Jack, 18 Sep: "sell price is around 51.50 — as that is what it was selling when it last went to
+     full price"). Rule 1's sell is the Buy Box 90-day average +8%, and when Amazon has been discounting that
+     average is dragged down — the G321 White reads £47.51 against a £50.98 market. On 8 Sep Jack settled that
+     this exception is the GRAPH's job, not the formula's. Rule 2 rows have always had a box to type the price
+     you read off the graph; Rule 1 rows never did, so on a brand run there was no way to do that job. Now there
+     is. The typed price is stored per ASIN, shared, and re-runs the numbers through Rule 1's own fee maths —
+     the formula is not changed, and the rule's own price stays on the row for comparison. */
+  if(cur.rule===1){const F=factsAll();R.out.forEach(o=>{const f=F[o.ASIN];const ys=f&&+f.sell;if(!(ys>0))return;
+    const kg=+o.kg||0,ref=(+o['Referral %']||15)/100,fba=+o['FBA fee £']||BR.DEF_FBA;
+    const [pf,roi]=brProfit(ys,+o['Landed £'],ref,fba,kg,null,o.Category||'');
+    o['Rule sell £']=o['Sell £ used'];o['Rule profit £']=o['Profit £'];o['Rule ROI %']=o['ROI %'];
+    o['Sell £ used']=ys;o['Sell used']='your price'+(f.who?' ('+f.who+')':'');o['Profit £']=pf;o['ROI %']=roi;
+    o.Score=r2score(pf,roi,o.SPM,ys<R2.LOW_TICKET);o.yourSell=true;});}
   /* the central blacklists: an ASIN, or an approved brand, never shows — on any rule, any run, whatever Keepa filter found it */
   const B=blAll(),bl=[];R.out=R.out.filter(o=>{const b=B[o.ASIN];const bb=bbStatusFor(o.Brand||(cur.type==='brand'?cur.name:''));
     if(b){bl.push([o.ASIN,o.Title||o.Product||'','BLACKLISTED · '+b.reason+(b.note?' — '+b.note:'')+(b.who?' · '+b.who:'')]);return false;}
@@ -557,12 +709,13 @@ function run(){if(!cur)return;
 function logRun(){const R=result,c={NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};R.out.forEach(o=>c[o.STATUS]++);
   const names=cur.rule===1?SLOTS.filter(k=>files[k]).map(k=>files[k].name):[files.one.name];
   const rowsIn=cur.rule===1?files.viewer.rows.length:files.one.rows.length;
-  runSave({at:nowIso(),day:today(),source:cur.key,name:cur.name,rule:cur.rule,files:names,rowsIn,leads:R.out.length,new:c.NEW,better:c.BETTER,worse:c.WORSE,gone:R.gone.length,blacklisted:R.blacklisted.length,asins:R.out.map(o=>o.ASIN),who:me()});
+  runSave({at:nowIso(),day:today(),source:cur.key,name:cur.name,rule:cur.rule,files:names,rowsIn,st:R.st,leads:R.out.length,new:c.NEW,better:c.BETTER,worse:c.WORSE,gone:R.gone.length,blacklisted:R.blacklisted.length,asins:R.out.map(o=>o.ASIN),who:me()});
   leadSave(cur.key,nextLeadMap(R.out,R.rule,leadMap(cur.key)));renderLog();}
 
 /* ============ results ============ */
 function sumTile(v,l,cls){return`<div class="sum ${cls||''}"><span class="sv">${typeof v==='number'?v.toLocaleString():v}</span><span class="sl">${l}</span></div>`;}
 function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=true;$('#results').hidden=false;
+  paintOptionBar();paintPastBar();
   const rev=out.filter(o=>o.QUEUE).length;let tiles;
   if(cur.rule===1){const cnt=k=>out.filter(o=>o['Buy market']===k).length,euN=out.length-cnt('UK');
     tiles=sumTile(st.viewer,'in the Viewer')+sumTile(st.demand,'sell 10+/mo in the UK')+sumTile(st.buy,'Amazon selling it')+sumTile(out.length,'leads','lead')
@@ -616,10 +769,12 @@ function paintCompare(R,c,rev){let el=$('#vsYest');const sr=$('#statusRow');if(!
   if(faller)lines.push(`Biggest fall: <b>${nm(faller)}</b> — ${escapeHtml(faller.Changed||'')}.`);
   const q50=out.filter(o=>o.QUEUE&&sc(o)>=50).length;if(rev)lines.push(`Of the ${rev} to review, <b>${q50}</b> score 50 or better.`);
   el.innerHTML=`<div class="vsh">vs ${ukDate(R.prevStamp)}</div><div class="vsbody">${tbl}<div class="vslines">${lines.map(l=>`<p>${l}</p>`).join('')}</div></div>`;el.hidden=false;}
+/* b127: a stored or past run has no row-by-row counts — say so instead of printing NaN */
+function numOrDash(v){return(v==null||v==='—'||v===''||isNaN(+v))?'<b>—</b>':`<b>${(+v).toLocaleString()}</b>`;}
 function paintStory(){const R=result;if(!R||!cur)return;const st=R.st,out=R.out;const rev=out.filter(o=>o.QUEUE).length;
   const c={NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};out.forEach(o=>c[o.STATUS]++);
   const judged=out.filter(o=>o.verdict&&!o.QUEUE).length;const V=verdAll();const yes=out.filter(o=>(V[o.ASIN]||{}).v==='Yes').length,no=out.filter(o=>(V[o.ASIN]||{}).v==='No').length;
-  const n=v=>`<b>${(+v).toLocaleString()}</b>`;
+  const n=numOrDash;
   const story=cur.rule===1
     ?`${n(st.viewer)} products in the Viewer → ${n(st.demand)} sell 10+ a month in the UK → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`
     :`${n(st.rows)} products in the export → ${n(st.priced)} sold by Amazon → ${n(st.demand)} sell 10+ a month → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`;
@@ -709,11 +864,11 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
     return`<i class="ch ${conf?'good':'oa'}" title="${escapeHtml(rows.map(x=>`${x.who} ${Math.round(x.pct*10)/10}% → £${x.p.toFixed(2)} profit · ${Math.round(x.roi)}% ROI`).join(' · '))}">${escapeHtml(lab)}</i>`;};
   const pmRow=o=>o['Buy market']!=='UK'?'':`<div class="pms pms-r1">${PM_OPTIONS.map(x=>`<button type="button" class="pm${(factGet(o.ASIN).pm||[]).includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}" title="Tick when you have confirmed ${x} price-matches">${pmLabel(x)}</button>`).join('')}</div>`;
   if(cur.rule===1){h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Product</th><th>Verdict</th><th class="r">Landed £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">/mo</th><th>Flags · OA check</th></tr></thead><tbody>`;
-    rows.forEach((o,i)=>{const fl=(o.Flags||'').split('; ').filter(Boolean);const band=bandOf(o.Score||1);h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td class="scorec"><span class="score ${band}">${o.Score||1}</span><div class="stat2">${statusCell(o)}</div></td>
+    rows.forEach((o,i)=>{const fl=(o.Flags||'').split('; ').filter(Boolean);const band=bandOf(o.Score||1);h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}" data-asin="${o.ASIN}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td class="scorec"><span class="score ${band}">${o.Score||1}</span><div class="stat2">${statusCell(o)}</div></td>
       <td class="prod"><span class="t" title="${escapeHtml(o.Title)}">${escapeHtml(o.Title)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o['Sell used'])}${o['LTD badge']?' · <b>LTD</b>':''}</span></span>${acts(o)}${pend(cur.name)}</td>
       <td class="vcell">${verdCell(o)}</td>
       <td class="num r buyc">${mk(o['Buy market'])} <b>${gbp(o['Landed £'])}</b>${o['Discount applied']?`<span class="sub">${escapeHtml(o['Discount applied'])}</span>`:''}</td>
-      <td class="num r">${gbp(o['Sell £ used'])}${(o['Sell low £']||0)>0&&(o['Sell low £']||0)<(o['Sell £ used']||0)-0.005?`<span class="sub" title="If it only ever fetches the Buy Box 90d average">worst £${(o['Sell low £']).toFixed(2)}</span>`:''}</td>
+      <td class="num r sellc"><b class="${o.yourSell?'yours':''}">${gbp(o['Sell £ used'])}</b>${o.yourSell?`<span class="sub">yours · rule said ${gbp(o['Rule sell £'])}</span>`:((o['Sell low £']||0)>0&&(o['Sell low £']||0)<(o['Sell £ used']||0)-0.005?`<span class="sub" title="If it only ever fetches the Buy Box 90d average">worst £${(o['Sell low £']).toFixed(2)}</span>`:'')}<input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" min="0" placeholder="your £" value="${o.yourSell?o['Sell £ used']:''}" title="Read the graph? Type what it really sells at and the profit re-works">${lvlPicker(o.ASIN,o['Sell £ used'])}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r">${o.SPM}<span class="sub">${o['SPM from']}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
       <td class="flagc">${(()=>{const oa=oaChip(o),fx=flagPick(fl);return`<span class="chips">${oa}${fx.show.map(flagChip).join('')}${fx.rest.length?`<i class="ch more" title="${escapeHtml(fx.rest.join(' · '))}">+${fx.rest.length}</i>`:''}</span>`;})()}${pmRow(o)}</td></tr>`;});}
@@ -721,12 +876,12 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
     rows.forEach(o=>{const pot=o['Potential score']>o.Score+5?o['Potential score']:0;const band=bandOf(Math.max(o.Score,pot));
       const fact=factGet(o.ASIN);const alt=[['Buy Box 90d',o['Buy Box 90d £']],['Buy Box 180d',o['Buy Box 180d £']],['FBA 90d',o['FBA 90d £']],['FBM 90d',o['FBM 90d £']],['Buy Box high',o['Buy Box high £']]].filter(x=>x[1]).map(x=>`${x[0]} ${gbp(x[1])}`).join(' · ');
       const vcls=fact.vat==null?'':(+fact.vat===0?'z':'s');const vtxt=fact.vat==null?(o['VAT %']===0?(cur.vat0?'0% VAT · FILTER':'0% VAT · CONFIRM'):'VAT 20%'):(+fact.vat===0?'0% VAT ✓':'20% VAT ✓');
-      h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}">${sel(o)}<td class="idx">${o['#']}</td>
+      h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}" data-asin="${o.ASIN}">${sel(o)}<td class="idx">${o['#']}</td>
       <td class="scorec"><span class="score ${band}">${o.Score}</span>${pot?`<span class="potl" title="Potential score with ${escapeHtml(o['Potential via'])}">→ ${pot}</span>`:''}<div class="stat2">${statusCell(o)}</div></td>
       <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d':''}</span></span>${acts(o)}<span class="chips">${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 3 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
       <td class="vcell">${verdCell(o)}</td>
       <td class="num r buyc"><b>${gbp(o['After discount £'])}</b><span class="sub">${o['Discount applied']?'Amazon '+gbp(o['Buy at £'])+' · '+escapeHtml(o['Discount applied']):(o['Amazon 90d drop %']!==''&&o['Amazon 90d drop %']!=null?o['Amazon 90d drop %']+'% under 90d avg':'')}</span></td>
-      <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(o['Sell from']+' — '+alt)}">${escapeHtml(shortSell(o['Sell from']))}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit"></td>
+      <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(o['Sell from']+' — '+alt)}">${escapeHtml(shortSell(o['Sell from']))}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit">${lvlPicker(o.ASIN,o['Sell for £'])}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r">${o['Sells /mo']}<span class="sub">/mo${o['Demand from']?' · '+escapeHtml(o['Demand from']):''}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
       <td class="pmc">${oaCell(o)}</td></tr>`;});}
@@ -735,7 +890,8 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
   let pg='';const win=[...new Set([1,2,view.page-1,view.page,view.page+1,pages-1,pages].filter(p=>p>=1&&p<=pages))].sort((a,b)=>a-b);
   let last=0;win.forEach(p=>{if(p-last>1)pg+='<span style="padding:0 4px;color:var(--faint)">…</span>';pg+=`<button data-pg="${p}" class="${p===view.page?'on':''}">${p}</button>`;last=p;});
   $('#pager').innerHTML=`<span>Showing ${from}–${to} of ${all.length}${view.sel.size?` · <b>${view.sel.size} selected</b>`:''}</span><div class="pg"><button data-pg="${view.page-1}" ${view.page<=1?'disabled':''}>‹</button>${pg}<button data-pg="${view.page+1}" ${view.page>=pages?'disabled':''}>›</button></div>`;
-  $('#openSel').textContent=view.sel.size?`Open ${view.sel.size} ticked in Keepa`:all.length<=OPEN_ALL_MAX?`Open all ${all.length} in Keepa`:`Open ${rows.length} on this page in Keepa`;}
+  $('#openSel').textContent=view.sel.size?`Open ${view.sel.size} ticked in Keepa`:all.length<=OPEN_ALL_MAX?`Open all ${all.length} in Keepa`:`Open ${rows.length} on this page in Keepa`;
+  setupKeys();paintJudged();if(view.active){const tr=document.querySelector(`.ltbl tbody tr[data-asin="${view.active}"]`);if(tr)tr.classList.add('active');}}
 /* b23 density pass (Jack, 14 Sep: "too busy") — the Sell cell already shows the worst case and the retailer buttons say
    "check OA", so those two flags are noise; the rest are ranked and only two show, the others sit behind "+n" on hover */
 const FLAG_RANK=[/EU PLUG|PLUG CHECK/i,/tanked/i,/NOT A DROP/i,/no FBA seller/i,/LIMITED TIME/i,/AMAZON OWNS/i,/WIDE SELL/i,/volatile/i,/drops only/i,/not in a drop/i,/A2A->OA/i,/ZERO-RATED/i];
@@ -765,6 +921,9 @@ function markAllSeen(){if(!result||!needMe())return;const list=result.out.filter
   list.forEach(o=>{o.verdict=verdGet(o.ASIN);o.QUEUE='';o.sinceVerdict='';});touched.clear();renderResults();renderLog();toast(list.length+' marked as seen — baseline set');}
 function onTableClick(e){const cp=e.target.closest('button[data-copy]');if(cp){copy(cp.dataset.copy,cp.dataset.copy+' copied');return;}
   const b=e.target.closest('button');if(!b)return;const a=b.dataset.asin||b.dataset.bl||b.dataset.blbrand||b.dataset.vat||b.dataset.track;if(!a)return;const o=leadOf(a);
+  /* b116: a level chip = the sell for this lead, and a lesson for the shape. Tap the one that is on to clear it. */
+  if(b.dataset.lv){const f=factGet(a);if(f.lvl===b.dataset.lv)factSet(a,{sell:null,lvl:null,shape:null});else factSet(a,{sell:parseFloat(b.dataset.val),lvl:b.dataset.lv,shape:b.dataset.shape||null});touched.add(a);
+    const y=window.scrollY;run();window.scrollTo(0,y);const tr=document.querySelector(`tr[data-asin="${a}"]`)||[...document.querySelectorAll('button.lv')].find(x=>x.dataset.asin===a)?.closest('tr');if(tr)tr.classList.add('lvopen');return;}
   if(b.dataset.pm){const f=factGet(a);const pm=new Set(f.pm||[]);if(pm.has(b.dataset.pm))pm.delete(b.dataset.pm);else pm.add(b.dataset.pm);factSet(a,{pm:[...pm]});touched.add(a);run();return;}
   if(b.dataset.vat!=null){if(!needMe(b))return;const f=factGet(a);const next=f.vat==null?0:(+f.vat===0?20:null);factSet(a,{vat:next});toast(next==null?'Back to the Rule 3 keyword rule':next+'% VAT set on '+a+' — shared');touched.add(a);run();return;}
   if(b.dataset.track!=null){if(!o)return;const f=factGet(a);const sug=f.track?f.track.target:(o.low?o.low.buy:Math.round((o.state.buy*0.9)*100)/100);
@@ -1011,7 +1170,7 @@ function brandsInit(){if(typeof bbSeed==='function')bbSeed();paintJackOnly();ren
   ['#runNext','#runNext2'].forEach(id=>$(id).addEventListener('click',e=>{const k=e.currentTarget.dataset.key;if(k&&srcGet(k)){backToList();openRun(k);window.scrollTo({top:0,behavior:'smooth'});}}));
   $('#yourDay').addEventListener('click',e=>{const b=e.target.closest('button[data-start]');if(b)openRun(b.dataset.start);});
   $('#howToHide').addEventListener('click',()=>{lsSet(HOWTO_KEY,true);renderHowTo();});$('#howToShow').addEventListener('click',()=>{lsSet(HOWTO_KEY,false);renderHowTo();$('#howTo').scrollIntoView({behavior:'smooth',block:'center'});});
-  $('#runStrip').addEventListener('click',e=>{if(e.target.closest('[data-act="hist"]')&&cur)openHistory(cur);});
+  $('#runStrip').addEventListener('click',e=>{const d=e.target.closest('[data-run]');if(d&&cur){openPastRun(d.dataset.run);return;}if(e.target.closest('[data-act="hist"]')&&cur)openHistory(cur);});
   $('#runCopyLink').addEventListener('click',e=>{if(!cur)return;const w=USERS.includes(cur.owner)?'&who='+cur.owner:'';copy(location.origin+location.pathname+'#run='+cur.key+w,'Link copied — paste it into the AVM HQ task'+(w?' (opens as '+cur.owner+', no name prompt)':''),e.currentTarget,'Copied');});
   $('#runAllTime').addEventListener('click',()=>{if(!cur)return;const k=cur.key;backToList();historyOpenFor(k);});
   $('#fSort').addEventListener('change',e=>{view.sort=e.target.value;view.page=1;renderTable();});

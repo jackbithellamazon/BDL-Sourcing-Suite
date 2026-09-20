@@ -102,11 +102,23 @@ async function audCheckTables(){if(!cloudEnabled()||audState.checking)return aud
   try{await cloudGetAll('src_audit_verdicts','select=id&limit=1');audState.tables=true;}
   catch(e){audState.tables=missingTables(e)?false:audState.tables;}
   audState.checking=false;return audState.tables;}
+/* b106 — every audit table gets exactly the columns it was created with (2026-09-16-BDL-SOURCING-AUDIT-SUPABASE.sql).
+   Product rows carry two local-only fields, `offers` and `asked`, which src_products does not have; sending them
+   got every product upsert rejected, and that one rejected row blocked the whole queue. Applied at SEND time, so
+   the rows already stuck in the outbox are cleaned on the way out too. The offer count is kept, in the table's
+   own `fba` column, which is what that column is for. */
+const AUD_COLS={
+  src_products:['asin','domain','title','brand','image','price','rank','root','mo','fba','source','fetched_at'],
+  src_audit_verdicts:['id','asin','domain','verdict','reason','note','seller_id','who','at','expires_at'],
+  src_audit_shelves:['seller_id','name','kind','asins','pulled_at','pulled_by']};
+function audShape(table,rows){const c=AUD_COLS[table];if(!c)return rows;
+  return rows.map(r=>{const o={};c.forEach(k=>{if(r[k]!==undefined)o[k]=r[k];});
+    if(table==='src_products'&&(o.fba==null||o.fba==='')&&r.offers!=null)o.fba=r.offers;return o;});}
 async function audFlush(){if(!cloudEnabled())return;if(audState.tables===null)await audCheckTables();if(!audState.tables)return;
   let q=audOut();let guard=0;
   while(q.length&&guard++<50){const it=q[0];
     try{
-      if(it.op==='up')for(let i=0;i<it.rows.length;i+=200)await cloudReq('POST',it.table,it.rows.slice(i,i+200),'resolution=merge-duplicates,return=minimal');
+      if(it.op==='up')for(let i=0;i<it.rows.length;i+=200)await cloudReq('POST',it.table,audShape(it.table,it.rows.slice(i,i+200)),'resolution=merge-duplicates,return=minimal');
       else if(it.op==='del')await cloudReq('DELETE',it.table+'?id=in.('+it.ids.map(v=>'"'+encodeURIComponent(v)+'"').join(',')+')',null,'return=minimal');
       q=audOut();q.shift();lsSet(AUD.OUT,q);
     }catch(e){if(missingTables(e)){audState.tables=false;return;}
@@ -130,7 +142,7 @@ async function audPullShelves(force){if(!cloudEnabled())return false;if(!force&&
 async function audPullProducts(asins){if(!cloudEnabled()||!(await audCheckTables()))return;
   const want=asins.filter(a=>!audState.prod[a]);if(!want.length)return;
   for(let i=0;i<want.length;i+=150){const part=want.slice(i,i+150);
-    try{const rows=await cloudGetAll('src_products','select=*&asin=in.('+part.join(',')+')');rows.forEach(r=>audState.prod[r.asin]=r);audProdSaveLocal();}catch(e){return;}}}
+    try{const rows=await cloudGetAll('src_products','select=*&asin=in.('+part.join(',')+')');rows.forEach(r=>{if(r.source==='keepa'){r.asked=1;if(r.offers==null&&r.fba!=null)r.offers=r.fba;}audState.prod[r.asin]=r;});audProdSaveLocal();}catch(e){return;}}}
 function audSaveProducts(rows){rows.forEach(r=>{audState.prod[r.asin]=r;});audProdSaveLocal();if(cloudEnabled())audQueue({op:'up',table:'src_products',rows});}
 
 /* b65 (Jack: "as automated as possible"): opening a shelf fills in the details by itself.
@@ -223,21 +235,38 @@ function auSyncNote(){const n=audOut().length;if(!cloudEnabled())return'<span cl
   return n?`<span class="ausync">${n} answer${n===1?'':'s'} to send</span>`:'<span class="ausync ok">Saved for everyone</span>';}
 function audPaintSync(){const el=$('#auSync');if(el)el.outerHTML=auSyncNote().replace('<span class="','<span id="auSync" class="');}
 
-const AU_ANCHOR={top:null,key:null};
+const AU_ANCHOR={top:null,want:false};
+/* called by the things that move the cursor, so only a deliberate press pins the page */
+function auPin(){const el=document.querySelector('.aurow.focus');
+  AU_ANCHOR.top=el?el.getBoundingClientRect().top:null;AU_ANCHOR.want=!!el;}
 function renderAudit(){const host=$('#page-audit');if(!host)return;
   document.body.classList.toggle('auditing',auView.mode==='audit');
-  const _f=document.querySelector('.aurow.focus');
-  if(_f&&AU_ANCHOR.key===auView.shelf+'|'+auView.focus)AU_ANCHOR.top=_f.getBoundingClientRect().top;
   if(!isJack()){host.innerHTML=`<div class="card"><div class="empty"><span>The storefront audit is Jack's. Pick your name top right if this is you.</span></div></div>`;return;}
   if(auView.mode==='audit'&&auView.shelf&&audShelf(auView.shelf))auRenderOne();else auRenderList();}
 /* b69 (Jack: "highest % of products I sell too") — the rival you overlap with most is the one worth auditing,
    because everything on their shelf you do not sell is a lead you have not found yet. */
 function auOverlap(c){return c.all?c.sell/c.all:0;}
+/* b100 (Jack: "add a sort by"). 39 rivals was one fixed order — most overlap first — and no way to ask a
+   different question of the list. These are the questions worth asking, in the words of the answer. */
+const AU_RSORTS=[['overlap','You sell the most of theirs'],['leads','Most were our leads'],
+  ['todo','Fewest left to judge'],['most','Most left to judge'],['size','Biggest shelf'],
+  ['done','Least recently audited'],['name','Name A-Z']];
+function auRsort(){return AU_RSORTS.some(x=>x[0]===auView.rsort)?auView.rsort:'overlap';}
+function auRankRivals(rows){const by={
+  overlap:(a,b)=>auOverlap(b.c)-auOverlap(a.c)||b.c.todo-a.c.todo,
+  leads:(a,b)=>(b.c.had||0)-(a.c.had||0)||auOverlap(b.c)-auOverlap(a.c),
+  todo:(a,b)=>(a.c.todo||0)-(b.c.todo||0)||auOverlap(b.c)-auOverlap(a.c),
+  most:(a,b)=>(b.c.todo||0)-(a.c.todo||0)||auOverlap(b.c)-auOverlap(a.c),
+  size:(a,b)=>(b.c.all||0)-(a.c.all||0),
+  /* never audited first — those are the ones with everything still to find */
+  done:(a,b)=>String(a.la||'').localeCompare(String(b.la||''))||auOverlap(b.c)-auOverlap(a.c),
+  name:(a,b)=>String(a.sh.name||'').localeCompare(String(b.sh.name||''))}[auRsort()];
+  return rows.sort(by);}
 function auNextShelf(fromId){const L=audShelfList().map(sh=>({sh,c:auCounts(sh)})).filter(x=>x.sh.id!==fromId&&x.c.todo>0)
   .sort((a,b)=>auOverlap(b.c)-auOverlap(a.c)||b.c.todo-a.c.todo);return L[0]?L[0].sh:null;}
 function auRenderList(){auView.mode='list';const shelves=audShelfList();
   if(auView.cards===null)auView.cards=shelves.length<=8;   /* a few rivals read better as cards, 39 do not */const V=audAll();const O=auOurs();
-  const rows=shelves.map(sh=>({sh,c:auCounts(sh),la:auLastAudit(sh),nw:auNewSince(sh)})).sort((a,b)=>auOverlap(b.c)-auOverlap(a.c)||b.c.todo-a.c.todo);
+  const rows=auRankRivals(shelves.map(sh=>({sh,c:auCounts(sh),la:auLastAudit(sh),nw:auNewSince(sh)})));
   const seen=new Set();let todo=0,had=0,sell=0,missed=0;
   shelves.forEach(sh=>sh.items.forEach(it=>{if(seen.has(it.a))return;seen.add(it.a);const st=audStatus(V[it.a],audSells(sh.id,it.a));
     if(st==='todo')todo++;if(st==='missed')missed++;if(audSells(sh.id,it.a))sell++;const o=O[it.a];if(o&&o.said!=='Yes')had++;}));
@@ -246,7 +275,7 @@ function auRenderList(){auView.mode='list';const shelves=audShelfList();
   $('#page-audit').innerHTML=`<div class="card">
     <div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg></span><h2>Storefront audits</h2>
       <span class="sub">One pass per rival. After that only their new lines come back. An answer belongs to the product, so it counts on every shelf.</span>
-      <div class="right">${auSyncNote().replace('<span class="','<span id="auSync" class="')}<button class="btn ghost sm" id="auCards" type="button">${auView.cards?'Show as a list':'Show as cards'}</button><button class="btn ghost sm" id="auRefresh" type="button">Refresh shelves</button>${(()=>{const n=auNextShelf(null);const c=n?auCounts(n):null;return n?`<button class="btn primary sm" type="button" data-open="${escapeHtml(n.id)}">${ICONS.run}${c.byHand?'Carry on':'Start'} · ${escapeHtml(n.name)} · ${c.todo.toLocaleString()} left</button>`:'';})()}</div></div>
+      <div class="right">${auSyncNote().replace('<span class="','<span id="auSync" class="')}<label class="ausortby"><span>Order</span><select id="auRsort">${AU_RSORTS.map(([v,l])=>`<option value="${v}"${auRsort()===v?' selected':''}>${l}</option>`).join('')}</select></label><button class="btn ghost sm" id="auCards" type="button">${auView.cards?'Show as a list':'Show as cards'}</button><button class="btn ghost sm" id="auRefresh" type="button">Refresh shelves</button>${(()=>{const n=auNextShelf(null);const c=n?auCounts(n):null;return n?`<button class="btn primary sm" type="button" data-open="${escapeHtml(n.id)}">${ICONS.run}${c.byHand?'Carry on':'Start'} · ${escapeHtml(n.name)} · ${c.todo.toLocaleString()} left</button>`:'';})()}</div></div>
     ${shelves.length?`<div class="kpis aukpis">
       ${k(shelves.length,'Rivals with a saved shelf','from OA Overview, plus any you add')}
       ${k(seen.size.toLocaleString(),'Products','each judged once, everywhere')}
@@ -409,14 +438,22 @@ function auRenderOne(){const sh=audShelf(auView.shelf);const c=auCounts(sh);cons
      before the render and scroll by exactly the difference after it. The page then never moves under
      your hand, however much the row grows. scrollIntoView only ran when the row left the viewport,
      which is why it felt fine sometimes and awful others. */
+  /* b99 (Jack: "it's jittering when i press discord now"). b92 corrected the scroll on EVERY render and
+     stored the result as the next target. The panel's Keepa graph arrives a moment later, the page grows,
+     another render lands — and each one tried to re-pin against a target it could no longer reach, so it
+     nudged, and nudged again. The correction is now armed only by an actual keypress, runs ONCE after the
+     browser has laid the page out, and disarms itself. Renders that nobody asked for leave the scroll alone. */
   const f=document.querySelector('.aurow.focus');
-  if(f){const after=f.getBoundingClientRect().top;
-    if(AU_ANCHOR.top!=null&&AU_ANCHOR.key===auView.shelf+'|'+auView.focus){
-      const drift=after-AU_ANCHOR.top;
-      if(Math.abs(drift)>1)window.scrollBy(0,drift);
-    }else if(after<0||after>innerHeight-120){f.scrollIntoView({block:'nearest',behavior:'auto'});}
-    AU_ANCHOR.top=f.getBoundingClientRect().top;AU_ANCHOR.key=auView.shelf+'|'+auView.focus;}
-  else{AU_ANCHOR.top=null;}
+  if(!f){AU_ANCHOR.top=null;AU_ANCHOR.want=false;}
+  else if(AU_ANCHOR.want&&AU_ANCHOR.top!=null){
+    AU_ANCHOR.want=false;
+    requestAnimationFrame(()=>{const el=document.querySelector('.aurow.focus');if(!el)return;
+      const drift=el.getBoundingClientRect().top-AU_ANCHOR.top;
+      if(Math.abs(drift)>1&&Math.abs(drift)<600)window.scrollBy(0,drift);
+      AU_ANCHOR.top=null;});
+  }else{AU_ANCHOR.want=false;
+    const top=f.getBoundingClientRect().top;
+    if(top<0||top>innerHeight-120)f.scrollIntoView({block:'nearest',behavior:'auto'});}
   const cur=vis[auView.focus];if(cur)auLoadGraph(cur.a);}
 /* b71: the price graph. Keepa's free chart is limited by IP address, and when it trips it returns a small PNG that says
    "blocked" rather than an error — so a real chart is judged by its width, never by onload alone. It loads only for the
@@ -508,7 +545,7 @@ function auJudgeNow(asins,code){const sh=audShelf(auView.shelf);if(!sh)return;
     const t0=audType(code);
     if(asins.length===1&&(audGet(asins[0])||{}).verdict===code){
       const vis=auVisible(sh);const k=vis.findIndex(it=>it.a===asins[0]);if(k>=0)auView.focus=k;
-      renderAudit();auFollow();
+      auPin();renderAudit();auFollow();
       if(!(t0&&t0.reasons))toast('Already marked '+(t0?t0.label:code)+' — press U to undo');
     }
     return;}
@@ -521,7 +558,7 @@ function auJudgeNow(asins,code){const sh=audShelf(auView.shelf);if(!sh)return;
      the chip can pop in. The mark clears itself, so scrolling past later never replays it. */
   auView.landed={a:asins[0],at:Date.now()};   /* b98: `asin` never existed here — the parameter is `asins`, and the ReferenceError killed the redraw on EVERY press */
   clearTimeout(auView._landT);auView._landT=setTimeout(()=>{auView.landed=null;},600);
-  auView.sel=new Set();if(!(t&&t.reasons))auAdvance();renderAudit();auFollow();}
+  auView.sel=new Set();auPin();if(!(t&&t.reasons))auAdvance();renderAudit();auFollow();}
 /* b95 (Jack: "why does unsure take us to the top — i want to bulk go through them rapid without being moved").
    It was not Unsure. auAdvance searched DOWN for the next unjudged row and, finding none, wrapped round and
    searched from the top — so the moment everything below you was done, one keypress teleported you to row 1
@@ -583,6 +620,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     const trOpen=t.closest('tr[data-open]');if(trOpen){auOpen(trOpen.dataset.open);return;}
     if(t.closest('#auBack')||t.closest('#auBack2')){auBack();return;}
     if(t.closest('#auCards')){auView.cards=!auView.cards;auSave();renderAudit();return;}
+    if(t.closest('#auRsort'))return;   /* the select handles itself, below */
     if(t.closest('#auRefresh')){toast('Refreshing…');await audPullShelves(true);await audPullVerdicts(true);renderAudit();toast('Up to date');return;}
     if(t.closest('#auPull')){auPullSeller($('#auSeller').value);return;}
     if(t.closest('#auAdd')){auAddList();return;}
@@ -641,3 +679,7 @@ function auHash(){const m=/^#audit(?:=([\w-]+))?/i.exec(location.hash||'');if(!m
   const b=document.querySelector('.pagebtn[data-page="page-audit"]');if(b&&!b.classList.contains('active'))b.click();
   if(m[1]&&audShelf(m[1]))auOpen(m[1]);else{auView.mode='list';renderAudit();}
   return true;}
+
+/* b100: the rival order, saved so it is still there tomorrow */
+document.addEventListener('change',e=>{const sel=e.target&&e.target.closest&&e.target.closest('#auRsort');
+  if(!sel)return;auView.rsort=sel.value;auSave();renderAudit();});
