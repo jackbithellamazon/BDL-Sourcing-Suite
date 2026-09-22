@@ -38,6 +38,7 @@ const closeMenus=()=>document.querySelectorAll('.menu.open').forEach(m=>m.classL
 
 /* ============ identity ============ */
 function whoPaint(){['#whoSel','#meIn'].forEach(id=>{const el=$(id);if(el&&el.value!==me())el.value=me();});
+  if(typeof paintAuthBox==='function')paintAuthBox();
   /* b126: when the person is signed in the picker is theirs, not a choice — swap it for their name and a way out */
   const n=(typeof authedName==='function')?authedName():'';const sel=$('#whoSel');if(!sel)return;
   let pill=$('#authPill');
@@ -48,11 +49,12 @@ function whoPaint(){['#whoSel','#meIn'].forEach(id=>{const el=$(id);if(el&&el.va
 /* the storefront audit is Jack's page — the tile is not there for anyone else */
 function paintJackOnly(){document.querySelectorAll('.jackonly').forEach(el=>{el.hidden=!isJack();});
   if(!isJack()){const p=$('#page-audit');if(p&&p.classList.contains('active')){document.querySelector('.pagebtn[data-page="page-brands"]').click();}}}
-function whoSet(v){lsSet(ME_KEY,v);whoPaint();paintJackOnly();if(typeof renderAudit==='function')renderAudit();renderList();if(result)renderTable();toast(v?'You are '+v+' — everything you mark carries your name':'No name set — nothing can be marked until you pick one',!v);}
+function whoSet(v){lsSet(ME_KEY,v);whoPaint();paintJackOnly();if(typeof renderAudit==='function')renderAudit();renderList();if(result)renderTable();
+  if(v&&pendingFiles){const f=pendingFiles;pendingFiles=null;whoGate(false);handleFiles(f);}   /* b131: the held export goes through */toast(v?'You are '+v+' — everything you mark carries your name':'No name set — nothing can be marked until you pick one',!v);}
 /* b24 (14 Sep: Jack clicked Y/N/M all afternoon with no name picked — every click was refused by a toast he never saw and the
    work was lost). The question is now a gate you cannot miss: it opens on first visit and on any marking click, and the click
    that hit it is replayed once a name is picked. */
-let whoPending=null;
+let whoPending=null,pendingFiles=null;
 function needMe(target){if(me())return true;whoPending=target||null;whoGate(true);return false;}
 function whoGate(show){let g=$('#whoGate');if(!g){g=document.createElement('div');g.id='whoGate';g.className='whogate';
     /* b126: sign in with a one-click email link. The name picker stays underneath, so nobody is ever locked out. */
@@ -76,7 +78,9 @@ function whoGate(show){let g=$('#whoGate');if(!g){g=document.createElement('div'
 /* ============ list view ============ */
 function weekAgo(){return Date.now()-7*864e5;}
 function toReviewCount(run){if(!run)return 0;const V=verdAll(),B=blAll();return(run.asins||[]).filter(a=>!V[a]&&!B[a]).length;}
-function renderKpis(){const all=srcAll(),runs=runsAll(),V=verdAll(),LA=leadAll();
+function renderKpis(){const all=visibleSources(),keys=new Set(all.map(s=>s.key));
+  /* b132: a VA's week counts her own sources only — Jack's tiles still count everything */
+  const runs=runsAll().filter(r=>isJack()||keys.has(r.source)),V=verdAll(),LA=leadAll();
   /* b23 (Jack, 14 Sep: "better kpi's like what has actually happened… love data and analysis") — every tile is a count
      from this week's run records, lead states and verdicts; nothing is estimated */
   const due=all.filter(s=>dueState(s).due).length,active=all.filter(s=>s.status==='active').length,testing=all.filter(s=>s.status==='testing').length;
@@ -107,24 +111,25 @@ function listSorted(){const L=srcAll();const last=s=>runLast(s.key);const t=s=>{
     cadence:(a,b)=>((CADENCE_DAYS[a.cadence]||99)-(CADENCE_DAYS[b.cadence]||99))||a.name.localeCompare(b.name)}[lview.sort]||null;
   if(!cmp)return srcSorted();
   return L.sort((a,b)=>(a.type===b.type?0:a.type==='filter'?-1:1)||cmp(a,b));}
-function segCounts(){const all=srcAll();const c={due:0,mine:0,all:all.length,active:0,paused:0};
+function segCounts(){const all=visibleSources();const c={due:0,mine:0,all:all.length,active:0,paused:0};
   all.forEach(s=>{if(dueState(s).due)c.due++;if(s.status==='paused')c.paused++;else c.active++;if((me()&&s.owner===me())||(lockFresh(s)&&ownLock(s)))c.mine++;});
   document.querySelectorAll('#lSeg button').forEach(b=>{const n=b.querySelector('b');if(n)n.textContent=c[b.dataset.seg]||0;});
   const nb=$('#lvnBrands'),nr=$('#lvnRuns'),nl=$('#lvnLeads');if(nb)nb.textContent=all.length;if(nr)nr.textContent=runsAll().length;
   if(nl){let n=0;const LA=leadAll();Object.values(LA).forEach(m=>n+=Object.keys(m||{}).length);nl.textContent=n.toLocaleString();}}
 /* b60 (Jack: "needs to be smooth and easy for my VAs"): the next thing to run, for whoever is signed in */
-function nextDue(fromKey){const m=me();const L=srcAll().filter(s=>s.status!=='paused'&&s.key!==fromKey&&dueState(s).due);
+function nextDue(fromKey){const m=me();const L=visibleSources().filter(s=>s.status!=='paused'&&s.key!==fromKey&&dueState(s).due);
   L.sort((a,b)=>((m&&b.owner===m)-(m&&a.owner===m))||(dueRank(a)-dueRank(b))||a.name.localeCompare(b.name));return L[0]||null;}
 function renderYourDay(){const el=$('#yourDay');if(!el)return;const m=me();if(!m){el.hidden=true;return;}
   const mine=srcAll().filter(s=>s.status!=='paused'&&(s.owner===m||(m==='Jack'&&false)));const due=mine.filter(s=>dueState(s).due);
   const tr=mine.reduce((n,s)=>n+toReviewCount(runLast(s.key)),0);const nx=nextDue(null);
   const dueAny=srcAll().filter(s=>s.status!=='paused'&&dueState(s).due).length;
   el.innerHTML=`<div class="yd"><span class="ydn">${whoChip(m)}</span><span class="ydt">${mine.length?(due.length?`<b>${due.length}</b> of your ${mine.length} filters ${due.length===1?'is':'are'} due today`:`all ${mine.length} of your filters are done for today ✓`):`nothing is assigned to you yet`}${tr?` · <b>${tr.toLocaleString()}</b> lead${tr===1?'':'s'} waiting for a look`:''}${!due.length&&dueAny?` · ${dueAny} due for others`:''}</span>
-    ${nx?`<button class="btn primary sm" type="button" data-start="${nx.key}">${ICONS.run}Start with ${escapeHtml(nx.name)}${nx.owner!==m?' ('+((nx.owner||'VAs')==='VAs'?'VAs':escapeHtml(nx.owner)+"'s")+')':''}</button>`:''}</div>`;el.hidden=false;}
+    ${nx?`<button class="btn primary sm" type="button" data-start="${nx.key}">${ICONS.run}Start with ${escapeHtml(nx.name)}${nx.owner!==m?' ('+((!nx.owner||nx.owner===NO_OWNER)?'unassigned':(nx.owner==='VAs'?'VAs':escapeHtml(nx.owner)+"'s"))+')':''}</button>`:''}</div>`;el.hidden=false;}
 const HOWTO_KEY='bdl-sourcing-howto-hidden';
 function renderHowTo(){const el=$('#howTo');if(!el)return;el.hidden=!!lsGet(HOWTO_KEY,false);}
 function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay();renderHowTo();const q=lview.q.toLowerCase();
   const rows=listSorted().filter(s=>{
+    if(!canSee(s))return false;   /* b132: a VA sees her own sources and nobody else's */
     if(lview.seg==='due'&&!dueState(s).due)return false;
     if(lview.seg==='paused'&&s.status!=='paused')return false;
     if(lview.seg==='active'&&s.status==='paused')return false;
@@ -241,7 +246,7 @@ function openHistory(s){const runs=runsFor(s.key).slice().reverse(),V=verdAll();
       return`<div class="h"><span class="w">${fmtWhen(r.at)}${r.who?'<br>'+escapeHtml(r.who):''}</span><span class="l"><b>${r.leads}</b> leads · ${r.new} new · ${r.better} better · ${r.worse} worse · ${r.gone} gone${r.blacklisted?' · '+r.blacklisted+' blacklisted':''}</span><span class="v">${y}Y ${n}N ${m}M</span></div>`;}).join(''):'<div class="empty"><span>Not run yet.</span></div>'}</div>
     <div class="dfoot"><button class="btn ghost danger" id="dForget">Forget history</button><button class="btn ghost" id="dClose">Close</button></div>`);
   $('#dClose').addEventListener('click',closeDrawer);
-  $('#dForget').addEventListener('click',()=>{if(!confirm('Forget every saved run and the compare baseline for '+s.name+' — for everyone? The next run shows everything as NEW. Verdicts are kept.'))return;histForget(s.key);runsForget(s.key);closeDrawer();renderList();renderLog();toast('History cleared for '+s.name);});}
+  $('#dForget').addEventListener('click',()=>{if(!confirm('Forget every saved run and the compare baseline for '+s.name+' — for everyone? The next run shows everything as NEW. Verdicts are kept.'))return;histForget(s.key);runsForget(s.key);apiLookForget(s.key);closeDrawer();renderList();renderLog();toast('History cleared for '+s.name);});}
 function openBrandBlacklist(brand,fromAsin){if(!needMe())return;
   openDrawer(`<h3>Blacklist a brand</h3><p class="dsub">${isJack()?'You are Jack — this applies straight away.':'Goes to Jack for approval. Until then the brand keeps showing with a PENDING chip.'}</p>
   <div class="form">
@@ -276,16 +281,18 @@ function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runN
   $('#step1Sub').textContent=r1&&!uk1?`Finder export for each of ${s.markets.join(' · ')}, then the UK Product Viewer. Any order.`:uk1?'UK Product Finder, all columns. One file — it carries the UK sell side too, so no Viewer is needed.':'UK Product Finder, all columns. One file.';
   const link=finderLink(s);
   if(!link){$('#keepaRow').innerHTML=`<span class="nolinkmsg">No Keepa link saved for this yet — <button type="button" class="linkbtn" id="keepaEdit">Edit</button> and paste the Finder link. Exports can still be dropped below.</span>`;$('#keepaEdit').addEventListener('click',()=>openEdit(cur));return;}
-  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1&&!uk1?s.markets.map(m=>`<a href="${link}" data-mk="${m}" target="_blank" rel="noopener" title="Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export">${FLAG[m]} ${m}<span class="tick">✓</span>${ICONS.ext}</a>`).join('')+`<span class="mkhint">Same filter for all ${s.markets.length}. Keepa cannot take the marketplace from a link — after it opens, switch the flag top-right of Keepa to that country, run, export. One file per country.</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);}
+  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1&&!uk1?s.markets.map(m=>`<a href="${link}" data-mk="${m}" target="_blank" rel="noopener" title="Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export">${FLAG[m]} ${m}<span class="tick">✓</span>${ICONS.ext}</a>`).join('')+`<span class="mkhint">Same filter for all ${s.markets.length}. Keepa cannot take the marketplace from a link — after it opens, switch the flag top-right of Keepa to that country, run, export. One file per country.</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);paintApiRun();}   /* b138: inside the painter, not after it */
 function paintNext(){const nx=cur?nextDue(cur.key):null;['#runNext','#runNext2'].forEach(id=>{const b=$(id);if(!b)return;b.hidden=!nx;if(nx){b.innerHTML=(id==='#runNext2'?'Done — next due: ':'Next due: ')+escapeHtml(nx.name)+' →';b.dataset.key=nx.key;}});}
 /* b59 (Jack: "make it easier to see the history"): the last runs of this source sit under its name, one chip each; the whole history and
    every lead it ever kept are one click away */
 function paintRunStrip(){const el=$('#runStrip');if(!el||!cur)return;const runs=runsFor(cur.key).slice().reverse();const V=verdAll();
-  if(!runs.length){el.hidden=true;el.innerHTML='';return;}
+  const look=isJack()?apiLookFor(cur.key):null;   /* b139: Jack's API look sits beside the real runs, marked, never counted */
+  if(!runs.length&&!look){el.hidden=true;el.innerHTML='';return;}
+  const lookChip=look?`<button type="button" class="rchip api" data-look="1" title="Your Keepa API look · ${fmtWhen(look.at)} · ${(look.rowsIn||0).toLocaleString()} in → ${look.leads} leads · ${look.new||0} new · not saved as a run, the due date has not moved"><span class="d">API</span><b>${look.leads}</b><span class="s">leads</span><span class="tr z">${fmtWhen(look.at).toLowerCase()}</span></button>`:'';
   const chips=runs.slice(0,7).map(r=>{let y=0,j=0;(r.asins||[]).forEach(a=>{const v=V[a];if(!v)return;j++;if(v.v==='Yes')y++;});const tr=toReviewCount(r);
     return`<button type="button" class="rchip${tr?'':' done'}" data-run="${r.day||r.at.slice(0,10)}" title="${escapeHtml(r.name)} · ${fmtWhen(r.at)}${r.who?' · '+escapeHtml(r.who):''} · ${r.rowsIn||0} in → ${r.leads} leads · ${r.new} new · ${r.better||0} better · ${j} judged"><span class="d">${ukDate(r.at).replace(/^\w+ /,'').replace(/\/\d{4}/,'')}</span><b>${r.leads}</b><span class="s">leads</span>${y?`<span class="y">${y}Y</span>`:''}<span class="tr ${tr?'':'z'}">${tr?tr+' to review':'all judged'}</span></button>`;}).join('');
   const tot=runs.reduce((n,r)=>n+(r.leads||0),0);
-  el.innerHTML=`<span class="rl-lab">Last runs</span>${chips}${runs.length>7?`<button type="button" class="rchip more" data-act="hist">+${runs.length-7} more</button>`:''}<span class="rl-tot">${runs.length} run${runs.length===1?'':'s'} · ${tot.toLocaleString()} leads all time</span>`;el.hidden=false;}
+  el.innerHTML=`<span class="rl-lab">Last runs</span>${lookChip}${chips}${runs.length>7?`<button type="button" class="rchip more" data-act="hist">+${runs.length-7} more</button>`:''}<span class="rl-tot">${runs.length?`${runs.length} run${runs.length===1?'':'s'} · ${tot.toLocaleString()} leads all time`:'no export run yet'}</span>`;el.hidden=false;}
 /* floors: the inputs ARE this source's floors — saved as you type, shared, applied to every run of it */
 function paintFloors(){if(!cur)return;const f=cur.filters||{};const r1=cur.rule===1;
   FLOORS.forEach(([k,l,scope])=>{const el=$('#fl_'+k);if(!el)return;el.parentElement.hidden=(scope==='r2'&&r1);if(document.activeElement!==el)el.value=f[k]==null?'':f[k];});
@@ -349,7 +356,12 @@ const GUIDE_KEY='bdl-sourcing-guidefull';
 function guideFull(){const v=lsGet(GUIDE_KEY,null);return v==null?me()!=='Jack':!!v;}
 function ukOnly(){return!!(cur&&cur.rule===1&&cur.markets.every(m=>m==='UK'));}
 function sig(){return SLOTS.map(k=>files[k]?files[k].name+':'+files[k].rows.length:'').join('|')+'|'+(files.one?files.one.name+':'+files.one.rows.length:'');}
-async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return;const notes=[];
+async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return;
+  /* b131 (ShiftTrack, 21 Sep: 13 of 35 runs came back with a blank who). Judging always asked who you are, dropping an export
+     never did — so a run could be saved with nobody's name on it, and ShiftTrack cannot say what Suz ran today. The export is
+     held, the question is asked, and the drop replays itself the moment a name is set. */
+  if(!me()){pendingFiles=arr;needMe();toast('Pick your name first — the export is waiting',true);return;}
+  const notes=[];
   for(const file of arr){let d;try{d=describeExport(parseCSV(await readFileText(file)));}catch(e){d=null;}
     if(!d){notes.push(file.name+': no data rows');continue;}
     const f={name:file.name,rows:d.rows,hasFees:d.hasFees,asins:d.asins,domain:d.domain,hasSince:d.hasSince,missing:d.missing||[]};
@@ -374,27 +386,140 @@ async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return
   touched.clear();paintSlots();warn(notes);
   /* b123 (Jack: "we use exports so it should cost 0 tokens"): nothing is asked of Keepa on a drop — the option check is a button Jack presses */
   run();}
+/* b128 (Jack, 20 Sep: "add a way where we do a Keepa tracker for all EU prices without export on drops — sometimes EU stuff is
+   always profitable in the UK, very very rarely though"). A UK filter run only ever looks at the UK price. This asks Keepa what
+   the same product costs in Germany, France, Italy and Spain and runs the brand-run maths on it: EU buy, UK sell, landed.
+   Tokens, so it is Jack's button, it works on the leads he ticks, and it says the cost before it spends anything. */
+const EU_MK=['DE','FR','IT','ES'];
+function euLeadAsins(){if(!result||!result.out)return[];
+  const picked=[...view.sel];const from=picked.length?result.out.filter(o=>view.sel.has(o.ASIN)):result.out;
+  return from.map(o=>o.ASIN);}
+function paintEuLeads(){const tb=document.querySelector('#results .toolbar');if(!tb)return;let b=$('#euLeadsBtn');
+  const sellF=cur?(cur.rule===1?files.viewer:files.one):null;
+  const show=!!(result&&result.out&&result.out.length&&sellF&&!sellF.fromKeepa&&isJack()&&typeof eupFetch==='function');
+  if(!show){if(b)b.hidden=true;return;}
+  if(!b){b=document.createElement('button');b.id='euLeadsBtn';b.type='button';b.className='btn ghost';tb.insertBefore(b,$('#judgedPill')||$('#moreMenu')||null);
+    b.addEventListener('click',euCheckLeads);}
+  b.hidden=false;const as=euLeadAsins(),cost=eupCost(as,EU_MK);
+  b.textContent=`Check EU prices · ${as.length} lead${as.length===1?'':'s'}${cost?` · ${cost.toLocaleString()} tokens`:' · cached'}`;
+  b.title=view.sel.size?'The leads you have ticked':'Every lead in this run — tick some rows to check only those';}
+async function euCheckLeads(){const sellF=cur?(cur.rule===1?files.viewer:files.one):null;if(!sellF||!result)return;
+  const asins=euLeadAsins();if(!asins.length)return;
+  const cost=eupCost(asins,EU_MK),b=$('#euLeadsBtn');
+  if(cost){const left=await eupBalance();
+    if(left!=null&&left<cost){toast(`Only ${left} Keepa tokens left, this needs ${cost}`,true);return;}
+    if(!confirm(`Ask Keepa what these ${asins.length} products cost in ${EU_MK.join(', ')}?\n\n${cost} tokens${left!=null?` · ${left} left, ${left-cost} after`:''}.\nAmazon's own price only — nothing is flattered.`))return;}
+  const was=b.textContent;b.disabled=true;
+  try{
+    const got=await eupFetch(asins,EU_MK,(done,total,mk)=>{b.textContent=`${mk} · ${done}/${total}`;},rate());
+    const set=new Set(asins);const sub={name:sellF.name,rows:sellF.rows.filter(r=>set.has((r.ASIN||'').trim())),hasFees:sellF.hasFees,asins,domain:'UK',hasSince:sellF.hasSince,missing:sellF.missing||[]};
+    const R=rule1Compute({viewer:sub,UK:null,DE:got.DE||null,FR:got.FR||null,IT:got.IT||null,ES:got.ES||null},cur.name,rate(),null);
+    euShow(R.out.filter(o=>o['Buy market']!=='UK'),asins.length);
+  }catch(e){toast('Keepa did not answer — nothing was spent on the failed part',true);}
+  b.disabled=false;paintEuLeads();}
+function euShow(wins,n){const res=$('#results');if(!res)return;let el=$('#euPanel');
+  if(!el){el=document.createElement('div');el.id='euPanel';el.className='eupanel';res.insertBefore(el,res.firstChild);
+    el.addEventListener('click',e=>{if(e.target.closest('#euClose')){el.hidden=true;}});}
+  el.hidden=false;
+  if(!wins.length){el.innerHTML=`<span>Checked <b>${n}</b> lead${n===1?'':'s'} against ${EU_MK.join(', ')} — <b>none</b> are cheaper enough in the EU to work. The prices are cached, so checking again is free.</span><button type="button" class="btn ghost sm" id="euClose">Close</button>`;return;}
+  wins.sort((a,b)=>b['ROI %']-a['ROI %']);
+  el.innerHTML=`<div class="euph"><span>Checked <b>${n}</b> lead${n===1?'':'s'} in ${EU_MK.join(', ')} — <b>${wins.length}</b> work bought from the EU and sold in the UK.</span><button type="button" class="btn ghost sm" id="euClose">Close</button></div>`
+    +`<div class="euprows">${wins.slice(0,12).map(o=>`<div class="euprow"><span class="mk">${FLAG[o['Buy market']]||''} ${o['Buy market']}</span><a href="${o.Keepa}" target="_blank" rel="noopener">${escapeHtml(o.ASIN)}</a><span class="t">${escapeHtml(String(o.Title).slice(0,52))}</span><span class="n">landed ${gbp(o['Landed £'])}</span><span class="n">sell ${gbp(o['Sell £ used'])}</span><b class="p">${gbp(o['Profit £'])}</b><b class="r">${Math.round(o['ROI %'])}%</b></div>`).join('')}</div>`
+    +(wins.length>12?`<div class="eupmore">+${wins.length-12} more — they are in the EU alerts source too</div>`:'');}
+/* b128 (Jack, 20 Sep: "where is magic link for them"). The sign-in only showed on the first-visit gate, so anyone who had
+   already picked a name never saw it. It lives in Settings now, and Jack can send a VA her link from his own screen:
+   Supabase emails the one-click link to an address he has already invited. */
+function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='function')return;
+  const u=(typeof authUser==='function')?authUser():null;
+  const send=`<div class="authsend"><input type="email" id="abEmail" placeholder="${u&&isJack()?'suz@… — send her a link':'you@… — your work email'}" autocomplete="email" spellcheck="false"><button type="button" class="btn solid sm" id="abSend">Send link</button></div><div class="wgmsg" id="abMsg"></div>`;
+  el.innerHTML=u
+    ? `<div class="authnow"><i></i><b>Signed in</b> as ${escapeHtml(u.name)} · ${escapeHtml(u.email)}<button type="button" class="btn ghost sm" id="abOut">Sign out</button></div>`
+      +(isJack()?`<p class="ssub">Send Suz or Mera their sign-in link. They must already be invited in Supabase (Authentication → Users → Invite user) — a link cannot create an account.</p>${send}`:'')
+    : `<p class="ssub"><b>Not signed in.</b> Signing in replaces picking a name, so a verdict can never carry the wrong person. Type your work email and we send a one-click link — no password. It stays signed in on this browser.</p>${send}`;
+  const out=$('#abOut');if(out)out.addEventListener('click',()=>{if(confirm('Sign out of '+u.name+'?')){authSignOut();paintAuthBox();}});
+  const b=$('#abSend');if(b)b.addEventListener('click',async()=>{const i=$('#abEmail'),m=$('#abMsg'),v=(i.value||'').trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){m.textContent='That does not look like an email address.';m.className='wgmsg bad';return;}
+    b.disabled=true;m.textContent='Sending…';m.className='wgmsg';
+    try{await authSendLink(v);m.innerHTML=`Sent to <b>${escapeHtml(v)}</b>. The link only works in the browser it is opened in, so it has to be opened on that person's machine.`;m.className='wgmsg good';i.value='';}
+    catch(e){m.textContent=String(e.message||e)+(/not allowed|not found|invalid/i.test(String(e.message||''))?' — invite this address in Supabase first.':'');m.className='wgmsg bad';}
+    b.disabled=false;});}
+/* b138: Run via Keepa API — Jack only. Counts first, prices it, asks, then builds the same files a drop would and runs the same rules. */
+function paintApiRun(){const row=$('#keepaRow');if(!row||!cur)return;let b=$('#apiRunBtn');
+  const ok=isJack()&&typeof apiSelection==='function'&&!!finderLink(cur);
+  if(!ok){if(b)b.hidden=true;return;}
+  if(!b){b=document.createElement('button');b.id='apiRunBtn';b.type='button';b.className='btn ghost sm apirun';b.addEventListener('click',apiRunSource);row.appendChild(b);}
+  b.hidden=false;b.textContent='Run via Keepa API · priced first';b.title='Jack only. Asks Keepa for this filter\'s products and runs the same rules — no export. Counts and prices it before it spends a token.';}
+async function apiRunSource(){if(!cur||!isJack())return;const b=$('#apiRunBtn');const link=finderLink(cur);const t=apiSelection({link});
+  if(!t){toast('This source has no Keepa filter to run',true);return;}
+  const markets=cur.rule===1?(cur.markets||['UK']):['UK'];const eu=markets.filter(m=>m!=='UK');
+  b.disabled=true;b.textContent='Counting…';
+  try{
+    const left0=await eupBalance();
+    const c=await apiQuery(Object.assign({},t.selection,{perPage:50,page:0}),2);const total=c.totalResults||0;
+    if(!total){toast('Keepa finds nothing for this filter today',true);return;}
+    const pages=Math.ceil(total/API_PAGE);
+    const cache=apiCache(),now=Date.now();let cached=0;(c.asinList||[]).forEach(a=>{const k=cache['2|'+a];if(k&&now-k.at<API_CACHE_H*3600e3)cached++;});
+    const est=pages*API_PER_PAGE+Math.round(total*(1-cached/Math.max(1,(c.asinList||[]).length)))*API_PER_PRODUCT+(eu.length?total*eu.length:0);
+    const left=(c.tokensLeft!=null)?c.tokensLeft:left0;
+    /* b138: when the whole list will not fit, offer the top slice the balance can afford — Keepa returns the filter's own sort order, so the first N are the ones worth having */
+    const perProduct=API_PER_PRODUCT+eu.length;let limit=0,estRun=est;
+    if(left!=null&&left-est<API_FLOOR){const room=left-API_FLOOR-API_PER_PAGE;limit=Math.max(0,Math.floor(room/perProduct));
+      if(limit<25){toast(`Balance ${left.toLocaleString()} is too low for this list (needs about ${est.toLocaleString()}, floor ${API_FLOOR}) — it refills 21 a minute`,true);return;}
+      estRun=API_PER_PAGE+limit*perProduct;}
+    const msg=limit
+      ?`"${cur.name}" finds ${total.toLocaleString()} products today — about ${est.toLocaleString()} tokens, more than the balance allows.\n\nRun the FIRST ${limit} instead (Keepa's own order, best first) for about ${estRun.toLocaleString()} tokens?\n\nBalance ${left.toLocaleString()} → about ${(left-estRun).toLocaleString()} after. Floor ${API_FLOOR}.`
+      :`Run "${cur.name}" through Keepa?\n\n${total.toLocaleString()} products today · about ${est.toLocaleString()} tokens`+(eu.length?` (includes ${eu.join(', ')} prices)`:'')+(cached?`\n${cached} of the first ${(c.asinList||[]).length} are cached from today, so it may cost less`:'')+`\n\nBalance ${left!=null?left.toLocaleString():'?'} → about ${left!=null?(left-est).toLocaleString():'?'} after. Floor ${API_FLOOR}.`;
+    if(!confirm(msg))return;
+    const L=await apiAllAsins(t.selection,2,(n,tot)=>{b.textContent=`Listing… ${n}${tot?'/'+tot:''}`;},limit||0);
+    const R=await apiRows(L.asins,2,(n,tot)=>{b.textContent=`Fetching ${n}/${tot} products…`;});
+    /* the exclusions the API could not take (brand, root category, binding), from the product itself */
+    const rows=R.rows.filter(r=>apiKeep({brand:r.Brand,rootCategory:r.__rootId,binding:r.__binding},t.after));
+    const stamp=new Date();const nm=`Keepa API · ${stamp.getDate()}/${String(stamp.getMonth()+1).padStart(2,'0')} ${String(stamp.getHours()).padStart(2,'0')}:${String(stamp.getMinutes()).padStart(2,'0')}`;
+    const f={name:nm,rows,hasFees:true,asins:rows.map(r=>r.ASIN),domain:'UK',hasSince:true,missing:[],fromKeepa:true};
+    clearRun();
+    if(cur.rule===1){files.viewer=f;files.UK=null;
+      if(eu.length){const got=await eupFetch(f.asins,eu,(done,tot,mk)=>{b.textContent=`${mk} prices · ${done}/${tot}`;},rate());eu.forEach(m=>{files[m]=got[m];});}}
+    else files.one=f;
+    touched.clear();paintSlots();warn([`${nm}: ${rows.length.toLocaleString()} products from Keepa (${L.total.toLocaleString()} matched${limit?`, the first ${limit} taken`:''}, ${L.asins.length-rows.length} excluded by brand / category) · ${(L.spent+R.spent).toLocaleString()} tokens spent · ${R.fromCache} came from today's cache`]);run();
+    toast(`Keepa run done — ${rows.length.toLocaleString()} products, ${(L.spent+R.spent).toLocaleString()} tokens`);
+  }catch(e){toast('Keepa did not answer: '+String(e.message||e).slice(0,80)+' — nothing more was spent',true);}
+  finally{b.disabled=false;paintApiRun();if(typeof paintTokens==='function')paintTokens();}}
 /* b127 (Jack, 20 Sep: "somewhere they should be able to view past ones"): click a date in Last runs and that day's run opens —
    what went in, what came out, and what everyone decided. Read-only: the numbers are the ones recorded on the day. */
 function openPastRun(day){if(!cur)return;const r=runsFor(cur.key).find(x=>(x.day||x.at.slice(0,10))===day);if(!r)return;
   const {rows}=storedRows(cur.key,cur.rule);const by={};rows.forEach(o=>by[o.ASIN]=o);const V=verdAll();
+  const wasQueued=new Set(r.queue||[]);   /* b143: what actually needed a look that day */
   const out=(r.asins||[]).map((a,i)=>{const o=by[a];
-    if(o)return Object.assign({},o,{'#':i+1,QUEUE:'',STATUS:'',verdict:V[a]||null});
+    if(o)return Object.assign({},o,{'#':i+1,QUEUE:wasQueued.has(a)?'new':'',STATUS:'',verdict:V[a]||null});
     /* a lead that has since dropped off the list: the ASIN and what was decided is all that is left */
     const blank=cur.rule===1?{ASIN:a,Title:'(no longer a lead — kept for the record)','Buy market':'UK','Landed £':0,'Sell £ used':0,'Profit £':0,'ROI %':0,SPM:0,Score:1,Flags:'',Keepa:`https://keepa.com/#!product/2-${a}`}
       :{ASIN:a,Product:'(no longer a lead — kept for the record)',Score:1,'Buy at £':0,'After discount £':0,'Sell for £':0,'Profit £':0,'ROI %':0,'Sells /mo':0,chips:[],Keepa:`https://keepa.com/#!product/2-${a}`};
-    return Object.assign(blank,{'#':i+1,QUEUE:'',STATUS:'',verdict:V[a]||null,gone:true});});
+    return Object.assign(blank,{'#':i+1,QUEUE:wasQueued.has(a)?'new':'',STATUS:'',verdict:V[a]||null,gone:true});});
   const st=r.st||{};
   result={rule:cur.rule,out,all:out,dropped:[],reasons:{},blacklisted:[],floored:0,stored:true,past:r,at:r.at,gone:[],prevMap:{},prevStamp:null,
     st:cur.rule===1?{viewer:st.viewer==null?(r.rowsIn||'—'):st.viewer,demand:st.demand==null?'—':st.demand,sell:st.sell==null?'—':st.sell,buy:st.buy==null?'—':st.buy,kept:out.length,bbHiCol:true,capped:st.capped||0}
       :{rows:st.rows==null?(r.rowsIn||'—'):st.rows,priced:st.priced==null?'—':st.priced,demand:st.demand==null?'—':st.demand,kept:out.length}};
   view.page=1;view.sel.clear();renderResults();renderGuide();
   const res=$('#results');if(res)res.scrollIntoView({behavior:'smooth',block:'start'});}
+/* b139: reopen the newest API look for this source — read-only, verdicts as they stand now */
+function openApiLook(){if(!cur)return;const L=apiLookFor(cur.key);if(!L)return;const V=verdAll();
+  const out=(L.rows||[]).map((o,i)=>Object.assign({},o,{'#':i+1,verdict:V[o.ASIN]||null,QUEUE:V[o.ASIN]?'':(o.QUEUE||'')}));
+  result={rule:cur.rule,out,all:out,dropped:[],reasons:{},blacklisted:[],floored:0,stored:true,apiLook:true,reopened:true,at:L.at,gone:[],prevMap:{},prevStamp:null,st:L.st||(cur.rule===1?{viewer:L.rowsIn||'—',demand:'—',sell:'—',buy:'—',kept:out.length,bbHiCol:true,capped:0}:{rows:L.rowsIn||'—',priced:'—',demand:'—',kept:out.length})};
+  view.page=1;view.sel.clear();renderResults();renderGuide();
+  const res=$('#results');if(res)res.scrollIntoView({behavior:'smooth',block:'start'});}
+function lookOwnerName(){const o=cur&&cur.owner;if(!o||o===NO_OWNER||o==='Jack')return 'the';if(o==='VAs')return 'the VAs\'';return escapeHtml(o)+'\'s';}
 function paintPastBar(){const res=$('#results');if(!res)return;let el=$('#pastBar');if(!el){el=document.createElement('div');el.id='pastBar';el.className='pastbar';res.insertBefore(el,res.firstChild);
-    el.addEventListener('click',e=>{if(e.target.closest('#pastBack')){result=null;if(!runStored())clearRun();}});}
-  const p=result&&result.past;if(!p){el.hidden=true;el.innerHTML='';return;}el.hidden=false;
+    el.addEventListener('click',e=>{if(e.target.closest('#pastBack')){const liveLook=!!(result&&result.apiLook&&!result.reopened);result=null;
+      if(liveLook){SLOTS.forEach(k=>files[k]=null);files.one=null;lastSig='';touched.clear();paintSlots();}   /* b139: the API rows leave the slots with the look */
+      if(!runStored())clearRun();}});}
+  const p=result&&result.past;
+  /* b139: the API look says what it is not — the run. The due date and the compare stay with the VA's last export. */
+  if(!p&&result&&result.apiLook){el.hidden=false;el.classList.add('api');const own=lookOwnerName();const who=own==='the'?'':own.replace(/'s$|'$/,'');
+    el.innerHTML=`<span><b>Your Keepa API look${result.at?' · '+escapeHtml(fmtWhen(result.at)):''}</b> · not saved as a run for ${escapeHtml(cur.name)}: ${own} due date and the new / better compare stay where the last export left them${who?`, until ${who} works it`:''}. Your Yes / No / Maybe are kept.</span><button type="button" class="btn ghost sm" id="pastBack">Back to the last run</button>`;return;}
+  el.classList.remove('api');
+  if(!p){el.hidden=true;el.innerHTML='';return;}el.hidden=false;
   const V=verdAll();let judged=0,yes=0;(p.asins||[]).forEach(a=>{const v=V[a];if(!v||!v.v)return;judged++;if(v.v==='Yes')yes++;});
-  el.innerHTML=`<span><b>The run from ${escapeHtml(ukDate(p.at))}</b>${p.who?' · '+escapeHtml(p.who):''} · ${(p.rowsIn||0).toLocaleString()} products in, <b>${p.leads}</b> leads out, ${p.new||0} new · ${judged} judged since${judged?` (${yes} Yes)`:''}. Nothing here changes what runs today.</span><button type="button" class="btn ghost sm" id="pastBack">Back to today</button>`;}
+  el.innerHTML=`<span><b>The run from ${escapeHtml(ukDate(p.at))}</b>${p.who?' · '+escapeHtml(p.who):''} · ${(p.rowsIn||0).toLocaleString()} products in, <b>${p.leads}</b> leads out, ${p.new||0} new${p.queue&&p.queue.length?`, <b>${p.queue.length}</b> needed a look that day`:''} · ${judged} judged since${judged?` (${yes} Yes)`:''}${p.goneAsins&&p.goneAsins.length?` · ${p.goneAsins.length} had fallen off since the run before`:''}. Nothing here changes what runs today.</span><button type="button" class="btn ghost sm" id="pastBack">Back to today</button>`;}
 /* b123: the option check is a button, Jack-only, and the run tells you what it would cost */
 function paintOptionBar(){const res=$('#results');if(!res)return;let el=$('#optBar');if(!el){el=document.createElement('div');el.id='optBar';el.className='optbar';res.insertBefore(el,res.firstChild);}
   const sellF=cur?(cur.rule===1?files.viewer:files.one):null;if(!result||!sellF||sellF.fromKeepa||typeof shareUnknown!=='function'){el.hidden=true;el.innerHTML='';return;}
@@ -409,10 +534,18 @@ function activeRow(){return document.querySelector('.ltbl tbody tr.active');}
 function setActive(tr,scroll){document.querySelectorAll('.ltbl tbody tr.active').forEach(x=>x.classList.remove('active'));if(!tr){view.active=null;return;}tr.classList.add('active');view.active=tr.dataset.asin;
   if(scroll){const r=tr.getBoundingClientRect();if(r.top<90||r.bottom>window.innerHeight-40)tr.scrollIntoView({block:'center',behavior:'smooth'});}}
 function stepActive(dir,unjudgedOnly){const rows=[...document.querySelectorAll('.ltbl tbody tr[data-asin]')];if(!rows.length)return;const cur_=activeRow();let i=cur_?rows.indexOf(cur_):-1;
-  for(let k=0;k<rows.length;k++){i+=dir;if(i<0||i>=rows.length)break;const tr=rows[i];if(unjudgedOnly&&/\b(Yes|No|Maybe)\b/.test(tr.className))continue;setActive(tr,true);return;}}
-function paintJudged(){const tb=document.querySelector('#results .toolbar');if(!tb||!result)return;let el=$('#judgedPill');if(!el){el=document.createElement('span');el.id='judgedPill';el.className='judged';tb.appendChild(el);}
-  const all=visible();const done=all.filter(o=>(verdGet(o.ASIN)||{}).v).length;
-  el.innerHTML=`<b>${done}</b> of ${all.length} judged<i title="Click a row, then Y / N / M · ↓ ↑ move · Esc clears">Y · N · M · ↓ ↑</i>`;}
+  for(let k=0;k<rows.length;k++){i+=dir;if(i<0||i>=rows.length)break;const tr=rows[i];if(unjudgedOnly&&/\b(Yes|No|Maybe)\b/.test(tr.className))continue;setActive(tr,true);return;}
+  /* b140: off the end of the page, the keys carry on to the next page (and ↑ at the top goes back to the last row of the one before) —
+     64 leads at 50 a page used to stop dead at row 50 with no sign there were 14 more. */
+  const pages=Math.ceil(visible().length/PAGEN());
+  if(dir>0&&view.page<pages){view.page++;touched.clear();renderTable();setActive(null);const rs=[...document.querySelectorAll('.ltbl tbody tr[data-asin]')];const first=rs.find(tr=>!unjudgedOnly||!/\b(Yes|No|Maybe)\b/.test(tr.className))||rs[0];if(first)setActive(first,true);}
+  else if(dir<0&&view.page>1){view.page--;touched.clear();renderTable();const rs=document.querySelectorAll('.ltbl tbody tr[data-asin]');if(rs.length)setActive(rs[rs.length-1],true);}}
+function paintJudged(){const tb=document.querySelector('#results .toolbar');if(!tb||!result)return;let el=$('#judgedPill');if(!el){el=document.createElement('span');el.id='judgedPill';el.className='judged';tb.insertBefore(el,$('#moreMenu')||null);}   /* b137: pill sits before More */
+  const all=visible();const done=all.filter(o=>(verdGet(o.ASIN)||{}).v).length;const finished=all.length>0&&done===all.length;
+  /* b140: when the last one is judged the pill says so and the Done button lights up — the VA should not have to count */
+  el.classList.toggle('all',finished);const nx=$('#runNext2');if(nx)nx.classList.toggle('ready',finished&&!result.stored);
+  el.innerHTML=finished?`<b>${done}</b> of ${all.length} judged ✓<i title="Everything on this list has a verdict — Done moves you to the next filter that is due">all done</i>`
+    :`<b>${done}</b> of ${all.length} judged<i title="Click a row, then Y / N / M · ↓ ↑ move (↓ carries on to the next page) · Esc clears">Y · N · M · ↓ ↑</i>`;}
 let keysReady=false;
 function setupKeys(){if(keysReady)return;keysReady=true;
   document.addEventListener('keydown',e=>{const t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;if(e.metaKey||e.ctrlKey||e.altKey)return;
@@ -560,7 +693,8 @@ function rawRowOf(asin){const pools=[files.viewer,files.one,files.UK].filter(Boo
 function lvlPicker(asin,sellNow){if(typeof sellLevels!=='function')return'';const r=rawRowOf(asin);if(!r)return'';const lv=sellLevels(r);if(!lv.length)return'';
   const fact=factGet(asin);const shape=sellShape(r);const st=shape?lvlStats(factsAll(),shape):{n:0};
   const chips=lv.map(x=>{const on=fact.lvl===x.key||(!fact.lvl&&Math.abs(x.value-(sellNow||0))<0.005);
-    return `<button type="button" class="lv${on?' on':''}" data-lv="${x.key}" data-asin="${asin}" data-val="${x.value}" data-shape="${shape||''}" title="Sell at the ${x.label} level · £${x.value.toFixed(2)}${x.n!=null?` · ${x.n} seller${x.n===1?'':'s'}`:''}">${x.label} <b>£${x.value.toFixed(2)}</b>${x.n!=null?`<i>${x.n}</i>`:''}</button>`;}).join('');
+    /* b128: short codes so the levels take two lines, not six — the full name is in the tooltip */
+    return `<button type="button" class="lv${on?' on':''}" data-lv="${x.key}" data-asin="${asin}" data-val="${x.value}" data-shape="${shape||''}" title="Sell at the ${x.label} level · £${x.value.toFixed(2)}${x.n!=null?` · ${x.n} FBA seller${x.n===1?'':'s'} there`:''}">${x.short} <b>${x.value>=100?Math.round(x.value):x.value.toFixed(2)}</b></button>`;}).join('');   /* b140: £100+ chips drop the pence so two fit a line */
   const learn=(st.n>=2&&st.top)?`<span class="lvlearn" title="What you have picked on this shape before">on this shape you take ${(SELL_LEVELS.find(z=>z[0]===st.top.lvl)||[])[1]||st.top.lvl} ${st.top.count} of ${st.n}</span>`:'';
   const stale=(typeof staleFba==='function'&&staleFba(r))?`<span class="lvstale" title="Keepa's FBA 90d average counts every FBA offer it tracked, including ones that vanished. On a thin listing it can be a ghost.">FBA avg may be stale · check the graph</span>`:'';
   return `<div class="lvls">${chips}${learn}${stale}</div>`;}
@@ -702,20 +836,34 @@ function run(){if(!cur)return;stampLearned();
   if(R.rule!==1)R.out.forEach((o,i)=>o['#']=i+1);
   R.gone=applyQueue(R.out,R.rule,prevMap,verdAll()).filter(([a])=>!B[a]);   /* a blacklisted ASIN is not 'gone', it is banned */
   const stamps=Object.values(prevMap).map(p=>p.stamp).filter(Boolean).sort();R.prevStamp=stamps.length?stamps[stamps.length-1]:null;R.prevMap=prevMap;
+  {const sellNow=cur.rule===1?files.viewer:files.one;R.apiLook=!!(sellNow&&sellNow.fromKeepa);}   /* b139: the sell side came from the API, not an export */
   result=R;
   const s=sig();const fresh=s!==lastSig;if(fresh){lastSig=s;view.page=1;view.sel.clear();logRun();}
   renderResults();renderGuide();paintNext();
   if(fresh&&R.out.length&&!R.stored){setTimeout(()=>{const t=$('#leadTop');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});},250);}}
+/* b145 (Jack, 22 Sep: should a second run the same day replace the list? "yeah — shouldn't really be ran 2 times a day really if I'm honest").
+   So the day's list is set by the FIRST run of the day and only ever grows: anything new a later run finds is added, nothing already on the
+   list is taken off, however it has moved since this morning. */
+function dayQueueFor(R){const had=(runsFor(cur.key).find(r=>(r.day||String(r.at).slice(0,10))===today())||{}).queue||[];
+  const now=R.out.filter(o=>o.QUEUE).map(o=>o.ASIN);
+  return [...new Set([...had,...now])];}
 function logRun(){const R=result,c={NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};R.out.forEach(o=>c[o.STATUS]++);
+  /* b139: an API look is Jack's own. No runSave (no src_runs row, due date unmoved), no leadSave (the compare baseline stays the VA's). */
+  if(R.apiLook){const sf=cur.rule===1?files.viewer:files.one;
+    apiLookSave(cur.key,{at:nowIso(),source:cur.key,name:cur.name,rule:cur.rule,who:me(),rowsIn:sf?sf.rows.length:0,st:R.st,leads:R.out.length,new:c.NEW,better:c.BETTER,gone:R.gone.length,rows:R.out});
+    paintRunStrip();return;}
   const names=cur.rule===1?SLOTS.filter(k=>files[k]).map(k=>files[k].name):[files.one.name];
   const rowsIn=cur.rule===1?files.viewer.rows.length:files.one.rows.length;
-  runSave({at:nowIso(),day:today(),source:cur.key,name:cur.name,rule:cur.rule,files:names,rowsIn,st:R.st,leads:R.out.length,new:c.NEW,better:c.BETTER,worse:c.WORSE,gone:R.gone.length,blacklisted:R.blacklisted.length,asins:R.out.map(o=>o.ASIN),who:me()});
-  leadSave(cur.key,nextLeadMap(R.out,R.rule,leadMap(cur.key)));renderLog();}
+  /* b143: the run remembers WHICH leads needed a look and which fell off, not just how many — so "what was I looking at yesterday?" has an answer */
+  runSave({at:nowIso(),day:today(),source:cur.key,name:cur.name,rule:cur.rule,files:names,rowsIn,st:R.st,leads:R.out.length,new:c.NEW,better:c.BETTER,worse:c.WORSE,gone:R.gone.length,blacklisted:R.blacklisted.length,
+    asins:R.out.map(o=>o.ASIN),queue:dayQueueFor(R),goneAsins:(R.gone||[]).slice(0,400).map(g=>g[0]),who:me()});
+  leadSave(cur.key,nextLeadMap(R.out,R.rule,leadMap(cur.key)));renderLog();
+  paintRunStrip();}   /* b143: today's run joins Last runs straight away — it used to need a reopen before you could click back into it */
 
 /* ============ results ============ */
 function sumTile(v,l,cls){return`<div class="sum ${cls||''}"><span class="sv">${typeof v==='number'?v.toLocaleString():v}</span><span class="sl">${l}</span></div>`;}
 function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=true;$('#results').hidden=false;
-  paintOptionBar();paintPastBar();
+  paintOptionBar();paintPastBar();paintEuLeads();
   const rev=out.filter(o=>o.QUEUE).length;let tiles;
   if(cur.rule===1){const cnt=k=>out.filter(o=>o['Buy market']===k).length,euN=out.length-cnt('UK');
     tiles=sumTile(st.viewer,'in the Viewer')+sumTile(st.demand,'sell 10+/mo in the UK')+sumTile(st.buy,'Amazon selling it')+sumTile(out.length,'leads','lead')
@@ -734,7 +882,7 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
   const be=cur.rule===1?discForBrand((cur.brands&&cur.brands[0])||cur.name):null;
   if(be&&be.note){bn.innerHTML=`<b>${escapeHtml(be.name)}</b> · ${escapeHtml(be.note)}`;bn.hidden=false;}else bn.hidden=true;
   let sn=$('#storedNote');if(!sn){sn=document.createElement('div');sn.id='storedNote';sn.className='storednote';fw.parentNode.insertBefore(sn,fw);}
-  if(R.stored){let d=R.at?new Date(String(R.at).replace(' ','T')):null;if(d&&isNaN(d))d=null;const day=String(R.at||'').slice(0,10);const when=d?(day===today()?'today '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})):(day?day:'the last run');
+  if(R.stored&&!R.apiLook&&!R.past){let d=R.at?new Date(String(R.at).replace(' ','T')):null;   /* b139: the API look and a past run have their own bar */if(d&&isNaN(d))d=null;const day=String(R.at||'').slice(0,10);const when=d?(day===today()?'today '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})):(day?day:'the last run');
     const rv=out.filter(o=>o.QUEUE).length;
     sn.innerHTML=`<b>Showing the saved run from ${when}</b> · ${out.length} leads as they were scored then · ${rv?rv+' still to review':'all judged'} · verdicts and links work as normal.${view.status==='REVIEW'&&rv<out.length?` <button type="button" class="linkbtn" id="snAll">Show all ${out.length} leads</button>`:''} Drop today's export above to refresh.`;sn.hidden=false;
     const sa=$('#snAll');if(sa)sa.addEventListener('click',()=>{view.status='ALL';view.page=1;renderTable();$('#leadTop').scrollIntoView({behavior:'smooth',block:'start'});});}else sn.hidden=true;
@@ -743,10 +891,14 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
   if(msgs.length){fw.innerHTML=msgs.join('<br>');fw.classList.add('show');}else{fw.classList.remove('show');}
   $('#fMarket').hidden=cur.rule!==1;
   const unseen=out.filter(o=>!verdGet(o.ASIN)).length;const sb=$('#seenAll');sb.hidden=!unseen||!isJack();sb.textContent=`Mark all ${unseen} as seen`;
+  paintPutBack(sb);
   renderTable();}
 /* the summary in words + the status pills — repainted after every verdict so the numbers never lie */
 /* b48 (Jack, 15 Sep: "some type of analysis vs last but better… difference from yesterday… the overall assessment of the file") */
-function ukDate(stamp){const s=String(stamp||'');const m=/^(\d{4})-(\d{2})-(\d{2})(?:[T_ ](\d{2}):?(\d{2}))?/.exec(s);if(!m)return escapeHtml(s);
+function ukDate(stamp){const s=String(stamp||'');
+  /* b139: a full ISO stamp (what every run saves) is UTC — show it in the clock on the wall, not an hour behind all summer */
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/.test(s)){const d=new Date(s);if(!isNaN(d))return `${d.toLocaleDateString('en-GB',{weekday:'short'})} ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} · ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+  const m=/^(\d{4})-(\d{2})-(\d{2})(?:[T_ ](\d{2}):?(\d{2}))?/.exec(s);if(!m)return escapeHtml(s);
   const d=new Date(+m[1],+m[2]-1,+m[3],m[4]?+m[4]:0,m[5]?+m[5]:0);const wd=d.toLocaleDateString('en-GB',{weekday:'short'});
   return `${wd} ${m[3]}/${m[2]}/${m[1]}`+(m[4]?` · ${m[4]}:${m[5]}`:'');}
 function paintCompare(R,c,rev){let el=$('#vsYest');const sr=$('#statusRow');if(!sr)return;if(!el){el=document.createElement('div');el.id='vsYest';el.className='vsyest';sr.parentNode.insertBefore(el,sr);}
@@ -799,14 +951,28 @@ function paintStory(){const R=result;if(!R||!cur)return;const st=R.st,out=R.out;
   $('#statusRow').innerHTML=(R.prevStamp?`<span class="vs">vs ${ukDate(R.prevStamp)}</span>`:`<span class="vs">first run for ${escapeHtml(cur.name)} — everything is NEW</span>`)+
     [['TO REVIEW',rev,'rev'],['NEW',c.NEW,'new'],['BETTER',c.BETTER,'better'],['WORSE',c.WORSE,'worse'],['UNCHANGED',c.UNCHANGED,'same'],['GONE',R.gone.length,'gone'],['BLACKLISTED',R.blacklisted.length,'bl']].map(([l,n,k])=>`<span class="spill ${k}${n?'':' zero'}"><b>${n}</b>${l}</span>`).join('');
 }
-function visible(){const q=view.q.toLowerCase();const list=result.out.filter(o=>{
-  if(view.status==='REVIEW'){if(!o.QUEUE&&!touched.has(o.ASIN))return false;}
+/* b144 (Jack, 22 Sep: "the 83 that was in the queue needs to be there for the day and marked done by x person").
+   The queue used to be a live filter: judge a lead and it vanished, so you could not see what you had done, who had done
+   it, or how much was left — and after a reload the list you started the day with was gone. Today's queue is now the
+   day's list. It is fixed when the run is logged, every lead on it stays visible until tomorrow, and the ones that are
+   answered sit at the bottom wearing the name of whoever answered them. */
+function dayList(){if(!cur||!result||result.past||result.apiLook)return null;   /* b144: a reopened source still gets today's list — only an older run opened on purpose does not */
+  const r=runLast(cur.key);if(!r||(r.day||String(r.at).slice(0,10))!==today()||!r.queue||!r.queue.length)return null;
+  return new Set(r.queue);}
+function paintDayBar(total,done){let el=$('#dayBar');const host=$('#leadTop');if(!host)return;
+  if(!el){el=document.createElement('div');el.id='dayBar';el.className='daybar';host.appendChild(el);}
+  if(!total){el.hidden=true;el.innerHTML='';return;}
+  el.hidden=false;const pct=Math.round(done/total*100);
+  el.innerHTML=`<span class="dbb"><i style="width:${pct}%"></i></span><span class="dbt">${done} of ${total} answered today${done===total?' — all done':''}</span>`;}
+function visible(){const q=view.q.toLowerCase();const day=dayList();const list=result.out.filter(o=>{
+  if(view.status==='REVIEW'){if(!o.QUEUE&&!touched.has(o.ASIN)&&!(day&&day.has(o.ASIN)))return false;}
   else if(view.status!=='ALL'&&o.STATUS!==view.status)return false;
   if(cur.rule===1&&view.market!=='ALL'&&o['Buy market']!==view.market)return false;
   if(view.hideNo){const v=verdGet(o.ASIN);if(v&&v.v==='No')return false;}
   if(q&&!((o.ASIN+' '+(o.Title||o.Product||'')+' '+(o.Brand||'')).toLowerCase().includes(q)))return false;return true;});
   const sc=o=>o.Score||0;
   if(view.sort==='default'&&cur.rule===1)list.sort((a,b)=>sc(b)-sc(a)||b['Profit £']-a['Profit £']);
+  if(view.status==='REVIEW'&&day){const done=o=>(verdGet(o.ASIN)?1:0);list.sort((a,b)=>done(a)-done(b));}
   if(view.sort==='gain')list.sort((a,b)=>(b.gain||0)-(a.gain||0)||sc(b)-sc(a));
   else if(view.sort==='profit')list.sort((a,b)=>b['Profit £']-a['Profit £']);
   else if(view.sort==='roi')list.sort((a,b)=>b['ROI %']-a['ROI %']);
@@ -815,12 +981,15 @@ function visible(){const q=view.q.toLowerCase();const list=result.out.filter(o=>
 function acts(o){const mk=cur.rule===1?(o['Buy market']||'UK'):'UK';
   return`<span class="rowacts"><a href="${o.Keepa}" target="_blank" rel="noopener" title="Keepa graph — the Track tab is on this page">Keepa</a><a href="${o.SAS}" target="_blank" rel="noopener" title="SellerAmp">SAS</a><a href="${o['Buy link']}" target="_blank" rel="noopener" title="Where we would buy it">Buy ${mk}</a><a href="${o['UK sell link']||o['Buy link']}" target="_blank" rel="noopener" title="The UK listing we would sell on">Sell UK</a></span>`;}
 function verdCell(o){const v=verdGet(o.ASIN)||{};const b=x=>`<button type="button" class="vb ${x[0]}${v.v===x?' on':''}" data-v="${x}" data-asin="${o.ASIN}" title="${x}">${x[0]}</button>`;
-  const chips=v.v==='No'?`<div class="vreasons">${noReasons().map(r=>`<button type="button" class="vr${v.reason===r?' on':''}" data-r="${r}" data-asin="${o.ASIN}">${escapeHtml(r)}</button>`).join('')}</div>`:'';
+  /* b140: once a reason is picked only that chip stays (click it to change) — five chips one under the other were 105px of every No row */
+  const chips=v.v==='No'?`<div class="vreasons${v.reason?' picked':''}">${noReasons().filter(r=>!v.reason||r===v.reason).map(r=>`<button type="button" class="vr${v.reason===r?' on':''}" data-r="${r}" data-asin="${o.ASIN}">${escapeHtml(r)}</button>`).join('')}</div>`:'';
   const note=v.v&&v.v!=='Seen'?`<input class="vnote" data-asin="${o.ASIN}" placeholder="note…" value="${escapeHtml(v.note||'')}">`:'';
-  const who=v.v?`<span class="chg">${v.v==='Seen'?'seen':''} ${escapeHtml(v.who||'')} · ${fmtWhen(v.at)}</span>`:'';
+  const who=v.v?`<span class="chg" title="${escapeHtml((v.v==='Seen'?'Marked seen':v.v)+' by '+(v.who||'?')+' · '+fmtWhen(v.at)+(v.via?' · from '+v.via:''))}">${v.v==='Seen'?'seen':''} ${escapeHtml(v.who||'')} · ${fmtWhen(v.at)}${v.via&&v.v==='Seen'?` <i class="viab">${escapeHtml(v.via)}</i>`:''}</span>`:'';
   const pick=blPick===o.ASIN?`<div class="blpick"><span class="t">Never show again — why?</span>${BL_REASONS.map(r=>`<button type="button" class="vr" data-blr="${r}" data-asin="${o.ASIN}">${r}</button>`).join('')}<button type="button" class="brandb" data-blbrand="${o.ASIN}">Blacklist the whole brand instead…</button></div>`:'';
   return`<div class="verd">${b('Yes')}${b('No')}${b('Maybe')}<button type="button" class="vb B${blPick===o.ASIN?' on':''}" data-bl="${o.ASIN}" title="Blacklist — never show this ASIN again">⃠</button></div>${chips}${note}${who}${pick}`;}
-function statusCell(o){const sp=`<span class="spill ${({NEW:'new',BETTER:'better',WORSE:'worse',UNCHANGED:'same'})[o.STATUS]}">${o.STATUS}</span>`;
+function statusCell(o){const sp=`<span class="spill ${({NEW:'new',BETTER:'better',WORSE:'worse',UNCHANGED:'same'})[o.STATUS]}">${o.STATUS}</span>`
+    /* b145: BETTER says HOW MUCH better. On the 11→12 Sep Mera pair, 25 leads were "more profitable" — 4 of them by £10+ and 13 by under 25p. Same word, very different news. */
+    +(o.STATUS==='BETTER'&&Math.abs(o.gain||0)>=0.005?`<span class="gainb ${Math.abs(o.gain)>=1?'big':''}" title="How much more profit a unit than the last run">+${Math.abs(o.gain)>=1?'£'+Math.abs(o.gain).toFixed(2):Math.round(Math.abs(o.gain)*100)+'p'}</span>`:'');
   const first=(o.Changed||'').split('; ')[0]||'';
   const chg=o.Changed?`<span class="chg" title="${escapeHtml(o.Changed)}">${escapeHtml(first)}${o.Changed.includes('; ')?' …':''}</span>`:'';
   const since=o.QUEUE==='better'?`<span class="chg since" title="${escapeHtml(o.sinceVerdict)}">↑ since ${escapeHtml(o.verdict.v==='Seen'?'seen':o.verdict.v)}${o.verdict.who?' · '+escapeHtml(o.verdict.who):''}</span>`:'';
@@ -830,12 +999,23 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
   const rows=all.slice((view.page-1)*PAGEN(),view.page*PAGEN());
   {const out=result.out,c={REVIEW:out.filter(o=>o.QUEUE).length,ALL:out.length,NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};out.forEach(o=>{if(c[o.STATUS]!=null)c[o.STATUS]++;});
     document.querySelectorAll('#fSeg button').forEach(b=>{b.classList.toggle('on',b.dataset.st===view.status);const n=b.querySelector('b');if(n)n.textContent=c[b.dataset.st]||0;});}
-  $('#leadCount').textContent=({REVIEW:'To review',ALL:'All leads',NEW:'New',BETTER:'Better',WORSE:'Worse',UNCHANGED:'Unchanged'})[view.status]+(all.length===result.out.length?` (${all.length})`:` (${all.length} of ${result.out.length})`);
+  {const day=dayList();const lc=$('#leadCount');
+    if(view.status==='REVIEW'&&day){const inDay=result.out.filter(o=>day.has(o.ASIN));const doneRows=inDay.filter(o=>verdGet(o.ASIN));
+      const byWho={};doneRows.forEach(o=>{const w=(verdGet(o.ASIN)||{}).who||'?';byWho[w]=(byWho[w]||0)+1;});
+      const whoTxt=Object.entries(byWho).sort((a,b)=>b[1]-a[1]).map(([w,n])=>`${escapeHtml(w)} ${n}`).join(' · ');
+      lc.innerHTML=`Today's list <b>${inDay.length-doneRows.length}</b> to do<span class="ldone"> · ${doneRows.length} done${whoTxt?' · '+whoTxt:''}</span>`;
+      paintDayBar(inDay.length,doneRows.length);}
+    else{paintDayBar(0,0);lc.textContent='';}}
+  if($('#leadCount').textContent==='')$('#leadCount').textContent=({REVIEW:'To review',ALL:'All leads',NEW:'New',BETTER:'Better',WORSE:'Worse',UNCHANGED:'Unchanged'})[view.status]+(all.length===result.out.length?` (${all.length})`:` (${all.length} of ${result.out.length})`);
   const asin=o=>`<td class="asin">${o.ASIN}<button type="button" data-copy="${o.ASIN}" title="Copy ASIN">${ICONS.copy}</button></td>`;
   const sel=o=>`<td class="sel"><input type="checkbox" data-sel="${o.ASIN}"${view.sel.has(o.ASIN)?' checked':''}></td>`;
   const pend=b=>bbStatusFor(b)==='pending'?`<i class="ch pend" title="Brand blacklist requested — waiting for Jack">BRAND BLACKLIST PENDING</i>`:'';
   let h;
-  if(!all.length){$('#leads').innerHTML=`<tbody><tr><td style="text-align:center;color:var(--faint);padding:26px">${view.status==='REVIEW'?'Nothing new to review — every lead on this run is the same as or worse than the last run, or already judged and not improved since. Hit <b>All leads</b> above to see them all.':'Nothing matches.'}</td></tr></tbody>`;$('#pager').innerHTML='';$('#openSel').textContent='Open in Keepa';return;}
+  if(!all.length){const n=result.out.length;
+    /* b129: the empty To-review state was a dead end — a VA read "hit All leads above" and had to find it. One button. */
+    $('#leads').innerHTML=`<tbody><tr><td class="emptyrow">${view.status==='REVIEW'?`<b>Nothing new to review.</b><span>Every lead on this run is the same as or worse than the last run, or already judged and not improved since.</span>${n?`<button type="button" class="btn solid sm" id="seeAll">See all ${n} lead${n===1?'':'s'}</button>`:''}`:'<b>Nothing matches.</b>'}</td></tr></tbody>`;
+    const b=$('#seeAll');if(b)b.addEventListener('click',()=>{view.status='ALL';view.page=1;renderTable();});
+    $('#pager').innerHTML='';$('#openSel').textContent='Open in Keepa';return;}
   const asinl=o=>`<span class="asinl">${o.ASIN}<button type="button" data-copy="${o.ASIN}" title="Copy ASIN">${ICONS.copy}</button></span>`;
   const roiCls=v=>v>=20?'pos':v>=10?'pos soft':v>=0?'warm':'neg';
   const mk=m=>`<i class="mk">${FLAG[m]||''} ${m}</i>`;
@@ -864,34 +1044,35 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
     return`<i class="ch ${conf?'good':'oa'}" title="${escapeHtml(rows.map(x=>`${x.who} ${Math.round(x.pct*10)/10}% → £${x.p.toFixed(2)} profit · ${Math.round(x.roi)}% ROI`).join(' · '))}">${escapeHtml(lab)}</i>`;};
   const pmRow=o=>o['Buy market']!=='UK'?'':`<div class="pms pms-r1">${PM_OPTIONS.map(x=>`<button type="button" class="pm${(factGet(o.ASIN).pm||[]).includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}" title="Tick when you have confirmed ${x} price-matches">${pmLabel(x)}</button>`).join('')}</div>`;
   if(cur.rule===1){h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Product</th><th>Verdict</th><th class="r">Landed £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">/mo</th><th>Flags · OA check</th></tr></thead><tbody>`;
-    rows.forEach((o,i)=>{const fl=(o.Flags||'').split('; ').filter(Boolean);const band=bandOf(o.Score||1);h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}" data-asin="${o.ASIN}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td class="scorec"><span class="score ${band}">${o.Score||1}</span><div class="stat2">${statusCell(o)}</div></td>
+    rows.forEach((o,i)=>{const fl=(o.Flags||'').split('; ').filter(Boolean);const band=bandOf(o.Score||1);h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}${verdGet(o.ASIN)?' rdone':''}" data-asin="${o.ASIN}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td class="scorec"><span class="score ${band}">${o.Score||1}</span><div class="stat2">${statusCell(o)}</div></td>
       <td class="prod"><span class="t" title="${escapeHtml(o.Title)}">${escapeHtml(o.Title)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o['Sell used'])}${o['LTD badge']?' · <b>LTD</b>':''}</span></span>${acts(o)}${pend(cur.name)}</td>
       <td class="vcell">${verdCell(o)}</td>
       <td class="num r buyc">${mk(o['Buy market'])} <b>${gbp(o['Landed £'])}</b>${o['Discount applied']?`<span class="sub">${escapeHtml(o['Discount applied'])}</span>`:''}</td>
       <td class="num r sellc"><b class="${o.yourSell?'yours':''}">${gbp(o['Sell £ used'])}</b>${o.yourSell?`<span class="sub">yours · rule said ${gbp(o['Rule sell £'])}</span>`:((o['Sell low £']||0)>0&&(o['Sell low £']||0)<(o['Sell £ used']||0)-0.005?`<span class="sub" title="If it only ever fetches the Buy Box 90d average">worst £${(o['Sell low £']).toFixed(2)}</span>`:'')}<input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" min="0" placeholder="your £" value="${o.yourSell?o['Sell £ used']:''}" title="Read the graph? Type what it really sells at and the profit re-works">${lvlPicker(o.ASIN,o['Sell £ used'])}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
-      <td class="num r">${o.SPM}<span class="sub">${o['SPM from']}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
+      <td class="num r demc">${o.SPM}<span class="sub">${o['SPM from']}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
       <td class="flagc">${(()=>{const oa=oaChip(o),fx=flagPick(fl);return`<span class="chips">${oa}${fx.show.map(flagChip).join('')}${fx.rest.length?`<i class="ch more" title="${escapeHtml(fx.rest.join(' · '))}">+${fx.rest.length}</i>`:''}</span>`;})()}${pmRow(o)}</td></tr>`;});}
   else{h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Product</th><th>Verdict</th><th class="r">Buy £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">Demand</th><th title="We cannot see other retailers' prices. These are the ones worth checking for this product — tick what you confirm.">OA check · you check</th></tr></thead><tbody>`;
     rows.forEach(o=>{const pot=o['Potential score']>o.Score+5?o['Potential score']:0;const band=bandOf(Math.max(o.Score,pot));
       const fact=factGet(o.ASIN);const alt=[['Buy Box 90d',o['Buy Box 90d £']],['Buy Box 180d',o['Buy Box 180d £']],['FBA 90d',o['FBA 90d £']],['FBM 90d',o['FBM 90d £']],['Buy Box high',o['Buy Box high £']]].filter(x=>x[1]).map(x=>`${x[0]} ${gbp(x[1])}`).join(' · ');
       const vcls=fact.vat==null?'':(+fact.vat===0?'z':'s');const vtxt=fact.vat==null?(o['VAT %']===0?(cur.vat0?'0% VAT · FILTER':'0% VAT · CONFIRM'):'VAT 20%'):(+fact.vat===0?'0% VAT ✓':'20% VAT ✓');
-      h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}" data-asin="${o.ASIN}">${sel(o)}<td class="idx">${o['#']}</td>
+      h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}${verdGet(o.ASIN)?' rdone':''}" data-asin="${o.ASIN}">${sel(o)}<td class="idx">${o['#']}</td>
       <td class="scorec"><span class="score ${band}">${o.Score}</span>${pot?`<span class="potl" title="Potential score with ${escapeHtml(o['Potential via'])}">→ ${pot}</span>`:''}<div class="stat2">${statusCell(o)}</div></td>
       <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d':''}</span></span>${acts(o)}<span class="chips">${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 3 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
       <td class="vcell">${verdCell(o)}</td>
       <td class="num r buyc"><b>${gbp(o['After discount £'])}</b><span class="sub">${o['Discount applied']?'Amazon '+gbp(o['Buy at £'])+' · '+escapeHtml(o['Discount applied']):(o['Amazon 90d drop %']!==''&&o['Amazon 90d drop %']!=null?o['Amazon 90d drop %']+'% under 90d avg':'')}</span></td>
       <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(o['Sell from']+' — '+alt)}">${escapeHtml(shortSell(o['Sell from']))}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit">${lvlPicker(o.ASIN,o['Sell for £'])}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
-      <td class="num r">${o['Sells /mo']}<span class="sub">/mo${o['Demand from']?' · '+escapeHtml(o['Demand from']):''}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
+      <td class="num r demc">${o['Sells /mo']}<span class="sub">/mo${o['Demand from']?' · '+escapeHtml(o['Demand from']):''}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
       <td class="pmc">${oaCell(o)}</td></tr>`;});}
   $('#leads').innerHTML=h+'</tbody>';
   const from=all.length?(view.page-1)*PAGEN()+1:0,to=Math.min(all.length,view.page*PAGEN());
   let pg='';const win=[...new Set([1,2,view.page-1,view.page,view.page+1,pages-1,pages].filter(p=>p>=1&&p<=pages))].sort((a,b)=>a-b);
   let last=0;win.forEach(p=>{if(p-last>1)pg+='<span style="padding:0 4px;color:var(--faint)">…</span>';pg+=`<button data-pg="${p}" class="${p===view.page?'on':''}">${p}</button>`;last=p;});
-  $('#pager').innerHTML=`<span>Showing ${from}–${to} of ${all.length}${view.sel.size?` · <b>${view.sel.size} selected</b>`:''}</span><div class="pg"><button data-pg="${view.page-1}" ${view.page<=1?'disabled':''}>‹</button>${pg}<button data-pg="${view.page+1}" ${view.page>=pages?'disabled':''}>›</button></div>`;
+  $('#pager').innerHTML=`<span>Showing ${from}–${to} of ${all.length}${view.sel.size?` · <b>${view.sel.size} selected</b>`:''}${pages>1&&view.page<pages?` · <span class="pghint">${all.length-to} more on the next page — ↓ carries on</span>`:''}</span><div class="pg"><button data-pg="${view.page-1}" ${view.page<=1?'disabled':''}>‹</button>${pg}<button data-pg="${view.page+1}" ${view.page>=pages?'disabled':''}>›</button></div>`;
   $('#openSel').textContent=view.sel.size?`Open ${view.sel.size} ticked in Keepa`:all.length<=OPEN_ALL_MAX?`Open all ${all.length} in Keepa`:`Open ${rows.length} on this page in Keepa`;
-  setupKeys();paintJudged();if(view.active){const tr=document.querySelector(`.ltbl tbody tr[data-asin="${view.active}"]`);if(tr)tr.classList.add('active');}}
+  $('#openSel').title='Opens them in one Keepa tab. Looking is not judging — nothing is marked, and they stay in To review until you press Y / N / M.';
+  setupKeys();paintJudged();paintEuLeads();if(view.active){const tr=document.querySelector(`.ltbl tbody tr[data-asin="${view.active}"]`);if(tr)tr.classList.add('active');}}
 /* b23 density pass (Jack, 14 Sep: "too busy") — the Sell cell already shows the worst case and the retailer buttons say
    "check OA", so those two flags are noise; the rest are ranked and only two show, the others sit behind "+n" on hover */
 const FLAG_RANK=[/EU PLUG|PLUG CHECK/i,/tanked/i,/NOT A DROP/i,/no FBA seller/i,/LIMITED TIME/i,/AMAZON OWNS/i,/WIDE SELL/i,/volatile/i,/drops only/i,/not in a drop/i,/A2A->OA/i,/ZERO-RATED/i];
@@ -915,9 +1096,29 @@ function codeBestRoi(o){if(!cur||o['Buy market']!=='UK')return -99;const landed=
   return list.reduce((m,pct)=>{const c=landed*(1-pct/100);const pp=p+(landed-c)/V;return Math.max(m,c?100*pp/c:-99);},-99);}
 function bandOf(sc){return sc>=70?'hi':sc>=50?'md':sc>=30?'lo':'weak';}
 function leadOf(a){return result?result.out.find(o=>o.ASIN===a):null;}
+/* b142: every lead this source marked SEEN today — what the old Open button stamped, and what "Mark all as seen" stamps.
+   Yes / No / Maybe are never in here, so putting them back can only restore a queue, never lose a real answer. */
+/* the NEWEST day that has seen-marks on this source, not just today — so the button is still there when Jack pushes this tomorrow */
+function seenToday(){if(!result||!cur)return[];const V=verdAll();
+  const mine=(result.out||[]).filter(o=>{const v=V[o.ASIN];return v&&v.v==='Seen'&&(!v.source||v.source===cur.key)&&v.at;});
+  if(!mine.length)return[];
+  const last=mine.map(o=>String(V[o.ASIN].at).slice(0,10)).sort().pop();
+  return mine.filter(o=>String(V[o.ASIN].at).slice(0,10)===last).map(o=>o.ASIN);}
+function seenTodayDay(){if(!result||!cur)return'';const V=verdAll();const a=seenToday();return a.length?String((V[a[0]]||{}).at||'').slice(0,10):'';}
+function paintPutBack(sb){if(!sb||!sb.parentNode)return;let ub=$('#putBack');
+  if(!ub){ub=document.createElement('button');ub.type='button';ub.id='putBack';ub.className='btn ghost sm putback';sb.parentNode.insertBefore(ub,sb.nextSibling);ub.addEventListener('click',putBackSeen);}
+  const n=isJack()?seenToday().length:0;ub.hidden=!n;const day=seenTodayDay();
+  ub.textContent=day===today()?`Put ${n} back in the queue`:`Put ${n} back in the queue · seen ${ukDate(day).replace(/^\w+ /,'')}`;
+  ub.title=`${n} lead${n===1?'':'s'} on this source were marked SEEN on ${day===today()?'today':ukDate(day)} — by "Mark all as seen", or by the old Open in Keepa button which marked what it opened. This clears those marks so they are back in To review. Yes / No / Maybe are not touched.`;}
+function putBackSeen(){const list=seenToday();if(!list.length)return;
+  const day=seenTodayDay();
+  if(!confirm(`Put ${list.length} lead${list.length===1?'':'s'} back in the queue?\n\nThey were marked SEEN on ${day===today()?'today':ukDate(day)} — by "Mark all as seen", or by the old Open in Keepa button which used to mark what it opened.\n\nYour Yes / No / Maybe are not touched.`))return;
+  verdDelMany(list);
+  result.gone=applyQueue(result.out,result.rule,result.prevMap||{},verdAll()).filter(([a])=>!blAll()[a]);
+  touched.clear();renderResults();renderLog();toast(`${list.length} back in the queue`);}
 function markAllSeen(){if(!result||!needMe())return;const list=result.out.filter(o=>!verdGet(o.ASIN));if(!list.length){toast('Everything already has a verdict');return;}
   if(!confirm(`Mark all ${list.length} leads without a verdict as SEEN by ${me()}? This is the baseline: from the next run only NEW leads and ones that got BETTER will be "to review".`))return;
-  verdSetMany(list.map(o=>({asin:o.ASIN,v:{v:'Seen',reason:'',note:'',source:cur.key,state:o.state}})));
+  verdSetMany(list.map(o=>({asin:o.ASIN,v:{v:'Seen',reason:'',note:'',source:cur.key,state:o.state}})),'Mark all as seen');
   list.forEach(o=>{o.verdict=verdGet(o.ASIN);o.QUEUE='';o.sinceVerdict='';});touched.clear();renderResults();renderLog();toast(list.length+' marked as seen — baseline set');}
 function onTableClick(e){const cp=e.target.closest('button[data-copy]');if(cp){copy(cp.dataset.copy,cp.dataset.copy+' copied');return;}
   const b=e.target.closest('button');if(!b)return;const a=b.dataset.asin||b.dataset.bl||b.dataset.blbrand||b.dataset.vat||b.dataset.track;if(!a)return;const o=leadOf(a);
@@ -953,10 +1154,11 @@ const OPEN_ALL_MAX=250;
 function openInKeepa(){if(!result){toast('Nothing to open',true);return;}
   const all=visible();const list=view.sel.size?[...view.sel]:(all.length<=OPEN_ALL_MAX?all:all.slice((view.page-1)*PAGEN(),view.page*PAGEN())).map(o=>o.ASIN);
   if(!list.length){toast('Nothing to open',true);return;}window.open(keepaLink(list,'2'),'_blank');
-  /* b56 (Jack, 15 Sep): opening leads in Keepa IS the review most days — so the ones opened count as seen by whoever pressed the button.
-     Yes/No/Maybe already on a row are kept; rows with no verdict get SEEN with today's numbers, so "better since seen" works from here. */
-  if(!me())return;const fresh=list.map(a=>result.out.find(o=>o.ASIN===a)).filter(o=>o&&!verdGet(o.ASIN));
-  if(fresh.length){verdSetMany(fresh.map(o=>({asin:o.ASIN,v:{v:'Seen',reason:'',note:'',source:cur.key,state:o.state}})));fresh.forEach(o=>{o.verdict=verdGet(o.ASIN);o.QUEUE='';o.sinceVerdict='';});renderResults();renderLog();toast(`Opened ${list.length} in Keepa · ${fresh.length} marked seen by ${me()}`);}}
+  /* b142 (Jack, 22 Sep: "why only 83 and then I opened KPV and it only shows 1 now — unless I upload new filters I should be able to
+     see what I need to run"). b56 made this button ALSO mark every lead it opened as seen, because back then opening them WAS the review.
+     It is not any more: he opens them in the Product Viewer to look at them, and the queue emptied under him — 83 to review became 1.
+     Opening is looking, not judging. Nothing is marked now. Y / N / M still judge, and "Mark all as seen" still sets the baseline. */
+  toast(`Opened ${list.length} in Keepa — nothing marked. Y / N / M judge a row; "Mark all as seen" sets the baseline.`);}
 
 /* ============ runs log (the 7-day count) ============ */
 /* b58 (Jack: "we should be getting a mega amount of data in this too"): the log is filterable, sortable, and rolls up by source / day / person */
@@ -1167,10 +1369,15 @@ function brandsInit(){if(typeof bbSeed==='function')bbSeed();paintJackOnly();ren
   $('#leads').addEventListener('click',onTableClick);$('#leads').addEventListener('change',onTableChange);$('#leads').addEventListener('input',onTableInput);
   $('#pager').addEventListener('click',e=>{const b=e.target.closest('button[data-pg]');if(!b||b.disabled)return;view.page=parseInt(b.dataset.pg);touched.clear();renderTable();$('#leadTop').scrollIntoView({behavior:'smooth',block:'start'});});
   document.querySelectorAll('#fSeg button').forEach(b=>b.addEventListener('click',()=>{view.status=b.dataset.st;view.page=1;touched.clear();renderTable();}));
+  /* b137: the More menu on the run toolbar */
+  {const m=$('#moreMenu'),b=$('#moreBtn');if(m&&b){b.addEventListener('click',e=>{e.stopPropagation();const o=!m.classList.contains('open');m.classList.toggle('open',o);b.setAttribute('aria-expanded',o?'true':'false');});
+    document.addEventListener('click',e=>{if(!m.contains(e.target)){m.classList.remove('open');b.setAttribute('aria-expanded','false');}});
+    m.querySelector('.tbpop').addEventListener('click',e=>{if(e.target.closest('button'))setTimeout(()=>{m.classList.remove('open');b.setAttribute('aria-expanded','false');},0);});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&m.classList.contains('open')){m.classList.remove('open');b.setAttribute('aria-expanded','false');}});}}
   ['#runNext','#runNext2'].forEach(id=>$(id).addEventListener('click',e=>{const k=e.currentTarget.dataset.key;if(k&&srcGet(k)){backToList();openRun(k);window.scrollTo({top:0,behavior:'smooth'});}}));
   $('#yourDay').addEventListener('click',e=>{const b=e.target.closest('button[data-start]');if(b)openRun(b.dataset.start);});
   $('#howToHide').addEventListener('click',()=>{lsSet(HOWTO_KEY,true);renderHowTo();});$('#howToShow').addEventListener('click',()=>{lsSet(HOWTO_KEY,false);renderHowTo();$('#howTo').scrollIntoView({behavior:'smooth',block:'center'});});
-  $('#runStrip').addEventListener('click',e=>{const d=e.target.closest('[data-run]');if(d&&cur){openPastRun(d.dataset.run);return;}if(e.target.closest('[data-act="hist"]')&&cur)openHistory(cur);});
+  $('#runStrip').addEventListener('click',e=>{const d=e.target.closest('[data-run]');if(d&&cur){openPastRun(d.dataset.run);return;}if(e.target.closest('[data-look]')&&cur){openApiLook();return;}if(e.target.closest('[data-act="hist"]')&&cur)openHistory(cur);});
   $('#runCopyLink').addEventListener('click',e=>{if(!cur)return;const w=USERS.includes(cur.owner)?'&who='+cur.owner:'';copy(location.origin+location.pathname+'#run='+cur.key+w,'Link copied — paste it into the AVM HQ task'+(w?' (opens as '+cur.owner+', no name prompt)':''),e.currentTarget,'Copied');});
   $('#runAllTime').addEventListener('click',()=>{if(!cur)return;const k=cur.key;backToList();historyOpenFor(k);});
   $('#fSort').addEventListener('change',e=>{view.sort=e.target.value;view.page=1;renderTable();});

@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b127">
-<link rel="stylesheet" href="css/brands.css?v=b127">
+<link rel="stylesheet" href="css/base.css?v=b146">
+<link rel="stylesheet" href="css/brands.css?v=b146">
 </head>
 <body>
 <div class="wrap">
@@ -396,13 +396,17 @@
           <div class="warn feewarn" id="feeWarn"></div>
           <div class="toolbar">
             <button class="btn primary" id="openSel" type="button">Open in Keepa</button>
-            <button class="btn solid" id="copyKept" type="button"><span class="lab">Copy lead ASINs</span></button>
-            <button class="btn solid" id="copyKpv" type="button" title="Copy a Keepa Product Viewer link with every lead loaded — paste it to anyone, no export needed"><span class="lab">Copy KPV link</span></button>
-            <button class="btn ghost" id="dlSheet" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="lab">Review sheet (xlsx)</span></button>
             <div class="spacer"></div>
-            <button class="btn solid seen" id="seenAll" type="button" hidden title="Baseline: mark every lead without a verdict as SEEN — from the next run only NEW and BETTER show as to-review">Mark all as seen</button>
-            <button class="btn ghost" id="dlCsv" type="button">CSV</button>
-            <button class="btn ghost" id="dlDropped" type="button">Dropped list</button>
+            <!-- b137: one primary action each side, everything else behind More — the toolbar was ten controls over two rows -->
+            <div class="tbmenu" id="moreMenu"><button class="btn ghost" id="moreBtn" type="button" aria-haspopup="true" aria-expanded="false">More <span class="caret">▾</span></button>
+              <div class="tbpop" id="morePop">
+                <button class="btn solid" id="copyKept" type="button"><span class="lab">Copy lead ASINs</span></button>
+                <button class="btn solid" id="copyKpv" type="button" title="Copy a Keepa Product Viewer link with every lead loaded — paste it to anyone, no export needed"><span class="lab">Copy KPV link</span></button>
+                <button class="btn ghost" id="dlSheet" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="lab">Review sheet (xlsx)</span></button>
+                <button class="btn ghost" id="dlCsv" type="button">CSV</button>
+                <button class="btn ghost" id="dlDropped" type="button">Dropped list</button>
+                <button class="btn solid seen" id="seenAll" type="button" hidden title="Baseline: mark every lead without a verdict as SEEN — from the next run only NEW and BETTER show as to-review">Mark all as seen</button>
+              </div></div>
             <button class="btn primary" id="runNext2" type="button" hidden title="Open the next filter that is due today">Done — next due →</button>
           </div>
 
@@ -438,7 +442,9 @@
       <div class="ssec"><h3>You</h3><p>Who is clicking, and whether this browser is talking to the shared database.</p></div>
       <div class="sgrid">
         <div class="sbox"><h3>Who am I <span class="scope local">this browser</span></h3><p class="ssub">Your name goes on every lead you mark, every run you do and every blacklist entry. Nothing can be marked until it is set.</p>
-          <div class="row"><select class="sel" id="meIn"><option value="">— pick your name —</option><option>Jack</option><option>Mera</option><option>Suz</option></select></div></div>
+          <div class="row"><select class="sel" id="meIn"><option value="">— pick your name —</option><option>Jack</option><option>Mera</option><option>Suz</option></select></div>
+          <!-- b128: signing in lives here, not only on the first-visit gate -->
+          <div class="authbox" id="authBox"></div></div>
         <div class="sbox"><h3>Shared storage <span class="scope shared">shared</span></h3><p class="ssub" id="cloudInfo">…</p>
           <div class="row"><button class="btn solid sm" id="cloudPullBtn" type="button">Refresh from shared</button><button class="btn ghost sm" id="cloudSendBtn" type="button">Send queued changes</button></div>
           <p class="hint">Every click saves in this browser first, then goes to the shared database. Lose the connection and it queues, then sends itself. Nothing is lost on a refresh.</p></div>
@@ -494,23 +500,23 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b127"></script>
-<script src="js/parse.js?v=b127"></script>
-<script src="js/rule1.js?v=b127"></script>
-<script src="js/rule2.js?v=b127"></script>
-<script src="js/export.js?v=b127"></script>
-<script src="js/rule4.js?v=b127"></script>
-<script src="js/queue.js?v=b127"></script>
-<script src="js/sources.js?v=b127"></script>
-<script src="js/cloud.js?v=b127"></script>
-<script src="js/auth.js?v=b127"></script>
-<script src="js/leadtools.js?v=b127"></script>
-<script src="js/keepaconsole.js?v=b127"></script>
-<script src="js/euprice.js?v=b127"></script>
-<script src="js/apirun.js?v=b127"></script>
-<script src="js/brands.js?v=b127"></script>
-<script src="js/history.js?v=b127"></script>
-<script src="js/audit.js?v=b127"></script>
-<script src="js/boot.js?v=b127"></script>
+<script src="js/core.js?v=b146"></script>
+<script src="js/parse.js?v=b146"></script>
+<script src="js/rule1.js?v=b146"></script>
+<script src="js/rule2.js?v=b146"></script>
+<script src="js/export.js?v=b146"></script>
+<script src="js/rule4.js?v=b146"></script>
+<script src="js/queue.js?v=b146"></script>
+<script src="js/sources.js?v=b146"></script>
+<script src="js/cloud.js?v=b146"></script>
+<script src="js/auth.js?v=b146"></script>
+<script src="js/leadtools.js?v=b146"></script>
+<script src="js/keepaconsole.js?v=b146"></script>
+<script src="js/euprice.js?v=b146"></script>
+<script src="js/apirun.js?v=b146"></script>
+<script src="js/brands.js?v=b146"></script>
+<script src="js/history.js?v=b146"></script>
+<script src="js/audit.js?v=b146"></script>
+<script src="js/boot.js?v=b146"></script>
 </body>
 </html>

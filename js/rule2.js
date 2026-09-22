@@ -164,11 +164,11 @@ function sellPick(r){const P=sellPickBase(r);if(!P)return P;const L=UNIFIED_SELL
   return{sell:v,why:`${lv.label} level · you take it on this shape ${L.count} of ${L.n} times`,shape:P.shape,conf:'high',learned:true};}
 /* b116 — THE LEVELS ON THE ROW (Jack, 20 Sep: "custom, dynamic and non-restrictive"). Every price level Keepa gives for a product,
    so the person reading the graph taps the one it supports instead of typing. Pure: row in, levels out. */
-const SELL_LEVELS=[['bb90','Buy Box 90d','Buy Box: 90 days avg.'],['bb180','Buy Box 180d','Buy Box: 180 days avg.'],['fba30','FBA 30d','New, 3rd Party FBA: 30 days avg.'],
-  ['fba90','FBA 90d','New, 3rd Party FBA: 90 days avg.'],['fbm90','FBM 90d','New, 3rd Party FBM: 90 days avg.'],['hi','Box high','Buy Box: Highest']];
+const SELL_LEVELS=[['bb90','Buy Box 90d','Buy Box: 90 days avg.','BB90'],['bb180','Buy Box 180d','Buy Box: 180 days avg.','BB180'],['fba30','FBA 30d','New, 3rd Party FBA: 30 days avg.','F30'],
+  ['fba90','FBA 90d','New, 3rd Party FBA: 90 days avg.','F90'],['fbm90','FBM 90d','New, 3rd Party FBM: 90 days avg.','FBM'],['hi','Box high','Buy Box: Highest','HIGH']];
 function sellLevels(r){if(!r)return[];const fbaN=kNum(r['Buy Box Eligible Offer Counts: New FBA'])||0,fbmN=kNum(r['New FBM Offer Count: Current'])||0;
-  return SELL_LEVELS.map(([key,label,col])=>{const v=kNum(r[col]);if(!v)return null;
-    const n=/^fba/.test(key)?fbaN:(key==='fbm90'?fbmN:null);return{key,label,value:Math.round(v*100)/100,n};}).filter(Boolean);}
+  return SELL_LEVELS.map(([key,label,col,short])=>{const v=kNum(r[col]);if(!v)return null;
+    const n=/^fba/.test(key)?fbaN:(key==='fbm90'?fbmN:null);return{key,label,short:short||label,value:Math.round(v*100)/100,n};}).filter(Boolean);}
 function sellShape(r){const P=(typeof sellPick==='function')?sellPick(r):null;return P?P.shape:null;}
 /* the Dell 15 (20 Sep): Keepa's FBA 90d average was £788 with nobody near it on the graph — that column averages every FBA offer
    it tracked, including ones that vanished. Thin listing + FBA average far above the box = a ghost, so say so. */

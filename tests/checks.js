@@ -208,9 +208,10 @@ window.SourcingChecks=(function(){
       /* b75: the two Mera filters are named for what they actually catch. The migration must rename a saved row
          that still holds the old name, and must NOT touch one Jack has renamed himself. */
       /* b126 (Jack: "improve names, electricals + look like the same for me"): named for what each one catches */
-      ok('Sources · the two Mera filters cannot be mistaken for each other',
+      /* b131: named from the decoded Keepa payload, not from the note — £60+ has no upper bound and is category-restricted */
+      ok('Sources · the two Mera filters are named for what they actually search',
         ['mera-highticket','mera-150plus'].map(k=>(SRC_SEED.find(z=>z.key===k)||{}).name),
-        ['Mera · everyday £60–£150','Mera · big-ticket £150+']);
+        ['Mera · chosen categories £60+','Mera · anything £150–£2,000']);
       ok('Sources · the rename skips a filter Jack named himself',(()=>{
         const rows=[{key:'mera-highticket',name:'Mera high-ticket',migV:6},
                     {key:'mera-150plus',name:'Mera BIG STUFF',migV:6}];
@@ -218,7 +219,7 @@ window.SourcingChecks=(function(){
         rows.forEach(x=>{const sd=SRC_SEED.find(z=>z.key===x.key);
           if(sd&&x.name===OLD[x.key])x.name=sd.name;x.migV=7;});
         return rows.map(r=>r.name+'|'+r.migV);
-      })(),['Mera · everyday £60–£150|7','Mera BIG STUFF|7']);
+      })(),['Mera · chosen categories £60+|7','Mera BIG STUFF|7']);
       /* b76 (Jack, 17 Sep): 100 EU alert ASINs with no Finder exports behind them. The UK Viewer is dropped as
          normal and the EU BUY side is bought from Keepa — 1 token per ASIN per market — then handed to Rule 1 in
          the exact shape a dropped CSV makes, so the frozen rule is never touched. */
@@ -629,7 +630,7 @@ window.SourcingChecks=(function(){
         ok('One sell · the four shapes pick the right level',[g305.shape,g305.sell,g923.shape,g923.sell,siem.shape,siem.sell,tom.shape,tom.sell],['big-pack',39.71,'amazon-owns',269.86,'amazon-dips',560.71,'small-pack',26.72]);
         ok('One sell + £100 bar · both switched ON (b117), the b114 swap stays off',[UNIFIED_SELL.on,BAR100.on,BR.UNIFIED_SELL_60],[true,true,false]);
         UNIFIED_SELL.on=false;BAR100.on=false;const MEa=rule2Compute(ME.rows,{},{});UNIFIED_SELL.on=true;BAR100.on=true;const MEb=rule2Compute(ME.rows,{},{});
-        ok('One sell + £100 bar · Mera electricals 19 Sep: 272 -> 237 with both on',[MEa.out.length,MEb.out.length],[272,237]);}
+        ok('One sell + £100 bar · Mera electricals 19 Sep: 272 -> 238 with both on (b134: Amazfit is no longer blocked)',[MEa.out.length,MEb.out.length],[272,238]);}
       /* b116: the levels on the row, the stale-FBA note, and what the app learns from Jack's picks */
       {const LP=await csv('laptops-2026-09-19.csv'),SZ=await csv('suz-a2a-2026-09-19.csv');const dell=LP.rows.find(x=>x.ASIN.trim()==='B0GK33PJTK'),g305=SZ.rows.find(x=>x.ASIN.trim()==='B07CGPZ3ZQ');
         ok('Levels · six levels with seller counts on the G305',sellLevels(g305).map(x=>[x.key,x.value,x.n]),[['bb90',33.2,null],['bb180',32.03,null],['fba30',39.71,10],['fba90',43.11,10],['fbm90',42.05,15],['hi',96.24,null]]);
@@ -658,6 +659,101 @@ window.SourcingChecks=(function(){
       ok('Sign in · no session means the name picker still runs everything',[authSession(),authedName(),authUser()],[null,'',null]);
       /* b127: a past run shows what it recorded, and never prints NaN for a figure it never had */
       ok('Past runs · a missing count reads as a dash, not NaN',[numOrDash(35),numOrDash('—'),numOrDash(undefined),numOrDash(0)],['<b>35</b>','<b>—</b>','<b>—</b>','<b>0</b>']);
+      /* b131 (ShiftTrack found it): a run can never be saved without a name on it */
+      ok('Runs · a name is required before an export is processed',/if\(!me\(\)\)\{pendingFiles=arr;needMe\(\);/.test(String(handleFiles)),true);
+      ok('Runs · the held export replays itself once a name is picked',/pendingFiles\).\{const f=pendingFiles;pendingFiles=null;whoGate\(false\);handleFiles\(f\);\}/.test(String(whoSet).replace(/\s+/g,' '))||/pendingFiles/.test(String(whoSet)),true);
+      /* b132: a VA sees her own sources and nobody else's; Jack sees everything; unowned is Jack's until he hands it out */
+      {const save=me();const S=k=>({key:k,owner:{a:'Suz',b:'Mera',c:NO_OWNER,d:'Jack',e:'VAs'}[k],status:'active'});const K=['a','b','c','d','e'];
+        lsSet(ME_KEY,'Suz');const suz=K.map(k=>canSee(S(k)));
+        lsSet(ME_KEY,'Mera');const mera=K.map(k=>canSee(S(k)));
+        lsSet(ME_KEY,'Jack');const jack=K.map(k=>canSee(S(k)));
+        lsSet(ME_KEY,save||'');
+        ok('Privacy · own + "VAs" yes, each other and unowned no, Jack everything',[suz,mera,jack],[[true,false,false,false,true],[false,true,false,false,true],[true,true,true,true,true]]);}
+      ok('Sources · Mera 200+ is in, paused, with her Keepa link',(()=>{const s=SRC_SEED.find(z=>z.key==='mera-200plus');return s?[s.name,s.status,s.owner,/keepa\.com\/#!finder/.test(s.link||''),/%22filter%22%3A200/.test(s.link||'')]:null;})(),['Mera · 200+ · 10% drop','paused','Mera',true,true]);
+      /* b134: Logitech's multi-buy promos, and Amazfit is no longer blocked anywhere */
+      ok('Logitech · a promo allowance, marked as a promo not a code',[discIsPromo('Logitech'),discBrandPair('Logitech',50),discIsPromo('Bosch')],[true,['Logitech',10],false]);
+      ok('Logitech · the promo lives on the brand site, so the row sends them there',[discPromoSite('Logitech'),discPromoSite('Bosch'),BR.PROMO_FLOOR_ROI],['logitech.com','',-5]);
+      ok('Filters · no saved filter blocks Amazfit any more',SRC_SEED.filter(s=>/amazfit/i.test(s.link||'')).map(s=>s.key),[]);
+      ok('Filters · the other brand blocks survived the edit',(()=>{const b=s=>{try{const j=JSON.parse(decodeURIComponent((s.link||'').split('#!finder/')[1]));const x=(j.f||{}).brand;return x&&x.type==='isNoneOf'?String(x.filter).split('###').length:0;}catch(e){return -1;}};
+        return [b(SRC_SEED.find(z=>z.key==='mera-150plus')),b(SRC_SEED.find(z=>z.key==='suz-deep-drops'))];})(),[42,39]);
+      /* b136 (ShiftTrack, 21 Sep): a brand Jack has already given to a person must survive the "all brands unassigned" migration */
+      ok('Owners · assigning a brand sticks; only the seeded pool is cleared',(()=>{
+        const rows=[{key:'msi',type:'brand',owner:'Mera'},{key:'gtech',type:'brand',owner:'Mera'},{key:'bialetti',type:'brand',owner:'Suz'},
+                    {key:'acer',type:'brand',owner:'VAs'},{key:'braun',type:'brand'}];
+        rows.forEach(x=>{if(x.type==='brand'&&(x.migV||0)<11){if(!x.owner||x.owner==='VAs')x.owner=NO_OWNER;x.migV=11;}});
+        return rows.map(r=>r.key+'='+r.owner);})(),['msi=Mera','gtech=Mera','bialetti=Suz','acer=—','braun=—']);
+      /* b138: a Keepa API product maps onto the same columns a CSV export has — checked against the same two products' export */
+      {const J=await(await fetch('../fixtures/api-sample-2026-09-21.json')).json();const ME2=await csv('mera-electricals-2026-09-19.csv');
+        const rows=J.products.map(p=>apiRow(p,2));const r=rows.find(x=>x.ASIN==='B0B8H4B2QJ'),c=ME2.rows.find(x=>x.ASIN.trim()==='B0B8H4B2QJ');
+        const near=(a,b,pct)=>Math.abs(kNum(a)-kNum(b))<=kNum(b)*pct;
+        ok('API · prices land within 2% of the export taken two days earlier (Buy Box 90d, FBA 90d, FBM 90d)',[near(r['Buy Box: 90 days avg.'],c['Buy Box: 90 days avg.'],0.02),near(r['New, 3rd Party FBA: 90 days avg.'],c['New, 3rd Party FBA: 90 days avg.'],0.02),near(r['New, 3rd Party FBM: 90 days avg.'],c['New, 3rd Party FBM: 90 days avg.'],0.02)],[true,true,true]);
+        ok('API · the exact columns match the export (Buy Box high, review count ±1 for two days of reviews, monthly sold, FBA offers, OOS, fees, variations, root)',[r['Buy Box: Highest'],String(Math.abs(kNum(r['Reviews: Rating Count'])-kNum(c['Reviews: Rating Count']))<=1?c['Reviews: Rating Count']:r['Reviews: Rating Count']),r['Monthly Sales Trends: Bought in past month'],r['Buy Box Eligible Offer Counts: New FBA'],r['Buy Box: 90 days OOS'],r['Referral Fee %'],r['FBA Pick&Pack Fee'],r['Variation Count'],r['Categories: Root'],rowDomain(r)],
+          [c['Buy Box: Highest'],c['Reviews: Rating Count'],c['Monthly Sales Trends: Bought in past month'],c['Buy Box Eligible Offer Counts: New FBA'],c['Buy Box: 90 days OOS'],c['Referral Fee %'],c['FBA Pick&Pack Fee'],c['Variation Count'],c['Categories: Root'],'UK']);
+        ok('API · Amazon\'s share of the box is read, and a variation with no confirmed figure is share-unknown (a confirmed one is not)',[/\d+ %/.test(r['Buy Box: % Amazon 90 days']),r['Reviews: Review Count - Format Specific'],shareUnknown(r),shareUnknown(Object.assign({},r,{'Monthly Sales Trends: Bought in past month':''}))],[true,'-',false,true]);
+        const R2=rule2Compute(rows,{},{});ok('API · the rules run on API rows without a drop (2 priced, both demand)',[R2.st.priced,R2.st.demand],[2,2]);}
+      /* b139 (Jack, 21 Sep — does an API run count as the VA's run? "not until they worked it") */
+      {const L=String(logRun).replace(/\s+/g,' ');const iL=L.indexOf('apiLookSave('),iR=L.indexOf('runSave(');
+        ok('API look · logRun stores it on its own and returns before runSave / leadSave (no src_runs row, baseline untouched)',[iL>0&&iR>iL,/paintRunStrip\(\);return;\}/.test(L.slice(iL,iR)),/apiLook=!!\(sellNow&&sellNow\.fromKeepa\)/.test(String(window.run)),String(apiLookSave).includes('cloudQueue')],[true,true,true,false]);}
+      {const k='__chk_look';apiLookForget(k);apiLookSave(k,{at:'2026-09-21T10:32:00Z',leads:3,rows:[{ASIN:'B000000001'}]});const L=apiLookFor(k);apiLookForget(k);
+        ok('API look · round-trips in this browser only and forgets cleanly',[L&&L.leads,L&&L.rows.length,apiLookFor(k)],[3,1,null]);}
+      /* b140 (Jack, 21 Sep: "keep improving smoothness and easy to use") */
+      ok('Keys · ↓ / Y at the last row of a page carries on to the next page, ↑ at the top goes back',[/view\.page<pages\)\{view\.page\+\+;touched\.clear\(\);renderTable\(\)/.test(String(stepActive)),/view\.page>1\)\{view\.page--;touched\.clear\(\);renderTable\(\)/.test(String(stepActive))],[true,true]);
+      ok('Judged pill · says "all done" and lights Done when every visible lead has a verdict',[/finished=all\.length>0&&done===all\.length/.test(String(paintJudged)),/classList\.toggle\('ready',finished/.test(String(paintJudged))],[true,true]);
+      {const css=[...document.styleSheets].find(x=>/brands\.css/.test(x.href||''));const rules=css?[...css.cssRules].map(r=>r.cssText):[];
+        ok('Table · fits a 1366px laptop: the note box no longer forces a 244px Verdict column, level chips are chip-sized',[rules.some(r=>/^\.vnote \{.*max-width: 168px/.test(r)),rules.some(r=>/\.ltbl td\.num \.lv b \{.*font-size: 10\.5px/.test(r))],[true,true]);}
+      /* b141 (Jack, 22 Sep: "storefront audit — still very jittery", "still very jumpy whenever I press anything") */
+      {const css=[...document.styleSheets].find(x=>/brands\.css/.test(x.href||''));const rules=css?[...css.cssRules].map(r=>r.cssText):[];
+        ok('Audit · a row never changes height: the buttons are on every row, not revealed on hover or focus',
+          [rules.some(r=>/\.aulist \.aurow:not\(:hover\):not\(\.focus\) > \.aubtns/.test(r)&&/display: flex/.test(r)),
+           rules.some(r=>/\.aulist \.aurow\.reasoning > \.aubtns/.test(r)&&/display: none/.test(r)),
+           rules.some(r=>/\.aulist \.aurow:not\(\.focus\) \.aunext/.test(r)&&/visibility: hidden/.test(r))],[true,true,true]);}
+      ok('Audit · a press repaints the list, not the whole page',[typeof auQuickRender==='function',typeof auRefresh==='function',/auQuickRender\(\)\)renderAudit/.test(String(auRefresh)),/auRefresh\(\);auFollow\(\);\}$/.test(String(auJudgeNow).trim())],[true,true,true,true]);
+      ok('Audit · the reason chips stand in for the buttons instead of opening a line under them',/&&!v\.reason/.test(String(auRow))&&/reasons\?' reasoning':''/.test(String(auRow)),true);
+      {const st={current:[]};st.current[18]=-1;st.current[0]=-1;st.current[1]=1299;st.current[3]=4200;
+        const r=audFromKeepa({asin:'B0TEST00001',title:'T',stats:st});
+        const bb={current:[]};bb.current[18]=2499;bb.current[0]=2599;bb.current[1]=2399;
+        const r2=audFromKeepa({asin:'B0TEST00002',title:'T',stats:bb});
+        ok('Audit · no Buy Box and no Amazon offer falls back to the cheapest live 3P price, labelled',[r.price,r.pricefrom,r2.price,r2.pricefrom],[12.99,'3p',24.99,'bb']);}
+      {const rows=[{a:'x1',p:{price:10}},{a:'x2',p:{price:90}},{a:'x3',p:{}}];
+        ok('Audit · the frozen order re-freezes when the numbers THIS sort reads arrive',/AU_SORTF\[auView\.sort\]/.test(String(auVisible))&&/auView\._osig!==osig/.test(String(auVisible)),true);}
+      ok('Audit · a verdict given on another shelf says which shelf it came from',/v\.seller_id!==sh\.seller/.test(String(auRow))&&/from \$\{escapeHtml\(auSrcShort\(fromShelf\)\)\}/.test(String(auRow)),true);
+      /* b142 (Jack, 22 Sep: "why only 83 and then I opened KPV and it only shows 1 now — super super buggy") */
+      ok('Open in Keepa · looking is not judging: nothing is marked seen by opening',[/verdSetMany/.test(String(openInKeepa)),/nothing marked/.test(String(openInKeepa))],[false,true]);
+      ok('Put back · restores the newest batch of SEEN marks on this source, never a Yes / No / Maybe',[typeof seenToday==='function',typeof putBackSeen==='function',/v\.v==='Seen'/.test(String(seenToday)),/sort\(\)\.pop\(\)/.test(String(seenToday)),/verdDelMany\(list\)/.test(String(putBackSeen))],[true,true,true,true,true]);
+      ok('Put back · a removed verdict leaves the cloud too',[typeof verdDelMany==='function',/cloudQueue\('src_verdicts','delete'/.test(String(verdDelMany))],[true,true]);
+      /* b143 (Jack, 22 Sep: "what is the fix and improvement to make sure it never happens again") — the guard that
+         makes b142's bug impossible to reintroduce: ONE place in the app may write a Seen verdict, and it is the
+         button that says so. If anyone ever adds another, this check fails with the line number. */
+      {const src=await(await fetch('js/brands.js')).text();
+        const hits=[...src.matchAll(/v:'Seen'/g)].map(m=>m.index);
+        const start=src.indexOf('function markAllSeen(');const end=src.indexOf('\nfunction ',start+20);
+        const inside=hits.length?hits.every(i=>i>start&&i<end):false;
+        const lines=hits.map(i=>src.slice(0,i).split('\n').length);
+        ok('Guard · only "Mark all as seen" may write a Seen verdict (b142: the Open button was doing it silently)',[hits.length,inside,lines.length===1],[1,true,true]);}
+      ok('Verdicts · every write records how it was made, and that label never reaches the cloud',[/via:via\|\|'the row'/.test(String(verdSet)),/via:via\|\|'a bulk button'/.test(String(verdSetMany)),/rows\.push\(\{asin,v:row\.v,reason:row\.reason\|\|'',note:row\.note\|\|'',who,at,source_key/.test(String(verdSetMany)),/via/.test(String(verdSetMany).split('rows.push')[1]||'')],[true,true,true,false]);
+      ok('History · a run records which leads needed a look and which fell off, not just the counts',[/queue:dayQueueFor\(R\)/.test(String(logRun))&&/o\.QUEUE\)\.map\(o=>o\.ASIN\)/.test(String(dayQueueFor)),/goneAsins:/.test(String(logRun)),/wasQueued\.has\(a\)\?'new':''/.test(String(openPastRun))],[true,true,true]);
+      /* b144 (Jack, 22 Sep: "the 83 that was in the queue needs to be there for the day and marked done by x person") */
+      ok('Today\'s list · the day\'s queue is fixed by the run and judged leads stay on it',[typeof dayList==='function',/r\.day\|\|String\(r\.at\)\.slice\(0,10\)\)!==today\(\)/.test(String(dayList)),/!\(day&&day\.has\(o\.ASIN\)\)/.test(String(visible)),/done\(a\)-done\(b\)/.test(String(visible))],[true,true,true,true]);
+      ok('Today\'s list · the header counts what is left and who answered the rest',[/to do<span class="ldone"/.test(String(renderTable)),/byWho\[w\]=\(byWho\[w\]\|\|0\)\+1/.test(String(renderTable)),typeof paintDayBar==='function'],[true,true,true]);
+      /* b145 (Jack, 22 Sep: a second run the same day must not rebuild the list) */
+      ok('Today\'s list · set by the first run of the day, and only ever grows',[typeof dayQueueFor==='function',/\[\.\.\.new Set\(\[\.\.\.had,\.\.\.now\]\)\]/.test(String(dayQueueFor)),/queue:dayQueueFor\(R\)/.test(String(logRun))],[true,true,true]);
+      ok('Better · the row says how much more profit, and £1+ reads differently from pennies',[/o\.STATUS==='BETTER'&&Math.abs\(o\.gain\|\|0\)>=0\.005/.test(String(statusCell)),/Math\.abs\(o\.gain\)>=1\?'big':''/.test(String(statusCell))],[true,true]);
+      {/* the measured shape of BETTER on the 11→12 Sep Mera pair, so a change to the rule shows up here */
+       const A=await csv('mera-2026-09-11.csv'),B=await csv('mera-2026-09-12.csv');
+       const RA=rule2Compute(A.rows,{},{vatFor}),RB=rule2Compute(B.rows,{},{vatFor});
+       const prev={};RA.out.forEach(o=>{prev[o.ASIN]={state:leadState(o,2),stamp:'2026-09-11T09:00:00Z'};});
+       const out=RB.out.map(o=>Object.assign({},o));applyQueue(out,2,prev,{});
+       const better=out.filter(o=>prev[o.ASIN]&&o.STATUS==='BETTER');
+       const big=better.filter(o=>Math.abs(o.gain||0)>=1).length,tiny=better.filter(o=>Math.abs(o.gain||0)<0.25).length;
+       ok('Better · measured on two real Mera runs: 25 flagged, 9 worth £1+ a unit, 13 under 25p',[better.length,big,tiny],[25,9,13]);}
+      /* b146 (Jack, 22 Sep: "order of cheapness on EU if price matched - italy france germany - unsure where spain sits just yet") */
+      {const P=(a,l)=>euPick(a,['IT','FR','DE'],l==null?0.25:l);
+        const mk=(m,c)=>[m,c/1.17,c,1];
+        const L=BR.EU_LEVEL;
+        ok('EU order · on a matched price it goes Italy, France, Germany',[P([mk('ES',20.00),mk('FR',20.00),mk('DE',20.00)],L)[0],P([mk('DE',20.00),mk('FR',20.00)],L)[0],P([mk('FR',20.00),mk('IT',20.00)],L)[0]],['FR','FR','IT']);
+        ok('EU order · a penny cheaper wins, whoever it is (Jack, 22 Sep)',[P([mk('ES',19.99),mk('IT',20.00)],L)[0],P([mk('DE',19.99),mk('IT',20.00),mk('FR',20.00)],L)[0],P([mk('ES',20.00),mk('IT',20.01)],L)[0]],['ES','DE','ES']);
+        ok('EU order · the UK is never displaced when it is cheapest or level',[P([mk('UK',20.00),mk('IT',20.00)],L)[0],P([mk('UK',19.99),mk('IT',20.00)],L)[0],P([mk('UK',20.01),mk('IT',20.00)],L)[0]],['UK','UK','IT']);
+        ok('EU order · Spain is not in the order, so it only ever wins on price',[P([mk('ES',20.00),mk('DE',20.00)],L)[0],P([mk('ES',19.99),mk('DE',20.00)],L)[0]],['DE','ES']);}
       ok('History · builds from stored leads',typeof hsRows==='function'&&Array.isArray(hsRows())&&Array.isArray(hsFiltered()),true);
       /* b59: Rule 3 keyword fix — the drink's form wins over incidental words (tea & coffee export 15 Sep: 14 of 84 rows went 20%) */
       ok('R3 VAT · jar / caddy / biscuit / "espresso machine" in a coffee title stay 0%',[
@@ -683,7 +779,9 @@ window.SourcingChecks=(function(){
     /* b117 (Jack, 20 Sep: "just improve the rules"): one sell + the £100 bar switched ON. Logitech 96 -> 86, ASUS 55 -> 34 (20 of the 21 under the bar at their best), Mera UK-only 310 -> 266 */
     /* b119 (Jack, 20 Sep: "the faster the spm the more I am happy with a low profit"): the velocity bar on both rules, judged on the best of headline / high-end / price match. Logitech 86 -> 77 (M240 £0.17 at 1000/mo, G203 £1.24 at 50/mo …), ASUS 34 -> 38 and Mera UK-only 266 -> 269 because the high-end sell now counts for the slow-seller test too */
     /* b120: the bar slides between the points (200/mo = 7.5% or £1): +1 Logitech, +2 Mera UK-only, +1 / +2 Mera lists, +1 S&S */
-    logitech:{demand:241,leads:78,first:'B07MTXLFXV'},
+    /* b134 (Jack: "for Logitech if it's UK A2A be more lenient — they nearly always have a promo on"): a 10% promo allowance on UK buys, so 13 thin ones are kept for a human to check. 78 -> 91 */
+    /* b135 (Jack: "Logitech is multi-buys on the brand website, not Amazon — be extra more lenient on UK A2A even if it's a small loss"): a UK Logitech lead is an OA lead, so it is kept when the promo brings it near break-even and the thin-lead bar does not judge it on Amazon's price. 91 -> 112 */
+    logitech:{demand:241,leads:112,first:'B07MTXLFXV'},
     asus:{demand:114,leads:38,mb:[46.46,51.8]},   /* B550M: Amazon out of stock 53%, a 3P holds the box at £164 - the market today, not the £192 average */
     /* 14 Sep evening b25: 366 → 364 (STATUS toaster + BELLA air fryer: a month flat 30%+ under the 90-day average = the price moved). */
     /* b26: 364 → 356 (FBA 30/90d midpoint floor). */

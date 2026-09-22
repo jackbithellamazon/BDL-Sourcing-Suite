@@ -20,7 +20,10 @@ function hsBuild(){const LA=leadAll(),B=blAll(),app={};
   return rows;}
 function hsRows(){const sig=hsSig();if(hsCache.sig!==sig){hsCache={sig,rows:hsBuild()};}return hsCache.rows;}
 function hsFiltered(){const V=verdAll(),q=(hs.q||'').toLowerCase(),t0=new Date();t0.setHours(0,0,0,0);const now=Date.now();
+  /* b132: lead history shows the sources you can see — Jack's shows everything */
+  const seen=(typeof visibleSources==='function')?new Set(visibleSources().map(s=>s.key)):null;
   return hsRows().filter(x=>{
+    if(seen&&!seen.has(x.key))return false;
     if(hs.src!=='ALL'&&x.key!==hs.src)return false;
     if(hs.owner!=='ALL'&&x.owner!==hs.owner)return false;
     if(hs.rule!=='ALL'&&String(x.rule)!==hs.rule)return false;

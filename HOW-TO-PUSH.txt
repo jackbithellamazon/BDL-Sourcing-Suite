@@ -1,265 +1,68 @@
-BDL SOURCING — b127 · 20 Sep 2026
-YOU ARE STILL ON b73. This folder is everything since, in one upload.
+BDL SOURCING — b146 · 22 Sep 2026
+
+YOU ARE ON b73 IF YOU HAVE NOT PUSHED SINCE. This folder is everything since, in one upload.
 
 1. UPLOAD
    GitHub → Add file → Upload files. Drag in index.html, css, js, tests, README-DEPLOY.txt.
-   js/ has THREE NEW files — euprice.js (EU prices), apirun.js (parked) and auth.js (signing in).
+   js/ has THREE files that did not exist on b73 — euprice.js, apirun.js and auth.js.
    All three must go up: index.html loads them, and a missing file is a blank page.
    Commit, hard-refresh once (Cmd+Shift+R).
 
-2. ONE THING IN KEEPA, ONCE
-   Product Viewer column picker → tick Variation Count, Variation ASINs, Variation Attributes.
-   Then every lead says "1 of 24" beside its sales figure. Free, no tokens. Tell the VAs too.
+2. FIRST THING AFTER YOU PUSH
+   Open Philips. Next to "Mark all as seen" there is a button: "Put 82 back in the queue".
+   Press it. Those 82 were marked SEEN by the old Open in Keepa button, not by you judging them.
+   It never touches a Yes, No or Maybe, and it clears them from Supabase too.
+
+3. ONE THING IN KEEPA, ONCE
+   Product Viewer column picker → tick Variation Count, Variation ASINs, Variation Attributes,
+   and under Monthly Sales Trends tick Monthly Sold (Last Known) and its Date.
+   Free, no tokens. Tell the VAs too.
 
 WHAT LANDS, NEWEST FIRST
-   b127 LOOK AT A PAST RUN. Every date in the "Last runs" strip is a button now. Click one and that
-        day's run opens - what went in, what came out, what has been judged since - with a "Back to
-        today" button. Leads that have since dropped off still show, marked "kept for the record".
-        THE NaN IS FIXED. The Acer screen said "35 products -> NaN sell 10+ a month" on a stored
-        run because those counts were never saved. Runs save them now; anything never recorded
-        reads as a dash.
-   b126 SIGN IN WITH A ONE-CLICK EMAIL LINK. Type your work email, Supabase sends a link, clicking
-        it lands you back signed in, and it stays signed in on that browser. No passwords. The
-        accounts are in YOUR Supabase project so you invite, re-send or remove them.
-        TWO THINGS TO DO FIRST, both in the Supabase dashboard:
-          1. Authentication -> URL configuration -> Redirect URLs: add the live app URL.
-          2. Authentication -> Users -> Invite user: one each for Suz and Mera.
-        Until then the app works exactly as today - pick a name and carry on. Signing in only
-        decides WHO YOU ARE; it does not yet limit what anyone can read, so nothing can break.
-        BRANDS BELONG TO NOBODY. All 22 brand runs are unassigned - you hand each one out in the
-        owner box, and only then does it appear in that VA's day.
-        NAMES. "Mera - everyday GBP 60-150" and "Mera - big-ticket GBP 150+" instead of two lines
-        that both read "electricals".
-   b125 MSI WAS NEITHER ACTIVE NOR PAUSED. Its row had no status and no owner, so it never
-        counted as active and its status box was blank. Now VAs / active like every other brand.
-   b124 CANON ADDED as a brand run, all five markets, every 3 days. The other eight on your list
-        (Hoover, Lenovo, Logitech, MSI, Ninja/Shark, Philips, Skullcandy, Tefal) were already there.
-   b123 EXPORTS COST NOTHING. A run never asks Keepa for anything. An option whose share of the
-        family's sales is unknown is a lead on the family's drops (under 50 confirmed = Keepa drops)
-        and the row says "FAMILY DROPS - OWN SHARE UNKNOWN". A yellow bar above the leads counts
-        them and, for you only, offers "Ask Keepa - 20 tokens" to confirm each option's own sales.
-        JUDGE WITH THE KEYBOARD. Click a row, then Y / N / M marks it and moves to the next unjudged
-        one; arrows move; Esc clears. A "2 of 236 judged" pill sits in the toolbar.
-   b121 NO S&S SEEN, SAY SO. A grocery, health, beauty, pet or baby product where Keepa shows no
-        Subscribe & Save now says "NO S&S SEEN - CHECK THE PAGE" on the row. The maths is unchanged.
-   b120 THE VELOCITY BAR SLIDES. No steps: 50/mo needs 10% or GBP 3, 100/mo 9% or GBP 3, 200/mo
-        7.5% or GBP 1, 300+ 6% or GBP 1, and everything in between sits on the line. Under 50 stays
-        at 20% or GBP 3. Counts move by one or two.
-   b119 THE VELOCITY BAR. One sliding bar on both rules: 300+/mo needs 6% or GBP 1 a unit, 100-299
-        needs 9% or GBP 3, 50-99 needs 10% or GBP 3, under 50 stays at 20% or GBP 3. Judged on the
-        best of the headline, the high-end sell and the price match. Your CanesMeno, Chicnutrix and
-        Moleskine stay; the Epson ink, Nutriburst and Perfectil go. Logitech 86 -> 77, Mera 12 Sep
-        278 -> 267. The row says "THIN FOR 100/MO - NEEDS 9% OR GBP 3" so you can see why.
-   b118 ONLY YOU TEACH THE SELL MODEL. A VA tapping a level still sets the sell for that lead, but
-        only your taps count towards the app learning a shape.
-   b117 ONE SELL PRICE AND THE GBP 100 BAR ARE ON. Every lead on every rule is priced by the one model
-        built from your 38 graph calls (37 within 10% of you). Anything selling at GBP 100+ must reach
-        8% ROI or GBP 15 a unit at its best - Amazon's price, the brand code or the assumed 5% match.
-        What it does to the runs you know: Logitech 96 -> 86, ASUS 55 -> 34 (20 of the 21 that go were
-        under the bar at their best), Mera 12 Sep 345 -> 278, Suz S&S 52 -> 49. Under GBP 60 nothing
-        is ever priced above 1.35x the Buy Box average (the L'OR pods rule from the 14th still holds).
-        The level chips now stay tucked away until you are on the row; tapping one keeps your place.
-   b116 THE LEVELS ON THE ROW. Under the sell price on every lead: Buy Box 90d, Buy Box 180d, FBA 30d,
-        FBA 90d, FBM 90d, Box high, each with the seller count. Tap the one the graph supports and it
-        is the sell for that lead - profit and ROI re-work, saved for everyone. Tap again to clear.
-        The app learns: once you have taken one level on a shape 5 times (70%+), the one-sell model
-        uses it for that shape and says so on the row. "FBA avg may be stale - check the graph" shows
-        where Keepa's FBA average is a ghost (the Dell). One sell and the GBP 100 bar are still OFF.
-        HEADS UP: your own 19 Sep exports (Suz A2A, Mera electricals, laptops) do NOT carry the two
-        Last Known columns, so on b111+ they stop with the red "Export error" until they are ticked.
-   b115 ONE SELL PRICE + THE GBP 100 BAR - BUILT, BOTH SWITCHED OFF. Nothing changes on this upload.
-        The one sell price is built from your 23 graph calls: FBA 30-day level when 8+ sellers sit above
-        the box, Buy Box average +6-8% when a few do, Rule 2's caps when Amazon dips or drops out.
-        Scored on your calls: Rule 1 6.1% off on average, Rule 2 6.5%, one sell 3.7% and within 10% on
-        22 of 23. The GBP 100 bar (8% ROI or GBP 15, even with a code) sits on top. Say go and they
-        switch on: Mera electricals 300 -> 245 leads, Suz A2A 48 -> 54, Logitech 71 -> 65.
-   b114 BOSCH IS ALL MARKETPLACES. The Bosch run now asks for the five Finder exports plus the UK
-        Viewer, like Logitech. Your saved Bosch row is migrated once on load.
-        Also carried, switched OFF: Rule 1 taking Rule 2's sell model at GBP 60+. Your calls on the
-        18th/19th showed neither model wins everywhere - Rule 1 is right when Amazon owns the Buy Box
-        (G923, G515), Rule 2 is right when Amazon dips or drops out (Lift, G PRO, Shark, Siemens,
-        Ninja). Nothing changes until the split is proven on more of your prices.
-   b113 BRAND STORES ARE KNOWN, RETAILERS ARE ASSUMED. A brand-store code (Hoover Direct 15%, Shark 9%)
-        counts at its rate. A retailer the VA has NOT ticked on the row is assumed at Currys / Argos 5%,
-        not at its own rate (Marks Electrical 8%, AO GBP 10) - "unless we know it's a price match at the
-        place we have to go, it's a 5%". Tick the retailer on the row and it counts at its real rate.
-        GTECH IS NOT A CODE. Its 19% is Amazon Business tiers, which Keepa's own column carries when
-        real. DELL is on the list with no rate ("Dell direct usually has some offer on - check").
-        On the 12 Sep Mera export: Rule 1 UK-only 307 -> 310 (+6 Hoover, -2 Acer, -1 AOC monitor that
-        only worked on Argos 6%); Rule 2 355 -> 354 and 346 -> 345 (the Gtech Duo bundle both times).
-   b112 ONE DISCOUNT LIST. Rule 1 now reads the same Settings discount list as Rule 2 - brands and
-        price-matchers, by category, the list you edit in Settings. Rule 1 had its own copy since 8 Sep
-        and it had drifted: Hoover 10 vs your 15, Acer 15 flat vs 15 full-price-only, no Tefal, no Gtech,
-        no Marks Electrical. On the 12 Sep Mera export as UK-only: 307 -> 316 leads (+11 Hoover / Gtech /
-        Marks Electrical price-match leads, all negative at Amazon's price and flagged A2A->OA; -2 Acer
-        laptops that only worked on the flat 15%). Logitech 96 -> 97. The Settings text now says it is
-        the one list every rule reads, and which retailers show for which category.
-        Also: the price-match chip's ROI is a whole number; the version pill shows today's date.
-   b111 EXPORT ERROR, NOT A WARNING. A UK export missing any of the six demand-ladder columns now stops
-        the run. The file chip goes red and where the numbers would be it says: "Export error - FILE is
-        missing 2 columns the demand rules need. In Keepa's column picker tick: Variation ASINs · ... Then
-        export again." The VA fixes it on the spot. EU alert lists built from the API are never blocked.
-        PRICE-MATCH LINE SHOWS THE MONEY. Rule 2 still judges every lead at Amazon's price - the price
-        you can always buy at, since sometimes there is no price match. The "with Currys 5%" chip now
-        says "-> 11% ROI · GBP 13.42 WITH CURRYS 5%" instead of a bare score. Maths unchanged.
-   b110 RANK MONTH ROLLS BY ITSELF. Suz's A2A GBP 10-40 filter was still pinned to SEPTEMBER 2025 - a year
-        stale - and 25 other filters sit on Aug 2026. The saved links are untouched; the link that opens
-        now carries the last complete month, every time, for every filter. Nobody re-pins anything again.
-        MISSING COLUMNS ARE SAID ON THE FILE. Drop a UK export that lacks any of the six demand-ladder
-        columns and the file chip turns amber and names them: "Missing 2 columns the demand rules need -
-        every variation is being judged on its family's figures. Tick: ...". Nothing is blocked.
-        API RUNS ADDED, NOT USED. js/apirun.js can turn a saved Keepa filter into an API query and count
-        its matches through the Worker. Measured today: 10 tokens a query + 1 per 50 results + 1 per ASIN
-        for stats, about 335 tokens for a Suz run. Brand blocks and the rank month cannot be sent to the
-        API (tested), so they are applied after the fetch. It is switched off; nothing calls it.
-   b109 THE ONE-YEAR SAFETY NET. If the review share would drop a variation under 10 a month, but Amazon
-        confirmed sales on it at any point in the last year, it stays - with a note saying so. It can
-        only keep a lead, never remove one.
-   b108 CONFIRMED SALES THAT LAPSED STILL COUNT. If today's bought-in-past-month is blank but Amazon
-        confirmed a figure in the last 90 days, that counts as confirmed - on both rules. Your Shark
-        Matrix Plus (last confirmed 50/mo on 17 Jul) is back: 23.6% ROI, GBP 63.72 a unit.
-   b107 REVIEWS ON EVERY RULE. Suz's and Mera's filters now judge a variation on its own share of the
-        reviews too, same as your brand runs. Mera electricals: 322 -> 311 and 312 -> 307. Anything it
-        takes out is on the Dropped list with the reason, so nothing disappears silently.
-   b106 THE AMBER BANNER WAS LYING. You ran the SQL on the 16th and the tables are there. The app was
-        sending product rows with two columns the table does not have, Supabase rejected them, and the
-        app misread the error as "no tables" - then stopped sending anything, so every audit answer
-        since has been queued on your machine behind one row that could never send. Nothing is lost.
-        After this upload and one refresh, the whole queue goes to Supabase on its own and the banner
-        goes. NO SQL NEEDED.
-   b105 EVERY VARIATION JUDGED ON ITS OWN. No confirmed figure = family drops x its share of the
-        reviews, and the 10-a-month floor applies to that. Confirmed still beats everything.
-        On 18 Sep Logitech: 71 leads -> 64, the 7 you checked and were happy with.
-   b104 WHO REALLY SELLS. A variation lead with no confirmed figure of its own now names the sibling
-        that does, on the row: "the family's sales are Fabric Blue 64GB (1,000/mo confirmed) - this
-        option has no figure of its own". That is your ASUS Chromebook in one line. Needs the Variation
-        and Reviews columns ticked in Keepa. A label only - it never removes a lead.
-   b103 THE RULES TALK TO EACH OTHER, AND YOUR SLOW-SELLER BAR.
-        VAT: Rule 1 now asks Rule 3, the same VAT engine every other rule uses. It used to have its
-        own seven-word coffee/tea list, so one product could be taxed two ways depending on which
-        run found it.
-        Slow sellers (under 50 a month): now need GBP 3 a unit OR 20% ROI, was GBP 5 or 15%. It only
-        ever adds leads - never removes one - and every one it adds makes GBP 3+ a unit. Your G321
-        Black is back. On your 18 Sep Logitech run: 70 leads -> 71.
-   b102 YOUR OWN SELL PRICE ON BRAND RUNS. Rule 2 rows always had a box to type the price you read off
-        the graph. Rule 1 rows - every brand run - never did. Now they do: type 51.50 on the G321 White
-        and it goes from 7.2% ROI to 16%, re-worked through Rule 1's own fees. The rule's price stays
-        underneath ("rule said £47.51") so you can see the gap. Shared with Suz and Mera. Clear the
-        box and it goes back. The formula itself is NOT changed.
-   b101 SHORT EXPORTS. Keepa only exports the page on screen. If a file lands on exactly one of its
-        page sizes - 20, 50, 100, 200, 250, 500 or 1,000 rows - the app now puts an amber warning on
-        that file telling you to max out rows per page and export again. Across your ~150 exports
-        this had cut two short without anyone knowing, one of them the SanDisk/Seagate brand run at
-        exactly 50 rows.
-   b100 ORDER, on the rivals page. Seven questions instead of one fixed order:
-          You sell the most of theirs   (what it always did)
-          Most were our leads           (they are selling what your filters found)
-          Fewest left to judge          (quick ones to clear)
-          Most left to judge            (the big jobs)
-          Biggest shelf · Least recently audited · Name A-Z
-        Works on the cards and the list, and it remembers what you picked.
-   b99  THE JITTER. My fault again, from b92. The scroll pinning ran on every single redraw and
-        stored its own result as the next target - so when the Keepa graph landed in the panel a
-        moment later and the page got taller, each redraw nudged the scroll again chasing a spot it
-        could no longer reach. It is armed by a keypress now, fires once after the browser has laid
-        the page out, and disarms itself. Redraws nobody asked for leave the scroll alone.
-   b98  THE CRASH. This was the real one, and it was mine. In b94 I wrote `a:asin` inside a function
-        whose parameter is `asins` - so every verdict press threw a ReferenceError immediately after
-        saving your answer and before redrawing the screen. The answer went in. Nothing moved. It
-        looked exactly like "Discord has no second step", and it would have been doing the same to
-        every other verdict too. Nothing in the 129 checks ever called that function, so they all
-        passed. There is now a check that reads the judge path's own source and fails on a name
-        that is not in scope.
-   b97  DISCORD, THE ACTUAL BUG. Marking a row with the verdict it ALREADY has is a no-op inside -
-        there is nothing to save - and the code bailed out at that point before redrawing anything.
-        So on any row you had already pressed Discord on, pressing 3 again did literally nothing:
-        no picker, no message, no clue. Pressing it again is exactly how you reach or change the
-        destination, so it redraws now even when the verdict itself has not moved.
-   b96  DISCORD'S SECOND CLICK, part one. It worked in every test and not on your machine, and the reason is
-        a list of the six verdicts saved in your browser. Nothing in the app ever writes it, but if
-        one is there it used to win outright - and yours was saved before PS/THC/FFB existed, so
-        your Discord had no second step at all. A saved list can still say which verdicts exist and
-        what they are called; how one BEHAVES now always comes from the code. Nothing to clear.
-   b95  THE JUMP TO THE TOP. It was never Unsure - it was every key. Judging searched DOWN for the
-        next unjudged row and, finding none below you, wrapped round and started again at row 1.
-        One press and you were at the top with no idea where you had been. It only goes down now.
-        Run out below and you stay put; it tells you how many are still waiting above and G takes
-        you back to the first of them. Judged rows also step back visually so your eye lands on
-        the work rather than on what you have already done.
-   b94  WHAT A PRESS FEELS LIKE. Judging a row flashes that row once in the verdict's own colour and
-        pops the chip in - 420ms - then it settles to its quiet judged tint. You see it land, you
-        see it go quiet, and your eye is already on the row below. Pass the row again later and it
-        does not replay. Off entirely if your machine is set to reduce motion.
-   b93  COLOURS. The left stripe was on every single row - 117 to-do rows in iris at half opacity,
-        with the odd orange lost among them - so the colour told you nothing. Now a to-do row has
-        no stripe at all, a judged row wears its verdict's colour at full strength with a faint
-        tint behind it, and the row you are on gets a wider bar and a lift. Bright means decided.
-   b92  THE JUMPINESS. Judging changes a row's height - six buttons appear, a reason row opens, both
-        close again - and every row below jumped. The row you are ON is now pinned to the same spot
-        on screen across the redraw, so the page never moves under your hand. Smooth scrolling is
-        off while a shelf is open (it made every keypress an animation you waited for), and the
-        reason picker only opens on the row you are on - a judged row with no reason used to keep
-        it open forever, which is why you had two rows expanded at once.
-   b91  Missed it has a seventh reason: "Never found it" (key Y). Different from "Never looked at" -
-        never LOOKED at means it reached your list and nobody judged it, never FOUND means the filters
-        never surfaced it and the rival is selling it anyway. One is a filter to fix, the other is a
-        VA to chase. Other moves from Y to U; every other key is where it was.
-   b90  Handling is one number: PREP_MISC GBP 1.00 a unit in Rule 1, instead of 60p prep + 40p misc.
-        Rule 2 already worked that way. Same money either way - checked against your own 62-lead EU
-        run and every landed cost, sell price, profit, ROI and breakeven came out identical.
-        (The weight fee, INBOUND_KG, is still GBP 0 - that one was switched off before today.)
-   b89  MERA - 7-DAY DROPS GBP 20+ ALL LINES 20% IS LIVE. Your note said WORTH RUNNING once the rank
-        month was re-pinned - it was still on Sep 2025, a year stale. Re-pinned to Aug 2026, the last
-        complete month, and switched on daily. If you would rather it ran on Sep 2026, open the filter
-        and change the month there, then paste the new link into the source.
-   b88  "Sellers on it" no longer sticks on a dash. That dash was doing two jobs - Keepa says nobody
-        is listed, and we never asked - and products saved before the seller count existed counted as
-        loaded forever, so it never cleared. They refetch themselves now and read "loading..." until
-        they do, or "none listed" when Keepa really has none.
-        "On their shelf: before" now reads "Already there".
-   b87  The audit tab strip. A coloured dot only where the count means something, empty verdicts
-        fade back instead of shouting a coloured zero, the count is a badge that fills with the
-        verdict's colour on the tab you are on, and thin rules group it: where you are | what we
-        already know | what you decided | everything.
-   b86  NO CONFIRMED FIGURE = UNDER 50 A MONTH. Not unknown - Amazon publishes the figure above 50,
-        so its absence is a ceiling. WITH YOUR EXCEPTION: above 50 rank drops the figure has been
-        LOST, not earned - your 1,404-row export had 60 like that, 4%. Those are treated as 50+.
-        And your one-unit rule: under 50 a month, 10 drops or fewer, half the listing or less -
-        marked "1 unit only" if ROI is 50%+ AND it clears GBP 10 a unit, otherwise "leave it".
-        Those four numbers sit together in ONE_UNIT at the top of js/brands.js. One line to change.
-   b84  DEMAND NOW HAS AN ORDER OF RESORT, your rule, written into the app:
-          1. CONFIRMED  Amazon's own bought-in-past-month. Per option, never under 50, believed.
-          2. SHARE      no confirmed figure - this option's share of the family's reviews.
-          3. DROPS      nothing else - the rank, which every option on the listing shares.
-        Proven on the Logitech Lift family: real sales 1000/300/200/100/100 against review shares
-        68.7/13.9/10.5/6.7/0.3%. Same order. The only miss is the Sand, listed in March - 11
-        reviews because it is new, and the app says so instead of writing it off.
-        New sheet columns: Option reviews, Option share %, Demand basis, Demand belongs to.
-        The share needs the family in the same export, so tick the Reviews columns.
-   b83  Variations, corrected: "bought in past month" IS each option's own sales — measured on the
-        Logitech Lift family, grey 1,000 a month, pink 300, left-handed 200, yours 100. The SALES
-        RANK is the parent's though, one number shared by all of them. So a lead whose demand came
-        from a bought figure is left alone, and only a rank-fed one is flagged as the listing's.
-   b82  MARKING OUR OWN HOMEWORK. When a rival is selling something our own filters found and we
-        never bought, the panel now puts the sell price the rule promised against what it really
-        goes for today: green = the call held, amber = the ROI was flattering, red = that ROI never
-        existed. It also works out what that buy would gross at today's price, so you can see
-        whether passing was right. It reports — it never re-judges a lead or changes a rule.
-   b81  The "our lead" tile names the filter or brand that found it — "electricals GBP 60+",
-        "Logitech", "A2A GBP 10-40" — with a dot in that person's colour. Hover for the full
-        source, date, score, buy, sell and ROI.
-   b80  Discord asks WHICH one — PS / THC / FFB, keys Q W E. Same picker as Missed it, so
-        pressing 3 waits for your answer. The picker is Discord violet, not Missed-it orange.
-   b79  "1 of N" beside every lead's sales figure, from the Keepa column above. UK side only,
-        which is the side that matters — a German listing splitting into 92 sizes tells you nothing.
-   b78  CURRENCY FIX. The API answers EU prices in euros; a CSV export is already in pounds.
-        They are converted now. Your Braun: GBP 66.37 landed, 18.1% ROI. 46 leads became 62.
-   b77  Copy KPV link on the run toolbar · that toolbar is sticky · Ultimate Ears on the Logitech run.
-   b76  New source "EU alerts · price check" — drop a Viewer export, press Get EU prices.
-   b75  Mera high-ticket → Mera · electricals GBP 60+ / GBP 150+.
-   b74  The audit panel picture fits its box. Orange means Missed it and nothing else.
 
-ROLLBACK
-   Upload the previous files over the top. GitHub keeps every version.
+   b146 ITALY, FRANCE, GERMANY WHEN THE PRICE IS MATCHED. Your order is in Rule 1 as a tie-break
+        on a matched price and nothing else: a penny cheaper anywhere wins, including Spain,
+        including the UK. Spain is deliberately not in the order until you know where it sits.
+        Measured against how it behaved before: Logitech and ASUS identical, Bialetti identical
+        with one lead moving DE -> FR at exactly the same £16.56 landed - the rule doing its job.
 
-148 checks, all green.
+   b145 THE MORNING'S LIST STANDS + BETTER SAYS HOW MUCH BETTER. A second run the same day ADDS to
+        the day's list and never rebuilds it (230 this morning, 26 new later, 256 - all 230 kept).
+        The BETTER pill now carries the gain: +£40.98 in green for a pound or more, +6p in grey for
+        pennies. On your 11->12 Sept Mera pair, 25 came back "more profitable" - 9 worth £1+ a unit,
+        13 under 25p, one still losing £6 a unit flagged for a 6p improvement. Rule unchanged.
+
+   b144 TODAY'S LIST STAYS ALL DAY, WITH WHO DID WHAT. The queue was a live filter - answer a lead
+        and it disappeared. Now the queue is fixed when the run is logged and every lead stays until
+        tomorrow. Answered ones drop to the bottom with a green edge and the name of whoever
+        answered. Header: "Today's list 19 to do · 5 done · Jack 3 · Suz 2" plus a progress bar.
+
+   b143 SO IT CANNOT HAPPEN AGAIN, AND YESTERDAY IS READABLE. Every verdict records how it was
+        written, and a test reads the code itself and FAILS if anything other than "Mark all as
+        seen" ever writes a Seen verdict again. A run now records which leads needed a look and
+        which fell off: click a date in Last runs and the To review tab shows that day's queue.
+
+   b142 OPENING LEADS IS NOT JUDGING THEM. "Open all N in Keepa" was also marking every lead it
+        opened as SEEN - your b56 instruction, when opening them WAS the review. Your Philips queue
+        emptied under you (83 to review, 1 already judged, 82 stamped seen, 1 left). Opening now
+        marks nothing. See point 2 above to get the 82 back.
+
+   b141 THE STOREFRONT AUDIT STOPS MOVING. The six buttons only appeared on the row your mouse or
+        cursor was on, so every row grew ~44px as you crossed it - that is the jitter. Buttons are
+        on every row now; the row you are on differs by colour only. Measured over ten presses:
+        every row 148px, 0px of movement. Dearest first now re-sorts when prices arrive, a missing
+        price says which kind of missing it is, and a verdict from another shelf says which shelf.
+
+   b140 THE LEAD TABLE FITS THE LAPTOP. On a 1366px laptop the table was 140px wider than the
+        screen, so the page scrolled sideways and the OA check column was cut off. Fixed and
+        measured at 1280 / 1366 / 1536. Y / N / M / down-arrow at the last row of a page now
+        carries on to the next page, and the pill says "all done" when the last one is judged.
+
+   b139 YOUR API LOOK IS NOT HER RUN. A Keepa API run is saved as YOUR look, not the source's run:
+        no row to Supabase, her due date does not move, her compare baseline stays hers.
+
+   b138 RUN VIA KEEPA API - YOUR BUTTON ONLY. On a run screen, next to Open in Keepa. It counts
+        first (about 11 tokens), tells you the price and the balance after, and offers the top
+        slice when the whole list will not fit. About 6 tokens a product. VAs never see it.
+
+   Everything before b138 is in README-DEPLOY.txt, newest first.

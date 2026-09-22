@@ -1015,6 +1015,9 @@ html[data-theme="light"] .rl.r2{color:#0b6fb8;background:rgba(11,111,184,.1)}
 .rchip .tr{color:var(--amber);font-weight:600;font-size:11px}
 .rchip .tr.z{color:var(--faint);font-weight:500}
 .rchip.more{color:var(--muted)}
+.rchip.api{border-style:dashed;border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.08)}
+.rchip.api .d{color:var(--amber);font-weight:700}
+.pastbar.api{border-style:dashed;border-color:rgba(245,158,11,.45)}
 .guide .ghead{flex:1 1 100%;font-size:13px;color:var(--muted);line-height:1.5;padding:2px 4px 6px;border-bottom:1px solid var(--line);margin-bottom:4px}
 .guide .ghead b{color:var(--text)}
 .seg.segl{flex-wrap:wrap}
@@ -1547,16 +1550,23 @@ body.auditing .aulist{scroll-behavior:auto}
 .emptysum.err b{color:#FF6B6B;display:block;margin-bottom:4px}
 
 /* b116: the levels under the sell price */
-.lvls{display:flex;flex-wrap:wrap;gap:3px;justify-content:flex-end;margin-top:5px;max-width:190px;margin-left:auto}
-.lv{font-family:var(--mono);font-size:9.5px;line-height:1;padding:4px 6px;border-radius:6px;border:1px solid var(--line2);background:transparent;color:var(--faint);cursor:pointer;white-space:nowrap}
+.lvls{display:flex;flex-wrap:wrap;gap:3px;justify-content:flex-end;margin-top:5px;max-width:210px;margin-left:auto}
+.lv{font-family:var(--mono);font-size:9px;line-height:1;padding:3px 5px;border-radius:5px;border:1px solid var(--line2);background:transparent;color:var(--faint);cursor:pointer;white-space:nowrap}
 .lv b{color:var(--text);font-weight:600;margin-left:2px}.lv i{font-style:normal;margin-left:4px;padding:0 3px;border-radius:4px;background:rgba(255,255,255,.06);color:var(--faint)}
 .lv:hover{border-color:var(--iris);color:var(--text)}.lv.on{border-color:var(--iris);background:rgba(124,120,255,.14);color:var(--text)}
 .lvlearn{flex-basis:100%;text-align:right;font-size:9.5px;color:var(--iris);margin-top:1px}
 .lvstale{flex-basis:100%;text-align:right;font-size:9.5px;color:var(--amber);margin-top:1px}
 
 /* b117: the levels stay tucked away until you are on the row, so the table keeps its rhythm */
-.ltbl tr .lvls{display:none}
-.ltbl tr:hover .lvls,.ltbl tr.lvopen .lvls,.ltbl tr:focus-within .lvls{display:flex}
+/* b128 (Jack, 20 Sep: "very jittery, not smooth at all"): showing the levels on hover made every row grow and shrink
+   as the mouse crossed it. They are always there now — the row never changes height, so nothing moves under the cursor. */
+.ltbl tr .lvls{display:flex}
+/* b130 (Jack: "it just moved and jittered"): the chips brightened and dimmed as the mouse crossed each row — a shimmer on every
+   row you pass, and a replay of the fade after every click because the table redraws. Nothing on a row changes with the mouse now
+   except the row's own background. */
+.ltbl tr .lv{opacity:.8;transition:none}
+.ltbl tr .lv.on{opacity:1}
+.ltbl tr:hover .lv{opacity:.8}
 .ltbl td.sellc{min-width:150px}
 
 /* b123: the active row, the judged pill, the option-check bar */
@@ -1582,3 +1592,169 @@ body.auditing .aulist{scroll-behavior:auto}
 .pastbar{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:9px 12px;margin:0 0 10px;border-radius:10px;border:1px solid var(--line2);background:var(--bg2);font-size:12.5px;color:var(--faint)}
 .pastbar b{color:var(--text)}
 .rchip{cursor:pointer}
+
+/* b128: signing in, from Settings */
+.authbox{margin-top:12px;padding-top:12px;border-top:1px solid var(--line2)}
+.authnow{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--faint);flex-wrap:wrap}
+.authnow i{width:7px;height:7px;border-radius:50%;background:var(--jade)}
+.authnow b{color:var(--text)}.authnow .btn{margin-left:auto}
+.authsend{display:flex;gap:8px;margin:8px 0 4px}
+.authsend input{flex:1;height:34px;border-radius:9px;border:1px solid var(--line2);background:var(--bg2);color:var(--text);padding:0 11px;font-size:12.5px}
+.authsend input:focus{outline:none;border-color:var(--iris)}
+
+/* b128: EU prices on a UK run */
+.eupanel{margin:0 0 10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(124,120,255,.35);background:rgba(124,120,255,.06);font-size:12.5px;color:var(--text)}
+.euph{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.euprows{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.euprow{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--faint);padding:4px 6px;border-radius:7px;background:rgba(255,255,255,.03)}
+.euprow .mk{min-width:46px}.euprow a{color:var(--iris);text-decoration:none}
+.euprow .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.euprow .p{color:var(--jade)}.euprow .r{color:var(--jade);min-width:40px;text-align:right}
+.eupmore{margin-top:6px;font-size:11px;color:var(--faint)}
+
+/* b129: the header stays put on long lists (the scroll wrapper only needs to scroll sideways on narrow screens) */
+@media (min-width:1280px){.leadwrap .tablescroll{overflow:visible}}
+.ltbl thead th{z-index:6}
+/* b129: Y / N / M show their colour before you commit */
+.vb.Y:hover{color:var(--jade);border-color:var(--jade)}
+.vb.N:hover{color:var(--coral);border-color:var(--coral)}
+.vb.M:hover{color:var(--amber);border-color:var(--amber)}
+/* b129: the empty state */
+.ltbl td.emptyrow{text-align:center;color:var(--faint);padding:30px 20px;font-size:13px}
+.ltbl td.emptyrow b{display:block;color:var(--text);font-size:14px;margin-bottom:4px}
+.ltbl td.emptyrow span{display:block;max-width:520px;margin:0 auto 12px;line-height:1.5}
+/* b129: .leadwrap clipped the sticky header (overflow hidden for the rounded corners) — let it through on wide screens */
+@media (min-width:1280px){.leadwrap{overflow:visible}.leadwrap .ltbl{border-radius:12px}}
+
+/* b130: nothing on the leads table animates — a redraw after a click must look identical to the frame before it */
+.ltbl,.ltbl tr,.ltbl td,.ltbl th,.ltbl .ch,.ltbl .vb,.ltbl .ysell,.ltbl .lv,.ltbl .rowacts a{transition:none!important}
+.ltbl tbody tr.active td{transition:none}
+
+/* b137: the run toolbar — one action each side, the rest behind More */
+.tbmenu{position:relative}
+.tbmenu .caret{font-size:10px;margin-left:4px;opacity:.7}
+.tbpop{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:220px;flex-direction:column;gap:2px;padding:6px;border-radius:11px;border:1px solid var(--line2);background:var(--surface2);box-shadow:0 12px 32px rgba(0,0,0,.35);z-index:40}
+.tbmenu.open .tbpop{display:flex}
+.tbmenu.open #moreBtn{border-color:var(--iris);color:var(--text)}
+.tbpop .btn{width:100%;justify-content:flex-start;text-align:left;border-color:transparent;background:transparent}
+.tbpop .btn:hover{background:rgba(110,123,255,.10);border-color:transparent}
+.tbpop .btn svg{width:14px;height:14px;margin-right:6px}
+.tbpop .btn.seen{color:var(--jade)}
+#judgedPill{margin-left:0}
+
+/* b138: Jack's API run button on the Open-in-Keepa row */
+.apirun{margin-left:10px;border-style:dashed}
+.apirun:disabled{opacity:.7;cursor:progress}
+
+/* b140 (Jack, 21 Sep: "keep improving smoothness and easy to use") — MEASURED on a 1366px laptop: the lead table was 1,410px wide in a
+   1,269px space, so the whole page scrolled sideways and the OA check column hung off the right. The note box (220px) was what made the
+   Verdict column 244px wide; the rest is padding. Buy £ and Demand subs wrapped to three lines in 75px cells. */
+.ltbl td{padding:8px 9px}
+.ltbl td.sel{padding-left:8px;padding-right:2px}.ltbl td.idx{padding-left:4px;padding-right:6px}
+.vnote{width:100%;min-width:118px;max-width:168px}
+.ltbl td.vcell{min-width:150px;max-width:190px}
+.vreasons{max-width:190px}
+.ltbl td.prod{max-width:330px}
+.ltbl td.buyc .sub{min-width:92px}
+.ltbl td.num .sub{max-width:110px}
+/* the level chips wrap to two lines whatever the width, so the Sell column need not be 203px for them; the subtitle never runs to three lines */
+.lvls{max-width:156px}
+.lv{padding:2px 4px}
+/* the chip's number was being sized by ".ltbl td.num b" (14.5px bold) — six chips came out 85px wide and 23px tall, one per line, 150px of row. Chip-sized now. */
+.lv{font-size:10px}
+.ltbl td.num .lv b{font-size:10.5px;font-weight:600}
+.ltbl td.sellc .sub{max-width:none}
+/* the "FBA avg may be stale" note and the "on this shape you take" note wrap under the chips instead of widening the Sell column by 60px */
+.lvls .lvlearn,.lvls .lvstale{flex-basis:100%;white-space:normal;line-height:1.25;text-align:right}
+/* Demand used to wrap "51 /mo · drops × reviews · 1 of 3" into four lines in an 81px cell */
+.ltbl td.demc{min-width:104px}
+.ltbl td.prod .s{max-height:2.8em;overflow:hidden}
+.rowacts a{height:23px}
+/* Chrome takes a cell's max-width as its width and will not shrink it for the others, so Product is sized per screen: the other ten columns
+   add up to ~1,005px on a 1366 laptop (wrap 1,269) and ~960px at 1280 (wrap 1,183) */
+@media (max-width:1535px){.ltbl td.prod{max-width:300px}}
+@media (max-width:1440px){.ltbl td.prod{max-width:260px;min-width:230px}.ltbl td.pmc{min-width:140px;max-width:164px}}
+/* pinned column widths (cell = content + 18px padding): the browser's auto layout kept robbing the Sell column of the 156px the chips need
+   whenever another column grew, and letting the Score cell balloon to 118px on a "BETTER · since Yes · Jack" line. Product absorbs the slack. */
+.ltbl td.sellc{min-width:176px}
+.ltbl td.scorec{max-width:96px}.ltbl td.scorec .stat2{max-width:78px;white-space:normal}.ltbl td.scorec .stat2 .chg{white-space:normal;display:block}
+@media (max-width:1320px){.ltbl{font-size:12px}.ltbl td.prod{max-width:222px;min-width:220px}.ltbl td.sellc{min-width:170px}.lvls{max-width:152px}.ltbl td.pmc{min-width:126px;max-width:156px}.ltbl td.buyc .sub{min-width:84px}.ltbl td.demc{min-width:96px}.ltbl td.vcell{min-width:140px}.vnote{max-width:150px}.ltbl td.scorec{max-width:90px}.ltbl td{padding:8px 6px}.rowacts a{padding:0 6px}}
+/* b140: the pill and Done light up when the last lead is judged */
+.judged.all b{color:var(--jade)}.judged.all i{border-color:rgba(52,211,153,.5);color:var(--jade)}
+#runNext2.ready{box-shadow:0 0 0 2px rgba(52,211,153,.45)}
+.pager .pghint{color:var(--iris)}
+/* a "No" row's reason chips were one per line in the narrower Verdict cell (126px of row) — chip-sized, they take three lines */
+.vr{font-size:10px;padding:2px 5px}
+.vreasons{gap:3px}
+.vreasons.picked .vr.on::after{content:' ✎';opacity:.6}
+
+/* ===== b141 (Jack, 22 Sep: "storefront audit — still very jittery", "still very jumpy whenever I press anything") =====
+   The rule the lead table learned in b128 and b130, applied here: NOTHING in a row appears or disappears with the mouse
+   or with the cursor. The six buttons were revealed on :hover and on .focus, so the row grew ~44px as the pointer
+   crossed it and again as you pressed a key — b92 and b99 answered that with scroll correction, which is why it
+   nudged. The buttons are now on every row, always, in the same place. Focus changes colour, never layout. */
+.aulist .aurow > .aubtns,
+.aulist .aurow:not(:hover):not(.focus) > .aubtns{display:flex;flex-wrap:wrap;gap:6px;align-self:start}
+.aulist .aurow.reasoning > .aubtns{display:none}
+.aulist .aurow > .aureasons{grid-area:btn;margin:6px 0 0 72px;min-height:36px;align-items:center}
+/* Next belongs to the row you are on, but its width is held on every row so nothing reflows when it appears */
+.aulist .aurow:not(.focus) .aunext{visibility:hidden}
+/* a row that is not the one you are on keeps its buttons quiet */
+.aulist .aurow:not(.focus):not(:hover) .aub{opacity:.62}
+.aulist .aurow:not(.focus):not(:hover) .aub kbd{opacity:.8}
+.aulist .aurow:hover:not(.focus) .aub{opacity:.85}
+/* the judged row's colour is the feedback; it must not also move */
+@media (prefers-reduced-motion:no-preference){.aulist .aurow.landed{animation:auLand .42s ease-out}}
+
+/* b141 · the money line says which price it is, and says plainly when there is not one */
+.aulist .aurow .aumoney .aup{font-weight:700;color:var(--text)}
+.aulist .aurow .aumoney .aupf{font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.04em;margin-left:4px;
+  padding:1px 4px;border-radius:5px;border:1px solid var(--line2);color:var(--muted);vertical-align:1px}
+.aulist .aurow .aumoney .aunop{font-style:normal;color:var(--amber);opacity:.9}
+.aulist .aurow .aumoney .aunop.dim{color:var(--faint);opacity:1}
+/* b141 · "from <other shelf>" on a verdict you gave somewhere else */
+.aulist .aurow .auelse{font-style:normal;font-size:10px;font-weight:700;opacity:.75;margin-left:2px}
+.aureasons .aurs{font-size:11.5px;padding:0 8px}
+
+/* b141 · the row has to FIT, or the six buttons wrap to a second line and the row is 204px tall.
+   Measured at 1366: the list column was 754px (the graph panel took 503), the facts wrapped to three
+   lines and the buttons to two. The panel keeps enough for the graph; the list gets the rest. */
+.augrid{grid-template-columns:minmax(0,68fr) minmax(0,32fr)}
+.aulist .aurow .aut{min-height:2.7em}                      /* two lines reserved, so every row is the same */
+.aulist .aurow .aufacts{flex-wrap:wrap;white-space:nowrap;gap:5px 8px;min-height:38px;max-height:38px;align-content:flex-start;overflow:hidden}
+.aulist .aurow .aub{height:32px;padding:0 10px 0 7px;gap:6px;font-size:12.5px}
+.aulist .aurow .aub kbd{width:18px;height:18px;font-size:11px}
+.aulist .aurow .aub svg{width:14px;height:14px}
+.aulist .aurow .aulk{height:30px;padding:0 10px;font-size:12px;gap:6px}
+.aulist .aurow > .aubtns{min-height:32px;margin-top:6px}
+.aunext{height:32px;padding:0 10px;font-size:12px}
+.aulist .aurow > .aureasons{min-height:32px}
+.aulist .aurow .aurs{height:28px}
+@media (max-width:1200px){.aulist .aurow .aub .lab{display:none}.aulist .aurow .aub{padding:0 8px}}
+.aulist .aurow .aumoney .aumo{font-weight:700;color:var(--muted)}
+
+/* b141 · the right-hand column is fixed, so a verdict pill appearing never steals width from the title
+   and the facts line never has to re-wrap or truncate mid-judging. Measured: it was cutting "24 sellers". */
+.aulist .aurow{grid-template-columns:56px minmax(0,1fr) 344px}
+.aulist .aurow > .auright{justify-content:flex-end;gap:8px}
+.aulist .aurow .aumark{min-width:92px;justify-content:flex-end}
+.aulist .aurow .aumark:empty{min-width:92px}
+@media (max-width:1240px){.aulist .aurow{grid-template-columns:56px minmax(0,1fr) 300px}.aulist .aurow .aulk .ll{display:none}.aulist .aurow .aulk{padding:0 9px}}
+.aulist .aurow .aut{min-height:2.7em;-webkit-line-clamp:2}   /* b141: two title lines, always — a cut product name is worse than a taller row */
+.aulist .aurow .aufacts{height:44px;max-height:44px}
+/* b142 · putting back what the old Open button marked */
+.btn.putback{border-color:rgba(251,191,36,.55);color:var(--amber)}
+.btn.putback:hover{background:var(--amber-dim)}
+.ltbl .chg .viab{font-style:normal;font-size:9.5px;padding:1px 4px;border-radius:5px;border:1px solid var(--line2);color:var(--faint);margin-left:3px}
+
+/* b144 · today's list: what was in the queue when the run landed stays all day, answered ones drop to the bottom */
+.ltbl tbody tr.rdone td{opacity:.72}
+.ltbl tbody tr.rdone:hover td,.ltbl tbody tr.rdone.active td{opacity:1}
+.ltbl tbody tr.rdone td:first-child{box-shadow:inset 3px 0 0 var(--jade)}
+#leadCount .ldone{color:var(--faint);font-weight:500}
+.daybar{display:flex;align-items:center;gap:10px;margin-top:8px}
+.daybar .dbb{flex:0 0 160px;height:6px;border-radius:4px;background:var(--ink);overflow:hidden;border:1px solid var(--line2)}
+.daybar .dbb i{display:block;height:100%;background:var(--jade)}
+.daybar .dbt{font-size:12px;color:var(--faint)}
+.gainb{display:inline-block;margin-top:3px;font-family:var(--mono);font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px;border:1px solid var(--line2);color:var(--faint)}
+.gainb.big{color:var(--jade);border-color:rgba(54,214,164,.5)}

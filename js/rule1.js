@@ -5,12 +5,28 @@
    The full write-up with the measurements lives in SOURCING RULES / RULE 1 / Rule 1.md.
    DOM-free: rule1Compute(files, brand, rate, prevRun) -> result. The page never reaches in.
    ============================================================================ */
+/* b146 (Jack, 22 Sep: "order of cheapness on EU if price matched — Italy, France, Germany; unsure where Spain sits just yet").
+   It is a tie-break and nothing more. Three things it must never do, all of them measured on the Logitech export first:
+     · never displace the UK — home market, no import, no wait, so it wins any tie on price;
+     · never pay more, not even a penny (a first cut at £1 sent two leads to a dearer country and lost one lead outright;
+       Jack, same day: "if Spain is still cheaper or UK is cheaper then use that — if anyone is cheaper even by a penny use that one");
+     · never place Spain — Jack does not know where it sits yet, so ES competes on price alone.
+   opts are [market, local price, landed £, qty]; returns the one to buy from. */
+function euPick(opts,order,level){if(!opts||!opts.length)return null;
+  const outright=opts.reduce((m,o)=>o[2]<m[2]?o:m);
+  if(outright[0]==='UK')return outright;
+  const lvl=opts.filter(o=>o[0]!=='UK'&&o[2]-outright[2]<=(level==null?0.25:level));
+  return (order||[]).reduce((p,mk)=>p||lvl.find(o=>o[0]===mk),null)||outright;}
 const BR={
   VAT:0.20, PREP_MISC:1.00, INBOUND_KG:0.00,   /* b90 (Jack, 17 Sep): one pound a unit for handling, not 60p prep + 40p misc. Same money, one number. */ CARD_FEE:0.01, BASKET_CAP:175, BASKET_MAX:5,
+  /* b146 (Jack, 22 Sep): when EU prices land level (within £1), this is the order they actually turn out cheapest in.
+     Spain is deliberately absent — he does not know where it sits yet, so it competes on price alone. */
+  EU_ORDER:['IT','FR','DE'], EU_LEVEL:0.005,   /* b146b (Jack: "if anyone is cheaper than the others even by a penny use that one") — matched means MATCHED, so the window is half a penny of rounding and nothing more */
   SHIP_BASE:3.99, SHIP_KG:0.83, SS_UK:0.15, SS_EU:0.05, MIN_ROI:0, MIN_ROI_WIDE:-15, WIDE_GAP:1.25, SELL_UPLIFT:1.08, SELL_HAIRCUT_AMZ90:0.80,
   NOT_A_DROP:0.08, MOVE_GBP:0.10, MOVE_PCT:0.005, DST:0.02,
   REF_LOW:0.08, REF_LOW_AT:10, REF_UPLIFT:1.0053, CLOSING:0.50, CLOSING_CATS:['pc & video games','video games'],
   UNIFIED_SELL_60:false,   /* b114: built, OFF until Jack says go — flipping it moves Logitech 96->93, ASUS 55->43, Mera UK-only 310->279 (18 Sep measurement) */
+  PROMO_FLOOR_ROI:-5,   /* b135: a UK buy of a promo brand is really an OA buy. The 10% stand-in is the smallest promo they run, so near break-even on that is worth a human's eyes: -5% here is about -14% at Amazon's price. */
   SLOW_SPM:50, SLOW_ROI:20, SLOW_PROFIT:3.00, SPM_BANDS:[300,100,50,30,10],   /* b103 (Jack, 18 Sep): "under 50spm need a minimum of £3 profit per unit or 20% roi" — was £5 or 15%. The G321 Black (49 drops, 10.3%, £3.22) was dropped by the old bar. */
   DEF_REF:0.15, DEF_FBA:3.50, DEF_KG:0.5, FX_FALLBACK:0.86, FX_TTL_H:6,
   /* Fallbacks for exports without the fee columns. Medians measured from 3,441 of Jack's own
@@ -187,8 +203,14 @@ function rule1Compute(files,brand,rate,prevRun){
     if(!opts.length){drop(a,title,'Amazon not selling anywhere','Amazon not selling');continue;}
     st.buy++;
     const best=Math.min(...opts.map(o=>o[2])),tied=opts.filter(o=>o[2]-best<=1.00);
-    const pick=tied.find(o=>o[0]==='IT')||tied.reduce((m,o)=>o[2]<m[2]?o:m);
+    /* b146 (Jack, 22 Sep: "order of cheapness on EU if price matched — Italy, France, Germany; unsure where Spain sits yet").
+       Only ever a tie-break: when two countries land within £1 of each other the price is effectively the same, so the one that
+       usually turns out cheapest once you are actually buying wins. Spain is deliberately NOT in the order — it falls through to
+       whichever is cheapest on the day, until Jack knows where it sits. Nothing here beats a genuinely cheaper country. */
+    const outright=tied.reduce((m,o)=>o[2]<m[2]?o:m);
+    const pick=euPick(opts,BR.EU_ORDER,BR.EU_LEVEL);
     const [d,local,landed,q]=pick;
+    if(outright[0]!==d)note+=`${d} and ${outright[0]} level at £${outright[2].toFixed(2)}-£${landed.toFixed(2)} - took ${d} `;
     if(notADrop&&d==='UK')sells=[['Buy Box 90d - not a real drop',bb90]];
     /* b22 (Jack, 14 Sep 2026: Lenovo Idea Tab "never ever been higher than 509.99"): nothing sells
        above the highest Buy Box price Keepa has ever seen for the listing. Only bites when the
@@ -206,7 +228,11 @@ function rule1Compute(files,brand,rate,prevRun){
     if(d==='UK'&&ukp){const scen=brPmScenarios(r.Brand,ukp,catRoot);pmScen=scen;
       if(scen.length){const bp=scen.reduce((m,x)=>x[1]>m[1]?x:m);const pmCost=r2(ukp*(1-bp[1]/100));
       const [pmP_,pr_]=brProfit(sell,pmCost,ref,fba,kg,vat,catRoot);pmRoi=pr_;pmP=pmP_;
-      pmNote=`if ${bp[0]} price-matches: £${pmCost.toFixed(2)} -> £${pmP_.toFixed(2)} / ${Math.round(pmRoi)}%`;}}
+      /* b134 (Jack, 21 Sep: "for Logitech if it's UK A2A be more lenient — they nearly always have a promo on, buy 2 get £10 off,
+         buy 3 get £50 off, it's so random"). A promo is not a price match, so it is worded as one and never presented as certain. */
+      const promo=(typeof discIsPromo==='function')&&discIsPromo(r.Brand)&&bp[0].toLowerCase()===String(r.Brand||'').toLowerCase().split(' ')[0];
+      pmNote=promo?`if ${bp[0]} has a promo on (they usually do): £${pmCost.toFixed(2)} -> £${pmP_.toFixed(2)} / ${Math.round(pmRoi)}%`
+        :`if ${bp[0]} price-matches: £${pmCost.toFixed(2)} -> £${pmP_.toFixed(2)} / ${Math.round(pmRoi)}%`;}}
     const exempt=BR.EXEMPT.some(x=>tl.includes(x));
     if(BR.EU_PLUG.some(w=>tl.includes(w))){drop(a,title,'EU PLUG stated in the title','EU plug in title');continue;}
     if(d!=='UK'&&BR.EXCLUDE.some(w=>tl.includes(w))&&!exempt){drop(a,title,`MAINS APPLIANCE: would be an EU buy (${d}) - UK plug required`,'Appliance from EU');continue;}
@@ -220,7 +246,12 @@ function rule1Compute(files,brand,rate,prevRun){
     /* b115: the £100+ bar (BAR100 in rule2.js), judged on the best of Amazon's price, the high-end sell and the price match */
     if(typeof BAR100!=='undefined'&&BAR100.on&&sell>=BAR100.SELL){const bR=Math.max(roi,hiRoi,pmRoi==null?-99:pmRoi),bP=Math.max(pr,hiP,pmP==null?-99:pmP);
       if(!(bR>=BAR100.ROI||bP>=BAR100.PROFIT)){drop(a,title,`under the £${BAR100.SELL}+ bar: best ${Math.round(bR)}% / £${bP.toFixed(2)} (needs ${BAR100.ROI}% or £${BAR100.PROFIT})`,'Under the £100+ bar');continue;}}
-    if(Math.max(roi,hiRoi)<floor&&!(pmRoi!=null&&pmRoi>=5)){drop(a,title,`ROI ${roi}% below the ${floor}% floor (cheapest ${d} £${landed.toFixed(2)} landed, sell £${sell.toFixed(2)})`,wideGap?'Wide-gap, still under -15%':'ROI under breakeven');continue;}
+    /* b135 (Jack: "be extra more lenient on UK A2A Logitech even if it's a small loss — tell them to go looking at the Logitech
+       website and OA price matches"). The promo is on the brand's own site, so a small loss against Amazon's price is not the
+       test: what matters is whether it works once the promo is on. Break-even there is enough to put it in front of a human. */
+    const promoRescue=(d==='UK'&&typeof discIsPromo==='function'&&discIsPromo(r.Brand)&&pmRoi!=null&&pmRoi>=BR.PROMO_FLOOR_ROI);
+    const promoOA=promoRescue&&Math.max(roi,hiRoi)<10;   /* an OA lead in an A2A run: it is on the list to be checked on the brand site, so the thin-lead bar does not judge it on Amazon's price */
+    if(Math.max(roi,hiRoi)<floor&&!(pmRoi!=null&&pmRoi>=5)&&!promoRescue){drop(a,title,`ROI ${roi}% below the ${floor}% floor (cheapest ${d} £${landed.toFixed(2)} landed, sell £${sell.toFixed(2)})`,wideGap?'Wide-gap, still under -15%':'ROI under breakeven');continue;}
     st.kept++;if(src.endsWith('capped at the Buy Box high'))st.capped++;
     const sd=brNum(r['Buy Box: Standard Deviation 90 days'])||0;
     const flags=[
@@ -241,7 +272,9 @@ function rule1Compute(files,brand,rate,prevRun){
       (d==='UK'&&pmScen.length)?'UK buy: check OA retailers ('+pmScen.map(x=>x[0]+' '+x[1]+'%').join(', ')+')':'',
       unknown?`variation of ${brNum(r['Variation Count'])}: on the family's ${drops} drops, its own share unknown (siblings not in the export, or no reviews yet)`:'',
       (!unknown&&r.__optionChecked&&!bought)?`variation of ${brNum(r['Variation Count'])}: on the family's ${drops} drops, Keepa has no confirmed figure for this option`:'',
-      (/grocery|health|beauty|pet|baby|drugstore/i.test(catRoot)&&!brHasSS(r))?'no S&S seen on Keepa - check the page':''].filter(Boolean).join('; ');
+      (/grocery|health|beauty|pet|baby|drugstore/i.test(catRoot)&&!brHasSS(r))?'no S&S seen on Keepa - check the page':'',
+      /* b134: the brand nearly always has something on that Keepa cannot see */
+      (d==='UK'&&typeof discIsPromo==='function'&&discIsPromo(r.Brand))?`OA, NOT AMAZON: buy it from ${(typeof discPromoSite==='function'&&discPromoSite(r.Brand))||'the brand site'} - they nearly always have a multi-buy on (buy 2 get £10, buy 3 get £50, it changes). Check the site, then Argos and Currys for a price match, then Discord it`:''].filter(Boolean).join('; ');
     out.push({STATUS:'',Changed:'',ASIN:a,Title:title,'Sell range':`£${loSell.toFixed(2)}-£${hiSell.toFixed(2)}`,'ROI low %':loRoi,'ROI high %':hiRoi,'Profit high £':hiP,
       SAS:`https://sas.selleramp.com/sas/lookup?search_term=${a}&sas_cost_price=${landed.toFixed(2)}&sas_sale_price=${sell.toFixed(2)}`,
       Keepa:`https://keepa.com/#!product/2-${a}`,'Buy link':`https://www.amazon.${BR_LINK[d]}/dp/${a}`,'UK sell link':`https://www.amazon.co.uk/dp/${a}`,
@@ -249,7 +282,7 @@ function rule1Compute(files,brand,rate,prevRun){
       'Profit £':pr,'ROI %':roi,'Best case':src,'GOOD LEAD?':'','HAPPY ON SHEET?':'',WHY:'',
       SPM:Math.round(spm),'SPM from':bought?'bought':(share!=null?'drops x '+Math.round(share*100)+'% of reviews':'drops'),'Buy price (local)':local,'Basket qty':q,'ROI at BuyBox90 %':bb90Roi,
       'Sell low £':loSell,'Sell high £':hiSell,'Sell FBA now £':fbaNow,'Sell FBA 30d £':fba30,'Sell FBA 90d £':fba90,'Sell BB 90d £':bb90,'UK Amazon now £':ukp,
-      'Phase 2 (ROI>=10%)':roi>=10?'YES':'no','OA price-match':pmNote,
+      'Phase 2 (ROI>=10%)':roi>=10?'YES':'no','OA price-match':pmNote,promoOA:promoOA||false,
       'All Amazon prices':opts.map(o=>`${o[0]} ${o[1]}`).join(' | '),'Dropped in':[...(found[a]||new Set(['UK']))].sort().join('/'),
       'Referral %':r1(ref*100),'FBA fee £':fba,kg:r2(kg),'Fees from':feeSrc,'LTD badge':r['Deals: Badge']||'',Category:catRoot,Flags:flags,'Last seen':'',
       'Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||''});
@@ -267,7 +300,8 @@ function rule1Compute(files,brand,rate,prevRun){
   const vel=typeof passesVelocity==='function';
   /* judged on the best of the headline, the high-end sell and the price match — the same three that let the lead in */
   const bestOf=o=>{const pm=/-> £([\d.]+) \/ (-?\d+)%/.exec(o['OA price-match']||'');return{roi:Math.max(o['ROI %'],o['ROI high %']||-99,pm?+pm[2]:-99),p:Math.max(o['Profit £'],o['Profit high £']||-99,pm?+pm[1]:-99)};};
-  const slow=out.filter(o=>{const b=bestOf(o);return vel?!passesVelocity(o.SPM,b.roi,b.p):(o.SPM<BR.SLOW_SPM&&b.roi<BR.SLOW_ROI&&b.p<BR.SLOW_PROFIT);});
+  const slow=out.filter(o=>{if(o.promoOA)return false;   /* b135: judged on the brand site, not on Amazon's price */
+    const b=bestOf(o);return vel?!passesVelocity(o.SPM,b.roi,b.p):(o.SPM<BR.SLOW_SPM&&b.roi<BR.SLOW_ROI&&b.p<BR.SLOW_PROFIT);});
   slow.forEach(o=>{const b=vel?velocityBar(o.SPM):{roi:BR.SLOW_ROI,profit:BR.SLOW_PROFIT};const bo=bestOf(o);drop(o.ASIN,o.Title,`thin for ${o.SPM}/mo: best ROI ${Math.round(bo.roi)}% and profit £${bo.p.toFixed(2)} - at that pace it needs ROI ≥ ${b.roi}% or profit ≥ £${b.profit}`,o.SPM<BR.SLOW_SPM?'Slow seller, thin margin':'Thin for its pace');});
   const kept=out.filter(o=>!slow.includes(o));st.kept=kept.length;
   /* STATUS vs the last sheet downloaded for this brand */
