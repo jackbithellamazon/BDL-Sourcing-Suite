@@ -1,6 +1,6 @@
-BDL SOURCING — b146 · 22 Sep 2026
+BDL SOURCING — b151 · 24 Sep 2026
 
-YOU ARE ON b73 IF YOU HAVE NOT PUSHED SINCE. This folder is everything since, in one upload.
+This folder is the whole app. Upload all of it every time; anything you already pushed is simply replaced.
 
 1. UPLOAD
    GitHub → Add file → Upload files. Drag in index.html, css, js, tests, README-DEPLOY.txt.
@@ -19,6 +19,41 @@ YOU ARE ON b73 IF YOU HAVE NOT PUSHED SINCE. This folder is everything since, in
    Free, no tokens. Tell the VAs too.
 
 WHAT LANDS, NEWEST FIRST
+   b151 BULK AUDIT. Every row in the storefront audit has a tick box on its picture. Tick one,
+        shift-click another to tick the whole run between, or cmd-click a row. A bar at the bottom
+        then judges all the ticked rows in one press - "Discord · PS", "THC", "FFB" are one click
+        each; "Missed it" opens its reasons. "Tick all shown", Esc to clear, and one U undoes the
+        whole lot. Q / W / E set the reason on every ticked row too. Nothing on the page moves when
+        you tick. ALSO FIXED: the "Which Discord?" chips drawing on top of the buttons (the TRIP
+        Dream Drops row in your screenshot).
+   b150 INSTAX, EVERY MARKET. New brand run on your own filter, kept exactly as you sent it: brand
+        instax, Amazon down 8%+ on its 90-day average, products only, sorted by rank then monthly
+        sold. UK, Germany, France, Italy and Spain, every 3 days like Canon. Unassigned, so only you
+        see it until you hand it out. The Keepa API button works on it too.
+   b149 LIVE PRICES ARE ALWAYS TODAY'S. You were right: b148 carried the live FBA offer forward
+        from the cache. The 1-token refresh DOES get Amazon's own price (your buy price), rank and
+        monthly sold fresh - but the live Buy Box, FBA and FBM offers need the full 6-token call.
+        Now only averages come off the shelf, never a live price, and every product that comes out
+        as a LEAD is pulled in full straight away and re-run. So anything you act on has today's
+        competition. It never goes under the 250 floor to do it - it tells you instead.
+   b148 SIX TOKENS DOWN TO ONE (Spense's caching tip, built). A full Keepa row costs 6 tokens
+        because of the offers data; a stats-only call is 1 token and leaves exactly 13 columns
+        empty - the Buy Box and FBA averages, the high, out-of-stock %, Amazon's share, monthly
+        sold last known, and the review columns. So an ASIN we already hold costs 1 token to
+        refresh what moves; the averages come off the shelf. Free if the row is under a day old.
+        THREE DAYS, NOT NINETY: your own consecutive exports say the 90-day averages drift ~0.25%
+        a DAY (0.23% over one day, 0.60% over three, 1.73% over seven). Three days keeps the error
+        near half a percent; ninety would be a fifth out.
+        Proved live on two Ninja ASINs: 12 tokens to pull fresh, 2 to refresh. On a Suz list that
+        is ~1,900 tokens down to ~320 on a re-run; Mera's ~3,300 down to ~550.
+   b147 IF IT IS PROFITABLE WE STILL WANT IT. Products Amazon is not selling anywhere used to be
+        binned ("Amazon not selling anywhere") even though they had already passed demand and
+        already had a sell price - the only thing missing was somewhere to buy them. They now come
+        out as OA TARGETS: a panel above the leads, biggest seller first, with what it sells for,
+        what it sells a month, the breakeven and the price to beat for 20% ROI, plus a CSV. They
+        are never leads and never scored, so nothing in the leads table moved.
+        Your two Ninja ASINs: Foodi FlexDrawer sells 1,000/mo at £268.83, buy under £168.89 for
+        20%. Prestige coffee sells 200/mo at £212.63, buy under £132.93.
 
    b146 ITALY, FRANCE, GERMANY WHEN THE PRICE IS MATCHED. Your order is in Rule 1 as a tie-break
         on a matched price and nothing else: a penny cheaper anywhere wins, including Spain,

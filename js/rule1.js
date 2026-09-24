@@ -109,7 +109,7 @@ function brBrandDisc(brand){const b=(brand||'').trim().toLowerCase().split(/\s+/
    brand = string (only used for the result), rate = GBP per EUR,
    prevRun = {stamp, snap:{ASIN:{...}}} from the last downloaded sheet, or null */
 function rule1Compute(files,brand,rate,prevRun){
-  const eu={},euSS={},found={};
+  const eu={},euSS={},found={},oa=[];
   ['UK','DE','FR','IT','ES'].forEach(d=>{const f=files[d];if(!f)return;f.rows.forEach(r=>{const a=(r.ASIN||'').trim();if(!a)return;
     (found[a]=found[a]||new Set()).add(d);
     if(d!=='UK'){const v=brNum(r['Amazon: Current']);if(v){(eu[a]=eu[a]||{})[d]=v;}
@@ -200,7 +200,24 @@ function rule1Compute(files,brand,rate,prevRun){
       const eur=gbp/rate,q=Math.max(1,Math.min(BR.BASKET_MAX,Math.floor(BR.BASKET_CAP/eur)));
       const post=(BR.SHIP_BASE+BR.SHIP_KG*kg*q)*rate;
       opts.push([d,r2(eur),r2(gbp*(1+BR.CARD_FEE)+post/q+0.005),q]);}
-    if(!opts.length){drop(a,title,'Amazon not selling anywhere','Amazon not selling');continue;}
+    if(!opts.length){
+      /* b147 (Jack, 22 Sep: "but if we had an OA sell price that is fine — remember it's A2A, but if we find something
+         profitable then we still want it"). Amazon not selling it anywhere kills the A2A buy side, not the product. It has
+         already passed demand and it already has a sell price, so the only thing missing is somewhere to buy it. That is a
+         job for a retailer, not a reason to bin it — so it leaves here as an OA TARGET carrying the price you would have to
+         buy it at. It is never a lead: a lead has a buy price, and this one has not got one yet. */
+      const bbHi0=brNum(r['Buy Box: Highest'])||0;
+      let [oaWhy,oaSell]=sells.reduce((m,c)=>c[1]>m[1]?c:m);
+      if(bbHi0&&oaSell>bbHi0+0.005){oaSell=r2(bbHi0);oaWhy+=', capped at the Buy Box high';}
+      const vat0=zeroVat?0:null;
+      /* the same fees the rule charges a lead: referral as a FRACTION, FBA from the export or the weight table */
+      const buyFor=(want)=>{let lo=0.01,hi=oaSell*2;for(let i=0;i<44;i++){const mid=(lo+hi)/2;
+        if(brProfit(oaSell,mid,ref,fba,kg,vat0,catRoot)[1]>=want)lo=mid;else hi=mid;}return r2(lo);};
+      oa.push({ASIN:a,Title:title,Brand:r.Brand||brand,'Sells /mo':spm,'SPM from':bought?'bought':(share!=null?'drops x '+Math.round(share*100)+'% of reviews':'drops'),'Sell £':oaSell,'Sell from':oaWhy,
+        'Breakeven buy £':buyFor(0),'Buy under £ for 20%':buyFor(20),'Buy under £ for 30%':buyFor(30),
+        'Buy under £ for the £100 bar':oaSell>=100?buyFor(8):buyFor(0),
+        Keepa:`https://keepa.com/#!product/2-${a}`,'UK sell link':`https://www.amazon.co.uk/dp/${a}`});
+      drop(a,title,`OA target: Amazon is not selling it anywhere, but it sells ${spm}/mo — buy under £${buyFor(20)} for 20%`,'Amazon not selling (OA target)');continue;}
     st.buy++;
     const best=Math.min(...opts.map(o=>o[2])),tied=opts.filter(o=>o[2]-best<=1.00);
     /* b146 (Jack, 22 Sep: "order of cheapness on EU if price matched — Italy, France, Germany; unsure where Spain sits yet").
@@ -319,6 +336,7 @@ function rule1Compute(files,brand,rate,prevRun){
   const gone=Object.entries(prev).filter(([a])=>!keptSet.has(a)).map(([a,p])=>[a,`was ${p['Buy market']} £${p['Landed £']} ROI ${p['ROI %']}%`]);
   const ord={NEW:0,BETTER:1,WORSE:2,UNCHANGED:3};
   kept.sort((x,y)=>(ord[x.STATUS]-ord[y.STATUS])||(band(x.SPM)-band(y.SPM))||(y['Profit £']-x['Profit £']));
-  return{out:kept,dropped,reasons,st,gone,prevStamp:prevRun?prevRun.stamp:null,rate};}
+  oa.sort((x,y)=>(+y['Sells /mo']||0)-(+x['Sells /mo']||0));
+  return{out:kept,dropped,reasons,st,gone,oa,prevStamp:prevRun?prevRun.stamp:null,rate};}
 /* what the history snapshot keeps per lead — enough to say NEW / BETTER / WORSE next time */
 function rule1Snap(out){const snap={};out.forEach(o=>{snap[o.ASIN]={'Buy market':o['Buy market'],'Landed £':o['Landed £'],'Sell £ used':o['Sell £ used'],'ROI %':o['ROI %'],'Profit £':o['Profit £'],'SPM':o.SPM};});return snap;}

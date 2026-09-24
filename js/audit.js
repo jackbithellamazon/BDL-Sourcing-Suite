@@ -199,9 +199,13 @@ function audSells(shelfId,asin){const s=audState.shared[shelfId];return !!(s&&s.
 
 /* ---------- judging ---------- */
 let audUndoStack=[];
-function audJudge(asins,code,sellerId){if(!needMe())return;const who=me();const now=nowIso();const batch=[];const m=audAll();
-  asins.forEach(a=>{const cur=m[a]||null;const p=audPress(a,cur,code,who,sellerId,now);if(p.same)return;
-    batch.push({asin:a,prev:cur?Object.assign({},cur):null,row:p.row});m[a]=p.row;});
+/* b151: `reason` lets one press set the verdict AND which Discord / why missed — so a bulk "Discord · PS" is one batch and one undo */
+function audJudge(asins,code,sellerId,reason){if(!needMe())return;const who=me();const now=nowIso();const batch=[];const m=audAll();
+  asins.forEach(a=>{const cur=m[a]||null;const p=audPress(a,cur,code,who,sellerId,now);
+    if(p.same){if(!reason||(cur&&cur.reason===reason))return;
+      const row=Object.assign({},cur,{reason,at:now});batch.push({asin:a,prev:Object.assign({},cur),row});m[a]=row;return;}
+    const row=reason?Object.assign({},p.row,{reason}):p.row;
+    batch.push({asin:a,prev:cur?Object.assign({},cur):null,row});m[a]=row;});
   if(!batch.length)return;
   audSave(m);audUndoStack.push(batch);if(cloudEnabled())audQueue({op:'up',table:'src_audit_verdicts',rows:batch.map(b=>b.row)});
   return batch;}
@@ -211,6 +215,9 @@ function audUndo(){const b=audUndoStack.pop();if(!b)return false;const m=audAll(
   return b;}
 function audSetReason(asin,reason){const m=audAll();const r=m[asin];if(!r)return;r.reason=r.reason===reason?'':reason;r.at=nowIso();
   audSave(m);if(cloudEnabled())audQueue({op:'up',table:'src_audit_verdicts',rows:[r]});}
+function audSetReasonMany(asins,reason){const m=audAll();const batch=[];const now=nowIso();
+  asins.forEach(a=>{const r=m[a];if(!r||r.reason===reason)return;const row=Object.assign({},r,{reason,at:now});batch.push({asin:a,prev:Object.assign({},r),row});m[a]=row;});
+  if(!batch.length)return null;audSave(m);audUndoStack.push(batch);if(cloudEnabled())audQueue({op:'up',table:'src_audit_verdicts',rows:batch.map(b=>b.row)});return batch;}
 function audSetNote(asin,note){const m=audAll();const r=m[asin];if(!r)return;r.note=(note||'').slice(0,200);
   audSave(m);if(cloudEnabled())audQueue({op:'up',table:'src_audit_verdicts',rows:[r]});}
 
@@ -276,11 +283,41 @@ function auQuickRender(){if(auView.mode!=='audit')return false;const sh=audShelf
   auPaintCounts(sh);auKeepFocusVisible();
   const cur=vis[auView.focus];if(cur)auLoadGraph(cur.a);
   return true;}
-function auRefresh(){if(!auQuickRender())renderAudit();}
+function auRefresh(){if(!auQuickRender())renderAudit();auPaintBulk();}
+/* b151 (Jack, 24 Sep: "add a way to bulk audit and click — a load of these are lead group, Discord, and I know which one").
+   Tick rows on their picture (shift-click ticks a run), and a bar pinned to the bottom of the screen judges every ticked row in
+   one press — including WHICH Discord, as one click. It floats over the page, so ticking never moves a single row. One press is
+   one undo. The keyboard already worked this way (shift + arrow, then 1-6); now the mouse does too, and Q / W / E set the reason
+   on every ticked row. */
+function auPaintBulk(){let el=document.getElementById('auBulk');const pg=document.getElementById('page-audit');
+  const on=!!(pg&&pg.classList.contains('active'))&&auView.mode==='audit'&&auView.sel&&auView.sel.size>0&&!!audShelf(auView.shelf);
+  document.body.classList.toggle('au-selecting',on);
+  if(!on){if(el){el.hidden=true;el.innerHTML='';}return;}
+  if(!el){el=document.createElement('div');el.id='auBulk';el.className='aubulk';document.body.appendChild(el);
+    el.addEventListener('click',e=>{const t=e.target;const sh=audShelf(auView.shelf);if(!sh)return;
+      if(t.closest('[data-bclear]')){auView.sel=new Set();auView.lastSel=null;auRefresh();return;}
+      if(t.closest('[data-ball]')){auView.sel=new Set(auVisible(sh).map(it=>it.a));auRefresh();return;}
+      const more=t.closest('[data-bmore]');if(more){auView.bulkOpen=auView.bulkOpen===more.dataset.bmore?null:more.dataset.bmore;auPaintBulk();return;}
+      const b=t.closest('[data-bv]');if(b){auView.bulkOpen=null;auJudgeNow([...auView.sel],b.dataset.bv,b.dataset.br||'');}});}
+  const sh=audShelf(auView.shelf);const n=auView.sel.size,shown=auVisible(sh).length;
+  const btn=(t,idx)=>{const k=`<kbd>${idx+1}</kbd>`;
+    if(t.reasons&&t.reasons.length<=3)return`<span class="bgrp" style="--c:${t.hex}"><span class="bl">${AU_ICON[t.icon]||''}${escapeHtml(t.short||t.label)}</span>${t.reasons.map(r=>`<button type="button" class="bb" data-bv="${t.code}" data-br="${escapeHtml(r)}" title="Mark all ${n} ${escapeHtml(t.label)} · ${escapeHtml(r)}">${escapeHtml(r)}</button>`).join('')}</span>`;
+    if(t.reasons)return`<button type="button" class="bb${auView.bulkOpen===t.code?' open':''}" style="--c:${t.hex}" data-bmore="${t.code}" title="${escapeHtml(t.label)} — pick why">${k}${AU_ICON[t.icon]||''}${escapeHtml(t.short||t.label)} ▾</button>`;
+    return`<button type="button" class="bb" style="--c:${t.hex}" data-bv="${t.code}" title="Mark all ${n} ${escapeHtml(t.label)} · key ${idx+1}">${k}${AU_ICON[t.icon]||''}${escapeHtml(t.short||t.label)}</button>`;};
+  const types=audTypes();const open=types.find(t=>t.code===auView.bulkOpen);
+  el.hidden=false;
+  el.innerHTML=`<div class="bmain"><span class="bn"><b>${n}</b> ticked</span><span class="bsep"></span>${types.map(btn).join('')}<span class="bsep"></span>
+      ${n<shown?`<button type="button" class="bl2" data-ball="1">Tick all ${shown} shown</button>`:''}<button type="button" class="bl2" data-bclear="1">Clear <kbd>Esc</kbd></button></div>
+    ${open?`<div class="bwhy" style="--c:${open.hex}"><span>${escapeHtml(open.prompt||'Why?')}</span>${open.reasons.map(r=>`<button type="button" class="bb" data-bv="${open.code}" data-br="${escapeHtml(r)}">${escapeHtml(r)}</button>`).join('')}</div>`:''}`;}
+function auToggleSel(asin,i,range){const sh=audShelf(auView.shelf);if(!sh)return;const vis=auVisible(sh);
+  if(range&&auView.lastSel!=null){const a=Math.min(auView.lastSel,i),b=Math.max(auView.lastSel,i);for(let k=a;k<=b;k++)if(vis[k])auView.sel.add(vis[k].a);}
+  else{if(auView.sel.has(asin))auView.sel.delete(asin);else auView.sel.add(asin);}
+  auView.lastSel=i;auRefresh();}
 function renderAudit(){const host=$('#page-audit');if(!host)return;
   document.body.classList.toggle('auditing',auView.mode==='audit');
   if(!isJack()){host.innerHTML=`<div class="card"><div class="empty"><span>The storefront audit is Jack's. Pick your name top right if this is you.</span></div></div>`;return;}
-  if(auView.mode==='audit'&&auView.shelf&&audShelf(auView.shelf))auRenderOne();else auRenderList();}
+  if(auView.mode==='audit'&&auView.shelf&&audShelf(auView.shelf))auRenderOne();else auRenderList();
+  if(typeof auPaintBulk==='function')auPaintBulk();}
 /* b69 (Jack: "highest % of products I sell too") — the rival you overlap with most is the one worth auditing,
    because everything on their shelf you do not sell is a lead you have not found yet. */
 function auOverlap(c){return c.all?c.sell/c.all:0;}
@@ -438,7 +475,7 @@ function auRow(it,i,sh){const V=audAll();const v=V[it.a];const p=audState.prod[i
   const money=[priceBit,p.rank?'#'+(+p.rank).toLocaleString():'',p.mo?`<b class="aumo">${(+p.mo).toLocaleString()}/mo</b>`:'',sellers?sellers+(sellers===1?' seller':' sellers'):''].filter(Boolean).join(' · ');
   const landed=auView.landed&&auView.landed.a===it.a&&Date.now()-auView.landed.at<600?' landed':'';
   return`<div class="aurow ${i===auView.focus?'focus':''} ${auView.sel.has(it.a)?'sel':''} ${st!=='todo'?'judged':''}${reasons?' reasoning':''}${elsewhere?' elsewhere':''}${landed}" data-i="${i}" data-a="${it.a}" style="--edge:${st==='todo'?'var(--iris)':(t?t.hex:(st==='jointauto'?'#2CE38B':'var(--line2)'))}">
-    <div class="auimg">${p.image?`<img loading="lazy" src="${escapeHtml(p.image)}" alt="">`:escapeHtml(it.a.slice(0,2))}</div>
+    <div class="auimg">${p.image?`<img loading="lazy" src="${escapeHtml(p.image)}" alt="">`:escapeHtml(it.a.slice(0,2))}<button type="button" class="ausel" data-sel="${it.a}" data-i="${i}" aria-label="Select ${it.a}" title="Tick to judge several at once · shift-click ticks a run"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></button></div>
     <div class="aumain">
       <div class="aut" title="${escapeHtml(p.title||it.a)}">${escapeHtml(p.title||it.a)}</div>
       <div class="aufacts">
@@ -591,9 +628,9 @@ function auOpen(id){auView.mode='audit';auView.shelf=id;auView.q='';auView.order
     if(auView.shelf===id)renderAudit();
     auNote(got?`Details loaded · about ${got} tokens · <button type="button" class="linkbtn" id="auAutoOff">stop doing this automatically</button>`:'');})();}
 function auNote(html,pct){const el=$('#auNote2');if(!el)return;el.innerHTML=(pct!=null?`<span class="auload"><i style="width:${Math.round(pct)}%"></i></span>`:'')+(html||'');}
-function auBack(){auView.mode='list';auView.shelf=null;location.hash='#audit';renderAudit();}
-function auJudgeNow(asins,code){const sh=audShelf(auView.shelf);if(!sh)return;
-  const b=audJudge(asins,code,sh.seller||sh.id);
+function auBack(){auView.mode='list';auView.shelf=null;auView.sel=new Set();location.hash='#audit';renderAudit();auPaintBulk();}
+function auJudgeNow(asins,code,reason){const sh=audShelf(auView.shelf);if(!sh)return;
+  const b=audJudge(asins,code,sh.seller||sh.id,reason);
   if(!b){
     /* b97 (Jack: "still not working bro"). audJudge treats pressing the verdict a row ALREADY has as a
        no-op and returns nothing — and this bailed out before anything redrew. So once a row was on
@@ -609,14 +646,14 @@ function auJudgeNow(asins,code){const sh=audShelf(auView.shelf);if(!sh)return;
     return;}
   asins.forEach(a=>auView.stay.add(a));
   const gap=(Date.now()-auView.lastAt)/1000;if(auView.lastAt&&gap<60){auView.secs=auView.secs.concat([gap]).slice(-40);auSave();}auView.lastAt=Date.now();
-  const t=audType(code);toast(`Marked ${t?t.label:code}${asins.length>1?' on '+asins.length+' products':''} — press U to undo`);
+  const t=audType(code);toast(`Marked ${t?t.label:code}${reason?' · '+reason:''}${asins.length>1?' on '+asins.length+' products':''} — press U to undo`);
   /* b94 (Jack: "improve smoothness when i tick it and how it reacts when it's ticked and where it goes").
      Pressing a key redrew the list and that was the entire feedback — nothing told you it had landed. The
      row that was just judged is now marked for one render, so it can flash its own verdict colour once and
      the chip can pop in. The mark clears itself, so scrolling past later never replays it. */
   auView.landed={a:asins[0],at:Date.now()};   /* b98: `asin` never existed here — the parameter is `asins`, and the ReferenceError killed the redraw on EVERY press */
   clearTimeout(auView._landT);auView._landT=setTimeout(()=>{auView.landed=null;},600);
-  auView.sel=new Set();if(!(t&&t.reasons))auAdvance();auRefresh();auFollow();}
+  auView.sel=new Set();auView.lastSel=null;if(!(t&&t.reasons)||reason)auAdvance();auRefresh();auFollow();}
 /* b95 (Jack: "why does unsure take us to the top — i want to bulk go through them rapid without being moved").
    It was not Unsure. auAdvance searched DOWN for the next unjudged row and, finding none, wrapped round and
    searched from the top — so the moment everything below you was done, one keypress teleported you to row 1
@@ -696,8 +733,9 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     const vb=t.closest('[data-v]');if(vb){const sh=audShelf(auView.shelf);const vis=auVisible(sh);const k=vis.findIndex(it=>it.a===vb.dataset.a);if(k>=0)auView.focus=k;
       auJudgeNow(auView.sel.size?[...auView.sel]:[vb.dataset.a],vb.dataset.v);return;}
     if(t.closest('[data-next]')){const sh=audShelf(auView.shelf);const vis=auVisible(sh);if(auView.focus<vis.length-1)auView.focus++;auRefresh();auFollow();return;}
+    const tick=t.closest('[data-sel]');if(tick){e.preventDefault();auToggleSel(tick.dataset.sel,+tick.dataset.i,e.shiftKey);return;}
     const rs=t.closest('[data-r]');if(rs){audSetReason(rs.dataset.a,rs.dataset.r);auAdvance();auRefresh();return;}
-    const row=t.closest('.aurow');if(row){auView.focus=+row.dataset.i;auRefresh();auFollow();return;}});
+    const row=t.closest('.aurow');if(row){if(e.metaKey||e.ctrlKey){auToggleSel(row.dataset.a,+row.dataset.i,false);return;}auView.focus=+row.dataset.i;auRefresh();auFollow();return;}});
   host.addEventListener('change',e=>{const id=e.target.id;
     const map={auSort:'sort',auBand:'band',auVol:'vol',auSell:'sellers'};
     if(map[id]){auView[map[id]]=e.target.value;auView.order=null;auView.focus=0;auSave();renderAudit();}});
@@ -714,7 +752,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     const tg=e.target;if(tg&&tg.closest&&tg.closest('input,textarea,select'))return;
     const sh=audShelf(auView.shelf);if(!sh)return;const vis=auVisible(sh);const it=vis[auView.focus];
     if(e.key==='/'){e.preventDefault();const q=$('#auQ');if(q)q.focus();return;}
-    if(e.key==='Escape'){if(auView.sel.size){auView.sel=new Set();auRefresh();}return;}
+    if(e.key==='Escape'){if(auView.sel.size){auView.sel=new Set();auView.lastSel=null;auView.bulkOpen=null;auRefresh();}return;}
     if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const d=e.key==='ArrowDown'?1:-1;const nf=Math.min(vis.length-1,Math.max(0,auView.focus+d));
       if(e.shiftKey){if(it)auView.sel.add(it.a);if(vis[nf])auView.sel.add(vis[nf].a);}else auView.sel=new Set();
       auView.focus=nf;auRefresh();auFollow();return;}
@@ -722,6 +760,9 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     if(n>=1&&n<=types.length&&it){e.preventDefault();auJudgeNow(auView.sel.size?[...auView.sel]:[it.a],types[n-1].code);return;}
     const rk=AU_RKEYS.indexOf(String(e.key).toLowerCase());
     if((e.key==='g'||e.key==='G')&&!e.metaKey&&!e.ctrlKey){e.preventDefault();auFirstTodo();return;}
+    if(rk>=0&&auView.sel.size){const byType={};[...auView.sel].forEach(a=>{const v=audGet(a);const ty=v&&audType(v.verdict);if(ty&&ty.reasons&&ty.reasons[rk])(byType[ty.reasons[rk]]=byType[ty.reasons[rk]]||[]).push(a);});
+      const keys=Object.keys(byType);if(keys.length){e.preventDefault();let n=0;keys.forEach(r=>{const b=audSetReasonMany(byType[r],r);if(b)n+=b.length;});
+        auView.sel=new Set();auView.lastSel=null;toast(`${n} set to ${keys.join(' / ')} — press U to undo`);auRefresh();return;}}
     if(rk>=0&&it){const v=audGet(it.a);const ty=v&&audType(v.verdict);if(ty&&ty.reasons&&ty.reasons[rk]){audSetReason(it.a,ty.reasons[rk]);auAdvance();auRefresh();auFollow();return;}}
     if(e.key==='u'||e.key==='U'){const b=audUndo();toast(b?'Undone':'Nothing to undo');
       if(b){const back=auVisible(sh).findIndex(x=>x.a===b[0].asin);if(back>=0)auView.focus=back;auRefresh();}return;}
@@ -729,6 +770,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     if(e.key==='o'||e.key==='O')window.open('https://www.amazon.co.uk/dp/'+it.a,'_blank');
     else if(e.key==='k'||e.key==='K')window.open('https://keepa.com/#!product/2-'+it.a,'_blank');
     else if(e.key==='s'||e.key==='S')window.open('https://sas.selleramp.com/sas/lookup?search_term='+it.a,'_blank');});
+  document.addEventListener('click',e=>{if(e.target.closest('.pagebtn'))setTimeout(auPaintBulk,0);});   /* b151: the bulk bar belongs to the audit page only */
   /* first paint + shared data when the page opens */
   const btn=document.querySelector('.pagebtn[data-page="page-audit"]');
   if(btn)btn.addEventListener('click',async()=>{renderAudit();if(cloudEnabled()){await audPullShelves();await audPullVerdicts();renderAudit();}});

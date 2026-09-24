@@ -78,6 +78,39 @@ const API_IDX={AMAZON:0,NEW:1,SALES:3,NEW_FBM:7,NEW_FBA:10,COUNT_NEW:11,RATING:1
 const API_AMAZON_SELLER={2:'A3P5ROKL5A1OLE',3:'A3JWKAKR8XB7XF',4:'A1X6FK5RDHNB96',8:'A11IL2PNWYJU7H',9:'A1AT7YVPFBWXBL'};
 const API_DOMAIN_TLD={2:'co.uk',3:'de',4:'fr',8:'it',9:'es'};
 const API_CACHE_KEY='bdl-sourcing-api-rows',API_CACHE_H=24,API_FLOOR=250,API_PER_PRODUCT=6,API_PER_PAGE=12,API_PAGE=500;
+/* b148 (Spense in the Discord, via Jack 22 Sep: "Caching is VERY VERY important when using keepa. Average prices aren't going
+   change much over a few days"; Jack: "probs worth caching average price for like 90 days or whatever we use - saves keepa
+   tokens and space in storage").
+   A full row costs 6 tokens because it needs offers=20. A stats-only call is 1 token and comes back with exactly these 13
+   columns empty — measured on B0C9JD2B4D, 22 Sep. Everything else (Amazon price, rank, drops, monthly sold, fees, weight,
+   category, variations, FBM, offer counts) is identical. So for an ASIN we already hold, one token refreshes what moves and
+   the averages come off the shelf.
+   NOT 90 days though: measured on Jack's own consecutive exports, the 90-day averages drift about 0.25% a DAY — 0.23% over
+   one day, 0.60% over three, 1.73% over seven (and 8% of products move more than 5% in a week). Three days keeps the median
+   error near half a percent; ninety would be a fifth off. The 30-day averages move twice as fast, which is why they are in
+   the list below and get re-read whenever a full pull happens. */
+const API_STABLE_H=72;
+/* b149 (Jack, 22 Sep: "but the live price still needs to be new though doesn't it?"). Yes. Measured on B0FJM3MZ9T: the 1-token
+   call DOES refresh Amazon's own price (the A2A buy price), the lowest new price, rank and monthly sold — but the live Buy Box,
+   the live FBA offer, the live FBM offer and the total offer count all need the 6-token offers data. b148 carried the live FBA
+   offer forward from the shelf as if it were today's. It no longer does: only AVERAGES come off the shelf, never a live price.
+   A blank live price makes the rules fall back on the averages, which is Rule 1's own principle anyway. And every product that
+   comes out as a LEAD is pulled in full straight after (apiConfirm), so the ones anybody acts on always carry live prices. */
+const API_FROM_CACHE=['Buy Box: 30 days avg.','Buy Box: 90 days avg.','Buy Box: 180 days avg.','Buy Box: Highest',
+  'Buy Box: 90 days OOS','Buy Box: % Amazon 90 days','New, 3rd Party FBA: 30 days avg.',
+  'New, 3rd Party FBA: 90 days avg.','Monthly Sales Trends: Monthly Sold (Last Known)',
+  'Monthly Sales Trends: Monthly Sold Date (Last Known)','Reviews: Rating','Reviews: Rating Count'];
+const API_CACHE_MAX=6000;   /* keep the file honest: oldest averages go first */
+/* what an ASIN will cost on the next run: 0 if the whole row is still fresh, 1 if only the averages are, 6 if neither */
+function apiCostFor(cache,domain,asin,now){const c=cache[domain+'|'+asin];if(!c)return 6;
+  now=now||Date.now();
+  if(now-(c.fresh||c.at)<API_CACHE_H*3600e3)return 0;
+  return now-c.at<API_STABLE_H*3600e3?1:6;}
+function apiPlan(cache,domain,asins,now){const p={free:[],topUp:[],full:[]};
+  (asins||[]).forEach(a=>{const cost=apiCostFor(cache,domain,a,now);(cost===0?p.free:cost===1?p.topUp:p.full).push(a);});
+  p.estimate=p.topUp.length+p.full.length*API_PER_PRODUCT;return p;}
+function apiTrim(cache){const keys=Object.keys(cache);if(keys.length<=API_CACHE_MAX)return cache;
+  keys.sort((a,b)=>(cache[a].at||0)-(cache[b].at||0)).slice(0,keys.length-API_CACHE_MAX).forEach(k=>delete cache[k]);return cache;}
 function kDate(m){if(!m||m<0)return'';const d=new Date((m+21564000)*60000);return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');}
 function apiMoney(arr,i){const v=arr&&arr[i];return(v==null||v<0)?'':(v/100).toFixed(2);}
 function apiInt(arr,i){const v=arr&&arr[i];return(v==null||v<0)?'':String(v);}
@@ -118,15 +151,36 @@ function apiRow(p,domain){if(!p||!p.asin)return null;const st=p.stats||{},cur=st
     'Business Discount: Percentage':'',
     __api:true,__rootId:p.rootCategory,__binding:(p.binding||'').toLowerCase()};}
 function apiCache(){return lsGet(API_CACHE_KEY,{});}
-/* rows for these ASINs, from the day's cache where possible, the rest from Keepa at 6 tokens each */
-async function apiRows(asins,domain,onStep){const cache=apiCache(),now=Date.now(),out=[],ask=[];
-  asins.forEach(a=>{const c=cache[domain+'|'+a];if(c&&now-c.at<API_CACHE_H*3600e3)out.push(c.row);else ask.push(a);});
-  let spent=0;
-  for(let i=0;i<ask.length;i+=100){const part=ask.slice(i,i+100);if(onStep)onStep(i,ask.length);
-    const r=await fetch(WORKER+'/keepa?path=product&domain='+domain+'&stats=90&offers=20&rating=1&asin='+part.join(','));const j=await r.json();
+/* rows for these ASINs: free from cache, 1 token to refresh what moves, 6 only when we have nothing */
+async function apiRows(asins,domain,onStep){const cache=apiCache(),now=Date.now(),out=[];
+  const plan=apiPlan(cache,domain,asins,now);
+  plan.free.forEach(a=>out.push(cache[domain+'|'+a].row));
+  let spent=0,done=0;const need=plan.topUp.length+plan.full.length;
+  const pull=async(list,cheap)=>{
+    for(let i=0;i<list.length;i+=100){const part=list.slice(i,i+100);if(onStep)onStep(done,need);
+      const q='path=product&domain='+domain+'&stats=90&history=0'+(cheap?'':'&offers=20&rating=1')+'&asin='+part.join(',');
+      const r=await fetch(WORKER+'/keepa?'+q);const j=await r.json();
+      if(j.error)throw new Error(j.error.message||'Keepa refused');spent+=j.tokensConsumed||0;
+      (j.products||[]).forEach(p=>{let row=apiRow(p,domain);if(!row)return;const key=domain+'|'+p.asin;
+        if(cheap){const held=(cache[key]||{}).row||{};
+          /* the averages we already paid for; the 1-token call left these empty */
+          API_FROM_CACHE.forEach(c=>{if(held[c]!=null&&held[c]!=='')row[c]=held[c];});
+          row.__avgAt=(cache[key]||{}).at||now;
+          cache[key]={at:(cache[key]||{}).at||now,fresh:now,row};}
+        else cache[key]={at:now,fresh:now,row};
+        out.push(row);});
+      done+=part.length;}};
+  await pull(plan.topUp,true);
+  await pull(plan.full,false);
+  lsSet(API_CACHE_KEY,apiTrim(cache));
+  return{rows:out,spent,fromCache:plan.free.length,toppedUp:plan.topUp.length,fullPulls:plan.full.length};}
+/* b149: the leads, pulled in full at 6 tokens each, so their live Buy Box / FBA / FBM prices are today's */
+async function apiConfirm(asins,domain,onStep){const cache=apiCache(),now=Date.now(),out=[];let spent=0;
+  for(let i=0;i<asins.length;i+=100){const part=asins.slice(i,i+100);if(onStep)onStep(i,asins.length);
+    const r=await fetch(WORKER+'/keepa?path=product&domain='+domain+'&stats=90&history=0&offers=20&rating=1&asin='+part.join(','));const j=await r.json();
     if(j.error)throw new Error(j.error.message||'Keepa refused');spent+=j.tokensConsumed||0;
-    (j.products||[]).forEach(p=>{const row=apiRow(p,domain);if(!row)return;cache[domain+'|'+p.asin]={at:now,row};out.push(row);});}
-  lsSet(API_CACHE_KEY,cache);return{rows:out,spent,fromCache:asins.length-ask.length};}
+    (j.products||[]).forEach(p=>{const row=apiRow(p,domain);if(!row)return;cache[domain+'|'+p.asin]={at:now,fresh:now,row};out.push(row);});}
+  lsSet(API_CACHE_KEY,apiTrim(cache));return{rows:out,spent};}
 /* every ASIN a saved filter finds today */
 async function apiAllAsins(selection,domain,onStep,limit){const all=[];let page=0,total=null,spent=0;
   while(true){const sel=Object.assign({},selection,{perPage:API_PAGE,page});if(onStep)onStep(all.length,total);

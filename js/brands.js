@@ -468,8 +468,8 @@ async function apiRunSource(){if(!cur||!isJack())return;const b=$('#apiRunBtn');
       estRun=API_PER_PAGE+limit*perProduct;}
     const msg=limit
       ?`"${cur.name}" finds ${total.toLocaleString()} products today — about ${est.toLocaleString()} tokens, more than the balance allows.\n\nRun the FIRST ${limit} instead (Keepa's own order, best first) for about ${estRun.toLocaleString()} tokens?\n\nBalance ${left.toLocaleString()} → about ${(left-estRun).toLocaleString()} after. Floor ${API_FLOOR}.`
-      :`Run "${cur.name}" through Keepa?\n\n${total.toLocaleString()} products today · about ${est.toLocaleString()} tokens`+(eu.length?` (includes ${eu.join(', ')} prices)`:'')+(cached?`\n${cached} of the first ${(c.asinList||[]).length} are cached from today, so it may cost less`:'')+`\n\nBalance ${left!=null?left.toLocaleString():'?'} → about ${left!=null?(left-est).toLocaleString():'?'} after. Floor ${API_FLOOR}.`;
-    if(!confirm(msg))return;
+      :`Run "${cur.name}" through Keepa?\n\n${total.toLocaleString()} products today · about ${est.toLocaleString()} tokens`+(eu.length?` (includes ${eu.join(', ')} prices)`:'')+(cached||plan.topUp.length?`\n${cached} of the first ${sample.length} are already here free${plan.topUp.length?`, ${plan.topUp.length} need only a 1-token refresh (averages still good)`:''}`:'')+`\n\nBalance ${left!=null?left.toLocaleString():'?'} → about ${left!=null?(left-est).toLocaleString():'?'} after. Floor ${API_FLOOR}.`;
+    if(!confirm(msg+(plan.topUp.length?`\n\nEvery product that comes out as a LEAD is then pulled in full (${API_PER_PRODUCT} tokens each) so its live Buy Box and FBA prices are today's.`:'')))return;
     const L=await apiAllAsins(t.selection,2,(n,tot)=>{b.textContent=`Listing… ${n}${tot?'/'+tot:''}`;},limit||0);
     const R=await apiRows(L.asins,2,(n,tot)=>{b.textContent=`Fetching ${n}/${tot} products…`;});
     /* the exclusions the API could not take (brand, root category, binding), from the product itself */
@@ -480,7 +480,23 @@ async function apiRunSource(){if(!cur||!isJack())return;const b=$('#apiRunBtn');
     if(cur.rule===1){files.viewer=f;files.UK=null;
       if(eu.length){const got=await eupFetch(f.asins,eu,(done,tot,mk)=>{b.textContent=`${mk} prices · ${done}/${tot}`;},rate());eu.forEach(m=>{files[m]=got[m];});}}
     else files.one=f;
-    touched.clear();paintSlots();warn([`${nm}: ${rows.length.toLocaleString()} products from Keepa (${L.total.toLocaleString()} matched${limit?`, the first ${limit} taken`:''}, ${L.asins.length-rows.length} excluded by brand / category) · ${(L.spent+R.spent).toLocaleString()} tokens spent · ${R.fromCache} came from today's cache`]);run();
+    touched.clear();paintSlots();
+    const saved=(R.toppedUp||0)*(API_PER_PRODUCT-1)+(R.fromCache||0)*API_PER_PRODUCT;
+    warn([`${nm}: ${rows.length.toLocaleString()} products from Keepa (${L.total.toLocaleString()} matched${limit?`, the first ${limit} taken`:''}, ${L.asins.length-rows.length} excluded by brand / category) · ${(L.spent+R.spent).toLocaleString()} tokens spent`
+      +` · ${R.fromCache} free from cache, ${R.toppedUp||0} refreshed for 1 token each (averages up to ${Math.round(API_STABLE_H/24)} days old), ${R.fullPulls||0} pulled in full`
+      +(saved?` · ${saved.toLocaleString()} tokens saved by caching`:'')]);run();
+    /* b149: any lead whose row was refreshed for 1 token has no live Buy Box / FBA price yet. Pull those in full and run again,
+       so every lead on the screen carries today's competition. Never below the floor: if the balance will not stretch, say so. */
+    {const byA={};rows.forEach(r=>byA[r.ASIN]=r);
+     const need=((result&&result.out)||[]).map(o=>o.ASIN).filter(a=>byA[a]&&byA[a].__avgAt);
+     if(need.length){const left=await eupBalance();const cost=need.length*API_PER_PRODUCT;
+       if(left!=null&&left-cost<API_FLOOR){warn([`${need.length} lead${need.length===1?'':'s'} still carry averages from up to ${Math.round(API_STABLE_H/24)} days ago and no live Buy Box or FBA price — confirming them would take the balance under the floor of ${API_FLOOR}. Check the live offer on Keepa before buying.`]);}
+       else{b.textContent=`Confirming ${need.length} leads…`;
+         const C=await apiConfirm(need,2,(n,tot)=>{b.textContent=`Live prices for leads · ${n}/${tot}`;});
+         const fresh={};C.rows.forEach(r=>fresh[r.ASIN]=r);
+         const merged=rows.map(r=>fresh[r.ASIN]||r);const sf=cur.rule===1?files.viewer:files.one;
+         sf.rows=merged;sf.asins=merged.map(r=>r.ASIN);
+         run();toast(`${need.length} leads confirmed with live prices · ${C.spent} tokens`);}}}
     toast(`Keepa run done — ${rows.length.toLocaleString()} products, ${(L.spent+R.spent).toLocaleString()} tokens`);
   }catch(e){toast('Keepa did not answer: '+String(e.message||e).slice(0,80)+' — nothing more was spent',true);}
   finally{b.disabled=false;paintApiRun();if(typeof paintTokens==='function')paintTokens();}}
@@ -862,8 +878,32 @@ function logRun(){const R=result,c={NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};R.out.fo
 
 /* ============ results ============ */
 function sumTile(v,l,cls){return`<div class="sum ${cls||''}"><span class="sv">${typeof v==='number'?v.toLocaleString():v}</span><span class="sl">${l}</span></div>`;}
+/* b147 (Jack, 22 Sep: "it's A2A, but if we find something profitable then we still want it").
+   Products Amazon sells nowhere are not leads — there is no buy price — but they are not rubbish either: they sell,
+   and we know what they fetch. So the run hands them over as a shopping list with the price to beat. */
+const OA_HDR=['ASIN','Title','Brand','Sells /mo','SPM from','Sell £','Sell from','Breakeven buy £','Buy under £ for 20%','Buy under £ for 30%','Keepa','UK sell link'];
+function paintOaTargets(){const res=$('#results');if(!res)return;let el=$('#oaTargets');
+  if(!el){el=document.createElement('div');el.id='oaTargets';el.className='oatarg';const anchor=$('#leadTop');
+    if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(el,anchor);else res.appendChild(el);
+    el.addEventListener('click',e=>{if(e.target.closest('#oaCsv')){const R=result;if(!R||!R.oa)return;
+        download(base()+'-OA-TARGETS.csv',rowsToCsv(OA_HDR,R.oa),'text/csv');toast(R.oa.length+' OA targets downloaded');return;}
+      if(e.target.closest('#oaMore')){el.classList.toggle('open');paintOaTargets();}});}
+  const list=(result&&result.oa)||[];
+  if(!list.length||result.stored){el.hidden=true;el.innerHTML='';return;}
+  el.hidden=false;
+  const open=el.classList.contains('open');
+  const rows=(open?list:list.slice(0,5)).map(o=>`<tr><td class="p"><a href="${o.Keepa}" target="_blank" rel="noopener">${escapeHtml((o.Title||'').slice(0,62))}</a><span class="a">${o.ASIN}</span></td>
+    <td class="n">${(+o['Sells /mo']).toLocaleString()}<span class="s">/mo</span></td>
+    <td class="n">${gbp(o['Sell £'])}<span class="s">${escapeHtml(shortSell(o['Sell from']))}</span></td>
+    <td class="n want">${gbp(o['Buy under £ for 20%'])}<span class="s">for 20%</span></td>
+    <td class="n">${gbp(o['Breakeven buy £'])}<span class="s">breakeven</span></td></tr>`).join('');
+  el.innerHTML=`<div class="oah"><b>${list.length} sell well, but Amazon is not selling them anywhere</b>
+      <span>Not leads — there is no buy price yet. Find one under the target and they are. Ordered by what they sell.</span>
+      <button type="button" class="btn ghost sm" id="oaCsv">Download the list</button></div>
+    <table class="oatbl"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"></colgroup><thead><tr><th>Product</th><th class="r">Sells</th><th class="r">Sell for</th><th class="r">Buy under</th><th class="r">Breakeven</th></tr></thead><tbody>${rows}</tbody></table>
+    ${list.length>5?`<button type="button" class="linkbtn" id="oaMore">${open?'Show fewer':'Show all '+list.length}</button>`:''}`;}
 function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=true;$('#results').hidden=false;
-  paintOptionBar();paintPastBar();paintEuLeads();
+  paintOptionBar();paintPastBar();paintEuLeads();paintOaTargets();
   const rev=out.filter(o=>o.QUEUE).length;let tiles;
   if(cur.rule===1){const cnt=k=>out.filter(o=>o['Buy market']===k).length,euN=out.length-cnt('UK');
     tiles=sumTile(st.viewer,'in the Viewer')+sumTile(st.demand,'sell 10+/mo in the UK')+sumTile(st.buy,'Amazon selling it')+sumTile(out.length,'leads','lead')

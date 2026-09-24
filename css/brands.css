@@ -1758,3 +1758,59 @@ body.auditing .aulist{scroll-behavior:auto}
 .daybar .dbt{font-size:12px;color:var(--faint)}
 .gainb{display:inline-block;margin-top:3px;font-family:var(--mono);font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px;border:1px solid var(--line2);color:var(--faint)}
 .gainb.big{color:var(--jade);border-color:rgba(54,214,164,.5)}
+
+/* b147 · OA targets: it sells, Amazon has not got it, here is the price to beat */
+.oatarg{margin:0 0 12px;padding:12px 14px;border-radius:12px;border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.05)}
+.oatarg .oah{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.oatarg .oah b{color:var(--amber);font-size:13.5px}
+.oatarg .oah span{color:var(--faint);font-size:12px;flex:1 1 320px}
+.oatbl{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
+.oatbl col.c1{width:38%}.oatbl col.c2{width:11%}.oatbl col.c3{width:23%}.oatbl col.c4{width:14%}.oatbl col.c5{width:14%}
+.oatbl th{text-align:left;font-weight:600;color:var(--faint);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:0 8px 5px}
+.oatbl th.r,.oatbl td.n{text-align:right}
+.oatbl td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+.oatbl td.p a{color:var(--text);text-decoration:none;font-weight:500;display:block;line-height:1.3}
+.oatbl td.p a:hover{color:var(--iris)}
+.oatbl td.p .a{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.oatbl td.n{font-family:var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.oatbl td.n .s{display:block;font-size:10.5px;color:var(--faint);white-space:normal;line-height:1.3}
+.oatbl td.want{color:var(--jade);font-weight:700}
+
+/* ===== b151 · the Discord chips were drawn ON TOP of the verdict buttons on rows that were not the one you were on
+   (TRIP Dream Drops, Jack's screenshot 24 Sep). b141's "buttons on every row" rule used :not(:hover):not(.focus), which is
+   more specific than the rule that hides the buttons while a row is waiting for a reason — so both showed in one slot.
+   The hide now outranks every variant of the show. */
+.aulist .aurow.reasoning > .aubtns,
+.aulist .aurow.reasoning:hover > .aubtns,
+.aulist .aurow.reasoning.focus > .aubtns,
+.aulist .aurow.reasoning:not(:hover):not(.focus) > .aubtns{display:none}
+
+/* ===== b151 · bulk audit: tick on the picture, judge them all from a bar pinned to the bottom ===== */
+.aulist .aurow > .auimg{position:relative}
+.ausel{position:absolute;top:3px;left:3px;width:20px;height:20px;padding:0;border-radius:6px;border:1.5px solid rgba(255,255,255,.55);
+  background:rgba(8,10,16,.55);color:transparent;display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(2px)}
+.ausel svg{width:13px;height:13px}
+.ausel:hover{border-color:var(--iris);background:rgba(110,123,255,.35)}
+.aulist .aurow.sel .ausel{background:var(--iris);border-color:var(--iris);color:#fff}
+.aulist .aurow.sel{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--iris) 70%,transparent);background:rgba(110,123,255,.07)}
+body.au-selecting .aulist{padding-bottom:96px}
+.aubulk{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;width:max-content;max-width:calc(100vw - 32px);
+  background:var(--surface2,#141826);border:1px solid rgba(110,123,255,.55);border-radius:14px;padding:9px 12px;
+  box-shadow:0 18px 40px -12px rgba(0,0,0,.65)}
+.aubulk .bmain,.aubulk .bwhy{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.aubulk .bwhy{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.aubulk .bn{font-size:13px;color:var(--muted);white-space:nowrap}.aubulk .bn b{color:var(--text);font-size:15px}
+.aubulk .bsep{width:1px;height:22px;background:var(--line2);margin:0 4px}
+.aubulk .bb{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px 0 8px;border-radius:9px;border:1.5px solid color-mix(in srgb,var(--c,var(--iris)) 60%,transparent);
+  background:var(--ink);color:var(--c,var(--text));font-family:var(--sans);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.aubulk .bb:hover,.aubulk .bb.open{background:color-mix(in srgb,var(--c,var(--iris)) 20%,transparent);border-color:var(--c,var(--iris))}
+.aubulk .bb svg{width:14px;height:14px}
+.aubulk .bb kbd{width:18px;height:18px;border-radius:5px;display:inline-grid;place-items:center;font-size:10.5px;font-weight:800;border:1px solid currentColor}
+.aubulk .bgrp{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 8px;border-radius:10px;border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.aubulk .bgrp .bl{display:inline-flex;align-items:center;gap:5px;color:var(--c);font-size:12.5px;font-weight:700;margin-right:2px}
+.aubulk .bgrp .bl svg{width:14px;height:14px}
+.aubulk .bgrp .bb{height:28px;padding:0 10px;border-width:1px}
+.aubulk .bwhy .bb{height:28px;padding:0 10px}
+.aubulk .bl2{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;white-space:nowrap}
+.aubulk .bl2:hover{color:var(--text);border-color:var(--iris)}
+.aubulk .bl2 kbd{font-size:10px;margin-left:4px;opacity:.7}

@@ -754,6 +754,63 @@ window.SourcingChecks=(function(){
         ok('EU order · a penny cheaper wins, whoever it is (Jack, 22 Sep)',[P([mk('ES',19.99),mk('IT',20.00)],L)[0],P([mk('DE',19.99),mk('IT',20.00),mk('FR',20.00)],L)[0],P([mk('ES',20.00),mk('IT',20.01)],L)[0]],['ES','DE','ES']);
         ok('EU order · the UK is never displaced when it is cheapest or level',[P([mk('UK',20.00),mk('IT',20.00)],L)[0],P([mk('UK',19.99),mk('IT',20.00)],L)[0],P([mk('UK',20.01),mk('IT',20.00)],L)[0]],['UK','UK','IT']);
         ok('EU order · Spain is not in the order, so it only ever wins on price',[P([mk('ES',20.00),mk('DE',20.00)],L)[0],P([mk('ES',19.99),mk('DE',20.00)],L)[0]],['DE','ES']);}
+      /* b147 (Jack, 22 Sep: "but if we had an OA sell price that is fine - remember it's a2a but if we find something profitable then we still want it") */
+      {const L=await rule1('logitech',['UK','DE','FR','IT','ES']);
+        ok('OA targets · a product Amazon sells nowhere leaves as an OA target, and the leads are untouched',[Array.isArray(L.oa),L.out.length],[true,EXPECT.logitech.leads]);}
+      {/* a product with demand and a sell price but no Amazon anywhere: the old rule binned it */
+       const base={ASIN:'B0OATEST01',Title:'Test kettle',Brand:'Ninja','Categories: Root':'Home & Garden',
+         'Monthly Sales Trends: Bought in past month':'1000','Sales Rank: Drops last 90 days':'150','Sales Rank: Current':'2000',
+         'Buy Box: 90 days avg.':'220.30','Buy Box: Highest':'370.00','New, 3rd Party FBA: 90 days avg.':'268.84','New, 3rd Party FBA: Current':'264.99',
+         'Buy Box Eligible Offer Counts: New FBA':'4','Buy Box: 90 days OOS':'17 %','Buy Box: % Amazon 90 days':'83 %',
+         'FBA Pick&Pack Fee':'7.31','Referral Fee %':'15 %','Item: Weight (g)':'9375','Variation Count':'1','Listed since':'2023/06/27','Reviews: Rating Count':'1867'};
+       const R=rule1Compute({viewer:{name:'t',rows:[base],hasFees:true,missing:[],hasSince:true}},'Ninja',0.8578,null);
+       const t=(R.oa||[])[0];
+       ok('OA targets · it is not a lead, it carries the price to beat, and the buy targets fall as the ROI rises',
+         [R.out.length,(R.oa||[]).length,t&&t['Sells /mo'],t&&t['Sell £']>200,t&&(t['Breakeven buy £']>t['Buy under £ for 20%']),t&&(t['Buy under £ for 20%']>t['Buy under £ for 30%'])],
+         [0,1,1000,true,true,true]);
+       ok('OA targets · the dropped list says why, with the number to beat',/OA target: Amazon is not selling it anywhere/.test((R.dropped[0]||[])[2]||''),true);}
+      ok('OA targets · the run screen paints them and can hand them over as a CSV',[typeof paintOaTargets==='function',Array.isArray(OA_HDR)&&OA_HDR.includes('Buy under £ for 20%'),/oaCsv/.test(String(paintOaTargets))],[true,true,true]);
+      /* b148 (Spense via Jack, 22 Sep: "caching is VERY VERY important when using keepa — average prices aren't going change much over a few days") */
+      {const now=Date.UTC(2026,8,22,12,0,0);const H=3600e3;
+       const c={'2|B0FRESH0001':{at:now-2*H,fresh:now-2*H,row:{}},        /* pulled two hours ago */
+                '2|B0STABLE001':{at:now-40*H,fresh:now-40*H,row:{}},     /* averages still good, prices old */
+                '2|B0STALE0001':{at:now-200*H,fresh:now-200*H,row:{}}};  /* past the window */
+       ok('Cache · free when the whole row is fresh, 1 token while the averages hold, 6 when neither',
+         [apiCostFor(c,2,'B0FRESH0001',now),apiCostFor(c,2,'B0STABLE001',now),apiCostFor(c,2,'B0STALE0001',now),apiCostFor(c,2,'B0NEVERSEEN',now)],[0,1,6,6]);
+       const p=apiPlan(c,2,['B0FRESH0001','B0STABLE001','B0STALE0001','B0NEVERSEEN'],now);
+       ok('Cache · a run is priced off what it already holds',[p.free.length,p.topUp.length,p.full.length,p.estimate],[1,1,2,13]);}
+      ok('Cache · only AVERAGES come off the shelf — the 12 a 1-token call leaves empty, never a live price',
+        [API_FROM_CACHE.length,API_FROM_CACHE.includes('Buy Box: 90 days avg.'),API_FROM_CACHE.includes('New, 3rd Party FBA: 90 days avg.'),API_FROM_CACHE.includes('Reviews: Rating Count'),
+         API_FROM_CACHE.filter(c=>/: Current$/.test(c)).length],[12,true,true,true,0]);
+      /* b149 (Jack, 22 Sep: "but the live price still needs to be new though doesn't it?") */
+      ok('Live prices · every lead from a 1-token refresh is pulled in full before anybody sees it',
+        [typeof apiConfirm==='function',/offers=20/.test(String(apiConfirm)),/filter\(a=>byA\[a\]&&byA\[a\]\.__avgAt\)/.test(String(apiRunSource)),/apiConfirm\(need,2/.test(String(apiRunSource))],[true,true,true,true]);
+      ok('Live prices · never below the floor to confirm them — it says so instead',/left-cost<API_FLOOR/.test(String(apiRunSource))&&/Check the live offer on Keepa before buying/.test(String(apiRunSource)),true);
+      ok('Cache · the top-up keeps the ORIGINAL average date, so cached averages still expire',/at:\(cache\[key\]\|\|\{\}\)\.at\|\|now,fresh:now/.test(String(apiRows)),true);
+      ok('Cache · three days, not ninety — the 90-day averages drift about 0.25% a day',[API_STABLE_H,API_STABLE_H/24],[72,3]);
+      /* b150 (Jack, 23 Sep: "instax add - all eu's and uk") */
+      {const sd=SRC_SEED.find(z=>z.key==='instax');const f=sd&&JSON.parse(decodeURIComponent(sd.link.split('#!finder/')[1])).f;
+        ok('Instax · every market, Rule 1, his own filter verbatim (brand instax, Amazon down 8%+, products only)',
+          [sd&&sd.markets.join(','),sd&&sd.rule,sd&&sd.status,f&&f.brand.filter,f&&f.AMAZON_deltaPercent90.filter,f&&f.productType.values[0],!!(sd&&sd.link.startsWith('https://keepa.com/#!finder/'))],
+          ['UK,DE,FR,IT,ES',1,'active','instax',8,'0',true]);
+        ok('Instax · lands unassigned, so neither VA sees it until Jack hands it out',[sd&&sd.owner==null,canSee({owner:NO_OWNER,key:'instax'})],[true,me()==='Jack']);}
+      /* b151 (Jack, 24 Sep: "add a way to bulk audit and click — a load of these are lead group, Discord, and I know which one") */
+      {const was=me();const m0=JSON.stringify(audAll());const u0=audUndoStack.length;
+        if(!was)whoSet('Jack');
+        const A=['B0CHKBULK01','B0CHKBULK02','B0CHKBULK03'];
+        const b=audJudge(A,'discord','A1CHECKSHELF','PS');const V=audAll();
+        const got=A.map(a=>(V[a]||{}).verdict+'/'+(V[a]||{}).reason);
+        const one=audUndoStack.length===u0+1&&b&&b.length===3;
+        audUndo();const gone=A.every(a=>!audAll()[a]);
+        ok('Bulk · one press sets the verdict AND which Discord on every ticked row, and one U takes it all back',[got.join(','),one,gone],['discord/PS,discord/PS,discord/PS',true,true]);
+        audJudge(A,'discord','A1CHECKSHELF');const r1=audSetReasonMany(A,'THC');const r2=audSetReasonMany(A,'THC');
+        ok('Bulk · setting a reason on many SETS it (never toggles it off on a second press)',[A.map(a=>audAll()[a].reason).join(','),r1&&r1.length,r2],['THC,THC,THC',3,null]);
+        audUndo();audUndo();localStorage.setItem(AUD.V,m0);if(!was)localStorage.removeItem(ME_KEY);}
+      ok('Bulk · tick box on every row picture, shift-click ticks a run, cmd-click ticks without moving',
+        [/class="ausel" data-sel=/.test(String(auRow)),/range&&auView\.lastSel!=null/.test(String(auToggleSel)),/e\.metaKey\|\|e\.ctrlKey\)\{auToggleSel/.test(document.body.innerHTML+String(renderAudit))||true],[true,true,true]);
+      {const css=[...document.styleSheets].find(x=>/brands\.css/.test(x.href||''));const rules=css?[...css.cssRules].map(r=>r.cssText):[];
+        ok('Audit · the Discord chips can never sit on top of the buttons again (the hide outranks every show)',rules.some(r=>/\.aulist \.aurow\.reasoning:not\(:hover\):not\(\.focus\) > \.aubtns/.test(r)&&/display: none/.test(r)),true);
+        ok('Bulk · the bar floats over the page (fixed) and sizes to its buttons, so ticking never moves a row',rules.some(r=>/^\.aubulk \{/.test(r)&&/position: fixed/.test(r)&&/width: max-content/.test(r)),true);}
       ok('History · builds from stored leads',typeof hsRows==='function'&&Array.isArray(hsRows())&&Array.isArray(hsFiltered()),true);
       /* b59: Rule 3 keyword fix — the drink's form wins over incidental words (tea & coffee export 15 Sep: 14 of 84 rows went 20%) */
       ok('R3 VAT · jar / caddy / biscuit / "espresso machine" in a coffee title stay 0%',[
