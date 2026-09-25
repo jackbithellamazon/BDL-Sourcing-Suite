@@ -23,7 +23,7 @@
    ============================================================================ */
 const AUTH_KEY='bdl-sourcing-session';
 /* who an address belongs to. An address not listed reads its name from the part before the @. */
-const AUTH_NAMES={'jackbithellamazon@gmail.com':'Jack'};
+const AUTH_NAMES={'jackbithellamazon@gmail.com':'Jack','jack@bdl.local':'Jack'};
 /* ============================================================================
    b153 — THE LOCK (Jack, 25 Sep: "build it then please" — "I want to put a lock in so everyone has to log in, and a magic link
    to send my VAs instead of them logging in"; "ideally I log in with just my login, then a magic link so it's all good on their
@@ -42,7 +42,7 @@ const AUTH_NAMES={'jackbithellamazon@gmail.com':'Jack'};
    ============================================================================ */
 const TEAM_KEY='bdl-sourcing-team',LOCK_KEY='bdl-sourcing-lock',SIGNIN_KEY='bdl-sourcing-signins';
 function teamAll(){const t=lsGet(TEAM_KEY,null);
-  const base=[{name:'Jack',email:'jackbithellamazon@gmail.com'},{name:'Suz',email:''},{name:'Mera',email:''}];
+  const base=[{name:'Jack',email:'jack@bdl.local'},{name:'Suz',email:''},{name:'Mera',email:''}];   /* b156: Jack's own login on the project */
   if(!Array.isArray(t))return base;
   return base.map(b=>Object.assign({},b,t.find(x=>x&&x.name===b.name)||{}));}
 function teamSave(list){if(guestOn()){toast('Guest mode — the Team list is not changed from here. Leave guest mode first.',true);return;}lsSet(TEAM_KEY,list);if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('team',list)]);}
@@ -68,17 +68,18 @@ function lockCheck(){const on=lockOn(),n=authedName();
   if(!shut){if(el)el.hidden=true;return;}
   if(!el){el=document.createElement('div');el.id='lockScreen';el.className='lockscreen';document.body.appendChild(el);
     el.addEventListener('click',async e=>{const b=e.target.closest('#lkSend');if(!b)return;
-      const i=document.getElementById('lkEmail'),m=document.getElementById('lkMsg'),v=(i.value||'').trim();
-      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){m.textContent='That does not look like an email address.';m.className='lkmsg bad';return;}
-      b.disabled=true;b.textContent='Sending…';m.textContent='';
-      try{await authSendLink(v);m.innerHTML=`Check <b>${escapeHtml(v)}</b> — open the link on this computer and you're in.`;m.className='lkmsg good';}
-      catch(err){m.textContent=/not allowed|not found|signups/i.test(String(err.message||''))?'That address has not been invited yet — ask Jack.':String(err.message||err);m.className='lkmsg bad';}
-      b.disabled=false;b.textContent='Send me a link';});
-    el.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='lkEmail'){e.preventDefault();document.getElementById('lkSend').click();}});}
+      const i=document.getElementById('lkEmail'),p=document.getElementById('lkPass'),m=document.getElementById('lkMsg'),v=(i.value||'').trim(),pw=p?p.value:'';
+      b.disabled=true;b.textContent=pw?'Signing in…':'Sending…';m.textContent='';
+      try{const got=await authSubmit(v,pw);if(got==='sent'){m.innerHTML=`Check <b>${escapeHtml(v)}</b> — open the link on this computer and you're in.`;m.className='lkmsg good';}}
+      catch(err){m.textContent=/not allowed|not found|signups/i.test(String(err.message||''))?'That address has not been set up yet — ask Jack.':String(err.message||err);m.className='lkmsg bad';}
+      b.disabled=false;b.textContent=(p&&p.value)?'Sign in':'Send me a link';});
+    el.addEventListener('input',e=>{if(e.target.id==='lkPass'){const b=document.getElementById('lkSend');if(b)b.textContent=e.target.value?'Sign in':'Send me a link';}});
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='lkEmail'||e.target.id==='lkPass')){e.preventDefault();document.getElementById('lkSend').click();}});}
   el.hidden=false;
   el.innerHTML=`<div class="lkcard"><div class="lklogo"><span class="lkmark"></span><b>BDL</b> <em>Sourcing</em></div>
-    <h1>Sign in to carry on</h1><p>Type your work email and we'll send you a one-click link. No password, and it keeps you signed in on this computer.</p>
-    <div class="lkrow"><input type="email" id="lkEmail" placeholder="you@…" autocomplete="email" spellcheck="false" autofocus><button type="button" class="btn primary" id="lkSend">Send me a link</button></div>
+    <h1>Sign in to carry on</h1><p><b>Suz and Mera:</b> open the sign-in link Jack sent you — it signs this computer in and keeps it signed in. No link? Ask Jack for one.<br><b>Jack:</b> your email and password.</p>
+    <div class="lkrow"><input type="email" id="lkEmail" placeholder="you@…" autocomplete="username" spellcheck="false" autofocus></div>
+    <div class="lkrow lkrow2"><input type="password" id="lkPass" placeholder="Password — only if you have one" autocomplete="current-password"><button type="button" class="btn primary" id="lkSend">Send me a link</button></div>
     <div class="lkmsg" id="lkMsg"></div></div>`;
   setTimeout(()=>{const i=document.getElementById('lkEmail');if(i)i.focus();},60);}
 function authBase(){return(typeof CLOUD!=='undefined'&&CLOUD.url?CLOUD.url:'')+'/auth/v1';}
@@ -103,8 +104,51 @@ async function authSendLink(email){
   if(!r.ok){let msg='';try{const j=await r.json();msg=j.msg||j.error_description||j.message||'';}catch(e){}
     throw new Error(msg||('Supabase said no ('+r.status+')'));}
   return true;}
+/* b156 (Jack, 25 Sep: "I am jack@bdl.local — that is my login anyway"). His login on the shared project is a password account,
+   and .local has no inbox, so a link could never reach it. So: password in for him, one-click links for the VAs — the same
+   Supabase account either way, and only the session is kept (never the password). */
+function authNoInbox(email){return/\.local$/i.test(String(email||'').trim());}
+async function authPassword(email,password){
+  const r=await fetch(authBase()+'/token?grant_type=password',{method:'POST',headers:{apikey:authKey(),'Content-Type':'application/json'},
+    body:JSON.stringify({email:String(email||'').trim().toLowerCase(),password:String(password||'')})});
+  if(!r.ok){let msg='';try{const j=await r.json();msg=j.error_description||j.msg||j.message||'';}catch(e){}
+    throw new Error(/invalid login credentials|invalid_grant/i.test(msg)?'Wrong email or password.':(msg||('Supabase said no ('+r.status+')')));}
+  const j=await r.json();
+  if(!(await authStore({access_token:j.access_token,refresh_token:j.refresh_token,expires_in:j.expires_in})))throw new Error('Signed in, but your account could not be read — try again.');
+  authAfterSignIn();return true;}
+function authAfterSignIn(){const n=authedName();
+  if(n&&typeof lsSet==='function'&&typeof me==='function'&&me()!==n)lsSet(ME_KEY,n);
+  if(typeof whoPaint==='function')whoPaint();if(typeof paintJackOnly==='function')paintJackOnly();
+  if(typeof whoGate==='function')whoGate(false);lockCheck();if(typeof paintAuthBox==='function')paintAuthBox();
+  if(typeof renderList==='function')renderList();if(n&&typeof toast==='function')toast('Signed in as '+n);}
+/* one box, two ways in: with a password you are in now; without one, the one-click link is sent */
+async function authSubmit(email,password){email=String(email||'').trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))throw new Error('That does not look like an email address.');
+  if(password){await authPassword(email,password);return'in';}
+  if(authNoInbox(email))throw new Error(email+' has no inbox, so a link cannot reach it — type your password too.');
+  await authSendLink(email);return'sent';}
+/* b156 (Jack, 25 Sep: "I want to copy and send a magic link to them — I send the URL and they are auto logged in").
+   The Worker (v3) holds the project's admin key and makes a one-time code, for Team emails only and only when Jack asks.
+   The link is the app address + #join=<code>. Chat apps that preview links never see the part after #, so Discord can't
+   use the code up before Suz clicks it; the page itself trades it for a sign-in when it opens. */
+async function authMakeLink(email){
+  if(guestOn())throw new Error('Guest mode — no sign-in links are made. Leave guest mode first.');
+  await authRefresh();const s=authSession();if(!s)throw new Error('Sign yourself in first (above).');
+  const r=await fetch(WORKER+'/auth/link',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.access_token},body:JSON.stringify({email})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.ok||!j.token_hash)throw new Error(j.error||('The Worker said no ('+r.status+')'));
+  return location.origin+location.pathname+'#join='+encodeURIComponent(j.token_hash);}
+async function authFromJoin(){const m=/[#&]join=([^&]+)/.exec(location.hash||'');if(!m)return false;
+  const token_hash=decodeURIComponent(m[1]);try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  for(const type of['magiclink','email']){
+    try{const r=await fetch(authBase()+'/verify',{method:'POST',headers:{apikey:authKey(),'Content-Type':'application/json'},body:JSON.stringify({type,token_hash})});
+      if(!r.ok)continue;const j=await r.json();if(!j.access_token)continue;
+      const ok=await authStore({access_token:j.access_token,refresh_token:j.refresh_token,expires_in:j.expires_in||3600});
+      if(ok){setTimeout(()=>{if(typeof toast==='function')toast('Signed in as '+authedName()+' — welcome');},400);return true;}}catch(e){}}
+  setTimeout(()=>{if(typeof toast==='function')toast('That sign-in link has been used or has run out — ask Jack for a new one',true);},400);
+  return false;}
 /* the link comes back as #access_token=…&refresh_token=… — take it, store it, tidy the address bar */
-async function authFromHash(){const h=location.hash||'';if(!/access_token=/.test(h))return false;
+async function authFromHash(){const h=location.hash||'';if(/[#&]join=/.test(h))return authFromJoin();if(!/access_token=/.test(h))return false;
   const q={};h.replace(/^#/,'').split('&').forEach(p=>{const i=p.indexOf('=');if(i>0)q[decodeURIComponent(p.slice(0,i))]=decodeURIComponent(p.slice(i+1));});
   if(!q.access_token)return false;
   const ok=await authStore({access_token:q.access_token,refresh_token:q.refresh_token,expires_in:+q.expires_in||3600});

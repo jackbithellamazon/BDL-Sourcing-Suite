@@ -889,6 +889,40 @@ window.SourcingChecks=(function(){
         ok('Guest · no sign-in emails and no lock switch from guest mode',[/Guest mode/.test(sendErr),lock],[true,false]);}
       ok('Guest · the snapshot leaves the sign-in session and the Keepa caches alone (Supabase rotates the session; the caches cost tokens)',['bdl-sourcing-session','bdl-sourcing-api-rows','bdl-sourcing-eu-price'].every(k=>GUEST_SKIP.includes(k))&&!guestKeys().includes('bdl-sourcing-session'),true);
       ok('Guest · viewing as Suz or Mera is not overridden by the signed-in name',[/!guestOn\(\)&&typeof me/.test(String(lockCheck)),/if\(!guestOn\(\)&&typeof lsSet/.test(String(authBoot)),/&&!guestOn\(\)\)\{/.test(String(whoSet))],[true,true,true]);
+      /* b156 (Jack, 25 Sep: "I am jack@bdl.local — that is my login anyway") */
+      ok('Sign-in · jack@bdl.local is Jack, and a .local address has no inbox',[authNameFor('jack@bdl.local'),authNoInbox('jack@bdl.local'),authNoInbox('suz@gmail.com')],['Jack',true,false]);
+      {const realFetch=window.fetch,calls=[],keep={s:localStorage.getItem('bdl-sourcing-session'),si:localStorage.getItem(SIGNIN_KEY),m:me()};let noPw='',dump='';
+        try{window.fetch=async(u,o)=>{u=String(u);calls.push(u.replace(/^https?:\/\/[^/]+/,'').split('?')[0]);
+            if(/grant_type=password/.test(u))return new Response(JSON.stringify({access_token:'AT',refresh_token:'RT',expires_in:3600}),{status:200});
+            if(/\/auth\/v1\/user$/.test(u))return new Response(JSON.stringify({id:'u1',email:'jack@bdl.local',user_metadata:{}}),{status:200});
+            return new Response('{}',{status:200});};
+          try{await authSubmit('jack@bdl.local','');}catch(e){noPw=e.message;}
+          const before=calls.length;localStorage.removeItem('bdl-sourcing-session');
+          await authSubmit('jack@bdl.local','pw-check-7731');
+          dump=Object.keys(localStorage).map(k=>localStorage.getItem(k)).join('|');
+          ok('Sign-in · no password on a .local address = a plain message, and no link is asked for',[/no inbox/.test(noPw),before],[true,0]);
+          ok('Sign-in · a password goes to Supabase\'s sign-in only, you come back as Jack, and the password is never kept',[calls.slice(before),authedName(),dump.includes('pw-check-7731')],[['/auth/v1/token','/auth/v1/user'],'Jack',false]);
+        }finally{window.fetch=realFetch;const put=(k,v)=>v==null?localStorage.removeItem(k):localStorage.setItem(k,v);put('bdl-sourcing-session',keep.s);put(SIGNIN_KEY,keep.si);lsSet(ME_KEY,keep.m);lockCheck();}}
+      {const realFetch=window.fetch,keep={s:localStorage.getItem('bdl-sourcing-session'),t:localStorage.getItem(TEAM_KEY),si:localStorage.getItem(SIGNIN_KEY),m:me(),u:location.pathname+location.search+location.hash};let noSess='',link='',joined=null,who='',used=null,urlAfter='';
+        try{window.fetch=async(u,o={})=>{u=String(u);
+            if(u.endsWith('/auth/link'))return new Response(JSON.stringify({ok:true,token_hash:'pkce_CHECK1'}),{status:200});
+            if(/\/verify$/.test(u)){const b=JSON.parse(o.body);return b.token_hash==='pkce_CHECK1'?new Response(JSON.stringify({access_token:'S1',refresh_token:'R',expires_in:3600}),{status:200}):new Response('{}',{status:400});}
+            if(/\/auth\/v1\/user$/.test(u))return new Response(JSON.stringify({id:'s',email:'suz@bdl.local'}),{status:200});
+            return new Response('{}',{status:404});};
+          lsSet(TEAM_KEY,[{name:'Jack',email:'jack@bdl.local'},{name:'Suz',email:'suz@bdl.local'},{name:'Mera',email:''}]);
+          localStorage.removeItem('bdl-sourcing-session');try{await authMakeLink('suz@bdl.local');}catch(e){noSess=e.message;}
+          lsSet('bdl-sourcing-session',{access_token:'J',refresh_token:'R',at:Date.now(),expires_in:3600,user:{id:'j',email:'jack@bdl.local',name:'Jack'}});
+          link=await authMakeLink('suz@bdl.local');
+          localStorage.removeItem('bdl-sourcing-session');history.replaceState(null,'',location.pathname+'#join=pkce_CHECK1');joined=await authFromHash();who=authedName();urlAfter=location.hash;
+          localStorage.removeItem('bdl-sourcing-session');history.replaceState(null,'',location.pathname+'#join=pkce_USED');used=await authFromHash();
+        }finally{window.fetch=realFetch;const put=(k,v)=>v==null?localStorage.removeItem(k):localStorage.setItem(k,v);put('bdl-sourcing-session',keep.s);put(TEAM_KEY,keep.t);put(SIGNIN_KEY,keep.si);lsSet(ME_KEY,keep.m);history.replaceState(null,'',keep.u);}
+        ok('Links · Copy link needs Jack signed in, and makes the app address + #join=<one-time code>',[/Sign yourself in/.test(noSess),/#join=pkce_CHECK1$/.test(link)],[true,true]);
+        ok('Links · opening it signs Suz in as Suz and tidies the address; a used link is refused',[joined,who,urlAfter,used],[true,'Suz','',false]);}
+      {const tb=document.createElement('table');tb.className='btbl';tb.style.cssText='position:absolute;left:-9999px';tb.innerHTML='<tbody><tr><td><select class="inl ownsel o-suz"><option>Suz</option></select><span class="whochip o-mera">Mera</span></td></tr></tbody>';document.body.appendChild(tb);
+        const root=getComputedStyle(document.documentElement),hex=v=>root.getPropertyValue(v).trim().toLowerCase();
+        const rgb=h=>{const n=parseInt(h.slice(1),16);return`rgb(${n>>16&255}, ${n>>8&255}, ${n&255})`;};
+        const got=[getComputedStyle(tb.querySelector('.ownsel')).color,getComputedStyle(tb.querySelector('.whochip')).color];tb.remove();
+        ok('People · owner and name chips wear the person\'s own colour, and no person shares a status colour',[got[0]===rgb(hex('--p-suz')),got[1]===rgb(hex('--p-mera')),['--p-jack','--p-suz','--p-mera','--p-vas'].map(hex).some(c=>['--coral','--amber','--jade'].map(hex).includes(c))],[true,true,false]);}
       ok('History · builds from stored leads',typeof hsRows==='function'&&Array.isArray(hsRows())&&Array.isArray(hsFiltered()),true);
       /* b59: Rule 3 keyword fix — the drink's form wins over incidental words (tea & coffee export 15 Sep: 14 of 84 rows went 20%) */
       ok('R3 VAT · jar / caddy / biscuit / "espresso machine" in a coffee title stay 0%',[

@@ -2008,3 +2008,47 @@ body.au-selecting .toast{bottom:calc(var(--bulk-h,56px) + 30px)}   /* b153: sit 
 .cloudpill.guest{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 50%,transparent);background:var(--amber-dim)}.cloudpill.guest i{background:var(--amber)}
 .scope.gon{color:var(--amber);border-color:rgba(251,191,36,.45);background:var(--amber-dim)}
 .guestbox .glist{margin:4px 0 14px 18px;padding:0;color:var(--muted);font-size:13px;line-height:1.65}
+
+/* ===== b156 · password sign-in for Jack (jack@bdl.local), links for the VAs ===== */
+.authsend input[type=password]{flex:0 1 180px}
+.lkrow2{margin-top:8px}
+.wgmail + .wgmail{margin-top:0}
+.teambox .tpw{display:inline-flex;align-items:center;height:30px;padding:0 10px;border-radius:8px;border:1px dashed var(--line2);color:var(--faint);font-size:12px;white-space:nowrap}
+
+/* ===== b156 · Brands list visual pass (Jack, 25 Sep: "improve ui ux design visually") =====
+   Colour kept, craft improved. Rows sit on the normal surface; the state shows as a crisp rail plus a short fade of its colour
+   from the left edge (the whole-row tint made thirty due rows one maroon wall). Owners finally wear their own colour — the
+   o-* classes were always there but `.btbl select.inl{background:transparent}` beat them. The review count is a chip, because
+   it is the thing to act on. Only Run is a filled button; the other three are quiet until you point at them. No glows. */
+.btbl tbody tr[data-key] td{transition:background-color .18s var(--ease),border-color .18s var(--ease)}
+.btbl tr.isdue td,.btbl tr.islate td{background:var(--surface2)}
+.btbl tr.isdue td:first-child{background:linear-gradient(90deg,color-mix(in srgb,var(--coral) 10%,var(--surface2)) 0,var(--surface2) 72%);box-shadow:inset 3px 0 0 color-mix(in srgb,var(--coral) 55%,transparent)}
+.btbl tr.islate td:first-child{background:linear-gradient(90deg,color-mix(in srgb,var(--coral) 18%,var(--surface2)) 0,var(--surface2) 78%);box-shadow:inset 3px 0 0 var(--coral)}
+.btbl tr.isfirst td:first-child{box-shadow:inset 3px 0 0 color-mix(in srgb,var(--coral) 38%,transparent)}
+.btbl tr.isdone td{background:var(--surface2)}
+.btbl tr.isdone td:first-child{background:linear-gradient(90deg,color-mix(in srgb,var(--jade) 12%,var(--surface2)) 0,var(--surface2) 72%);box-shadow:inset 3px 0 0 var(--jade)}
+.btbl tbody tr[data-key]:hover td,.btbl tbody tr[data-key].isdue:hover td{background:var(--raise)}
+/* owner = that person's colour */
+.btbl select.inl.ownsel{border-style:solid;border-width:1px}
+/* the person colours, everywhere a name appears (who chips, owner, Team) */
+.o-jack{--pc:var(--p-jack)}.o-suz{--pc:var(--p-suz)}.o-mera{--pc:var(--p-mera)}.o-vas{--pc:var(--p-vas)}
+.o-jack,.o-suz,.o-mera,.o-vas{color:var(--pc);background:color-mix(in srgb,var(--pc) 14%,transparent);border-color:color-mix(in srgb,var(--pc) 36%,transparent)}
+.btbl select.inl.ownsel.o-jack,.btbl select.inl.ownsel.o-suz,.btbl select.inl.ownsel.o-mera,.btbl select.inl.ownsel.o-vas{color:var(--pc);background-color:color-mix(in srgb,var(--pc) 14%,transparent);border-color:color-mix(in srgb,var(--pc) 34%,transparent)}
+.pdot{display:inline-block;width:9px;height:9px;border-radius:3px;background:var(--pc,var(--faint))}
+.btbl select.inl.ownsel.o-none{color:var(--muted);background-color:transparent;border-color:var(--line2);border-style:dashed}
+/* status: a soft filled pill, cadence quiet underneath */
+.btbl select.inl.stsel{border-color:transparent}
+.btbl select.inl.cadsel{color:var(--faint);font-size:11.5px;font-weight:500;margin-top:3px}
+.btbl select.inl.cadsel:hover{color:var(--text)}
+/* last run: the date, who ran it small, and what's waiting as a chip */
+.btbl td.lastc .l1 .whochip{font-size:10.5px;padding:1px 7px;margin-left:5px;vertical-align:1px}
+.btbl td.lastc .l2{margin-top:3px}
+.btbl td.lastc .l2 .tr:not(.zero){display:inline-flex;align-items:center;height:19px;padding:0 8px;border-radius:999px;background:var(--amber-dim);color:var(--amber);font-weight:650;font-size:11.5px;margin-left:3px}
+.btbl td.lastc .l2 .tr.zero{color:var(--jade);font-weight:600}
+/* actions: Run is the one filled button */
+.btbl td.actc .ib{background:transparent;border-color:transparent;color:var(--faint);transition:color .15s,background-color .15s,border-color .15s}
+.btbl td.actc .ib:hover,.btbl td.actc .menu.open .ib{background:var(--ink);border-color:var(--line2);color:var(--text)}
+.btbl td.actc .btn.run{background:linear-gradient(180deg,color-mix(in srgb,var(--iris) 92%,#fff),var(--iris-d));transition:filter .15s,transform .12s}
+.btbl td.actc .btn.run:hover{filter:brightness(1.08)}
+.teambox .tbtns{display:inline-flex;gap:6px}
+.teambox .wgmsg .tlink{display:block;width:100%;margin-top:8px;height:32px;border-radius:8px;border:1px solid var(--line2);background:var(--ink);color:var(--muted);font:12px var(--code);padding:0 10px}

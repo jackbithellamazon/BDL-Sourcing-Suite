@@ -6,6 +6,8 @@
     --jade:#36d6a4; --jade-dim:rgba(54,214,164,.13);
     --coral:#f76a83; --coral-dim:rgba(247,106,131,.12);
     --amber:#fbbf24; --amber-dim:rgba(251,191,36,.13);
+    /* b156: one colour per person that no status uses (Suz was the "late" red, Mera the "to review" amber) */
+    --p-jack:#8c95ff; --p-suz:#38bdf8; --p-mera:#fb923c; --p-vas:#e879f9;
     --bg-a:rgba(110,123,255,.10); --bg-b:rgba(154,123,255,.07);
     --shadow:rgba(0,0,0,.9); --scroll:rgba(255,255,255,.13); --scroll-hover:rgba(255,255,255,.22);
     --selection-bg:rgba(110,123,255,.35); --selection-text:#fff;
@@ -31,6 +33,7 @@
     --jade:#0f9f75; --jade-dim:rgba(15,159,117,.12);
     --coral:#d94d64; --coral-dim:rgba(217,77,100,.11);
     --amber:#b77905; --amber-dim:rgba(183,121,5,.13);
+    --p-jack:#4653d8; --p-suz:#0369a1; --p-mera:#c2410c; --p-vas:#a21caf;
     --bg-a:rgba(88,101,242,.09); --bg-b:rgba(15,159,117,.055);
     --shadow:rgba(20,31,54,.20); --scroll:rgba(21,31,51,.22); --scroll-hover:rgba(21,31,51,.34);
     --selection-bg:rgba(88,101,242,.22); --selection-text:#121827;

@@ -1,164 +1,50 @@
-BDL SOURCING — b155 · 25 Sep 2026
-
-(Nothing since b151 has been pushed — this folder has b152, b153, b154 AND b155 in it. The live site is still on b151.)
+BDL SOURCING — b156 · 25 Sep 2026
 
 This folder is the whole app. Upload all of it every time; anything you already pushed is simply replaced.
 
 1. UPLOAD
-   GitHub → Add file → Upload files. Drag in index.html, css, js, tests, README-DEPLOY.txt.
-   js/ has FIVE files that did not exist on b73 — euprice.js, apirun.js, auth.js, kcjudge.js (b154)
-   and guest.js (b155). All five must go up: index.html loads them, and a missing file is a blank page.
-   Commit, hard-refresh once (Cmd+Shift+R).
+   GitHub → Add file → Upload files. Drag in index.html, css, js, tests, README-DEPLOY.txt. Commit.
+   Hard-refresh once (Cmd+Shift+R) — the header should say b156.
 
-2. FIRST THING AFTER YOU PUSH
-   Open Philips. Next to "Mark all as seen" there is a button: "Put 82 back in the queue".
-   Press it. Those 82 were marked SEEN by the old Open in Keepa button, not by you judging them.
-   It never touches a Yes, No or Maybe, and it clears them from Supabase too.
+2. SIGN YOURSELF IN (no email, no Supabase step)
+   Settings → the "Who am I" box → jack@bdl.local + your usual password → Sign in.
+   Your Team row already says jack@bdl.local.
 
-3. ONE THING IN KEEPA, ONCE
-   Product Viewer column picker → tick Variation Count, Variation ASINs, Variation Attributes,
-   and under Monthly Sales Trends tick Monthly Sold (Last Known) and its Date.
-   Free, no tokens. Tell the VAs too.
+3. LINKS FOR SUZ AND MERA — ONCE
+   a) Supabase → Authentication → Users → Add user → CREATE NEW USER, one for each of them.
+      Any email - it does NOT need a real inbox (e.g. suz@bdl.local, mera@bdl.local).
+      Any password (nobody types it). Tick "Auto Confirm User".
+   b) App → Settings → Team: type the same email in Suz's row and Mera's row.
+   c) Cloudflare → Workers & Pages → bdl-sourcing → Edit code: select all, paste the whole of
+      ~/Downloads/2026-09-25-BDL-SOURCING-WORKER-v3-PASTE-THIS.js, Deploy.
+      (It is your v2 exactly, plus the link-maker. The Keepa key is not in it and does not change.)
+   d) bdl-sourcing → Settings → Variables and Secrets → Add:
+        SUPABASE_URL                Type: Text    Value: Supabase → Project Settings → Data API → Project URL
+        SUPABASE_SERVICE_ROLE_KEY   Type: SECRET  Value: Supabase → Project Settings → API Keys → service_role (Reveal, copy)
+      The service_role key is the master key of the project. It goes ONLY there, as a Secret - never in a chat or a file.
+      Deploy again if it asks.
 
+4. EVERY TIME SOMEONE NEEDS IN
+   Settings → Team → "Copy link" next to their name → paste it to them in Discord.
+   They open it on their WORK computer and they're signed in (it signs in whichever browser opens it).
+   Each link works ONCE, for about an hour. Need another? Press Copy link again.
 
-THE LOCK — DO IT IN THIS ORDER (the switch stays OFF until you flip it, so nothing changes on push)
-   Do all of this OUTSIDE guest mode - guest mode sends no emails and will not flip the switch.
-   1. Push this folder as normal.
-   2. Supabase (once): Authentication > URL Configuration > Redirect URLs - add
-      https://jackbithellamazon.github.io/BDL-Sourcing-Suite/
-      (Settings in the app shows the exact address too.)
-   3. Supabase (once): Authentication > Users > Add user > CREATE NEW USER (not "Send invitation")
-      - your email, then Suz's, then Mera's. Any password (nobody ever types it), tick
-      "Auto Confirm User". The app only sends a sign-in link to someone who already exists there.
-      Why not Invite: an invite email lands on the project's main address, which is another app.
-   4. App > Settings > Team: type Suz's and Mera's emails (yours is already there).
-   5. App > Settings: type your own email, press Send me a link, open the email ON THIS MAC
-      in the browser you use for the app. You are now signed in and the Team shows it.
-   6. Team: press Send link next to Suz and Mera. Tell them: open it on the WORK computer, in
-      the browser they use for Sourcing (if the email opens in a different browser, copy the link
-      into the right one). It signs in whichever browser opens it. The link lasts an hour.
-      If it says "email rate limit exceeded": Supabase's built-in email only sends a few an
-      hour - wait an hour and press Send link again.
-   7. When all three show "Signed in", flip "Sign-in required for everyone" on.
-      From then on: no sign-in = the sign-in card and nothing else; their name comes from the
-      sign-in, so nobody can pick the wrong one. They stay signed in on that browser.
+5. THE LOCK
+   When all three show "Signed in", flip "Sign-in required for everyone".
+   Not signed in = the sign-in screen and nothing else. Their name comes from the sign-in.
 
 GUEST MODE (b155) - RUN EVERYTHING, SAVE NOTHING
-   Settings > Guest mode > Start guest mode. It sends anything still queued, pulls the latest
-   real data, takes a copy of this browser, then goes amber: "Guest - not saving".
-   Run every source, judge, audit, use the console, "View as" Suz or Mera - none of it goes to
-   Supabase. Keepa API buttons still spend real tokens (what they fetch is kept).
-   Leave guest mode (the amber bar, top of every page): everything you did is thrown away,
-   this browser goes back exactly as it was, then picks up what Suz and Mera did meanwhile.
-   Only this browser - nobody else sees guest mode or anything you did in it.
+   Settings > Guest mode > Start guest mode. Amber bar = nothing goes to Supabase.
+   Leave guest mode = everything you did is thrown away and this browser goes back exactly as it was.
+   Keepa API buttons still spend real tokens. Sign-in links and the lock are paused inside it.
 
 WHAT LANDS, NEWEST FIRST
-   b155 GUEST MODE (see above). Tested: with the cloud forced on, guest mode queued nothing and
-        made zero network calls; leaving put every key back byte for byte, twice.
-   b154 DUE / LATE IN PLAIN WORDS, AND LEAD / NOT A LEAD IN THE KEEPA CONSOLE.
-        Brands / Filters: "9 days late", "Due today", "First run" in the Mac font with a dot -
-        no more "OVERDUE · 9D" in caps. Late is the strongest red, due today an outline, first run
-        dashed, and the rows are calmer so 30 due is not one red wall. The latest sort first.
-        Fixed: your banner said "nothing is assigned to you yet" - unassigned is yours, it counts
-        now. The "Checked 72%" tile was counting Seen stamps as judged; it's "Looked at" now and
-        says how many were really judged.
-        Keepa console > Filter & sort: drop a Product Viewer export and every row has Lead /
-        Not a lead (or Y / N on the row under the mouse; Not asks why, keys 1-5). Pick which filter
-        they came from. Counts, a To judge view, Copy leads. Saved under their name and the day.
-        Only you see the Team card at the top: who judged what each day this week, and their
-        latest leads. A VA never sees the other's. It doesn't touch your run verdicts, so a quick
-        "not a lead" can never hide a lead the rules later find profitable.
-   b153 THE LOCK (see the steps above), MAC TYPE, AND NOTHING MOVES WHEN YOU CLICK.
-        Type: San Francisco everywhere, numbers line up, monospace only for ASINs, brighter grey
-        text, pages fade instead of jumping. Lead table: answering a lead used to fling it to
-        page 2 and N grew the row - both fixed, 8 clicks in a row move nothing. Bulk audit: click
-        the picture to tick, X ticks the row you're on, 3 then Q sets Discord PS on ALL ticked
-        rows (it used to reach only one), and an Undo button in the message.
-   b152 THE AUDIT ROW HOLDS STILL WHEN YOU CLICK. Measured on screen this time, four causes:
-        judging a row switched its whole font to monospace (a CSS name clash with the leads page's
-        "judged" pill - it's why judged titles looked different); the six buttons slid 8px sideways
-        as focus moved; "Missed it" reasons wrapped and grew the row; and near the bottom of the
-        screen a click scrolled the page 230px. All fixed: six clicks in a row, nothing moved, page
-        scrolled 0px. The Missed it pill no longer gets cut off at the right edge either.
-   b151 BULK AUDIT. Every row in the storefront audit has a tick box on its picture. Tick one,
-        shift-click another to tick the whole run between, or cmd-click a row. A bar at the bottom
-        then judges all the ticked rows in one press - "Discord · PS", "THC", "FFB" are one click
-        each; "Missed it" opens its reasons. "Tick all shown", Esc to clear, and one U undoes the
-        whole lot. Q / W / E set the reason on every ticked row too. Nothing on the page moves when
-        you tick. ALSO FIXED: the "Which Discord?" chips drawing on top of the buttons (the TRIP
-        Dream Drops row in your screenshot).
-   b150 INSTAX, EVERY MARKET. New brand run on your own filter, kept exactly as you sent it: brand
-        instax, Amazon down 8%+ on its 90-day average, products only, sorted by rank then monthly
-        sold. UK, Germany, France, Italy and Spain, every 3 days like Canon. Unassigned, so only you
-        see it until you hand it out. The Keepa API button works on it too.
-   b149 LIVE PRICES ARE ALWAYS TODAY'S. You were right: b148 carried the live FBA offer forward
-        from the cache. The 1-token refresh DOES get Amazon's own price (your buy price), rank and
-        monthly sold fresh - but the live Buy Box, FBA and FBM offers need the full 6-token call.
-        Now only averages come off the shelf, never a live price, and every product that comes out
-        as a LEAD is pulled in full straight away and re-run. So anything you act on has today's
-        competition. It never goes under the 250 floor to do it - it tells you instead.
-   b148 SIX TOKENS DOWN TO ONE (Spense's caching tip, built). A full Keepa row costs 6 tokens
-        because of the offers data; a stats-only call is 1 token and leaves exactly 13 columns
-        empty - the Buy Box and FBA averages, the high, out-of-stock %, Amazon's share, monthly
-        sold last known, and the review columns. So an ASIN we already hold costs 1 token to
-        refresh what moves; the averages come off the shelf. Free if the row is under a day old.
-        THREE DAYS, NOT NINETY: your own consecutive exports say the 90-day averages drift ~0.25%
-        a DAY (0.23% over one day, 0.60% over three, 1.73% over seven). Three days keeps the error
-        near half a percent; ninety would be a fifth out.
-        Proved live on two Ninja ASINs: 12 tokens to pull fresh, 2 to refresh. On a Suz list that
-        is ~1,900 tokens down to ~320 on a re-run; Mera's ~3,300 down to ~550.
-   b147 IF IT IS PROFITABLE WE STILL WANT IT. Products Amazon is not selling anywhere used to be
-        binned ("Amazon not selling anywhere") even though they had already passed demand and
-        already had a sell price - the only thing missing was somewhere to buy them. They now come
-        out as OA TARGETS: a panel above the leads, biggest seller first, with what it sells for,
-        what it sells a month, the breakeven and the price to beat for 20% ROI, plus a CSV. They
-        are never leads and never scored, so nothing in the leads table moved.
-        Your two Ninja ASINs: Foodi FlexDrawer sells 1,000/mo at £268.83, buy under £168.89 for
-        20%. Prestige coffee sells 200/mo at £212.63, buy under £132.93.
-
-   b146 ITALY, FRANCE, GERMANY WHEN THE PRICE IS MATCHED. Your order is in Rule 1 as a tie-break
-        on a matched price and nothing else: a penny cheaper anywhere wins, including Spain,
-        including the UK. Spain is deliberately not in the order until you know where it sits.
-        Measured against how it behaved before: Logitech and ASUS identical, Bialetti identical
-        with one lead moving DE -> FR at exactly the same £16.56 landed - the rule doing its job.
-
-   b145 THE MORNING'S LIST STANDS + BETTER SAYS HOW MUCH BETTER. A second run the same day ADDS to
-        the day's list and never rebuilds it (230 this morning, 26 new later, 256 - all 230 kept).
-        The BETTER pill now carries the gain: +£40.98 in green for a pound or more, +6p in grey for
-        pennies. On your 11->12 Sept Mera pair, 25 came back "more profitable" - 9 worth £1+ a unit,
-        13 under 25p, one still losing £6 a unit flagged for a 6p improvement. Rule unchanged.
-
-   b144 TODAY'S LIST STAYS ALL DAY, WITH WHO DID WHAT. The queue was a live filter - answer a lead
-        and it disappeared. Now the queue is fixed when the run is logged and every lead stays until
-        tomorrow. Answered ones drop to the bottom with a green edge and the name of whoever
-        answered. Header: "Today's list 19 to do · 5 done · Jack 3 · Suz 2" plus a progress bar.
-
-   b143 SO IT CANNOT HAPPEN AGAIN, AND YESTERDAY IS READABLE. Every verdict records how it was
-        written, and a test reads the code itself and FAILS if anything other than "Mark all as
-        seen" ever writes a Seen verdict again. A run now records which leads needed a look and
-        which fell off: click a date in Last runs and the To review tab shows that day's queue.
-
-   b142 OPENING LEADS IS NOT JUDGING THEM. "Open all N in Keepa" was also marking every lead it
-        opened as SEEN - your b56 instruction, when opening them WAS the review. Your Philips queue
-        emptied under you (83 to review, 1 already judged, 82 stamped seen, 1 left). Opening now
-        marks nothing. See point 2 above to get the 82 back.
-
-   b141 THE STOREFRONT AUDIT STOPS MOVING. The six buttons only appeared on the row your mouse or
-        cursor was on, so every row grew ~44px as you crossed it - that is the jitter. Buttons are
-        on every row now; the row you are on differs by colour only. Measured over ten presses:
-        every row 148px, 0px of movement. Dearest first now re-sorts when prices arrive, a missing
-        price says which kind of missing it is, and a verdict from another shelf says which shelf.
-
-   b140 THE LEAD TABLE FITS THE LAPTOP. On a 1366px laptop the table was 140px wider than the
-        screen, so the page scrolled sideways and the OA check column was cut off. Fixed and
-        measured at 1280 / 1366 / 1536. Y / N / M / down-arrow at the last row of a page now
-        carries on to the next page, and the pill says "all done" when the last one is judged.
-
-   b139 YOUR API LOOK IS NOT HER RUN. A Keepa API run is saved as YOUR look, not the source's run:
-        no row to Supabase, her due date does not move, her compare baseline stays hers.
-
-   b138 RUN VIA KEEPA API - YOUR BUTTON ONLY. On a run screen, next to Open in Keepa. It counts
-        first (about 11 tokens), tells you the price and the balance after, and offers the top
-        slice when the whole list will not fit. About 6 tokens a product. VAs never see it.
-
-   Everything before b138 is in README-DEPLOY.txt, newest first.
+   b156 SIGN IN YOUR WAY + COPY-A-LINK + A CALMER BRANDS LIST.
+        You: email + password, straight in. Suz and Mera: a link you copy and send - no email.
+        Brands list: rows no longer one maroon wall (a clear red edge on late ones instead), each
+        owner shows in their own colour (Jack violet, Suz blue, Mera orange, VAs pink - none of
+        them now clash with "late" red or "to review" amber), "44 to review" is an amber chip, and
+        only Run is a filled button. Tested: 275 checks.
+   b155 GUEST MODE.
+   b154 Due / late in plain words, Lead / Not a lead in the Keepa console.
+   b153 The lock, Mac type, nothing moves when you click, bulk audit.

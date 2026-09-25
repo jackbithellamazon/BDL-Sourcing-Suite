@@ -59,20 +59,22 @@ let whoPending=null,pendingFiles=null;
 function needMe(target){if(me())return true;whoPending=target||null;whoGate(true);return false;}
 function whoGate(show){let g=$('#whoGate');if(!g){g=document.createElement('div');g.id='whoGate';g.className='whogate';
     /* b126: sign in with a one-click email link. The name picker stays underneath, so nobody is ever locked out. */
-    g.innerHTML=`<div class="wg"><div class="wgt">Sign in</div><div class="wgs">Type your work email and we send a one-click link — no password to remember. It keeps you signed in on this browser, and every verdict then carries your real name.</div>
-      <div class="wgmail"><input type="email" id="wgEmail" placeholder="you@…" autocomplete="email" spellcheck="false"><button type="button" class="btn primary" id="wgSend">Send me a link</button></div>
+    g.innerHTML=`<div class="wg"><div class="wgt">Sign in</div><div class="wgs"><b>Suz and Mera:</b> open the sign-in link Jack sent you — it signs this browser in, and every verdict then carries your name. <b>Jack:</b> your email and password.</div>
+      <div class="wgmail"><input type="email" id="wgEmail" placeholder="you@…" autocomplete="username" spellcheck="false"></div>
+      <div class="wgmail"><input type="password" id="wgPass" placeholder="Password — only if you have one" autocomplete="current-password"><button type="button" class="btn primary" id="wgSend">Send me a link</button></div>
       <div class="wgmsg" id="wgMsg"></div>
       <div class="wgor">or carry on without signing in</div>
       <div class="wgb">${USERS.map(u=>`<button type="button" data-who="${u}">${u}</button>`).join('')}</div></div>`;
     g.addEventListener('click',async e=>{
       const send=e.target.closest('#wgSend');
-      if(send){const el=$('#wgEmail'),msg=$('#wgMsg'),v=(el.value||'').trim();
-        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){msg.textContent='That does not look like an email address.';msg.className='wgmsg bad';return;}
-        send.disabled=true;msg.textContent='Sending…';msg.className='wgmsg';
-        try{await authSendLink(v);msg.innerHTML='Sent. Open the email on <b>this</b> machine and click the link — you will land back here signed in.';msg.className='wgmsg good';}
-        catch(err){msg.textContent=String(err.message||err)+(/not found|signups|invalid/i.test(String(err.message||''))?' — ask Jack to invite this address.':'');msg.className='wgmsg bad';send.disabled=false;}
-        return;}
+      if(send){const el=$('#wgEmail'),pw=($('#wgPass')||{}).value||'',msg=$('#wgMsg'),v=(el.value||'').trim();
+        send.disabled=true;msg.textContent=pw?'Signing in…':'Sending…';msg.className='wgmsg';
+        try{const got=await authSubmit(v,pw);if(got==='sent'){msg.innerHTML='Sent. Open the email on <b>this</b> machine and click the link — you will land back here signed in.';msg.className='wgmsg good';}}
+        catch(err){msg.textContent=String(err.message||err)+(/not found|signups/i.test(String(err.message||''))?' — ask Jack to set this address up.':'');msg.className='wgmsg bad';}
+        send.disabled=false;return;}
       const b=e.target.closest('button[data-who]');if(!b)return;whoSet(b.dataset.who);whoGate(false);const t=whoPending;whoPending=null;if(t)onTableClick({target:t});});
+    g.addEventListener('input',e=>{if(e.target.id==='wgPass')$('#wgSend').textContent=e.target.value?'Sign in':'Send me a link';});
+    g.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='wgEmail'||e.target.id==='wgPass')){e.preventDefault();$('#wgSend').click();}});
     document.body.appendChild(g);}
   g.classList.toggle('open',!!show);}
 
@@ -442,13 +444,14 @@ function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='func
   const when=iso=>{if(!iso)return'';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});};
   const si=signinsAll();const team=teamAll();
   const me_=u?`<div class="authnow"><i></i><span><b>Signed in</b> as ${escapeHtml(u.name)} <em>${escapeHtml(u.email)}</em></span><button type="button" class="btn ghost sm" id="abOut">Sign out</button></div>`
-    :`<div class="authnow off"><i></i><span><b>Not signed in on this computer.</b> Type your email and press Send — the link signs this browser in and keeps it signed in.</span></div>
-      <div class="authsend"><input type="email" id="abEmail" placeholder="you@… — your work email" autocomplete="email" spellcheck="false"><button type="button" class="btn solid sm" id="abSend">Send me a link</button></div><div class="wgmsg" id="abMsg"></div>`;
+    :`<div class="authnow off"><i></i><span><b>Not signed in on this computer.</b> Your email and password signs you straight in. Email on its own sends a one-click link instead (that's the way for Suz and Mera).</span></div>
+      <div class="authsend"><input type="email" id="abEmail" placeholder="you@… — your login email" autocomplete="username" spellcheck="false"><input type="password" id="abPass" placeholder="Password" autocomplete="current-password"><button type="button" class="btn solid sm" id="abSend">Send me a link</button></div><div class="wgmsg" id="abMsg"></div>`;
   const allIn=team.every(t=>si[t.name]);
   const teamHtml=!jack?'':`<div class="teambox"><div class="tbh"><b>Team</b><span>Each person's email. The name on everything they mark comes from here, never from a dropdown.</span></div>
-    ${team.map(t=>{const s_=si[t.name];return`<div class="trow"><span class="tn"><i style="background:${typeof auAv==='function'?auAv(t.name):'var(--iris)'}"></i>${escapeHtml(t.name)}</span>
+    ${team.map(t=>{const s_=si[t.name];return`<div class="trow"><span class="tn"><i class="pdot ${ownCls(t.name)}"></i>${escapeHtml(t.name)}</span>
       <input type="email" class="temail" data-team="${escapeHtml(t.name)}" value="${escapeHtml(t.email||'')}" placeholder="${escapeHtml(t.name.toLowerCase())}@…" autocomplete="off" spellcheck="false">
-      <button type="button" class="btn ghost sm" data-tsend="${escapeHtml(t.name)}" ${t.email?'':'disabled'}>Send link</button>
+      ${t.name==='Jack'?`<span class="tpw" title="You sign in with your email and password">Password login</span>`
+        :`<span class="tbtns"><button type="button" class="btn solid sm" data-tcopy="${escapeHtml(t.name)}" ${t.email&&u?'':'disabled'} title="${!t.email?'Type their email first':!u?'Sign yourself in first (above)':'Make a one-time sign-in link and copy it — paste it to them in Discord'}">Copy link</button>${t.email&&!authNoInbox(t.email)?`<button type="button" class="btn ghost sm" data-tsend="${escapeHtml(t.name)}" title="Email the link to ${escapeHtml(t.email)} instead">Email it</button>`:''}</span>`}
       <span class="tstat ${s_?'in':''}">${s_?'Signed in '+when(s_.at):'Not signed in yet'}</span></div>`;}).join('')}
     <div class="wgmsg" id="tMsg"></div></div>`;
   const lockHtml=!jack?'':`<div class="lockbox ${lk.on?'on':''}"><div class="lkh"><b>Sign-in required for everyone</b>
@@ -458,10 +461,12 @@ function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='func
       :allIn?`Everyone has signed in — safe to switch on.`
       :`Off. ${team.filter(t=>!si[t.name]).map(t=>t.name).join(' and ')} ${team.filter(t=>!si[t.name]).length===1?'has':'have'} not signed in yet — switch on now and they will see the sign-in screen until they open their link.`}
     ${sand?' <em>(This is the test sandbox — the lock never applies here.)</em>':''}</p>
-    <details class="lksteps"><summary>The two things in Supabase (once, yours)</summary><ol>
-      <li>Authentication → URL Configuration → Redirect URLs: add <code>${escapeHtml(location.origin+location.pathname)}</code></li>
-      <li>Authentication → Users → Add user → <b>Create new user</b> (not Send invitation): each email in the Team above, <b>yours included</b>. Any password, tick <b>Auto Confirm User</b>. A link only goes to someone who is already there — and an invite email would land on the project's main address, which is another app.</li>
-      <li>If a link says "email rate limit exceeded", Supabase's built-in email only sends a few an hour — wait an hour and send it again.</li></ol></details></div>`;
+    <details class="lksteps"><summary>Set-up, once (yours)</summary><ol>
+      <li><b>You:</b> your login is <code>jack@bdl.local</code> — type it with your password above. No email needed.</li>
+      <li><b>Suz and Mera</b> — Supabase → Authentication → Users → Add user → <b>Create new user</b>: any email for each (it does not need a real inbox, e.g. <code>suz@bdl.local</code>), any password, tick <b>Auto Confirm User</b>. Then type the same email in their Team row above.</li>
+      <li><b>The Worker, once</b> — paste <code>2026-09-25-BDL-SOURCING-WORKER-v3-PASTE-THIS.js</code> (Downloads) over bdl-sourcing's code and Deploy, then add two settings to it: <code>SUPABASE_URL</code> (Text — Supabase → Project Settings → Data API → Project URL) and <code>SUPABASE_SERVICE_ROLE_KEY</code> (<b>Secret</b> — Project Settings → API Keys → service_role). That key only ever lives in the Worker.</li>
+      <li>Then <b>Copy link</b> next to Suz or Mera, paste it to them in Discord, and they are in. Each link works once, for about an hour.</li>
+      <li>Emailing links instead (only for real inboxes): Authentication → URL Configuration → Redirect URLs → add <code>${escapeHtml(location.origin+location.pathname)}</code>.</li></ol></details></div>`;
   el.innerHTML=me_+teamHtml+lockHtml;
   const out=$('#abOut');if(out)out.addEventListener('click',()=>{if(confirm('Sign out of '+u.name+'?')){authSignOut();paintAuthBox();}});
   const sendTo=async(v,msgEl,btn)=>{if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){msgEl.textContent='That does not look like an email address.';msgEl.className='wgmsg bad';return;}
@@ -469,10 +474,27 @@ function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='func
     try{await authSendLink(v);msgEl.innerHTML=`Sent to <b>${escapeHtml(v)}</b>. It signs in whichever browser it is opened in — so open it on the computer you work on, not your phone.`;msgEl.className='wgmsg good';}
     catch(e){msgEl.textContent=/not allowed|not found|signups/i.test(String(e.message||''))?`${v} is not in Supabase yet — Authentication → Users → Add user → Create new user (tick Auto Confirm User).`:String(e.message||e);msgEl.className='wgmsg bad';}
     btn.disabled=false;btn.textContent=was;};
-  const b=$('#abSend');if(b)b.addEventListener('click',()=>sendTo(($('#abEmail').value||'').trim(),$('#abMsg'),b));
+  /* b156: email + password = in now (Jack's jack@bdl.local); email alone = the one-click link */
+  const b=$('#abSend');if(b){const pwIn=$('#abPass');
+    const go=async()=>{const v=($('#abEmail').value||'').trim(),pw=pwIn?pwIn.value:'',msgEl=$('#abMsg');
+      if(!pw){if(authNoInbox(v)){msgEl.textContent=v+' has no inbox, so a link cannot reach it — type your password too.';msgEl.className='wgmsg bad';return;}sendTo(v,msgEl,b);return;}
+      b.disabled=true;b.textContent='Signing in…';msgEl.textContent='';
+      try{await authSubmit(v,pw);}catch(e){msgEl.textContent=String(e.message||e);msgEl.className='wgmsg bad';b.disabled=false;b.textContent='Sign in';}};
+    b.addEventListener('click',go);
+    if(pwIn)pwIn.addEventListener('input',()=>{b.textContent=pwIn.value?'Sign in':'Send me a link';});
+    [$('#abEmail'),pwIn].forEach(x=>x&&x.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go();}}));}
   el.querySelectorAll('.temail').forEach(i=>i.addEventListener('change',()=>{const list=teamAll().map(t=>t.name===i.dataset.team?Object.assign({},t,{email:i.value.trim().toLowerCase()}):t);
     teamSave(list);toast(i.dataset.team+(i.value.trim()?' — email saved':' — email cleared'));paintAuthBox();}));
   el.querySelectorAll('[data-tsend]').forEach(btn=>btn.addEventListener('click',()=>{const t=teamAll().find(x=>x.name===btn.dataset.tsend);if(t)sendTo(t.email,$('#tMsg'),btn);}));
+  /* b156: the link Jack copies and sends himself */
+  el.querySelectorAll('[data-tcopy]').forEach(btn=>btn.addEventListener('click',async()=>{const t=teamAll().find(x=>x.name===btn.dataset.tcopy),msgEl=$('#tMsg');if(!t)return;
+    btn.disabled=true;const was=btn.textContent;btn.textContent='Making…';msgEl.textContent='';msgEl.className='wgmsg';
+    try{const link=await authMakeLink(t.email);
+      try{await navigator.clipboard.writeText(link);}catch(e){}
+      msgEl.innerHTML=`<b>${escapeHtml(t.name)}'s link is copied</b> — paste it to ${escapeHtml(t.name)} in Discord. It works <b>once</b>, for about an hour, and signs in whichever browser opens it, so tell ${escapeHtml(t.name)} to open it on the work computer. <input class="tlink" readonly value="${escapeHtml(link)}">`;msgEl.className='wgmsg good';
+      const li=msgEl.querySelector('.tlink');if(li){li.addEventListener('focus',()=>li.select());}
+      btn.textContent='Copied ✓';setTimeout(()=>{btn.textContent=was;btn.disabled=false;},2200);}
+    catch(e){msgEl.textContent=String(e.message||e);msgEl.className='wgmsg bad';btn.textContent=was;btn.disabled=false;}}));
   const tg=$('#lkToggle');if(tg)tg.addEventListener('click',()=>{const on=!lockState().on;
     if(on){const missing=teamAll().filter(t=>!signinsAll()[t.name]).map(t=>t.name);
       if(!confirm(`Switch the lock on?\n\nEvery browser that is not signed in will see only the sign-in screen.${missing.length?`\n\n${missing.join(' and ')} ${missing.length===1?'has':'have'} not signed in yet.`:''}`))return;}
