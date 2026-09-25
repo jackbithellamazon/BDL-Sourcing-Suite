@@ -8,7 +8,16 @@ window.SourcingChecks=(function(){
     for(const m of markets){try{f[m]=await csv(prefix+'-'+m+'.csv');}catch(e){f[m]=null;}}
     ['UK','DE','FR','IT','ES'].forEach(m=>{if(!(m in f))f[m]=null;});
     return rule1Compute(f,prefix,0.86,null);}
-  async function run(){R.length=0;const t0=performance.now();
+  /* b152 (25 Sep 2026): the checks replay OLD exports, but some rules count days from today — how old a listing is (b105: an option
+     under six months old stays on its family's sales), how recent a confirmed sale was (b108/b109). On 25 Sep the Galaxy S26 family
+     in the 12 Sep Mera export turned exactly six months old, 19 options left that export's leads, and four checks went red with
+     no code having changed. The rules were right; the test was asking a 12 Sep question with a 25 Sep clock. So the whole run is
+     judged as of the day every baseline below was last agreed. Move this date only when the baselines are re-agreed. */
+  const CHECK_CLOCK='2026-09-24T12:00:00Z';
+  function pinClock(){const Real=Date;const fixed=new Real(CHECK_CLOCK).getTime();
+    const Pinned=class extends Real{constructor(...a){if(a.length)super(...a);else super(fixed);} static now(){return fixed;}};
+    globalThis.Date=Pinned;return()=>{globalThis.Date=Real;};}
+  async function run(){R.length=0;const t0=performance.now();const unpin=pinClock();
     try{
       /* Rule 1 — Logitech, 9 Sep 2026 exports */
       const L=await rule1('logitech',['UK','DE','FR','IT','ES']);
@@ -322,9 +331,10 @@ window.SourcingChecks=(function(){
         const on=host.querySelector('button.on'),zero=host.querySelector('button.zero');
         const o=+getComputedStyle(zero).opacity, dot=getComputedStyle(on.querySelector('.d')).width;
         const sep=getComputedStyle(host.querySelector('.sep')).width;
-        const badge=getComputedStyle(on.querySelector('b')).fontFamily.toLowerCase();
+        /* b153: the counts used to be monospace so they lined up; they are the Mac system font now, lined up by tabular figures */
+        const badge=getComputedStyle(on.querySelector('b')).fontVariantNumeric.toLowerCase();
         host.remove();
-        return [o<0.5,o>0.3,dot,sep,badge.includes('mono')||badge.includes('ui-monospace')||badge.includes('menlo')];
+        return [o<0.5,o>0.3,dot,sep,badge.includes('tabular-nums')];
       })(),[true,true,'7px','1px',true]);
       /* b88 (Jack: "sellers on it is — why tho"). One dash was doing two jobs: Keepa says nobody is listed,
          and we never asked. Records written before the offer count existed counted as loaded forever. */
@@ -811,6 +821,74 @@ window.SourcingChecks=(function(){
       {const css=[...document.styleSheets].find(x=>/brands\.css/.test(x.href||''));const rules=css?[...css.cssRules].map(r=>r.cssText):[];
         ok('Audit · the Discord chips can never sit on top of the buttons again (the hide outranks every show)',rules.some(r=>/\.aulist \.aurow\.reasoning:not\(:hover\):not\(\.focus\) > \.aubtns/.test(r)&&/display: none/.test(r)),true);
         ok('Bulk · the bar floats over the page (fixed) and sizes to its buttons, so ticking never moves a row',rules.some(r=>/^\.aubulk \{/.test(r)&&/position: fixed/.test(r)&&/width: max-content/.test(r)),true);}
+      /* b152 (Jack, 25 Sep: "still very jumping when I click it") — every cause pinned */
+      {const cssTxt=await(await fetch('css/brands.css')).text();
+        ok('Jump · no bare .judged rule exists — the leads pill used it, and every judged audit row picked up its mono font',[/(^|\n|\})\s*\.judged[\s{.,:]/.test(cssTxt),/\.jpill\{/.test(cssTxt)],[false,true]);}
+      {const css=[...document.styleSheets].find(x=>/brands\.css/.test(x.href||''));const rules=css?[...css.cssRules].map(r=>r.cssText):[];
+        ok('Jump · the six buttons have the same padding and gap on every row, focused or not',
+          [rules.some(r=>/\.aulist \.aurow\.focus \.aub/.test(r)&&/padding: 0px 10px 0px 7px/.test(r)),rules.some(r=>/\.aulist \.aurow\.focus > \.aubtns/.test(r)&&/gap: 6px/.test(r))],[true,true]);}
+      ok('Jump · a mouse click never scrolls the page; the keyboard parks its row a third of the way down',[/if\(auView\.fromMouse\)\{auView\.fromMouse=false;return;\}/.test(String(auKeepFocusVisible)),/innerHeight\/3/.test(String(auKeepFocusVisible))],[true,true]);
+      /* b153 (Jack, 25 Sep: "build it then please" — the lock; "smoother and fun … better fonts, remember Mac user"; "bulk edit is great, make sure it works nice") */
+      {const sess=localStorage.getItem('bdl-sourcing-session'),team=localStorage.getItem(TEAM_KEY),lock=localStorage.getItem(LOCK_KEY),si=localStorage.getItem(SIGNIN_KEY),meWas=me();
+        try{localStorage.removeItem('bdl-sourcing-session');
+          ok('Lock · will not switch on unless Jack is signed in on this browser (so it can never shut him out)',lockSet(true),false);
+          lsSet(TEAM_KEY,[{name:'Jack',email:'jackbithellamazon@gmail.com'},{name:'Suz',email:'suz@example.com'},{name:'Mera',email:''}]);
+          ok('Lock · the name comes from the Team list, any capitals, never from a dropdown',[authNameFor('SUZ@Example.com'),authNameFor('jackbithellamazon@gmail.com'),teamNameFor('nobody@x.com')],['Suz','Jack','']);
+          ok('Lock · on localhost (the sandbox) it never applies',[/localhost/.test(String(lockSandbox)),lockSandbox()?lockOn():false],[true,false]);
+          ok('Lock · each person\'s sign-in is its own row, so two at once never overwrite each other',/settingRow\('signin:'\+name/.test(String(signinRecord)),true);
+          ok('Lock · signed in + locked, you cannot pick someone else\'s name',/lockOn\(\)&&authedName\(\)&&v!==authedName\(\)/.test(String(whoSet)),true);
+        }finally{const put=(k,v)=>v==null?localStorage.removeItem(k):localStorage.setItem(k,v);put('bdl-sourcing-session',sess);put(TEAM_KEY,team);put(LOCK_KEY,lock);put(SIGNIN_KEY,si);lsSet(ME_KEY,meWas);}}
+      ok('Toast · can carry an Undo button and waits 5 seconds for it',[/action\?5000:1600/.test(String(toast)),/class="tact"/.test(String(toast))],[true,true]);
+      ok('Bulk · a bulk Discord with no group keeps the rows ticked, so Q / W / E finishes all of them',/if\(waitReason\)\{auView\.sel=new Set\(asins\)/.test(String(auJudgeNow)),true);
+      ok('Bulk · the whole picture ticks, and X ticks the row you are on',[/\.aulist \.aurow > \.auimg/.test(document.querySelector('script[src*="audit.js"]')?'.aulist .aurow > .auimg':''),typeof auToggleSel==='function'],[true,true]);
+      {const root=getComputedStyle(document.documentElement);
+        ok('Type · numbers and labels use the Mac system font; only ASINs stay monospace',[/JetBrains/.test(root.getPropertyValue('--mono')),/JetBrains/.test(root.getPropertyValue('--code')),/-apple-system/.test(root.getPropertyValue('--sans').trim().slice(0,14))],[false,true,true]);}
+      ok('Leads · a lead you answer in this sitting keeps its place (b144 sent it to page 2, out from under the mouse)',/verdGet\(o\.ASIN\)&&!touched\.has\(o\.ASIN\)/.test(String(visible)),true);
+      ok('Leads · a No waiting for its reason shows the reasons in place of the note and name, so the row does not grow',[/const waiting=v\.v==='No'&&!v\.reason/.test(String(verdCell)),/&&!waiting\?`<input class="vnote"/.test(String(verdCell))],[true,true]);
+      /* b154 (Jack, 25 Sep: "improve font and UI UX design of due now and overdue"; "a way to do it on keepa console — for them to have the lead and not leads") */
+      {const runsWas=localStorage.getItem(RUN_KEY);
+        try{const at=n=>{const d=new Date();d.setDate(d.getDate()-n);d.setHours(9,40,0,0);return d.toISOString();};
+          lsSet(RUN_KEY,[{source:'zz-late',at:at(10),day:at(10).slice(0,10),asins:[]},{source:'zz-today',at:at(1),day:at(1).slice(0,10),asins:[]}]);
+          const L=dueState({key:'zz-late',cadence:'daily',status:'active'}),T=dueState({key:'zz-today',cadence:'daily',status:'active'}),F=dueState({key:'zz-never',cadence:'daily',status:'active'});
+          ok('Due · plain words — "9 days late", "Due today", "First run" — and the latest sort first',[L.label,L.kind,L.rank,T.label,T.kind,F.label,F.kind,L.rank<T.rank&&T.rank<F.rank],['9 days late','late',-9,'Due today','today','First run','first',true]);
+        }finally{runsWas==null?localStorage.removeItem(RUN_KEY):localStorage.setItem(RUN_KEY,runsWas);}}
+      {const tb=document.createElement('table');tb.className='btbl';tb.style.cssText='position:absolute;left:-9999px';tb.innerHTML='<tbody><tr><td class="nextc"><span class="nx due late"><i></i>9 days late</span></td></tr></tbody>';document.body.appendChild(tb);
+        const cs=getComputedStyle(tb.querySelector('.nx')),got=[cs.textTransform,/-apple-system|system-ui/.test(cs.fontFamily),getComputedStyle(tb.querySelector('.nx'),'::before').display];tb.remove();
+        ok('Due · the pill is sentence case in the system font, one dot (the old amber ::before dot is off)',got,['none',true,'none']);}
+      ok('Due · unassigned counts as Jack\'s on his screen, never a VA\'s',[ownsIt({owner:'—'},'Jack'),ownsIt({owner:''},'Jack'),ownsIt({owner:'—'},'Suz'),ownsIt({owner:'Suz'},'Suz'),ownsIt({owner:'VAs'},'Jack')],[true,true,false,true,false]);
+      ok('KPIs · "Seen" stamps are not counted as judged',/x\.v!=='Seen'\)judged\+\+/.test(String(renderKpis)),true);
+      {const kcWas=localStorage.getItem(KC_KEY),vWas=localStorage.getItem(VERD_KEY),meWas=me();
+        try{localStorage.removeItem(KC_KEY);lsSet(ME_KEY,'Suz');
+          kcSet('B0CHECK001','lead',{src:'suz-deep-drops'});kcSet('B0CHECK002','not',{});kcReason('B0CHECK002','too slow');
+          const ix=kcIndex('Suz');
+          ok('Console · Lead / Not a lead saves under the person and the day, with the reason',[ix.B0CHECK001&&ix.B0CHECK001.v,ix.B0CHECK002&&ix.B0CHECK002.reason,Object.keys(kcAll()),kcCloudKey('Suz','2026-09-24')],['lead','too slow',['Suz|2026-09-24'],'kc:Suz:2026-09-24']);
+          ok('Console · never touches the run verdicts (a console "not" must not bury a lead the rules later find profitable)',localStorage.getItem(VERD_KEY)===vWas,true);
+          ok('Console · Mera cannot see Suz\'s calls, and a VA only pulls her own rows',[kcIndex('Mera').B0CHECK001||null,/encodeURIComponent\('kc:'\+who\+':'\)/.test(String(kcPull))],[null,true]);
+          const all=kcAll();all['Suz|2026-09-22']={who:'Suz',day:'2026-09-22',updatedAt:'2026-09-22T10:00:00Z',items:{B0CHECK003:{v:'not',reason:'price wrong',at:'2026-09-22T10:00:00Z'}}};lsSet(KC_KEY,all);
+          kcIdx=kcIndex('Suz');kcJudge('B0CHECK003','not');const re=kcIndex('Suz').B0CHECK003;
+          kcIdx=kcIndex('Suz');kcJudge('B0CHECK001','lead');
+          ok('Console · an old call clicked again is re-confirmed today with its reason; today\'s call clicked again clears it',[re.day,re.reason,kcIndex('Suz').B0CHECK001||null],['2026-09-24','price wrong',null]);
+        }finally{clearTimeout(kcT);kcDirty.clear();kcPopClose();kcWas==null?localStorage.removeItem(KC_KEY):localStorage.setItem(KC_KEY,kcWas);vWas==null?localStorage.removeItem(VERD_KEY):localStorage.setItem(VERD_KEY,vWas);lsSet(ME_KEY,meWas);kcIdx=kcIndex(meWas);}}
+      ok('Console · the boot pull leaves the day rows out (they come down on their own)',/key=not\.like\.kc:\*/.test(String(cloudPull)),true);
+      {const cssTxt=await(await fetch('css/brands.css')).text();
+        ok('Console · the reasons float over the list and the column has a fixed width, so a click never moves a row',[/\.kcpop\{position:fixed/.test(cssTxt),/#tableF td\.kcj,#tableF th\.kcj\{width:250px;min-width:250px/.test(cssTxt)],[true,true]);}
+      /* b155 (Jack, 25 Sep: "a guest mode so it doesn't actually save to Supabase at all — I wanna run them all and check them") */
+      {const gWas=localStorage.getItem(GUEST_KEY),url=location.pathname+location.search+location.hash,realFetch=window.fetch,calls=[];
+        const ob0=outbox().length,au0=audOut().length;let reqErr='',sendErr='',lock=null,cloudWithFlag=null;
+        try{window.fetch=(u,o)=>{calls.push(((o&&o.method)||'GET')+' '+String(u).slice(0,60));return Promise.reject(new Error('blocked by checks'));};
+          history.replaceState(null,'',location.pathname+'?cloud');   /* the cloud would be ON here … */
+          localStorage.setItem(GUEST_KEY,JSON.stringify({on:true,since:'2026-09-24T12:00:00Z',by:'Jack'}));   /* … unless guest mode is */
+          cloudWithFlag=cloudEnabled();
+          cloudQueue('src_verdicts','upsert',[{asin:'B0CHECKG01',v:'Yes'}]);audQueue({op:'up',table:'src_products',rows:[{asin:'B0CHECKG01'}]});
+          try{await cloudReq('POST','src_verdicts',[{asin:'B0CHECKG01'}]);}catch(e){reqErr=e.message;}
+          try{await authSendLink('someone@example.com');}catch(e){sendErr=e.message;}
+          lock=lockSet(true);
+        }finally{window.fetch=realFetch;history.replaceState(null,'',url);gWas==null?localStorage.removeItem(GUEST_KEY):localStorage.setItem(GUEST_KEY,gWas);}
+        ok('Guest · with ?cloud on, guest mode still turns the cloud off, queues nothing and sends nothing',[cloudWithFlag,outbox().length-ob0,audOut().length-au0,calls.length],[false,0,0,0]);
+        ok('Guest · a write is refused even if something calls the database directly',reqErr,'guest mode — nothing is sent');
+        ok('Guest · no sign-in emails and no lock switch from guest mode',[/Guest mode/.test(sendErr),lock],[true,false]);}
+      ok('Guest · the snapshot leaves the sign-in session and the Keepa caches alone (Supabase rotates the session; the caches cost tokens)',['bdl-sourcing-session','bdl-sourcing-api-rows','bdl-sourcing-eu-price'].every(k=>GUEST_SKIP.includes(k))&&!guestKeys().includes('bdl-sourcing-session'),true);
+      ok('Guest · viewing as Suz or Mera is not overridden by the signed-in name',[/!guestOn\(\)&&typeof me/.test(String(lockCheck)),/if\(!guestOn\(\)&&typeof lsSet/.test(String(authBoot)),/&&!guestOn\(\)\)\{/.test(String(whoSet))],[true,true,true]);
       ok('History · builds from stored leads',typeof hsRows==='function'&&Array.isArray(hsRows())&&Array.isArray(hsFiltered()),true);
       /* b59: Rule 3 keyword fix — the drink's form wins over incidental words (tea & coffee export 15 Sep: 14 of 84 rows went 20%) */
       ok('R3 VAT · jar / caddy / biscuit / "espresso machine" in a coffee title stay 0%',[
@@ -819,6 +897,7 @@ window.SourcingChecks=(function(){
         vatFor({Title:"De'Longhi Dedica Espresso Coffee Machine, Stainless Steel"}).rate,vatFor({Title:'Coffee Machine Descaler 500g Powder'}).rate,vatFor({Title:'Tassimo Kenco Americano XL Coffee Pods x16 T-Discs'}).rate],[0,0,0,0,0.2,0.2,0]);
       ok('Sources · four ShiftTrack rows stay retired, the fifth is live again',hist.map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,s.owner,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/')&&!s.link.includes("'"))]:null;}),EXPECT.hist);
     }catch(e){R.push({name:'checks crashed: '+e.message,pass:false,got:String(e.stack||e),want:''});}
+    finally{unpin();}
     render(performance.now()-t0);return R;}
   function render(ms){const pass=R.filter(r=>r.pass).length;
     let el=document.getElementById('checksOut');if(!el){el=document.createElement('div');el.id='checksOut';document.body.prepend(el);}

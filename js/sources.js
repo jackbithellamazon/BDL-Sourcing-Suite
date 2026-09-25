@@ -209,15 +209,17 @@ function nextRun(src){const last=runLast(src.key);const days=CADENCE_DAYS[src.ca
 /* b46 (Jack, 15 Sep): "next run if today should be red as due today, overdue red too, the whole line red; if done today greyed out" */
 function dueState(src){if(src.status==='paused')return{label:'Paused',cls:'paused',due:false,rank:9000};
   const last=runLast(src.key);const days=CADENCE_DAYS[src.cadence];
-  if(!last)return{label:'Due now',cls:'due',due:true,rank:1,sub:'never run'};
+  /* b154 (Jack, 25 Sep: "improve font and UI UX design of due now and overdue"): plain words, and the latest runs come first.
+     kind = late / today / first, so the pill, the row and the counts can tell them apart; rank −days puts 9 days late above 1 day late */
+  if(!last)return{label:'First run',cls:'due first',kind:'first',due:true,rank:2,sub:'never run yet'};
   const lastDay=String(last.at).slice(0,10),t=today();
   const nx=new Date(last.at);nx.setDate(nx.getDate()+(days||0));nx.setHours(7,0,0,0);const nxDay=nx.toISOString().slice(0,10);
   const nice=nx.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
   if(lastDay===t)return{label:'Done today',cls:'done',due:false,rank:8000,sub:days?'next '+nice:'one-off'};
   if(!days)return{label:'One-off',cls:'',due:false,rank:5000};
-  if(nxDay<t){const od=Math.round((new Date(t)-new Date(nxDay))/864e5);return{label:'Overdue · '+od+'d',cls:'due',due:true,rank:0,sub:'was due '+nice};}
-  if(nxDay===t)return{label:'Due today',cls:'due',due:true,rank:1};
-  const inD=Math.round((new Date(nxDay)-new Date(t))/864e5);return{label:nice,cls:'ok',due:false,rank:100+inD,sub:'in '+inD+'d'};}
+  if(nxDay<t){const od=Math.round((new Date(t)-new Date(nxDay))/864e5);return{label:od===1?'1 day late':od+' days late',cls:'due late',kind:'late',late:od,due:true,rank:-od,sub:'was due '+nice};}
+  if(nxDay===t)return{label:'Due today',cls:'due today',kind:'today',due:true,rank:1};
+  const inD=Math.round((new Date(nxDay)-new Date(t))/864e5);return{label:nice,cls:'ok',due:false,rank:100+inD,sub:inD===1?'tomorrow':'in '+inD+' days'};}
 function fmtWhen(iso){const d=new Date(iso);const t=new Date();const sameDay=d.toDateString()===t.toDateString();
   const y=new Date(t);y.setDate(t.getDate()-1);const yest=d.toDateString()===y.toDateString();
   const hm=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});

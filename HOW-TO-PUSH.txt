@@ -1,11 +1,13 @@
-BDL SOURCING — b151 · 24 Sep 2026
+BDL SOURCING — b155 · 25 Sep 2026
+
+(Nothing since b151 has been pushed — this folder has b152, b153, b154 AND b155 in it. The live site is still on b151.)
 
 This folder is the whole app. Upload all of it every time; anything you already pushed is simply replaced.
 
 1. UPLOAD
    GitHub → Add file → Upload files. Drag in index.html, css, js, tests, README-DEPLOY.txt.
-   js/ has THREE files that did not exist on b73 — euprice.js, apirun.js and auth.js.
-   All three must go up: index.html loads them, and a missing file is a blank page.
+   js/ has FIVE files that did not exist on b73 — euprice.js, apirun.js, auth.js, kcjudge.js (b154)
+   and guest.js (b155). All five must go up: index.html loads them, and a missing file is a blank page.
    Commit, hard-refresh once (Cmd+Shift+R).
 
 2. FIRST THING AFTER YOU PUSH
@@ -18,7 +20,66 @@ This folder is the whole app. Upload all of it every time; anything you already 
    and under Monthly Sales Trends tick Monthly Sold (Last Known) and its Date.
    Free, no tokens. Tell the VAs too.
 
+
+THE LOCK — DO IT IN THIS ORDER (the switch stays OFF until you flip it, so nothing changes on push)
+   Do all of this OUTSIDE guest mode - guest mode sends no emails and will not flip the switch.
+   1. Push this folder as normal.
+   2. Supabase (once): Authentication > URL Configuration > Redirect URLs - add
+      https://jackbithellamazon.github.io/BDL-Sourcing-Suite/
+      (Settings in the app shows the exact address too.)
+   3. Supabase (once): Authentication > Users > Add user > CREATE NEW USER (not "Send invitation")
+      - your email, then Suz's, then Mera's. Any password (nobody ever types it), tick
+      "Auto Confirm User". The app only sends a sign-in link to someone who already exists there.
+      Why not Invite: an invite email lands on the project's main address, which is another app.
+   4. App > Settings > Team: type Suz's and Mera's emails (yours is already there).
+   5. App > Settings: type your own email, press Send me a link, open the email ON THIS MAC
+      in the browser you use for the app. You are now signed in and the Team shows it.
+   6. Team: press Send link next to Suz and Mera. Tell them: open it on the WORK computer, in
+      the browser they use for Sourcing (if the email opens in a different browser, copy the link
+      into the right one). It signs in whichever browser opens it. The link lasts an hour.
+      If it says "email rate limit exceeded": Supabase's built-in email only sends a few an
+      hour - wait an hour and press Send link again.
+   7. When all three show "Signed in", flip "Sign-in required for everyone" on.
+      From then on: no sign-in = the sign-in card and nothing else; their name comes from the
+      sign-in, so nobody can pick the wrong one. They stay signed in on that browser.
+
+GUEST MODE (b155) - RUN EVERYTHING, SAVE NOTHING
+   Settings > Guest mode > Start guest mode. It sends anything still queued, pulls the latest
+   real data, takes a copy of this browser, then goes amber: "Guest - not saving".
+   Run every source, judge, audit, use the console, "View as" Suz or Mera - none of it goes to
+   Supabase. Keepa API buttons still spend real tokens (what they fetch is kept).
+   Leave guest mode (the amber bar, top of every page): everything you did is thrown away,
+   this browser goes back exactly as it was, then picks up what Suz and Mera did meanwhile.
+   Only this browser - nobody else sees guest mode or anything you did in it.
+
 WHAT LANDS, NEWEST FIRST
+   b155 GUEST MODE (see above). Tested: with the cloud forced on, guest mode queued nothing and
+        made zero network calls; leaving put every key back byte for byte, twice.
+   b154 DUE / LATE IN PLAIN WORDS, AND LEAD / NOT A LEAD IN THE KEEPA CONSOLE.
+        Brands / Filters: "9 days late", "Due today", "First run" in the Mac font with a dot -
+        no more "OVERDUE · 9D" in caps. Late is the strongest red, due today an outline, first run
+        dashed, and the rows are calmer so 30 due is not one red wall. The latest sort first.
+        Fixed: your banner said "nothing is assigned to you yet" - unassigned is yours, it counts
+        now. The "Checked 72%" tile was counting Seen stamps as judged; it's "Looked at" now and
+        says how many were really judged.
+        Keepa console > Filter & sort: drop a Product Viewer export and every row has Lead /
+        Not a lead (or Y / N on the row under the mouse; Not asks why, keys 1-5). Pick which filter
+        they came from. Counts, a To judge view, Copy leads. Saved under their name and the day.
+        Only you see the Team card at the top: who judged what each day this week, and their
+        latest leads. A VA never sees the other's. It doesn't touch your run verdicts, so a quick
+        "not a lead" can never hide a lead the rules later find profitable.
+   b153 THE LOCK (see the steps above), MAC TYPE, AND NOTHING MOVES WHEN YOU CLICK.
+        Type: San Francisco everywhere, numbers line up, monospace only for ASINs, brighter grey
+        text, pages fade instead of jumping. Lead table: answering a lead used to fling it to
+        page 2 and N grew the row - both fixed, 8 clicks in a row move nothing. Bulk audit: click
+        the picture to tick, X ticks the row you're on, 3 then Q sets Discord PS on ALL ticked
+        rows (it used to reach only one), and an Undo button in the message.
+   b152 THE AUDIT ROW HOLDS STILL WHEN YOU CLICK. Measured on screen this time, four causes:
+        judging a row switched its whole font to monospace (a CSS name clash with the leads page's
+        "judged" pill - it's why judged titles looked different); the six buttons slid 8px sideways
+        as focus moved; "Missed it" reasons wrapped and grew the row; and near the bottom of the
+        screen a click scrolled the page 230px. All fixed: six clicks in a row, nothing moved, page
+        scrolled 0px. The Missed it pill no longer gets cut off at the right edge either.
    b151 BULK AUDIT. Every row in the storefront audit has a tick box on its picture. Tick one,
         shift-click another to tick the whole run between, or cmd-click a row. A bar at the bottom
         then judges all the ticked rows in one press - "Discord · PS", "THC", "FFB" are one click

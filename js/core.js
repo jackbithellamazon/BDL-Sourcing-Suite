@@ -1,8 +1,11 @@
 /* BDL Sourcing — shared helpers. No rules live here. */
 const $ = s => document.querySelector(s);
 const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-function toast(msg,err){const t=$('#toast');t.innerHTML=(err?'':CHECK)+'<span>'+msg+'</span>';
-  t.className='toast show'+(err?' err':'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',1600);}
+/* b153: an optional action — {label, fn} — puts a button in the toast (Undo), and the toast waits 5 seconds for it instead of 1.6 */
+function toast(msg,err,action){const t=$('#toast');t.innerHTML=(err?'':CHECK)+'<span>'+msg+'</span>'+(action?`<button type="button" class="tact">${action.label}</button>`:'');
+  t.className='toast show'+(err?' err':'')+(action?' act':'');clearTimeout(t._t);
+  if(action){const b=t.querySelector('.tact');b.onclick=()=>{clearTimeout(t._t);t.className='toast';action.fn();};}
+  t._t=setTimeout(()=>t.className='toast',action?5000:1600);}
 function flashOk(btn,word){const lab=btn.querySelector('.lab');if(!lab)return;
   const prev=lab.textContent;btn.classList.add('ok');lab.textContent=word||'Copied';
   clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.classList.remove('ok');lab.textContent=prev;},1400);}

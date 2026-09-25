@@ -7,10 +7,17 @@
 const CLOUD={url:'https://ffbdazepqrsyurhouxif.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmYmRhemVwcXJzeXVyaG91eGlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4OTM5MjIsImV4cCI6MjA5MDQ2OTkyMn0.BAuodLUDGzO9A7IfoRRn0HZ1MgWOXNPeYKPDBNaNWeg'};
 const OUTBOX_KEY='bdl-sourcing-outbox';
 const cloud={busy:false,last:null,err:'',tables:true,pulled:false,pulling:false};
-function cloudEnabled(){const h=location.hostname;const local=h==='localhost'||h==='127.0.0.1'||h==='';return !local||/[?&]cloud/.test(location.search);}
+/* b155 (Jack, 25 Sep: "a guest mode so it doesn't actually save to Supabase at all — I want to run them all and check them").
+   Guest mode = the sandbox switch on the live site: cloudEnabled() goes false, so nothing is queued, sent or pulled (the same
+   path every sandbox test already runs), and cloudReq refuses any write as a second lock. guest.js takes the snapshot on the
+   way in and puts it back on the way out. */
+const GUEST_KEY='bdl-sourcing-guest';
+function guestOn(){try{const g=JSON.parse(localStorage.getItem(GUEST_KEY)||'null');return!!(g&&g.on);}catch(e){return false;}}
+function cloudEnabled(){if(guestOn())return false;const h=location.hostname;const local=h==='localhost'||h==='127.0.0.1'||h==='';return !local||/[?&]cloud/.test(location.search);}
 function nowIso(){return new Date().toISOString();}
 function cloudHdr(extra){return Object.assign({apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json'},extra||{});}
 async function cloudReq(method,path,body,prefer,keepalive){
+  if(guestOn()&&method!=='GET'){const e=new Error('guest mode — nothing is sent');e.status=0;throw e;}
   const r=await fetch(CLOUD.url+'/rest/v1/'+path,{method,headers:cloudHdr(prefer?{Prefer:prefer}:{}),body:body==null?undefined:JSON.stringify(body),keepalive:!!keepalive});
   if(!r.ok){const t=await r.text();const e=new Error(method+' '+path.split('?')[0]+' → '+r.status+' '+t.slice(0,160));e.status=r.status;e.body=t;throw e;}
   const t=await r.text();return t?JSON.parse(t):null;}   /* 201/204 with return=minimal have no body */
@@ -49,7 +56,8 @@ async function cloudFlush(){if(!cloudEnabled()||cloud.busy)return;if(!outbox().l
 /* ---- pull: cloud → local. Called on boot and on demand. ---- */
 async function cloudPull(){if(!cloudEnabled()||cloud.pulling)return false;cloud.pulling=true;paintCloud();let ok=false;
   try{await cloudFlush();if(outbox().length)throw new Error('unsent changes — pull skipped');
-    const [S,R,V,F,B,BB,D,ST]=await Promise.all(['src_sources','src_runs','src_verdicts','src_facts','src_blacklist','src_brand_blacklist','src_discounts','src_settings'].map(t=>cloudGetAll(t)));
+    /* b154: the Keepa console's day rows (kc:<Name>:<day>) live in src_settings too — they come down on their own (kcPull), not with every boot */
+    const [S,R,V,F,B,BB,D,ST]=await Promise.all(['src_sources','src_runs','src_verdicts','src_facts','src_blacklist','src_brand_blacklist','src_discounts','src_settings'].map(t=>cloudGetAll(t,t==='src_settings'?'key=not.like.kc:*':undefined)));
     cloud.tables=true;
     /* an EMPTY cloud table means nobody has synced it yet — push what this browser has, never wipe it */
     if(!S.length)cloudQueue('src_sources','upsert',srcAll().map(srcRow));else lsSet(SRC_KEY,S.map(r=>r.data));
@@ -68,6 +76,10 @@ async function cloudPull(){if(!cloudEnabled()||cloud.pulling)return false;cloud.
     if(st.reasons)lsSet(REASONS_KEY,st.reasons);else cloudQueue('src_settings','upsert',[settingRow('reasons',noReasons())]);
     if(st.vat0)lsSet(VAT0_KEY,st.vat0);else cloudQueue('src_settings','upsert',[settingRow('vat0',vat0Words())]);
     if(st.catBlock)lsSet(CAT_KEY,st.catBlock);else cloudQueue('src_settings','upsert',[settingRow('catBlock',catWords())]);
+    /* b153: who is who, who has signed in, and whether the door is locked */
+    if(st.team&&typeof TEAM_KEY!=='undefined')lsSet(TEAM_KEY,st.team);
+    if(typeof SIGNIN_KEY!=='undefined'){const si={};Object.keys(st).filter(k=>k.startsWith('signin:')).forEach(k=>si[k.slice(7)]=st[k]);if(Object.keys(si).length)lsSet(SIGNIN_KEY,Object.assign(lsGet(SIGNIN_KEY,{})||{},si));}
+    if(st.lock&&typeof LOCK_KEY!=='undefined'){lsSet(LOCK_KEY,st.lock);if(typeof lockCheck==='function')lockCheck();}
     /* lead states are pulled per source when a run opens; the ones this browser already holds go up if the cloud has none */
     const LL=leadAll();for(const key of Object.keys(LL)){const m=LL[key];if(!m||!Object.keys(m).length)continue;
       const have=await cloudGetAll('src_leads','select=id&source_key=eq.'+encodeURIComponent(key)+'&limit=1');
@@ -93,7 +105,8 @@ async function cloudPullLeadsAll(){if(!cloudEnabled()||!cloud.tables)return fals
   catch(e){cloud.err=e.message;if(missingTables(e))cloud.tables=false;paintCloud();return false;}}
 /* ---- the pill in the header ---- */
 function paintCloud(){const el=document.getElementById('cloudPill');if(!el)return;const n=outbox().length;let cls='',txt='',title='';
-  if(!cloudEnabled()){cls='off';txt='Local · sandbox';title='Cloud is off on localhost (add ?cloud to the URL to test it)';}
+  if(guestOn()){cls='guest';txt='Guest · not saving';title='Guest mode: nothing you do is sent to the shared database, and it is all undone when you leave guest mode';}
+  else if(!cloudEnabled()){cls='off';txt='Local · sandbox';title='Cloud is off on localhost (add ?cloud to the URL to test it)';}
   else if(!cloud.tables){cls='bad';txt='Shared storage not set up';title='Run the SQL file in Supabase once — until then everything stays in this browser and is queued ('+n+' waiting)';}
   else if(cloud.pulling){cls='sync';txt='Loading shared data…';}
   else if(n){cls='sync';txt=n+' change'+(n===1?'':'s')+' to send';title=cloud.err||'sending…';}

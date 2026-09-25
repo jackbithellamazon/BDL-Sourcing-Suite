@@ -96,7 +96,8 @@ function audAll(){return lsGet(AUD.V,{});}
 function audSave(m){lsSet(AUD.V,m);}
 function audGet(asin){return audAll()[asin]||null;}
 function audOut(){return lsGet(AUD.OUT,[]);}
-function audQueue(op){const q=audOut();q.push(op);lsSet(AUD.OUT,q);audFlush();}
+function audQueue(op){if(typeof guestOn==='function'&&guestOn())return;   /* b155: guest mode queues nothing, so nothing can be sent later */
+  const q=audOut();q.push(op);lsSet(AUD.OUT,q);audFlush();}
 const AUD_PROD='bdl-sourcing-audit-prod';
 const audState={tables:null,pulled:0,shelfAt:0,sellers:[],shelf:{},shared:{},prod:lsGet(AUD_PROD,{})||{},checking:false};
 /* the picture cache also lives in this browser, capped, so a refresh never blanks the list */
@@ -269,8 +270,15 @@ function auPaintCounts(sh){const c=auCounts(sh);const host=$('#page-audit');if(!
     if(s)s.textContent=c.todo?`about ${Math.max(1,Math.round(c.todo*secs/60))} min · ${c.byHand.toLocaleString()} judged${c.auto?` · ${c.auto.toLocaleString()} marked for you`:''}`:'all done';}
   host.querySelectorAll('.autabs [data-tab]').forEach(el=>{const k=el.dataset.tab;const n=k==='all'?c.all:(c[k]||0);
     const b=el.querySelector('b');if(b)b.textContent=n;el.classList.toggle('zero',!n);});}
-function auKeepFocusVisible(){const el=document.querySelector('.aurow.focus');if(!el)return;
-  const r=el.getBoundingClientRect();if(r.top<64||r.bottom>innerHeight-20)el.scrollIntoView({block:'nearest',behavior:'auto'});}
+/* b152 (Jack, 25 Sep: "still very jumping when I click it"). Measured: judging the row near the bottom of the screen moved the
+   focus to the next row, which was off-screen, and the page scrolled 230px under the mouse. A CLICK never scrolls now — you are
+   looking at the row you clicked, and the next row's buttons are right there. The KEYBOARD still keeps its row on screen, but
+   when it has to scroll it puts the row a third of the way down, so the next few presses do not scroll at all (it used to nudge
+   on every press once you reached the bottom). */
+function auKeepFocusVisible(){if(auView.fromMouse){auView.fromMouse=false;return;}
+  const el=document.querySelector('.aurow.focus');if(!el)return;
+  const r=el.getBoundingClientRect();if(r.top>=64&&r.bottom<=innerHeight-20)return;
+  window.scrollTo({top:Math.max(0,r.top+window.scrollY-Math.round(innerHeight/3)),behavior:'smooth'});}
 function auQuickRender(){if(auView.mode!=='audit')return false;const sh=audShelf(auView.shelf);if(!sh)return false;
   const host=$('#page-audit');const list=host&&host.querySelector('.aulist');if(!list)return false;
   const tab=auView.tab[sh.id]||'todo';const c=auCounts(sh);
@@ -298,7 +306,7 @@ function auPaintBulk(){let el=document.getElementById('auBulk');const pg=documen
       if(t.closest('[data-bclear]')){auView.sel=new Set();auView.lastSel=null;auRefresh();return;}
       if(t.closest('[data-ball]')){auView.sel=new Set(auVisible(sh).map(it=>it.a));auRefresh();return;}
       const more=t.closest('[data-bmore]');if(more){auView.bulkOpen=auView.bulkOpen===more.dataset.bmore?null:more.dataset.bmore;auPaintBulk();return;}
-      const b=t.closest('[data-bv]');if(b){auView.bulkOpen=null;auJudgeNow([...auView.sel],b.dataset.bv,b.dataset.br||'');}});}
+      const b=t.closest('[data-bv]');if(b){auView.bulkOpen=null;auView.fromMouse=true;auJudgeNow([...auView.sel],b.dataset.bv,b.dataset.br||'');}});}
   const sh=audShelf(auView.shelf);const n=auView.sel.size,shown=auVisible(sh).length;
   const btn=(t,idx)=>{const k=`<kbd>${idx+1}</kbd>`;
     if(t.reasons&&t.reasons.length<=3)return`<span class="bgrp" style="--c:${t.hex}"><span class="bl">${AU_ICON[t.icon]||''}${escapeHtml(t.short||t.label)}</span>${t.reasons.map(r=>`<button type="button" class="bb" data-bv="${t.code}" data-br="${escapeHtml(r)}" title="Mark all ${n} ${escapeHtml(t.label)} · ${escapeHtml(r)}">${escapeHtml(r)}</button>`).join('')}</span>`;
@@ -308,7 +316,9 @@ function auPaintBulk(){let el=document.getElementById('auBulk');const pg=documen
   el.hidden=false;
   el.innerHTML=`<div class="bmain"><span class="bn"><b>${n}</b> ticked</span><span class="bsep"></span>${types.map(btn).join('')}<span class="bsep"></span>
       ${n<shown?`<button type="button" class="bl2" data-ball="1">Tick all ${shown} shown</button>`:''}<button type="button" class="bl2" data-bclear="1">Clear <kbd>Esc</kbd></button></div>
-    ${open?`<div class="bwhy" style="--c:${open.hex}"><span>${escapeHtml(open.prompt||'Why?')}</span>${open.reasons.map(r=>`<button type="button" class="bb" data-bv="${open.code}" data-br="${escapeHtml(r)}">${escapeHtml(r)}</button>`).join('')}</div>`:''}`;}
+    ${open?`<div class="bwhy" style="--c:${open.hex}"><span>${escapeHtml(open.prompt||'Why?')}</span>${open.reasons.map(r=>`<button type="button" class="bb" data-bv="${open.code}" data-br="${escapeHtml(r)}">${escapeHtml(r)}</button>`).join('')}</div>`:''}`;
+  /* b153: the toast sits exactly above the bar, however tall the bar is */
+  document.documentElement.style.setProperty('--bulk-h',el.offsetHeight+'px');}
 function auToggleSel(asin,i,range){const sh=audShelf(auView.shelf);if(!sh)return;const vis=auVisible(sh);
   if(range&&auView.lastSel!=null){const a=Math.min(auView.lastSel,i),b=Math.max(auView.lastSel,i);for(let k=a;k<=b;k++)if(vis[k])auView.sel.add(vis[k].a);}
   else{if(auView.sel.has(asin))auView.sel.delete(asin);else auView.sel.add(asin);}
@@ -526,7 +536,7 @@ function auRenderOne(){const sh=audShelf(auView.shelf);const c=auCounts(sh);cons
       !vis.length?'<div class="empty"><span>Nothing in this tab.</span></div>':
       `<div class="augrid"><div class="aulist">${page.map((it,i)=>auRow(it,i,sh)).join('')}${vis.length>AUD.PAGE?`<div class="aumore">Showing the first ${AUD.PAGE} of ${vis.length}. Judge these and the rest follow.</div>`:''}</div>
         <aside class="aupanel">${auPanel(vis[auView.focus],sh)}</aside></div>`}
-    <div class="aukeys"><span><kbd>1</kbd>–<kbd>${audTypes().length}</kbd> judge</span><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>⇧↓</kbd> select a run</span><span><kbd>G</kbd> back to the next one waiting</span><span><kbd>U</kbd> undo</span><span><kbd>O</kbd><kbd>K</kbd><kbd>S</kbd> Amazon · Keepa · SellerAmp</span><span><kbd>/</kbd> search</span></div></div>`;
+    <div class="aukeys"><span><kbd>1</kbd>–<kbd>${audTypes().length}</kbd> judge</span><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>X</kbd> tick · <kbd>⇧↓</kbd> tick a run</span><span><kbd>G</kbd> back to the next one waiting</span><span><kbd>U</kbd> undo</span><span><kbd>O</kbd><kbd>K</kbd><kbd>S</kbd> Amazon · Keepa · SellerAmp</span><span><kbd>/</kbd> search</span></div></div>`;
   /* b92 (Jack: "isn't smooth at all - very very jumpy"). Judging changes a row's height — the six
      buttons appear, a reason row opens, both close again — and every row below it jumped. The list is
      re-rendered wholesale, so the cure is to pin the row you are ON: remember where it sat on screen
@@ -646,14 +656,21 @@ function auJudgeNow(asins,code,reason){const sh=audShelf(auView.shelf);if(!sh)re
     return;}
   asins.forEach(a=>auView.stay.add(a));
   const gap=(Date.now()-auView.lastAt)/1000;if(auView.lastAt&&gap<60){auView.secs=auView.secs.concat([gap]).slice(-40);auSave();}auView.lastAt=Date.now();
-  const t=audType(code);toast(`Marked ${t?t.label:code}${reason?' · '+reason:''}${asins.length>1?' on '+asins.length+' products':''} — press U to undo`);
+  const t=audType(code);
+  const waitReason=!!(t&&t.reasons&&!reason&&asins.length>1);
+  toast(waitReason?`Marked ${t.label} on ${asins.length} — now pick which: ${t.reasons.slice(0,3).map((r,n)=>AU_RKEYS[n].toUpperCase()+' '+r).join(' · ')}${t.reasons.length>3?' …':''}`
+    :`Marked ${t?t.label:code}${reason?' · '+reason:''}${asins.length>1?' on '+asins.length+' products':''}`,false,
+    {label:'Undo',fn:()=>{const u=audUndo();if(u){const vis=auVisible(sh);const back=vis.findIndex(x=>x.a===u[0].asin);if(back>=0)auView.focus=back;auView.sel=new Set();auView.bulkOpen=null;auRefresh();toast('Undone');}}});
   /* b94 (Jack: "improve smoothness when i tick it and how it reacts when it's ticked and where it goes").
      Pressing a key redrew the list and that was the entire feedback — nothing told you it had landed. The
      row that was just judged is now marked for one render, so it can flash its own verdict colour once and
      the chip can pop in. The mark clears itself, so scrolling past later never replays it. */
   auView.landed={a:asins[0],at:Date.now()};   /* b98: `asin` never existed here — the parameter is `asins`, and the ReferenceError killed the redraw on EVERY press */
   clearTimeout(auView._landT);auView._landT=setTimeout(()=>{auView.landed=null;},600);
-  auView.sel=new Set();auView.lastSel=null;if(!(t&&t.reasons)||reason)auAdvance();auRefresh();auFollow();}
+  /* b153: bulk "Discord" with no group yet keeps the rows ticked and opens their reasons, so Q / W / E (or one click) finishes ALL of them
+     — it used to clear the ticks, and the next Q only reached the one row you were on */
+  if(waitReason){auView.sel=new Set(asins);auView.bulkOpen=t.reasons.length>3?code:null;}else{   /* Discord's three groups are already on the bar */auView.sel=new Set();auView.lastSel=null;auView.bulkOpen=null;}
+  if(!(t&&t.reasons)||reason)auAdvance();auRefresh();auFollow();}
 /* b95 (Jack: "why does unsure take us to the top — i want to bulk go through them rapid without being moved").
    It was not Unsure. auAdvance searched DOWN for the next unjudged row and, finding none, wrapped round and
    searched from the top — so the moment everything below you was done, one keypress teleported you to row 1
@@ -730,10 +747,12 @@ function auInit(){const host=$('#page-audit');if(!host)return;
       if(confirm(`Mark ${left.length} product${left.length===1?'':'s'} Not lead?`))auJudgeNow(left,'not');return;}
     const tab=t.closest('[data-tab]');if(tab){const sh=audShelf(auView.shelf);auView.tab[sh.id]=tab.dataset.tab;auView.order=null;auView.stay=new Set();auView.focus=0;auSave();
       const vis=auVisible(sh);const V=audAll();const f=vis.findIndex(it=>audStatus(V[it.a],audSells(sh.id,it.a))==='todo');auView.focus=Math.max(0,f);renderAudit();return;}
+    if(t.closest('[data-v],[data-r],[data-next],[data-sel],.aurow'))auView.fromMouse=true;
     const vb=t.closest('[data-v]');if(vb){const sh=audShelf(auView.shelf);const vis=auVisible(sh);const k=vis.findIndex(it=>it.a===vb.dataset.a);if(k>=0)auView.focus=k;
       auJudgeNow(auView.sel.size?[...auView.sel]:[vb.dataset.a],vb.dataset.v);return;}
     if(t.closest('[data-next]')){const sh=audShelf(auView.shelf);const vis=auVisible(sh);if(auView.focus<vis.length-1)auView.focus++;auRefresh();auFollow();return;}
-    const tick=t.closest('[data-sel]');if(tick){e.preventDefault();auToggleSel(tick.dataset.sel,+tick.dataset.i,e.shiftKey);return;}
+    const tick=t.closest('[data-sel]')||(t.closest('.aulist .aurow > .auimg')&&t.closest('.aurow'));
+    if(tick){e.preventDefault();const r=tick.closest('.aurow')||tick;auToggleSel(r.dataset.a||tick.dataset.sel,+(r.dataset.i||tick.dataset.i),e.shiftKey);return;}   /* b153: the whole picture ticks, not just the little box */
     const rs=t.closest('[data-r]');if(rs){audSetReason(rs.dataset.a,rs.dataset.r);auAdvance();auRefresh();return;}
     const row=t.closest('.aurow');if(row){if(e.metaKey||e.ctrlKey){auToggleSel(row.dataset.a,+row.dataset.i,false);return;}auView.focus=+row.dataset.i;auRefresh();auFollow();return;}});
   host.addEventListener('change',e=>{const id=e.target.id;
@@ -753,6 +772,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     const sh=audShelf(auView.shelf);if(!sh)return;const vis=auVisible(sh);const it=vis[auView.focus];
     if(e.key==='/'){e.preventDefault();const q=$('#auQ');if(q)q.focus();return;}
     if(e.key==='Escape'){if(auView.sel.size){auView.sel=new Set();auView.lastSel=null;auView.bulkOpen=null;auRefresh();}return;}
+    if((e.key==='x'||e.key==='X')&&it&&!e.metaKey&&!e.ctrlKey){e.preventDefault();auToggleSel(it.a,auView.focus,e.shiftKey);return;}   /* b153: X ticks the row you are on, like Gmail */
     if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const d=e.key==='ArrowDown'?1:-1;const nf=Math.min(vis.length-1,Math.max(0,auView.focus+d));
       if(e.shiftKey){if(it)auView.sel.add(it.a);if(vis[nf])auView.sel.add(vis[nf].a);}else auView.sel=new Set();
       auView.focus=nf;auRefresh();auFollow();return;}
@@ -764,7 +784,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
       const keys=Object.keys(byType);if(keys.length){e.preventDefault();let n=0;keys.forEach(r=>{const b=audSetReasonMany(byType[r],r);if(b)n+=b.length;});
         auView.sel=new Set();auView.lastSel=null;toast(`${n} set to ${keys.join(' / ')} — press U to undo`);auRefresh();return;}}
     if(rk>=0&&it){const v=audGet(it.a);const ty=v&&audType(v.verdict);if(ty&&ty.reasons&&ty.reasons[rk]){audSetReason(it.a,ty.reasons[rk]);auAdvance();auRefresh();auFollow();return;}}
-    if(e.key==='u'||e.key==='U'){const b=audUndo();toast(b?'Undone':'Nothing to undo');
+    if(e.key==='u'||e.key==='U'){const b=audUndo();toast(b?(b.length>1?'Undone — '+b.length+' products back':'Undone'):'Nothing to undo');auView.bulkOpen=null;
       if(b){const back=auVisible(sh).findIndex(x=>x.a===b[0].asin);if(back>=0)auView.focus=back;auRefresh();}return;}
     if(!it)return;
     if(e.key==='o'||e.key==='O')window.open('https://www.amazon.co.uk/dp/'+it.a,'_blank');

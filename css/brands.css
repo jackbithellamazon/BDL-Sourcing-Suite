@@ -1572,8 +1572,8 @@ body.auditing .aulist{scroll-behavior:auto}
 /* b123: the active row, the judged pill, the option-check bar */
 .ltbl tbody tr.active td{background:rgba(124,120,255,.07)}
 .ltbl tbody tr.active td:first-child{box-shadow:inset 3px 0 0 var(--iris)}
-.judged{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--faint);display:inline-flex;align-items:center;gap:8px}
-.judged b{color:var(--text)}.judged i{font-style:normal;padding:2px 7px;border-radius:6px;border:1px solid var(--line2);color:var(--faint)}
+.jpill{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--faint);display:inline-flex;align-items:center;gap:8px}
+.jpill b{color:var(--text)}.jpill i{font-style:normal;padding:2px 7px;border-radius:6px;border:1px solid var(--line2);color:var(--faint)}
 .optbar{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:9px 12px;margin:0 0 10px;border-radius:10px;border:1px solid rgba(255,178,36,.35);background:rgba(255,178,36,.06);font-size:12.5px;color:var(--text)}
 .optbar b{color:#FFB224}
 
@@ -1680,7 +1680,7 @@ body.auditing .aulist{scroll-behavior:auto}
 .ltbl td.scorec{max-width:96px}.ltbl td.scorec .stat2{max-width:78px;white-space:normal}.ltbl td.scorec .stat2 .chg{white-space:normal;display:block}
 @media (max-width:1320px){.ltbl{font-size:12px}.ltbl td.prod{max-width:222px;min-width:220px}.ltbl td.sellc{min-width:170px}.lvls{max-width:152px}.ltbl td.pmc{min-width:126px;max-width:156px}.ltbl td.buyc .sub{min-width:84px}.ltbl td.demc{min-width:96px}.ltbl td.vcell{min-width:140px}.vnote{max-width:150px}.ltbl td.scorec{max-width:90px}.ltbl td{padding:8px 6px}.rowacts a{padding:0 6px}}
 /* b140: the pill and Done light up when the last lead is judged */
-.judged.all b{color:var(--jade)}.judged.all i{border-color:rgba(52,211,153,.5);color:var(--jade)}
+.jpill.all b{color:var(--jade)}.jpill.all i{border-color:rgba(52,211,153,.5);color:var(--jade)}
 #runNext2.ready{box-shadow:0 0 0 2px rgba(52,211,153,.45)}
 .pager .pghint{color:var(--iris)}
 /* a "No" row's reason chips were one per line in the narrower Verdict cell (126px of row) — chip-sized, they take three lines */
@@ -1814,3 +1814,197 @@ body.au-selecting .aulist{padding-bottom:96px}
 .aubulk .bl2{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;white-space:nowrap}
 .aubulk .bl2:hover{color:var(--text);border-color:var(--iris)}
 .aubulk .bl2 kbd{font-size:10px;margin-left:4px;opacity:.7}
+
+/* ===== b152 · nothing in an audit row may change size or position when you judge it or when focus moves ===== */
+/* A (in brands.js) · the leads page's "N of M judged" pill had the class .judged — the same class every judged AUDIT row wears — so
+   each row you judged picked up the pill's monospace font, grey colour and 11px size. Every letter changed shape the moment you
+   clicked. The pill is .jpill now. */
+/* B · the row you are on used 5px left padding on its six buttons, every other row 7px — so each click slid the buttons 8px
+   sideways on two rows at once. One set of numbers for every state. */
+.aulist .aurow .aub,.aulist .aurow.focus .aub,.aulist .aurow:hover .aub{padding:0 10px 0 7px}
+/* B2 · and the GAP between them: 4px on the row you are on (a b68 rule), 6px everywhere else. Four gaps x 2px was the rest of the slide. */
+.aulist .aurow > .aubtns,.aulist .aurow.focus > .aubtns,.aulist .aurow:hover > .aubtns,
+.aulist .aurow:not(:hover):not(.focus) > .aubtns{gap:6px;justify-content:flex-start}
+/* D · "Missed it" has seven reasons; they wrapped onto a second line and the row grew 30px. Compact enough to fit one line at 1280. */
+.aulist .aurow > .aureasons{flex-wrap:nowrap;gap:4px;overflow:hidden;white-space:nowrap}
+.aulist .aurow > .aureasons .aurs{height:28px;padding:0 7px 0 5px;font-size:11.5px;gap:4px;flex:0 0 auto}
+.aulist .aurow > .aureasons .aurs kbd{width:16px;height:16px;font-size:9.5px;border-radius:4px}
+/* E · the verdict pill was clipped at the right edge ("Missed i") — the column was narrower than links + pill */
+.aulist .aurow{grid-template-columns:56px minmax(0,1fr) 392px}
+@media (max-width:1440px){.aulist .aurow{grid-template-columns:56px minmax(0,1fr) 372px}.aulist .aurow .aulk{padding:0 9px}}
+@media (max-width:1240px){.aulist .aurow{grid-template-columns:56px minmax(0,1fr) 300px}}
+
+/* ===== b153 · sign-in panel, Team, the lock ===== */
+.authnow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(54,214,164,.35);background:rgba(54,214,164,.06);font-size:13px}
+.authnow i{width:8px;height:8px;border-radius:50%;background:var(--jade);box-shadow:0 0 0 3px rgba(54,214,164,.18);flex:0 0 auto}
+.authnow span{flex:1;min-width:0}.authnow em{font-style:normal;color:var(--faint);margin-left:4px}
+.authnow.off{border-color:var(--line2);background:transparent}.authnow.off i{background:var(--faint);box-shadow:none}
+.authsend{display:flex;gap:8px;margin-top:10px}.authsend input{flex:1}
+.teambox{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.teambox .tbh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}.teambox .tbh span{color:var(--faint);font-size:12px}
+.trow{display:grid;grid-template-columns:90px minmax(0,1fr) auto 150px;gap:8px;align-items:center;padding:5px 0}
+.trow .tn{display:flex;align-items:center;gap:8px;font-weight:600}.trow .tn i{width:10px;height:10px;border-radius:3px}
+.trow .temail{height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--line2);background:var(--ink);color:var(--text);font:inherit;font-size:13px}
+.trow .temail:focus{outline:none;border-color:var(--iris)}
+.trow .tstat{font-size:12px;color:var(--faint);text-align:right}.trow .tstat.in{color:var(--jade)}
+.lockbox{margin-top:16px;padding:12px 14px;border-radius:12px;border:1px solid var(--line2);background:var(--ink2)}
+.lockbox.on{border-color:rgba(54,214,164,.45);background:rgba(54,214,164,.05)}
+.lockbox .lkh{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.lockbox p{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}.lockbox p em{font-style:normal;color:var(--faint)}
+.lkswitch{position:relative;width:44px;height:24px;border-radius:12px;border:1px solid var(--line2);background:var(--surface2);cursor:pointer;padding:0;transition:background .18s var(--ease),border-color .18s var(--ease)}
+.lkswitch i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--muted);transition:transform .2s var(--ease),background .18s}
+.lkswitch.on{background:var(--jade);border-color:var(--jade)}.lkswitch.on i{transform:translateX(20px);background:#fff}
+.lkswitch:disabled{opacity:.4;cursor:not-allowed}
+.lksteps{margin-top:10px;font-size:12.5px;color:var(--muted)}.lksteps summary{cursor:pointer;color:var(--text)}
+.lksteps ol{margin:8px 0 0 18px;padding:0;line-height:1.6}.lksteps code{font-size:11.5px;padding:1px 5px;border-radius:5px;background:var(--surface2);color:var(--text);word-break:break-all}
+/* the front door: when locked and nobody is signed in, the app is not merely covered — it is not drawn */
+html.locked body > *:not(#lockScreen):not(#toast){display:none!important}
+.lockscreen{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;
+  background:radial-gradient(900px 440px at 20% -10%, var(--bg-a), transparent 60%),radial-gradient(700px 400px at 90% 110%, var(--bg-b), transparent 60%),var(--ink)}
+.lockscreen[hidden]{display:none}
+.lkcard{width:min(440px,100%);padding:30px 28px 26px;border-radius:18px;border:1px solid var(--line2);background:var(--surface);box-shadow:0 30px 80px -40px rgba(0,0,0,.9);animation:lkIn .32s var(--ease) both}
+.lklogo{display:flex;align-items:center;gap:8px;font-family:var(--disp);font-size:17px;margin-bottom:22px}.lklogo em{font-style:normal;color:var(--iris2)}
+.lkmark{width:22px;height:22px;border-radius:7px;background:linear-gradient(140deg,var(--iris),var(--iris2))}
+.lkcard h1{margin:0 0 6px;font-size:22px;font-weight:650;letter-spacing:-.01em}
+.lkcard p{margin:0 0 18px;color:var(--muted);font-size:13.5px;line-height:1.55}
+.lkrow{display:flex;gap:8px}.lkrow input{flex:1;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line2);background:var(--ink);color:var(--text);font:inherit;font-size:14px}
+.lkrow input:focus{outline:none;border-color:var(--iris);box-shadow:0 0 0 3px rgba(110,123,255,.2)}
+.lkrow .btn{height:40px}
+.lkmsg{min-height:20px;margin-top:10px;font-size:12.5px;color:var(--muted)}.lkmsg.good{color:var(--jade)}.lkmsg.bad{color:var(--coral)}
+@keyframes lkIn{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+@media (max-width:720px){.trow{grid-template-columns:70px minmax(0,1fr);}.trow .tstat{grid-column:1/-1;text-align:left}}
+
+/* ===== b153 · Mac-first type and motion (Jack, 25 Sep: "smoother and fun to use — not rigid or buggy or jumpy — better fonts and
+   text, remember Mac user") ===== */
+/* buttons and inputs do not inherit number styling from the page in Chrome (the browser's own button font resets it), so every
+   count inside a tab, pager or bar button lost its lined-up figures. Given to them directly, at zero specificity. */
+:where(button,input,select,textarea,kbd){font-variant-numeric:tabular-nums}
+/* ASINs are the one thing that is genuinely code: they stay monospace, so B0B8H4B2QJ reads character by character */
+.asinl,.auasin,.ltbl td.asin,.oatbl td.p .a,.hstbl .asin,code{font-family:var(--code);font-variant-numeric:normal;letter-spacing:0}
+.asinl{font-size:11.5px}
+/* small uppercase labels were tracked for a monospace; San Francisco wants a touch less */
+.ltbl thead th,.oatbl th{letter-spacing:.05em}
+/* headings in San Francisco get Apple's own tight tracking */
+h1,h2,h3{letter-spacing:-.012em}
+/* PRESS FEEDBACK — a quick, tiny squeeze while the button is held. It is a transform, so nothing around it moves. */
+.btn,.aub,.vb,.bb,.bl2,.aulk,.pm,.lv,.rchip,.pager .pg button,.autabs button,.lkswitch,.ausel,.aunext{
+  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease,opacity .14s ease,transform .08s ease}
+.btn:active,.aub:active,.bb:active,.bl2:active,.aulk:active,.pm:active,.rchip:active,.pager .pg button:active,.autabs button:active,.aunext:active{transform:scale(.965)}
+/* in the lead table transitions stay OFF (b130: they made rows shimmer) — only the instant squeeze */
+.ltbl .vb:active,.ltbl .lv:active,.ltbl .pm:active{transform:scale(.94)}
+/* one focus ring everywhere, only for the keyboard */
+:where(button,a,input,select,[tabindex]):focus-visible{outline:2px solid var(--iris);outline-offset:2px;border-radius:8px}
+/* the bulk bar glides up the first time it appears rather than snapping in */
+.aubulk:not([hidden]){animation:bulkIn .22s cubic-bezier(.2,.8,.2,1) both}
+@keyframes bulkIn{from{opacity:0;transform:translateX(-50%) translateY(14px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+/* the judged row's landing is a colour wash only — the old pill "pop" scaled it, which read as a jump */
+.aulist .aurow.landed .aupill.big{animation:none}
+@media (prefers-reduced-motion:reduce){.aubulk:not([hidden]){animation:none}.btn:active,.aub:active,.bb:active{transform:none}}
+
+/* b153 · the toast can carry an Undo button */
+.toast.act{pointer-events:auto;padding-right:8px}
+.toast .tact{margin-left:10px;height:26px;padding:0 11px;border-radius:7px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:inherit;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer}
+.toast .tact:hover{background:rgba(255,255,255,.24)}
+/* the whole picture is a tick target */
+.aulist .aurow > .auimg{cursor:pointer}
+.aulist .aurow > .auimg:hover .ausel{border-color:var(--iris);background:rgba(110,123,255,.35)}
+body.au-selecting .toast{bottom:calc(var(--bulk-h,56px) + 30px)}   /* b153: sit above the bulk bar, never on top of it — measured, not guessed */
+.toast{transition-property:opacity,transform}   /* only the fade and the slide animate; its height above the bar changes at once, so it can never be caught over the bar */
+/* b153 · the verdict cell's extras are compact enough to sit inside the row's natural height */
+.ltbl td.vcell .vnote{height:25px;margin-top:5px;padding:3px 8px}
+.ltbl td.vcell .vreasons{margin-top:5px;gap:3px}
+.ltbl td.vcell .chg{display:block;margin-top:3px;line-height:1.25}
+
+/* ===== b154 · due / late (Jack, 25 Sep: "improve font and UI UX design of due now and overdue") =====
+   Plain words in the Mac system font, a dot instead of shouting caps. Three strengths of the same red so the eye reads
+   late > due today > first run, and the row tint is quieter so thirty due rows no longer make one red wall. */
+.btbl td.nextc .nx{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);text-transform:none;letter-spacing:-.005em;
+  font-size:12.5px;font-weight:600;line-height:1;padding:5px 11px 5px 9px;border-radius:999px;white-space:nowrap;border:1px solid transparent;background:none}
+.btbl td.nextc .nx.due{text-transform:none;letter-spacing:-.005em;font-size:12.5px;font-weight:600;padding:5px 11px 5px 9px;background:none}
+.btbl td.nextc .nx i{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.btbl td.nextc .nx.late{color:var(--coral);background:color-mix(in srgb,var(--coral) 15%,transparent);border-color:color-mix(in srgb,var(--coral) 40%,transparent)}
+.btbl td.nextc .nx.late i{box-shadow:0 0 0 3px color-mix(in srgb,var(--coral) 22%,transparent)}
+.btbl td.nextc .nx.today{color:var(--coral);border-color:color-mix(in srgb,var(--coral) 45%,transparent)}
+.btbl td.nextc .nx.first{color:var(--coral);border-color:color-mix(in srgb,var(--coral) 38%,transparent);border-style:dashed}
+.btbl td.nextc .nx.first i{background:none;box-shadow:inset 0 0 0 1.5px currentColor}
+.btbl td.nextc .nx.done{color:var(--jade);background:color-mix(in srgb,var(--jade) 12%,transparent);border-color:color-mix(in srgb,var(--jade) 36%,transparent);text-transform:none;letter-spacing:-.005em;font-size:12.5px}
+.btbl td.nextc .nx.ok{padding-left:0;padding-right:0;color:var(--text);font-weight:600}
+.btbl td.nextc .nx.paused{color:var(--faint);background:none;border-color:var(--line2);text-transform:none;font-size:12px;font-weight:500;padding:4px 10px}
+.btbl td.nextc .l2{display:block;font-size:11.5px;color:var(--faint);margin-top:5px;padding-left:2px;letter-spacing:0}
+.btbl td.nextc .nx.ok + .l2{padding-left:0;margin-top:3px}
+.btbl tr.isdue td{background:color-mix(in srgb,var(--coral) 3.5%,var(--surface2))}
+.btbl tr.isdue td:first-child{box-shadow:inset 3px 0 0 color-mix(in srgb,var(--coral) 45%,transparent)}
+.btbl tr.islate td{background:color-mix(in srgb,var(--coral) 6%,var(--surface2))}
+.btbl tr.islate td:first-child{box-shadow:inset 3px 0 0 var(--coral)}
+.btbl tbody tr[data-key].isdue:hover td{background:var(--raise)}
+.yourday .ydt b.ydlate{color:var(--coral)}
+.btbl td.nextc .nx::before{display:none}
+
+/* ===== b154 · Keepa console: Lead / Not a lead (kcjudge.js) ===== */
+#tableF td.kcj,#tableF th.kcj{width:250px;min-width:250px;text-align:left;white-space:nowrap}
+.kcb{display:flex;align-items:center;gap:6px}
+.kcb button{height:28px;padding:0 11px;border-radius:8px;border:1px solid var(--line2);background:var(--ink);color:var(--muted);font:600 12.5px/1 var(--sans);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.kcb .kcl:hover{color:var(--jade);border-color:color-mix(in srgb,var(--jade) 55%,transparent)}
+.kcb .kcn:hover{color:var(--coral);border-color:color-mix(in srgb,var(--coral) 55%,transparent)}
+.kcb .kcl.on{background:var(--jade);border-color:var(--jade);color:#04241b}
+.kcb .kcn.on{background:var(--coral-dim);border-color:color-mix(in srgb,var(--coral) 55%,transparent);color:var(--coral)}
+.kcb .kcn.on.waiting{border-style:dashed}
+.kcb .kcn{max-width:158px;overflow:hidden;text-overflow:ellipsis}
+.kcold{font-size:11px;color:var(--faint)}
+#tableF tbody tr.kc-lead td{background:color-mix(in srgb,var(--jade) 7%,transparent)}
+#tableF tbody tr.kc-not td:not(.kcj){color:var(--faint)}
+#tableF[data-kcv="todo"] tbody tr.kc-done:not(.kc-held),
+#tableF[data-kcv="lead"] tbody tr[data-asin]:not(.kc-lead):not(.kc-held),
+#tableF[data-kcv="not"] tbody tr[data-asin]:not(.kc-not):not(.kc-held){display:none}
+.kcbar{display:flex;align-items:center;gap:14px 18px;flex-wrap:wrap;padding:10px 12px;margin:14px 0 10px;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}
+.kcwho{display:flex;align-items:center;gap:12px}
+.kcsrc{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--faint)}
+.kcsrc select{height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--ink);color:var(--text);font:500 12.5px var(--sans);padding:0 8px;max-width:270px;cursor:pointer}
+.kcprog{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.kcprog b{color:var(--text);font-size:15px;font-weight:700}
+.kcmeter{display:inline-flex;width:120px;height:6px;border-radius:6px;background:var(--line2);overflow:hidden}
+.kcmeter i{display:block;height:100%;transition:width .25s var(--ease)}
+.kcmeter i.l{background:var(--jade)}.kcmeter i.n{background:var(--coral);opacity:.75}
+.kcl2{font-size:12px;color:var(--faint)}
+.kcseg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--ink);margin-left:auto}
+.kcseg button{height:26px;padding:0 10px;border:0;border-radius:7px;background:none;color:var(--muted);font:600 12px/1 var(--sans);cursor:pointer;transition:background .15s,color .15s}
+.kcseg button b{font-weight:600;color:var(--faint);margin-left:3px}
+.kcseg button.on{background:var(--raise);color:var(--text)}
+.kcpop{position:fixed;z-index:60;display:flex;flex-direction:column;gap:3px;padding:8px;min-width:180px;border-radius:12px;border:1px solid var(--line2);background:var(--surface);box-shadow:0 18px 40px -12px rgba(0,0,0,.55);animation:bulkIn .14s var(--ease)}
+.kcpop .t{font-size:11px;color:var(--faint);padding:2px 6px 4px}
+.kcpop .vr{display:flex;align-items:center;gap:9px;text-align:left;font-size:12.5px;padding:6px 10px;border-radius:8px;background:none;border:1px solid transparent;color:var(--text)}
+.kcpop .vr:hover,.kcpop .vr.on{border-color:color-mix(in srgb,var(--coral) 50%,transparent);color:var(--coral);background:var(--coral-dim)}
+.kcpop .vr kbd{font:600 10.5px/1 var(--sans);color:var(--faint);border:1px solid var(--line2);border-radius:4px;padding:2px 5px}
+.kcteam{border:1px solid var(--line);border-radius:14px;background:var(--surface2);padding:14px 16px;margin-bottom:18px}
+.kct-h{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}.kct-h .t{font-weight:700;font-size:14px}.kct-h .s{font-size:12px;color:var(--faint)}
+.kct{width:100%;border-collapse:collapse;font-size:12.5px}
+.kct thead th{font-weight:500;color:var(--faint);font-size:11.5px;text-align:left;padding:4px 8px}
+.kct td,.kct tbody th{padding:7px 8px;border-top:1px solid var(--line);text-align:left;vertical-align:middle}
+.kct td b{display:block;font-size:14px;color:var(--text);line-height:1.2}
+.kct td span{font-size:11.5px;color:var(--faint)}.kct td span.kl{color:var(--jade)}
+.kct td.z{color:var(--faint)}
+.kct-l{margin-top:12px;display:flex;flex-direction:column;gap:2px}
+.kct-l .t{font-size:11.5px;color:var(--faint);margin:0 0 4px 8px}
+.kcla{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;text-decoration:none;color:var(--text);font-size:12.5px}
+.kcla:hover{background:var(--raise)}
+.kcla code{font-family:var(--code);font-size:11.5px;color:var(--muted)}
+.kcla .tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kcla .fr{font-size:11.5px;color:var(--faint);white-space:nowrap}
+.kct-e{font-size:13px;color:var(--faint);margin:0}
+/* b154: the console list is where the judging happens now — let it use the screen, not a 430px letterbox */
+#tableWrap .tablescroll{max-height:max(430px,calc(100vh - 170px))}
+
+/* ===== b155 · guest mode (guest.js) — amber everywhere it shows, so it can never be mistaken for the real thing ===== */
+.guestbar{position:sticky;top:0;z-index:70;display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding:9px 22px;
+  background:color-mix(in srgb,var(--amber) 15%,var(--ink));border-bottom:1px solid color-mix(in srgb,var(--amber) 45%,transparent);font-size:13px;color:var(--text);animation:fadein .2s}
+.guestbar .gtag{display:inline-flex;align-items:center;gap:8px;font-weight:700;color:var(--amber);white-space:nowrap}
+.guestbar .gtag i{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 3px color-mix(in srgb,var(--amber) 25%,transparent)}
+.guestbar .gtxt{flex:1 1 420px;color:var(--muted)}.guestbar .gtxt b{color:var(--text);font-weight:600}
+.guestbar .gtok{color:var(--amber)}
+.guestbar .gas{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--faint);white-space:nowrap}
+.guestbar .gas select{height:28px;border-radius:7px;border:1px solid var(--line2);background:var(--ink);color:var(--text);font:500 12.5px var(--sans);padding:0 6px;cursor:pointer}
+.guestbar .gleave{height:30px;padding:0 14px;background:var(--amber);color:#2a1d00;border:0;font-weight:700;border-radius:8px}
+.guestbar .gleave:hover{filter:brightness(1.08)}
+.cloudpill.guest{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 50%,transparent);background:var(--amber-dim)}.cloudpill.guest i{background:var(--amber)}
+.scope.gon{color:var(--amber);border-color:rgba(251,191,36,.45);background:var(--amber-dim)}
+.guestbox .glist{margin:4px 0 14px 18px;padding:0;color:var(--muted);font-size:13px;line-height:1.65}

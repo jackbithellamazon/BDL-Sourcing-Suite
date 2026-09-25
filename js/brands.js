@@ -49,7 +49,8 @@ function whoPaint(){['#whoSel','#meIn'].forEach(id=>{const el=$(id);if(el&&el.va
 /* the storefront audit is Jack's page — the tile is not there for anyone else */
 function paintJackOnly(){document.querySelectorAll('.jackonly').forEach(el=>{el.hidden=!isJack();});
   if(!isJack()){const p=$('#page-audit');if(p&&p.classList.contains('active')){document.querySelector('.pagebtn[data-page="page-brands"]').click();}}}
-function whoSet(v){lsSet(ME_KEY,v);whoPaint();paintJackOnly();if(typeof renderAudit==='function')renderAudit();renderList();if(result)renderTable();
+function whoSet(v){if(typeof lockOn==='function'&&lockOn()&&authedName()&&v!==authedName()&&!guestOn()){toast('You are signed in as '+authedName()+' — sign out first to be someone else',true);return;}
+  lsSet(ME_KEY,v);whoPaint();paintJackOnly();if(typeof renderAudit==='function')renderAudit();renderList();if(result)renderTable();
   if(v&&pendingFiles){const f=pendingFiles;pendingFiles=null;whoGate(false);handleFiles(f);}   /* b131: the held export goes through */toast(v?'You are '+v+' — everything you mark carries your name':'No name set — nothing can be marked until you pick one',!v);}
 /* b24 (14 Sep: Jack clicked Y/N/M all afternoon with no name picked — every click was refused by a toast he never saw and the
    work was lost). The question is now a gate you cannot miss: it opens on first visit and on any marking click, and the click
@@ -89,7 +90,9 @@ function renderKpis(){const all=visibleSources(),keys=new Set(all.map(s=>s.key))
   const cut=Math.max(0,rowsIn-leadsSum),saved=rowsIn?Math.round(cut/rowsIn*100):0;
   const seen=new Set(),asins=new Set();let hot=0,warm=0;
   wk.forEach(r=>{const m=LA[r.source]||{};(r.asins||[]).forEach(a=>{asins.add(a);const k=r.source+'|'+a;if(seen.has(k))return;seen.add(k);const sc=(m[a]&&m[a].state&&+m[a].state.score)||0;if(sc>=75)hot++;else if(sc>=50)warm++;});});
-  let checked=0;asins.forEach(a=>{if(V[a])checked++;});
+  /* b154: "Seen" is not a judgement — on the live data 460 of 461 verdicts were bulk Seen stamps, and the tile called them "judged" */
+  let checked=0,judged=0;asins.forEach(a=>{const x=V[a];if(!x)return;checked++;if(x.v!=='Seen')judged++;});
+  const dueL=all.filter(s=>dueState(s).due),late=dueL.filter(s=>dueState(s).kind==='late').length,first=dueL.filter(s=>dueState(s).kind==='first').length,dToday=dueL.length-late-first;
   const wv=Object.values(V).filter(x=>x.at&&new Date(x.at).getTime()>=weekAgo());const yes=wv.filter(x=>x.v==='Yes').length,no=wv.filter(x=>x.v==='No').length,maybe=wv.filter(x=>x.v==='Maybe').length;
   const live=all.filter(s=>s.status!=='paused');const tr=live.reduce((n,s)=>n+toReviewCount(runLast(s.key)),0),trSrc=live.filter(s=>toReviewCount(runLast(s.key))>0).length;
   const k=(v,l,sub,cls,ic)=>`<div class="kpi"><span class="ki ${cls||''}">${ic}</span><div><div class="kv">${v}</div><div class="kl">${l}</div>${sub?`<div class="ks">${sub}</div>`:''}</div></div>`;
@@ -99,9 +102,9 @@ function renderKpis(){const all=visibleSources(),keys=new Set(all.map(s=>s.key))
     +k(seen.size.toLocaleString(),'Leads found',`${newN.toLocaleString()} new · ${betterN.toLocaleString()} better`,'iris',ICONS.play)
     +k(hot.toLocaleString(),'Bangers · score 75+',`${warm.toLocaleString()} scored 50–74`,hot?'jade':'',ICONS.run)
     +k(yes.toLocaleString(),'Approved · Yes',`${no} No · ${maybe} Maybe`,yes?'jade':'',ICONS.edit)
-    +k(asins.size?Math.round(checked/asins.size*100)+'%':'—','Checked',asins.size?`${checked.toLocaleString()} of ${asins.size.toLocaleString()} leads judged`:'no leads yet',asins.size&&checked/asins.size<.5?'coral':'jade',ICONS.eye)
+    +k(asins.size?Math.round(checked/asins.size*100)+'%':'—','Looked at',asins.size?`${judged.toLocaleString()} judged · ${(checked-judged).toLocaleString()} only marked seen · of ${asins.size.toLocaleString()}`:'no leads yet',asins.size&&checked/asins.size<.5?'coral':'jade',ICONS.eye)
     +k(tr.toLocaleString(),'To review now',trSrc?`across ${trSrc} filter${trSrc===1?'':'s'}`:'','iris',ICONS.eye)
-    +k(due,'Due today',`${active} active · ${testing} testing`,due?'amber':'jade',ICONS.cal);}
+    +k(due,'Due now',due?[late?`${late} late`:'',dToday?`${dToday} today`:'',first?`${first} never run`:''].filter(Boolean).join(' · '):`${active} active · all run`,due?(late?'coral':'amber'):'jade',ICONS.cal);}
 function listSorted(){const L=srcAll();const last=s=>runLast(s.key);const t=s=>{const l=last(s);return l?l.at:'';};
   const cmp={due:(a,b)=>(dueRank(a)-dueRank(b))||a.name.localeCompare(b.name),name:(a,b)=>a.name.localeCompare(b.name),
     owner:(a,b)=>(a.owner||'VAs').localeCompare(b.owner||'VAs')||a.name.localeCompare(b.name),
@@ -112,19 +115,21 @@ function listSorted(){const L=srcAll();const last=s=>runLast(s.key);const t=s=>{
   if(!cmp)return srcSorted();
   return L.sort((a,b)=>(a.type===b.type?0:a.type==='filter'?-1:1)||cmp(a,b));}
 function segCounts(){const all=visibleSources();const c={due:0,mine:0,all:all.length,active:0,paused:0};
-  all.forEach(s=>{if(dueState(s).due)c.due++;if(s.status==='paused')c.paused++;else c.active++;if((me()&&s.owner===me())||(lockFresh(s)&&ownLock(s)))c.mine++;});
+  all.forEach(s=>{if(dueState(s).due)c.due++;if(s.status==='paused')c.paused++;else c.active++;if(ownsIt(s,me())||(lockFresh(s)&&ownLock(s)))c.mine++;});
   document.querySelectorAll('#lSeg button').forEach(b=>{const n=b.querySelector('b');if(n)n.textContent=c[b.dataset.seg]||0;});
   const nb=$('#lvnBrands'),nr=$('#lvnRuns'),nl=$('#lvnLeads');if(nb)nb.textContent=all.length;if(nr)nr.textContent=runsAll().length;
   if(nl){let n=0;const LA=leadAll();Object.values(LA).forEach(m=>n+=Object.keys(m||{}).length);nl.textContent=n.toLocaleString();}}
 /* b60 (Jack: "needs to be smooth and easy for my VAs"): the next thing to run, for whoever is signed in */
+/* b154: unowned is Jack's until he assigns it (the visibility rule), so on Jack's screen it counts as his — not "for others" */
+function ownsIt(s,m){if(!m)return false;return s.owner===m||(m==='Jack'&&(!s.owner||s.owner===NO_OWNER));}
 function nextDue(fromKey){const m=me();const L=visibleSources().filter(s=>s.status!=='paused'&&s.key!==fromKey&&dueState(s).due);
-  L.sort((a,b)=>((m&&b.owner===m)-(m&&a.owner===m))||(dueRank(a)-dueRank(b))||a.name.localeCompare(b.name));return L[0]||null;}
+  L.sort((a,b)=>(ownsIt(b,m)-ownsIt(a,m))||(dueRank(a)-dueRank(b))||a.name.localeCompare(b.name));return L[0]||null;}
 function renderYourDay(){const el=$('#yourDay');if(!el)return;const m=me();if(!m){el.hidden=true;return;}
-  const mine=srcAll().filter(s=>s.status!=='paused'&&(s.owner===m||(m==='Jack'&&false)));const due=mine.filter(s=>dueState(s).due);
+  const mine=srcAll().filter(s=>s.status!=='paused'&&ownsIt(s,m));const due=mine.filter(s=>dueState(s).due);const what=m==='Jack'?'brands & filters':'filters';
   const tr=mine.reduce((n,s)=>n+toReviewCount(runLast(s.key)),0);const nx=nextDue(null);
   const dueAny=srcAll().filter(s=>s.status!=='paused'&&dueState(s).due).length;
-  el.innerHTML=`<div class="yd"><span class="ydn">${whoChip(m)}</span><span class="ydt">${mine.length?(due.length?`<b>${due.length}</b> of your ${mine.length} filters ${due.length===1?'is':'are'} due today`:`all ${mine.length} of your filters are done for today ✓`):`nothing is assigned to you yet`}${tr?` · <b>${tr.toLocaleString()}</b> lead${tr===1?'':'s'} waiting for a look`:''}${!due.length&&dueAny?` · ${dueAny} due for others`:''}</span>
-    ${nx?`<button class="btn primary sm" type="button" data-start="${nx.key}">${ICONS.run}Start with ${escapeHtml(nx.name)}${nx.owner!==m?' ('+((!nx.owner||nx.owner===NO_OWNER)?'unassigned':(nx.owner==='VAs'?'VAs':escapeHtml(nx.owner)+"'s"))+')':''}</button>`:''}</div>`;el.hidden=false;}
+  el.innerHTML=`<div class="yd"><span class="ydn">${whoChip(m)}</span><span class="ydt">${mine.length?(due.length?`<b>${due.length}</b> of your ${mine.length} ${what} ${due.length===1?'is':'are'} due${(()=>{const l=due.filter(s=>dueState(s).kind==='late').length;return l?` · <b class="ydlate">${l} late</b>`:'';})()}`:`all ${mine.length} of your ${what} are done for today ✓`):`nothing is assigned to you yet`}${tr?` · <b>${tr.toLocaleString()}</b> lead${tr===1?'':'s'} waiting for a look`:''}${!due.length&&dueAny?` · ${dueAny} due for others`:''}</span>
+    ${nx?`<button class="btn primary sm" type="button" data-start="${nx.key}">${ICONS.run}Start with ${escapeHtml(nx.name)}${!ownsIt(nx,m)?' ('+((!nx.owner||nx.owner===NO_OWNER)?'unassigned':(nx.owner==='VAs'?'VAs':escapeHtml(nx.owner)+"'s"))+')':''}</button>`:''}</div>`;el.hidden=false;}
 const HOWTO_KEY='bdl-sourcing-howto-hidden';
 function renderHowTo(){const el=$('#howTo');if(!el)return;el.hidden=!!lsGet(HOWTO_KEY,false);}
 function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay();renderHowTo();const q=lview.q.toLowerCase();
@@ -134,7 +139,7 @@ function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay()
     if(lview.seg==='paused'&&s.status!=='paused')return false;
     if(lview.seg==='active'&&s.status==='paused')return false;
     if(lview.type!=='ALL'&&(s.type==='filter'?'filter':'brand')!==lview.type)return false;
-    if(lview.seg==='mine'&&!(me()&&s.owner===me())&&!(lockFresh(s)&&ownLock(s)))return false;
+    if(lview.seg==='mine'&&!ownsIt(s,me())&&!(lockFresh(s)&&ownLock(s)))return false;
     if(lview.market!=='ALL'&&!s.markets.includes(lview.market))return false;
     if(lview.rule!=='ALL'&&String(s.rule)!==lview.rule)return false;
     if(lview.owner!=='ALL'&&(s.owner||NO_OWNER)!==lview.owner)return false;
@@ -142,13 +147,13 @@ function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay()
   const tb=$('#brandTbl');
   if(!rows.length){tb.innerHTML=`<tbody><tr><td colspan="8" style="text-align:center;color:var(--faint);padding:22px">${lview.seg==='due'?'Nothing due — everything has been run inside its cadence.':lview.seg==='mine'?(me()?'Nothing is yours yet — Jack sets the owner in Edit.':'Pick who you are (top right) to see your list.'):'Nothing here.'}</td></tr></tbody>`;return;}
   const rowHtml=s=>{const d=dueState(s),last=runLast(s.key),nx=nextRun(s),tok=tokenEstimate(s),lk=lockFresh(s)?s.inProgress:null,mine=lk&&ownLock(s),tr=toReviewCount(last);
-    return`<tr class="${s.status==='paused'?'paused':(d.cls==='due'?'isdue':d.cls==='done'?'isdone':'')}" data-key="${s.key}">
+    return`<tr class="${s.status==='paused'?'paused':(d.due?'isdue is'+d.kind:d.cls==='done'?'isdone':'')}" data-key="${s.key}">
       <td class="namec"><div class="brandcell">${avatar(s)}<div class="ntext"><div class="nline"><span class="bname">${escapeHtml(s.name)}</span><span class="rl r${s.rule}" title="${RULE_LABEL[s.rule]||''}">Rule ${s.rule}</span></div><span class="note" title="${escapeHtml(s.note||'')}">${escapeHtml(s.note||(s.type==='filter'?'Saved Keepa filter':'Brand run · UK sell side'))}</span></div></div></td>
       <td class="ownc">${isJack()?`<select class="inl ownsel ${ownCls(s.owner||NO_OWNER)}" data-key="${s.key}" title="Who runs this — saves straight away">${OWNER_OPTS.map(u=>`<option${(s.owner||'VAs')===u?' selected':''}>${u}</option>`).join('')}</select>`:whoChip(s.owner||'VAs')}</td>
       <td><div class="flags" title="${s.markets.join(' · ')}">${s.markets.map(m=>`<span class="f">${FLAG[m]}</span>`).join('')}</div></td>
       <td class="stc">${isJack()?`<select class="inl stsel s-${s.status}" data-key="${s.key}" title="Active runs on its cadence · Testing = trial · Paused = off the list — saves straight away">${Object.entries(STATUS_LABEL).map(([k,l])=>`<option value="${k}"${s.status===k?' selected':''}>${l}</option>`).join('')}</select><select class="inl cadsel" data-key="${s.key}" title="How often it should run — saves straight away">${Object.entries(CADENCE_LABEL).map(([k,l])=>`<option value="${k}"${s.cadence===k?' selected':''}>${l}</option>`).join('')}</select>`:`<span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span><span class="l2">${CADENCE_LABEL[s.cadence]||s.cadence}</span>`}${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
       <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` ${whoChip(last.who)}`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}</td>
-      <td class="nextc"><span class="nx ${d.cls}">${d.label}</span><span class="l2" title="Run by export today = 0 Keepa tokens. If this ran through the API by itself it would cost about ${tok.toLocaleString()} tokens.">${d.sub||'by export'}</span></td>
+      <td class="nextc"><span class="nx ${d.cls}">${d.due||d.cls==='done'?'<i></i>':''}${d.label}</span>${d.sub?`<span class="l2" title="Run by export today = 0 Keepa tokens. If this ran through the API by itself it would cost about ${tok.toLocaleString()} tokens.">${d.sub}</span>`:''}</td>
       <td class="actc"><div class="acts">${finderLink(s)?`<a class="ib" href="${finderLink(s)}" target="_blank" rel="noopener" title="${s.link?'Open the saved Keepa filter':'Open the generated Keepa filter (edit to paste your own)'}">${ICONS.ext}</a>`:`<span class="ib nolink" title="No Keepa link saved yet — Edit and paste it">?</span>`}<button class="btn run xs" data-act="run" ${s.status==='paused'?'disabled':''} title="${lk&&!mine?'Someone else has it open — you can still join':''}">${ICONS.run}${lk&&!mine?'Join':'Run'}</button>${isJack()?`<button class="ib" data-act="edit" title="Edit">${ICONS.edit}</button>`:''}
         <div class="menu"><button class="ib" data-act="menu" aria-label="More">⋮</button>
           <div class="pop"><button data-act="history">${ICONS.hist}History</button>${isJack()?`<button data-act="pause">${s.status==='paused'?ICONS.play:ICONS.pause}${s.status==='paused'?'Set active':'Pause'}</button>`:''}${lk?`<button data-act="unlock">${ICONS.eye}Clear "on it"</button>`:''}${isJack()?`<button data-act="delete" class="danger">${ICONS.trash}Delete</button>`:''}</div></div></div></td></tr>`;};
@@ -429,20 +434,49 @@ function euShow(wins,n){const res=$('#results');if(!res)return;let el=$('#euPane
 /* b128 (Jack, 20 Sep: "where is magic link for them"). The sign-in only showed on the first-visit gate, so anyone who had
    already picked a name never saw it. It lives in Settings now, and Jack can send a VA her link from his own screen:
    Supabase emails the one-click link to an address he has already invited. */
+/* b153 (Jack, 25 Sep: "build it then please"): the sign-in panel. Everyone sees whether they are signed in. Jack also gets the Team —
+   one email per person, a Send link button each and when they last signed in — and the lock, which will not switch on until he
+   is signed in on this browser himself. */
 function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='function')return;
-  const u=(typeof authUser==='function')?authUser():null;
-  const send=`<div class="authsend"><input type="email" id="abEmail" placeholder="${u&&isJack()?'suz@… — send her a link':'you@… — your work email'}" autocomplete="email" spellcheck="false"><button type="button" class="btn solid sm" id="abSend">Send link</button></div><div class="wgmsg" id="abMsg"></div>`;
-  el.innerHTML=u
-    ? `<div class="authnow"><i></i><b>Signed in</b> as ${escapeHtml(u.name)} · ${escapeHtml(u.email)}<button type="button" class="btn ghost sm" id="abOut">Sign out</button></div>`
-      +(isJack()?`<p class="ssub">Send Suz or Mera their sign-in link. They must already be invited in Supabase (Authentication → Users → Invite user) — a link cannot create an account.</p>${send}`:'')
-    : `<p class="ssub"><b>Not signed in.</b> Signing in replaces picking a name, so a verdict can never carry the wrong person. Type your work email and we send a one-click link — no password. It stays signed in on this browser.</p>${send}`;
+  const u=(typeof authUser==='function')?authUser():null;const jack=isJack();const lk=lockState();const sand=lockSandbox();
+  const when=iso=>{if(!iso)return'';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});};
+  const si=signinsAll();const team=teamAll();
+  const me_=u?`<div class="authnow"><i></i><span><b>Signed in</b> as ${escapeHtml(u.name)} <em>${escapeHtml(u.email)}</em></span><button type="button" class="btn ghost sm" id="abOut">Sign out</button></div>`
+    :`<div class="authnow off"><i></i><span><b>Not signed in on this computer.</b> Type your email and press Send — the link signs this browser in and keeps it signed in.</span></div>
+      <div class="authsend"><input type="email" id="abEmail" placeholder="you@… — your work email" autocomplete="email" spellcheck="false"><button type="button" class="btn solid sm" id="abSend">Send me a link</button></div><div class="wgmsg" id="abMsg"></div>`;
+  const allIn=team.every(t=>si[t.name]);
+  const teamHtml=!jack?'':`<div class="teambox"><div class="tbh"><b>Team</b><span>Each person's email. The name on everything they mark comes from here, never from a dropdown.</span></div>
+    ${team.map(t=>{const s_=si[t.name];return`<div class="trow"><span class="tn"><i style="background:${typeof auAv==='function'?auAv(t.name):'var(--iris)'}"></i>${escapeHtml(t.name)}</span>
+      <input type="email" class="temail" data-team="${escapeHtml(t.name)}" value="${escapeHtml(t.email||'')}" placeholder="${escapeHtml(t.name.toLowerCase())}@…" autocomplete="off" spellcheck="false">
+      <button type="button" class="btn ghost sm" data-tsend="${escapeHtml(t.name)}" ${t.email?'':'disabled'}>Send link</button>
+      <span class="tstat ${s_?'in':''}">${s_?'Signed in '+when(s_.at):'Not signed in yet'}</span></div>`;}).join('')}
+    <div class="wgmsg" id="tMsg"></div></div>`;
+  const lockHtml=!jack?'':`<div class="lockbox ${lk.on?'on':''}"><div class="lkh"><b>Sign-in required for everyone</b>
+      <button type="button" class="lkswitch ${lk.on?'on':''}" id="lkToggle" role="switch" aria-checked="${lk.on?'true':'false'}" ${!lk.on&&(!u||u.name!=='Jack')?'disabled':''}><i></i></button></div>
+    <p>${lk.on?`<b>On</b> since ${escapeHtml(when(lk.at))}. Anyone not signed in sees the sign-in screen and nothing else. People already signed in keep working even if Supabase goes down.`
+      :(!u||u.name!=='Jack')?`Sign yourself in first (above). The switch stays off until you are, so it can never lock you out.`
+      :allIn?`Everyone has signed in — safe to switch on.`
+      :`Off. ${team.filter(t=>!si[t.name]).map(t=>t.name).join(' and ')} ${team.filter(t=>!si[t.name]).length===1?'has':'have'} not signed in yet — switch on now and they will see the sign-in screen until they open their link.`}
+    ${sand?' <em>(This is the test sandbox — the lock never applies here.)</em>':''}</p>
+    <details class="lksteps"><summary>The two things in Supabase (once, yours)</summary><ol>
+      <li>Authentication → URL Configuration → Redirect URLs: add <code>${escapeHtml(location.origin+location.pathname)}</code></li>
+      <li>Authentication → Users → Add user → <b>Create new user</b> (not Send invitation): each email in the Team above, <b>yours included</b>. Any password, tick <b>Auto Confirm User</b>. A link only goes to someone who is already there — and an invite email would land on the project's main address, which is another app.</li>
+      <li>If a link says "email rate limit exceeded", Supabase's built-in email only sends a few an hour — wait an hour and send it again.</li></ol></details></div>`;
+  el.innerHTML=me_+teamHtml+lockHtml;
   const out=$('#abOut');if(out)out.addEventListener('click',()=>{if(confirm('Sign out of '+u.name+'?')){authSignOut();paintAuthBox();}});
-  const b=$('#abSend');if(b)b.addEventListener('click',async()=>{const i=$('#abEmail'),m=$('#abMsg'),v=(i.value||'').trim();
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){m.textContent='That does not look like an email address.';m.className='wgmsg bad';return;}
-    b.disabled=true;m.textContent='Sending…';m.className='wgmsg';
-    try{await authSendLink(v);m.innerHTML=`Sent to <b>${escapeHtml(v)}</b>. The link only works in the browser it is opened in, so it has to be opened on that person's machine.`;m.className='wgmsg good';i.value='';}
-    catch(e){m.textContent=String(e.message||e)+(/not allowed|not found|invalid/i.test(String(e.message||''))?' — invite this address in Supabase first.':'');m.className='wgmsg bad';}
-    b.disabled=false;});}
+  const sendTo=async(v,msgEl,btn)=>{if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){msgEl.textContent='That does not look like an email address.';msgEl.className='wgmsg bad';return;}
+    btn.disabled=true;const was=btn.textContent;btn.textContent='Sending…';msgEl.textContent='';
+    try{await authSendLink(v);msgEl.innerHTML=`Sent to <b>${escapeHtml(v)}</b>. It signs in whichever browser it is opened in — so open it on the computer you work on, not your phone.`;msgEl.className='wgmsg good';}
+    catch(e){msgEl.textContent=/not allowed|not found|signups/i.test(String(e.message||''))?`${v} is not in Supabase yet — Authentication → Users → Add user → Create new user (tick Auto Confirm User).`:String(e.message||e);msgEl.className='wgmsg bad';}
+    btn.disabled=false;btn.textContent=was;};
+  const b=$('#abSend');if(b)b.addEventListener('click',()=>sendTo(($('#abEmail').value||'').trim(),$('#abMsg'),b));
+  el.querySelectorAll('.temail').forEach(i=>i.addEventListener('change',()=>{const list=teamAll().map(t=>t.name===i.dataset.team?Object.assign({},t,{email:i.value.trim().toLowerCase()}):t);
+    teamSave(list);toast(i.dataset.team+(i.value.trim()?' — email saved':' — email cleared'));paintAuthBox();}));
+  el.querySelectorAll('[data-tsend]').forEach(btn=>btn.addEventListener('click',()=>{const t=teamAll().find(x=>x.name===btn.dataset.tsend);if(t)sendTo(t.email,$('#tMsg'),btn);}));
+  const tg=$('#lkToggle');if(tg)tg.addEventListener('click',()=>{const on=!lockState().on;
+    if(on){const missing=teamAll().filter(t=>!signinsAll()[t.name]).map(t=>t.name);
+      if(!confirm(`Switch the lock on?\n\nEvery browser that is not signed in will see only the sign-in screen.${missing.length?`\n\n${missing.join(' and ')} ${missing.length===1?'has':'have'} not signed in yet.`:''}`))return;}
+    if(lockSet(on)){toast(on?'Locked — sign-in required for everyone':'Unlocked — anyone with the link can use it again');paintAuthBox();}});}
 /* b138: Run via Keepa API — Jack only. Counts first, prices it, asks, then builds the same files a drop would and runs the same rules. */
 function paintApiRun(){const row=$('#keepaRow');if(!row||!cur)return;let b=$('#apiRunBtn');
   const ok=isJack()&&typeof apiSelection==='function'&&!!finderLink(cur);
@@ -556,7 +590,7 @@ function stepActive(dir,unjudgedOnly){const rows=[...document.querySelectorAll('
   const pages=Math.ceil(visible().length/PAGEN());
   if(dir>0&&view.page<pages){view.page++;touched.clear();renderTable();setActive(null);const rs=[...document.querySelectorAll('.ltbl tbody tr[data-asin]')];const first=rs.find(tr=>!unjudgedOnly||!/\b(Yes|No|Maybe)\b/.test(tr.className))||rs[0];if(first)setActive(first,true);}
   else if(dir<0&&view.page>1){view.page--;touched.clear();renderTable();const rs=document.querySelectorAll('.ltbl tbody tr[data-asin]');if(rs.length)setActive(rs[rs.length-1],true);}}
-function paintJudged(){const tb=document.querySelector('#results .toolbar');if(!tb||!result)return;let el=$('#judgedPill');if(!el){el=document.createElement('span');el.id='judgedPill';el.className='judged';tb.insertBefore(el,$('#moreMenu')||null);}   /* b137: pill sits before More */
+function paintJudged(){const tb=document.querySelector('#results .toolbar');if(!tb||!result)return;let el=$('#judgedPill');if(!el){el=document.createElement('span');el.id='judgedPill';el.className='jpill';   /* b152: was 'judged' — the same class every judged AUDIT row carries, so each judged row picked up this pill's mono font, grey colour and 11px size */tb.insertBefore(el,$('#moreMenu')||null);}   /* b137: pill sits before More */
   const all=visible();const done=all.filter(o=>(verdGet(o.ASIN)||{}).v).length;const finished=all.length>0&&done===all.length;
   /* b140: when the last one is judged the pill says so and the Done button lights up — the VA should not have to count */
   el.classList.toggle('all',finished);const nx=$('#runNext2');if(nx)nx.classList.toggle('ready',finished&&!result.stored);
@@ -1012,7 +1046,10 @@ function visible(){const q=view.q.toLowerCase();const day=dayList();const list=r
   if(q&&!((o.ASIN+' '+(o.Title||o.Product||'')+' '+(o.Brand||'')).toLowerCase().includes(q)))return false;return true;});
   const sc=o=>o.Score||0;
   if(view.sort==='default'&&cur.rule===1)list.sort((a,b)=>sc(b)-sc(a)||b['Profit £']-a['Profit £']);
-  if(view.status==='REVIEW'&&day){const done=o=>(verdGet(o.ASIN)?1:0);list.sort((a,b)=>done(a)-done(b));}
+  /* b153 (Jack, 25 Sep: "no rigid or buggy or jumpy"): b144 sent every answered lead to the bottom on EVERY redraw, so the one you
+     had just clicked Y on jumped from row 1 to row 63 — page 2 — and vanished from under the mouse. Anything answered in this
+     sitting now holds its place; only leads answered earlier (or by someone else) sit at the bottom. */
+  if(view.status==='REVIEW'&&day){const done=o=>(verdGet(o.ASIN)&&!touched.has(o.ASIN)?1:0);list.sort((a,b)=>done(a)-done(b));}
   if(view.sort==='gain')list.sort((a,b)=>(b.gain||0)-(a.gain||0)||sc(b)-sc(a));
   else if(view.sort==='profit')list.sort((a,b)=>b['Profit £']-a['Profit £']);
   else if(view.sort==='roi')list.sort((a,b)=>b['ROI %']-a['ROI %']);
@@ -1023,8 +1060,11 @@ function acts(o){const mk=cur.rule===1?(o['Buy market']||'UK'):'UK';
 function verdCell(o){const v=verdGet(o.ASIN)||{};const b=x=>`<button type="button" class="vb ${x[0]}${v.v===x?' on':''}" data-v="${x}" data-asin="${o.ASIN}" title="${x}">${x[0]}</button>`;
   /* b140: once a reason is picked only that chip stays (click it to change) — five chips one under the other were 105px of every No row */
   const chips=v.v==='No'?`<div class="vreasons${v.reason?' picked':''}">${noReasons().filter(r=>!v.reason||r===v.reason).map(r=>`<button type="button" class="vr${v.reason===r?' on':''}" data-r="${r}" data-asin="${o.ASIN}">${escapeHtml(r)}</button>`).join('')}</div>`:'';
-  const note=v.v&&v.v!=='Seen'?`<input class="vnote" data-asin="${o.ASIN}" placeholder="note…" value="${escapeHtml(v.note||'')}">`:'';
-  const who=v.v?`<span class="chg" title="${escapeHtml((v.v==='Seen'?'Marked seen':v.v)+' by '+(v.who||'?')+' · '+fmtWhen(v.at)+(v.via?' · from '+v.via:''))}">${v.v==='Seen'?'seen':''} ${escapeHtml(v.who||'')} · ${fmtWhen(v.at)}${v.via&&v.v==='Seen'?` <i class="viab">${escapeHtml(v.via)}</i>`:''}</span>`:'';
+  /* b153: a No still waiting for its reason shows the reasons IN PLACE of the note box and the name line, not on top of them —
+     all three together made the row 15px taller and shoved every row below it down on every N */
+  const waiting=v.v==='No'&&!v.reason;
+  const note=v.v&&v.v!=='Seen'&&!waiting?`<input class="vnote" data-asin="${o.ASIN}" placeholder="note…" value="${escapeHtml(v.note||'')}">`:'';
+  const who=v.v&&!waiting?`<span class="chg" title="${escapeHtml((v.v==='Seen'?'Marked seen':v.v)+' by '+(v.who||'?')+' · '+fmtWhen(v.at)+(v.via?' · from '+v.via:''))}">${v.v==='Seen'?'seen':''} ${escapeHtml(v.who||'')} · ${fmtWhen(v.at)}${v.via&&v.v==='Seen'?` <i class="viab">${escapeHtml(v.via)}</i>`:''}</span>`:'';
   const pick=blPick===o.ASIN?`<div class="blpick"><span class="t">Never show again — why?</span>${BL_REASONS.map(r=>`<button type="button" class="vr" data-blr="${r}" data-asin="${o.ASIN}">${r}</button>`).join('')}<button type="button" class="brandb" data-blbrand="${o.ASIN}">Blacklist the whole brand instead…</button></div>`:'';
   return`<div class="verd">${b('Yes')}${b('No')}${b('Maybe')}<button type="button" class="vb B${blPick===o.ASIN?' on':''}" data-bl="${o.ASIN}" title="Blacklist — never show this ASIN again">⃠</button></div>${chips}${note}${who}${pick}`;}
 function statusCell(o){const sp=`<span class="spill ${({NEW:'new',BETTER:'better',WORSE:'worse',UNCHANGED:'same'})[o.STATUS]}">${o.STATUS}</span>`
@@ -1363,7 +1403,8 @@ function showTab(tab,quiet){if(!['brands','runs','leads'].includes(tab))tab='bra
 function openHash(){let h=location.hash||'';
   if(/^#audit/i.test(h)&&typeof auHash==='function'&&isJack()){auHash();return;}
   /* b61: AVM HQ links carry the VA's name (#run=key&who=Suz) so the who-are-you gate never appears */
-  const wm=/[&?]who=([A-Za-z]+)/.exec(h);if(wm){const w=USERS.find(u=>u.toLowerCase()===wm[1].toLowerCase());if(w&&me()!==w){lsSet(ME_KEY,w);whoPaint();}const g=$('#whoGate');if(w&&g)g.hidden=true;h=h.replace(/[&?]who=[A-Za-z]+/,'');}
+  const wm=/[&?]who=([A-Za-z]+)/.exec(h);if(wm&&!(typeof lockOn==='function'&&lockOn())){const w=USERS.find(u=>u.toLowerCase()===wm[1].toLowerCase());if(w&&me()!==w){lsSet(ME_KEY,w);whoPaint();}const g=$('#whoGate');if(w&&g)g.hidden=true;}
+  if(wm)h=h.replace(/[&?]who=[A-Za-z]+/,'');   /* b153: the name in a link is ignored while the lock is on, but it still comes out of the address */
   const m=/^#run=([a-z0-9-]+)/i.exec(h);
   const lm=/^#leads=([a-z0-9-]+)/i.exec(h);if(lm&&srcGet(lm[1])){const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b&&!b.classList.contains('active'))b.click();if(cur&&!$('#viewRun').hidden)backToList();historyOpenFor(lm[1]);return;}
   if(/^#(runs|leads|history)\b/i.test(h)){const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b&&!b.classList.contains('active'))b.click();if(cur&&!$('#viewRun').hidden)backToList();showTab(/^#runs/i.test(h)?'runs':'leads');return;}const goBrands=()=>{const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b&&!b.classList.contains('active'))b.click();};

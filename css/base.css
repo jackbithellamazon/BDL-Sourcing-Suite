@@ -1,7 +1,7 @@
   :root{
     --ink:#080b11; --ink2:#0b0e16; --surface:#10141d; --surface2:#151a26; --raise:#1a2030;
     --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.12);
-    --text:#eef1f7; --muted:#868ea2; --faint:#565d6f;
+    --text:#eef1f7; --muted:#9aa2b6; --faint:#6c7488;   /* b153: secondary text was ~2.6:1 on the cards; now ~3.7:1 and ~6:1 */
     --iris:#6e7bff; --iris-d:#5662ee; --iris2:#9a7bff;
     --jade:#36d6a4; --jade-dim:rgba(54,214,164,.13);
     --coral:#f76a83; --coral-dim:rgba(247,106,131,.12);
@@ -12,9 +12,15 @@
     --tile-shadow:0 18px 42px -32px rgba(0,0,0,.95);
     --tile-shadow-hover:0 24px 54px -36px rgba(0,0,0,.95);
     --danger-fill:rgba(247,106,131,.12); --danger-line:rgba(247,106,131,.34);
-    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    /* b153 (Jack, 25 Sep: "better fonts and text — remember Mac user"). The Mac's own system font first: San Francisco renders
+       natively, with optical sizing and Apple's own hinting, so it is crisper than any web font on a Mac screen. Everyone else
+       (a VA on Windows) falls through to Inter, which is still loaded. --mono used to be JetBrains Mono across 118 places —
+       every number, table header, pill and count — and that terminal look was most of what read as "rigid". It is now the same
+       system font with tabular figures, so columns still line up. The real monospace is --code, kept for ASINs only. */
+    --sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter','Segoe UI',Roboto,'Helvetica Neue',sans-serif;
     --disp:'Bricolage Grotesque',var(--sans);
-    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --mono:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter','Segoe UI',Roboto,sans-serif;
+    --code:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
     --ease:cubic-bezier(.22,.7,.16,1);
   }
   html[data-theme="light"]{
@@ -33,8 +39,8 @@
     --danger-fill:rgba(217,77,100,.10); --danger-line:rgba(217,77,100,.28);
   }
   *{box-sizing:border-box}
-  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-  body{margin:0;font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--text);
+  html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+  body{margin:0;font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--text);font-variant-numeric:tabular-nums;
     letter-spacing:0;
     background:
       radial-gradient(900px 440px at 8% -14%, var(--bg-a), transparent 56%),
@@ -125,7 +131,7 @@
   .pagebtn.active .go{opacity:1;transform:none;color:var(--page-a)}
 
   .page{display:none}
-  .page.active{display:block;animation:rise .38s var(--ease)}
+  .page.active{display:block;animation:fadein .2s ease-out}   /* b153: a fade, not an 8px rise — switching pages should not move anything */
 
   /* ---- sub tabs ---- */
   .tabs{display:flex;gap:5px;margin-bottom:16px;padding:5px;border-radius:14px;
@@ -146,7 +152,8 @@
   html[data-theme="light"] .tab.active .step{background:var(--iris);color:#fff}
 
   .panel{display:none}
-  .panel.active{display:block;animation:rise .38s var(--ease)}
+  .panel.active{display:block;animation:fadein .2s ease-out}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
   @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 

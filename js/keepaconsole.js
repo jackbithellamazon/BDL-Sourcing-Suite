@@ -1,4 +1,4 @@
-/* BDL Sourcing — Keepa console page (Combine ASINs · Filter & sort). Unchanged from the Suite. */
+/* BDL Sourcing — Keepa console page (Combine ASINs · Filter & sort). From the Suite; b154 adds the Lead / Not a lead column (kcjudge.js). */
 let combinedSet=new Map(),combinedCount=0,filesC=[];
 function renderC(){const uniq=[...combinedSet.keys()],has=uniq.length>0;
   $('#yieldC').classList.toggle('show',has);$('#setC').style.display=has?'flex':'none';
@@ -65,7 +65,7 @@ function runFilter(){if(!viewerRows.length)return;
     if(idxAsin<0)miss.push('ASIN');if(idxDrops<0)miss.push('Sales Rank: Drops last 30 days');
     if(idxBought<0)miss.push('Monthly Sales Trends: Bought in past month');
     $('#warnF').innerHTML='<b>This doesn\'t look like a Product Viewer export.</b> Missing column'+(miss.length>1?'s':'')+': '+miss.join(', ')+'. This tab needs the full export with all columns — a plain ASIN list belongs in Combine ASINs.';
-    $('#warnF').classList.add('show');$('#yieldF').classList.remove('show');$('#barF').style.display='none';$('#tableWrap').classList.remove('show');return;}
+    $('#warnF').classList.add('show');$('#yieldF').classList.remove('show');$('#barF').style.display='none';$('#tableWrap').classList.remove('show');if($('#kcBar'))$('#kcBar').hidden=true;return;}
   $('#warnF').classList.remove('show');let kept=[],dropped=[];
   viewerRows.forEach(r=>{
     const d=num(r[idxDrops]),b=num(r[idxBought]);
@@ -82,15 +82,17 @@ function runFilter(){if(!viewerRows.length)return;
   keptAsins=kept.map(k=>k.asin);$('#outF').value=keptAsins.join(', ');
   const listArr=showAll?[...kept,...dropped]:kept;
   const showOfferCol=idxOffers>=0,showBbCol=idxBuyBox>=0,showAmazon90Col=idxAmazon90Drop>=0;
-  let h='<thead><tr><th>ASIN</th><th>Title</th><th class="r">Drops 30d</th><th class="r">Bought</th>'+(showOfferCol?'<th class="r">Offers</th>':'')+(showBbCol?'<th class="r">Buy Box</th>':'')+(showAmazon90Col?'<th class="r">Amazon drop 90d</th>':'')+'<th class="r">Status</th></tr></thead><tbody>';
-  listArr.slice(0,1000).forEach(k=>{h+=`<tr><td class="asin">${k.asin}</td><td class="title">${escapeHtml(k.title)}</td>`+
+  let h='<thead><tr><th>ASIN</th><th>Title</th><th class="r">Drops 30d</th><th class="r">Bought</th>'+(showOfferCol?'<th class="r">Offers</th>':'')+(showBbCol?'<th class="r">Buy Box</th>':'')+(showAmazon90Col?'<th class="r">Amazon drop 90d</th>':'')+'<th class="r">Status</th>'+(typeof kcHead==='function'?kcHead():'')+'</tr></thead><tbody>';
+  /* b154: each row carries what Lead / Not a lead saves with it (kcjudge.js) */
+  const kcOn=typeof kcCell==='function';
+  listArr.slice(0,1000).forEach(k=>{const ok=asinRe.test(k.asin);h+=`<tr${ok?` data-asin="${k.asin}" data-title="${escapeHtml((k.title||'').slice(0,80))}" data-bb="${k.buyBox||''}" data-bought="${k.bought||''}" data-drops="${k.drops||''}"`:''}><td class="asin">${k.asin}</td><td class="title">${escapeHtml(k.title)}</td>`+
     `<td class="num">${k.drops?k.drops.toLocaleString():'<span class=z>0</span>'}</td>`+
     `<td class="num">${k.bought?k.bought.toLocaleString():'<span class=z>—</span>'}</td>`+
     (showOfferCol?`<td class="num">${k.offers?k.offers.toLocaleString():'<span class=z>0</span>'}</td>`:'')+
     (showBbCol?`<td class="num">${k.buyBox!=null&&k.buyBox>0?'£'+k.buyBox.toFixed(2):'<span class=z>—</span>'}</td>`:'')+
     (showAmazon90Col?`<td class="num">${k.amazon90Drop!=null?k.amazon90Drop.toLocaleString()+'%':'<span class=z>—</span>'}</td>`:'')+
-    `<td class="st"><span class="pill ${k.keep?'keep':'drop'}">${k.keep?'KEEP':'DROP'}</span></td></tr>`;});
-  h+='</tbody>';$('#tableF').innerHTML=h;$('#tableWrap').classList.add('show');
+    `<td class="st"><span class="pill ${k.keep?'keep':'drop'}">${k.keep?'KEEP':'DROP'}</span></td>`+(kcOn?(ok?kcCell(k):'<td class="kcj"></td>'):'')+`</tr>`;});
+  h+='</tbody>';$('#tableF').innerHTML=h;$('#tableWrap').classList.add('show');if(typeof kcAfterRender==='function')kcAfterRender();
   $('#toggleAll').textContent=showAll?'Show kept only':'Show all rows';
   if(listArr.length>1000)toast('Showing first 1,000 rows');}
 function handleFFile(file){$('#filesF').innerHTML=`<span class="f">${escapeHtml(file.name)}</span>`;
@@ -126,6 +128,6 @@ function clearCombine(){combinedSet=new Map();combinedCount=0;filesC=[];$('#file
 function clearFilter(){viewerRows=[];keptAsins=[];showAll=false;$('#fileF').value='';
   $('#thDrops').value='10';$('#thBought').value='10';$('#thOffers').value='0';$('#thBuyBox').value='0';$('#thAmazon90Drop').value='';$('#domainF').value='2';updateRuleText();
   $('#yieldF').classList.remove('show');$('#barF').style.display='none';$('#tableWrap').classList.remove('show');
-  $('#warnF').classList.remove('show');$('#filesF').innerHTML='';$('#outF').classList.remove('show');$('#outF').value='';}
+  $('#warnF').classList.remove('show');$('#filesF').innerHTML='';$('#outF').classList.remove('show');$('#outF').value='';$('#tableF').innerHTML='';if($('#kcBar'))$('#kcBar').hidden=true;}
 $('#clearC').addEventListener('click',clearCombine);$('#clearF').addEventListener('click',clearFilter);
 updateRuleText();
