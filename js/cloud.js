@@ -76,6 +76,10 @@ async function cloudPull(){if(!cloudEnabled()||cloud.pulling)return false;cloud.
     if(st.reasons)lsSet(REASONS_KEY,st.reasons);else cloudQueue('src_settings','upsert',[settingRow('reasons',noReasons())]);
     if(st.vat0)lsSet(VAT0_KEY,st.vat0);else cloudQueue('src_settings','upsert',[settingRow('vat0',vat0Words())]);
     if(st.catBlock)lsSet(CAT_KEY,st.catBlock);else cloudQueue('src_settings','upsert',[settingRow('catBlock',catWords())]);
+    /* b158: the audit's inventory list and archived rivals follow Jack to any browser */
+    if(st['audit-mine'])lsSet('bdl-sourcing-audit-mine',st['audit-mine']);
+    if(st['audit-archived'])lsSet('bdl-sourcing-audit-archived',st['audit-archived']);
+    if(st['audit-jointdays']!=null)lsSet('bdl-sourcing-audit-jointdays',st['audit-jointdays']);
     /* b153: who is who, who has signed in, and whether the door is locked */
     if(st.team&&typeof TEAM_KEY!=='undefined')lsSet(TEAM_KEY,st.team);
     if(typeof SIGNIN_KEY!=='undefined'){const si={};Object.keys(st).filter(k=>k.startsWith('signin:')).forEach(k=>si[k.slice(7)]=st[k]);if(Object.keys(si).length)lsSet(SIGNIN_KEY,Object.assign(lsGet(SIGNIN_KEY,{})||{},si));}

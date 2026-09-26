@@ -2052,3 +2052,72 @@ body.au-selecting .toast{bottom:calc(var(--bulk-h,56px) + 30px)}   /* b153: sit 
 .btbl td.actc .btn.run:hover{filter:brightness(1.08)}
 .teambox .tbtns{display:inline-flex;gap:6px}
 .teambox .wgmsg .tlink{display:block;width:100%;margin-top:8px;height:32px;border-radius:8px;border:1px solid var(--line2);background:var(--ink);color:var(--muted);font:12px var(--code);padding:0 10px}
+
+/* ===== b158 · audit: your catalogue + archive rivals ===== */
+.aumine{margin:4px 0 18px;border:1px solid color-mix(in srgb,var(--jade) 30%,var(--line));border-radius:14px;background:color-mix(in srgb,var(--jade) 5%,var(--surface2));padding:12px 16px}
+.aumine summary{cursor:pointer;font-size:13.5px;color:var(--muted);list-style:none}
+.aumine summary::-webkit-details-marker{display:none}
+.aumine summary b{color:var(--jade)}
+.aumine summary::before{content:'›';display:inline-block;margin-right:8px;color:var(--jade);transition:transform .15s}
+.aumine[open] summary::before{transform:rotate(90deg)}
+.aumine .ssub{margin:10px 0}
+.aumine .row{display:flex;gap:8px;align-items:center;margin-top:8px}
+.aumine textarea{flex:1;min-height:64px;resize:vertical}
+.aucard{position:relative}
+.aucard .auarch{position:absolute;top:10px;right:10px;width:28px;height:28px;display:grid;place-items:center;border-radius:8px;color:var(--faint);opacity:0;transition:opacity .15s,background-color .15s,color .15s}
+.aucard:hover .auarch,.aucard .auarch:focus-visible{opacity:1}
+.aucard .auarch:hover{background:var(--ink);color:var(--text)}
+.aucard .auarch svg{width:15px;height:15px}
+.autbl .auarch.inl{font-size:12px;color:var(--faint);margin-right:8px;cursor:pointer}
+.autbl .auarch.inl:hover{color:var(--text);text-decoration:underline}
+.auarchbar{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:16px 0 8px;padding:10px 14px;border:1px dashed var(--line2);border-radius:12px;font-size:13px;color:var(--muted)}
+.auarchlist{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.auarchrow{display:grid;grid-template-columns:auto auto 1fr auto;gap:10px;align-items:center;padding:8px 12px;border-radius:10px;background:var(--surface2);border:1px solid var(--line)}
+
+/* ===== b159 · audit bulk: tick-all in the filter bar, clearer ticks, drag, the sold-out window ===== */
+.autools .autick{display:inline-flex;align-items:center;gap:8px;margin-left:auto;font-size:12.5px;color:var(--muted)}
+.autools .autick b{color:var(--text)}
+.autools .autick .bl2.tall{border:1px solid color-mix(in srgb,var(--iris) 45%,transparent);color:var(--iris);background:color-mix(in srgb,var(--iris) 10%,transparent);border-radius:8px;padding:4px 10px;font-weight:600}
+.autools .autick .bl2.tall:hover{background:color-mix(in srgb,var(--iris) 18%,transparent)}
+.autools .autick + .autoolsn{margin-left:10px}
+.ausel{width:22px;height:22px;border-width:2px;background:rgba(8,11,17,.55)}
+.aulist .aurow > .auimg{cursor:pointer;user-select:none;-webkit-user-select:none}
+.aulist .aurow.sel{box-shadow:inset 3px 0 0 var(--iris)}
+.aulist .aurow.sel > .aumain,.aulist .aurow.sel > .auright{background:color-mix(in srgb,var(--iris) 6%,transparent)}
+.aumine .aujd{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
+.aumine .aujd select{height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--ink);color:var(--text);font:500 12.5px var(--sans);padding:0 8px}
+.aumine summary .old{color:var(--amber)}
+
+/* ===== b160 · audit: see the rest, compact rows, the graph first ===== */
+.aumore{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;color:var(--faint);font-size:12.5px}
+.autools .aucomp{border:1px solid var(--line2);border-radius:8px;padding:4px 10px;color:var(--muted);font-weight:600;margin-left:6px}
+.autools .aucomp:hover{color:var(--text)}
+/* compact: one line per product — picture, title + facts, the six keys, the answer */
+.aulist.compact .aurow{grid-template-columns:40px minmax(0,1fr) auto auto;grid-template-areas:"img main btn right";padding:6px 12px 6px 16px;gap:0 12px;align-items:center;min-height:0}
+.aulist.compact .aurow > .auimg{width:40px;height:40px;border-radius:8px}
+.aulist.compact .aurow .ausel{width:18px;height:18px;top:2px;left:2px}
+.aulist.compact .aurow .aut{font-size:13px;min-height:0;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:unset}
+.aulist.compact .aurow .aufacts{height:auto;min-height:0;margin-top:2px;gap:7px;flex-wrap:nowrap;overflow:hidden;white-space:nowrap}
+.aulist.compact .aurow .aufacts .auasin{font-size:11px}
+.aulist.compact .aurow .auchips{display:none}
+.aulist.compact .aurow .aulinks{display:none}
+.aulist.compact .aurow > .auright{grid-area:right;align-self:center}
+.aulist.compact .aurow > .aubtns,
+.aulist.compact .aurow:not(:hover):not(.focus) > .aubtns{grid-area:btn;display:flex;flex-wrap:nowrap;gap:4px;margin:0;align-self:center}
+.aulist.compact .aurow.reasoning > .aubtns{display:none}
+.aulist.compact .aurow > .aureasons{grid-area:btn;margin:0;min-height:0;flex-wrap:wrap;justify-content:flex-end;max-width:520px}
+.aulist.compact .aurow .aub{height:30px;padding:0 7px;gap:5px;border-radius:8px}
+.aulist.compact .aurow .aub .lab{display:none}
+.aulist.compact .aurow .aub kbd{width:18px;height:18px;font-size:11px}
+.aulist.compact .aurow .aunext{display:none}
+.aulist.compact .aurow .aupill.big{font-size:11.5px;padding:3px 9px}
+.aulist.compact .aurow .aurs{height:28px;font-size:12px}
+/* the side panel reads top-down: graph, then what it is */
+.aupanel .aug1{margin-top:0}
+.aupanel .augraph.big{min-height:230px;border-radius:12px;background:#fff;display:grid;place-items:center;overflow:hidden}
+.aupanel .augraph.big img{width:100%;height:auto;display:block}
+.aupanel .augraph.big .auglab{color:#55607a;font-size:12.5px;padding:16px;text-align:center}
+.aupanel .auphead{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center;margin:12px 0 8px}
+.aupanel .aupimg.sm{height:64px;width:64px;border-radius:10px}
+.aupanel .auphead h3{margin:0 0 3px;font-size:14px}
+.aumine summary .aumsrc{color:var(--jade);font-weight:600}

@@ -21,7 +21,10 @@ const AUDIT_TYPES=[
   {code:'discord',label:'Discord',short:'Discord',hex:'#8C95FF',icon:'msg',prompt:'Which Discord?',reasons:['PS','THC','FFB']},
   {code:'ws',label:'WS',short:'WS',hex:'#22D3EE',icon:'box'},
   {code:'joint',label:'Joint lead',short:'Joint',hex:'#2CE38B',icon:'check'},
-  {code:'missed',label:'Missed it',short:'Missed it',hex:'#FF8A3D',icon:'clock',prompt:'Why missed?',reasons:['Out of stock','Passed on it','Too slow','Price gone','Never looked at','Never found it','Other']}];
+  {code:'missed',label:'Missed it',short:'Missed it',hex:'#FF8A3D',icon:'clock',prompt:'Why missed?',reasons:['Never looked at','Passed on it','Never found it','Other']},   /* b164 (Jack, 26 Sep: yes to trimming — only these were ever used; Q W E R) */
+  /* b161 (Jack, 26 Sep: "a new option — diff method — e.g. wholesale or PL stuff, not stuff I would sell and source for").
+     Key 7, so 1–6 stay where his hands already are. Three reasons, so the bulk bar shows them inline like Discord's. */
+  {code:'diff',label:'Diff method',short:'Diff method',hex:'#F472B6',icon:'tag',prompt:'Which method?',reasons:['Wholesale','PL','Other']}];
 /* b91 (Jack, 17 Sep): "never found it" is a different answer from "never looked at", and it is the one that
    points at a filter rather than at a person. Never looked at = it reached our list and nobody judged it.
    Never found it = our filters never surfaced it at all, and the rival is selling it anyway. Slotted before
@@ -34,14 +37,17 @@ const AU_RKEYS=['q','w','e','r','t','y','u'];
    comes from the code. Otherwise every future change is invisible to whoever has an old list stored. */
 function audTypes(){const v=lsGet('bdl-sourcing-audit-types',null);
   if(!Array.isArray(v)||!v.length)return AUDIT_TYPES;
-  return v.map(t=>{const base=AUDIT_TYPES.find(b=>b.code===t.code);if(!base)return t;
-    return Object.assign({},base,t,{reasons:base.reasons,prompt:base.prompt});});}
+  const out=v.map(t=>{const base=AUDIT_TYPES.find(b=>b.code===t.code);if(!base)return t;
+    return Object.assign({},base,t,{reasons:base.reasons,prompt:base.prompt});});
+  /* b161: an answer added in the code (Diff method) always appears, even under an older saved list */
+  AUDIT_TYPES.forEach(b=>{if(!out.some(t=>t.code===b.code))out.push(b);});return out;}
 function audType(code){return audTypes().find(t=>t.code===code)||null;}
 const AU_ICON={x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>',
   help:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.3M12 17h.01"/></svg>',
   msg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg>',
   box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
+  tag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
   clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>'};
 
 /* ---------- pure bits (the checks lock these) ---------- */
@@ -49,7 +55,13 @@ const AU_ICON={x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 function audRow(asin,code,who,sellerId,at){const t=at||nowIso();
   return{id:asin+'|'+(who||'?')+'|'+new Date(t).getTime().toString(36),asin,domain:2,verdict:code,reason:'',note:'',seller_id:sellerId||'',who:who||'',at:t,expires_at:null};}
 /* what the app should show for one product: a verdict, a joint lead it detected, or nothing yet */
-function audStatus(cur,sells){if(cur&&cur.verdict)return cur.verdict;if(sells)return'jointauto';return'todo';}
+/* b163 (Jack, 26 Sep: "maybe expires after 90 days? just in case it comes back and the price drops again").
+   The "not now" answers — Not lead, Missed it, Unsure — stop counting 90 days after they were given, and the product is to check
+   again (a chip says what was said and when). Discord / WS / Diff method / Joint describe the product, so they last. Worked out
+   from the answer's date, not stored, so the 271 answers already given follow the same rule. */
+const AUD_EXPIRE_DAYS=90,AUD_EXPIRE_CODES=['not','missed','unsure'];
+function audExpired(v){if(!v||!v.verdict||!AUD_EXPIRE_CODES.includes(v.verdict)||!v.at)return false;return(Date.now()-new Date(v.at).getTime())/864e5>AUD_EXPIRE_DAYS;}
+function audStatus(cur,sells){if(cur&&cur.verdict&&!audExpired(cur))return cur.verdict;if(sells)return'jointauto';return'todo';}
 /* press → {row, replaced, same}. Your own press inside the collapse window corrects that row; anyone else's writes a new one. */
 function audPress(asin,cur,code,who,sellerId,now){now=now||new Date().toISOString();
   const mine=!!(cur&&cur.who===who&&(new Date(now)-new Date(cur.at))/60000<AUD.COLLAPSE_MIN);
@@ -99,7 +111,7 @@ function audOut(){return lsGet(AUD.OUT,[]);}
 function audQueue(op){if(typeof guestOn==='function'&&guestOn())return;   /* b155: guest mode queues nothing, so nothing can be sent later */
   const q=audOut();q.push(op);lsSet(AUD.OUT,q);audFlush();}
 const AUD_PROD='bdl-sourcing-audit-prod';
-const audState={tables:null,pulled:0,shelfAt:0,sellers:[],shelf:{},shared:{},prod:lsGet(AUD_PROD,{})||{},checking:false};
+const audState={tables:null,pulled:0,shelfAt:0,sellers:[],shelf:{},shared:{},mineNow:new Set(),mineEver:new Set(),mineLast:{},mineLatest:'',prod:lsGet(AUD_PROD,{})||{},checking:false};
 /* the picture cache also lives in this browser, capped, so a refresh never blanks the list */
 function audProdSaveLocal(){const e=Object.entries(audState.prod);const keep=e.length>4000?e.slice(e.length-4000):e;
   lsSet(AUD_PROD,Object.fromEntries(keep));}
@@ -142,10 +154,23 @@ async function audPullShelves(force){if(!cloudEnabled())return false;if(!force&&
   try{const [sellers,shelf]=await Promise.all([cloudGetAll('bdl_sellers','select=seller_id,name,seller_order&order=seller_order'),
       cloudGetAll('bdl_competitor_shelf','select=seller_id,asin,first_seen,baseline&gone_on=is.null')]);
     const by={};shelf.forEach(r=>{(by[r.seller_id]=by[r.seller_id]||[]).push({a:r.asin,first:String(r.first_seen||'').slice(0,10),base:!!r.baseline});});
-    audState.sellers=sellers;audState.shelf=by;
-    const ca=await cloudGetAll('bdl_competitor_asins','select=seller_id,date,shared_asins&order=date.desc&limit=400');
-    const sh={};ca.forEach(r=>{if(!sh[r.seller_id])sh[r.seller_id]=new Set(r.shared_asins||[]);});
-    audState.shared=sh;audState.shelfAt=Date.now();return true;}
+    audState.sellers=sellers;audState.shelf=by;audState._first={};
+    /* b158: EVERY overlap row, not the last 400 — "yours" is anything Keepa has ever shown in your catalogue (see audMineWhy) */
+    const ca=await cloudGetAll('bdl_competitor_asins','select=seller_id,date,shared_asins&order=date.desc');
+    const sh={},now=new Set(),ever=new Set(),last={};let latest='';
+    ca.forEach(r=>{const list=r.shared_asins||[];const d=String(r.date||'').slice(0,10);if(d>latest)latest=d;
+      list.forEach(a=>{ever.add(a);if(!last[a]||d>last[a])last[a]=d;});if(!sh[r.seller_id]){sh[r.seller_id]=new Set(list);list.forEach(a=>now.add(a));}});
+    audState.shared=sh;audState.mineNow=now;audState.mineEver=ever;audState.mineLast=last;audState.mineLatest=latest;audState.mineSrc='overlap';
+    /* b165: OA Overview now keeps Lavarion's own storefront (bdl_my_shelf — built 26 Sep from the handover): on_now = seen on it in the
+       last 2 days, last_seen = the last day it was on it (Keepa's own per-listing date). That is the truth for "yours" — the pieced-together
+       overlap rows above stay only as the fallback if the table is missing or empty, and still fill any gap it has. */
+    try{const my=await cloudGetAll('bdl_my_shelf','select=asin,last_seen,on_now');
+      if(my.length){const n2=new Set(),l2={};let lt='';
+        my.forEach(r=>{const d=String(r.last_seen||'').slice(0,10);if(r.on_now)n2.add(r.asin);if(d){l2[r.asin]=d;if(d>lt)lt=d;}});
+        Object.keys(last).forEach(a=>{if(!l2[a]||last[a]>l2[a])l2[a]=last[a];});   /* keep the later of the two dates */
+        audState.mineNow=n2;audState.mineLast=l2;audState.mineEver=new Set([...Object.keys(l2),...ever]);audState.mineLatest=lt>latest?lt:latest;audState.mineSrc='storefront';}}
+    catch(e){/* table not there — the overlap rows carry on */}
+    audState.shelfAt=Date.now();return true;}
   catch(e){audState.shelfErr=e.message;return false;}}
 async function audPullProducts(asins){if(!cloudEnabled()||!(await audCheckTables()))return;
   const want=asins.filter(a=>!audState.prod[a]);if(!want.length)return;
@@ -196,7 +221,52 @@ function audShelfList(){const out=[];
     items:(s.asins||[]).map(a=>({a,first:pulled?String(s.at||'').slice(0,10):'',base:!pulled}))});});
   return out;}
 function audShelf(id){return audShelfList().find(s=>s.id===id)||null;}
-function audSells(shelfId,asin){const s=audState.shared[shelfId];return !!(s&&s.has&&s.has(asin));}
+/* b158 (Jack, 26 Sep: "how are you storing my ASINs — there is stuff I'm selling that hasn't been auto done as joint").
+   It never had a list of Jack's catalogue. It borrowed OA Overview's overlap for THAT rival, latest day only — and that comes
+   from Keepa's list of Lavarion's storefront, which drops a listing Keepa hasn't seen for about a week (out of stock between
+   restocks). On 25 Sep: 280 ASINs on Keepa's list that day, 473 ever seen since 20 Aug — 236 shelf products Jack has sold
+   were sitting in "to judge". Now "yours" = on Keepa's list now, OR on the inventory list Jack pastes, OR ever seen. */
+const AUD_MINE='bdl-sourcing-audit-mine',AUD_ARCH='bdl-sourcing-audit-archived';
+/* read once per paint, not once per product — a rival grid asks this ~8,000 times */
+let audMineCache=null;function audMineBust(){audMineCache=null;}
+function audMineList(){if(!audMineCache){const m=lsGet(AUD_MINE,null);audMineCache=new Set(m&&Array.isArray(m.asins)?m.asins:[]);}return audMineCache;}
+/* b159 (Jack, 26 Sep: "joint covers how long for us — if I sold out yesterday but they still have it, joint or new to look at?").
+   Sold out lately = still yours (you know it, you'll restock). Gone longer than the window = back to look at, with a chip
+   saying when you last had it — a rival still selling something you dropped is a restock lead. Window is Jack's (default 45 — b161). */
+const AUD_JDAYS='bdl-sourcing-audit-jointdays';
+/* b161 (Jack: "make it 45 days instead of 30 — 45 days once it clears off my sheet") */
+function audJointDays(){const d=lsGet(AUD_JDAYS,45);return d==='always'?'always':(+d||45);}
+function audMineDaysAgo(asin){const d=audState.mineLast[asin];if(!d||!audState.mineLatest)return null;return Math.round((new Date(audState.mineLatest)-new Date(d))/864e5);}
+/* b162 (Jack, 26 Sep: "anything on my storefront joint — if it leaves my storefront then for 45 days it's still down as joint —
+   if a competitor adds it within the 45 days it auto does joint; if they add it after my 45 days it becomes new and to check again").
+   So on a RIVAL's shelf the question is WHEN THEY ADDED IT, against the last day it was on Jack's storefront:
+     on his storefront now (or on his pasted inventory)          → Joint
+     they added it no later than 45 days after he last had it    → Joint (they had it while it was his, or within his 45 days)
+     they added it more than 45 days after he last had it        → new — to check again
+   With no shelf in view (the catalogue summary) it falls back to "45 days from today". */
+function audFirstOn(shelfId,asin){if(!shelfId)return'';let m=audState._first&&audState._first[shelfId];
+  if(!m){const items=audState.shelf[shelfId];if(!items)return'';m=new Map(items.map(it=>[it.a,it.first||'']));(audState._first=audState._first||{})[shelfId]=m;}
+  return m.get(asin)||'';}
+function audDaysBetween(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5);}
+function audMineWhy(asin,shelfId){if(audState.mineNow.has(asin))return'now';if(audMineList().has(asin))return'list';
+  if(!audState.mineEver.has(asin))return'';const w=audJointDays();if(w==='always')return'recent';
+  const last=audState.mineLast[asin];if(!last)return'recent';
+  const added=audFirstOn(shelfId,asin);
+  if(added)return audDaysBetween(last,added)<=w?'recent':'before';          /* the rival's add date decides */
+  const ago=audMineDaysAgo(asin);return ago==null||ago<=w?'recent':'before';}
+/* 'before' is information, not "yours": the product goes back to "to judge" with a chip */
+function audSells(shelfId,asin){const s=audState.shared[shelfId];if(s&&s.has&&s.has(asin))return true;const w=audMineWhy(asin,shelfId);return w==='now'||w==='list'||w==='recent';}
+function audMineLastNice(asin){const d=audState.mineLast[asin];return d?new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';}
+const AUD_MINE_WORDS={now:'You sell this',list:'On your inventory list',recent:'You sold this',before:'You used to sell this'};
+function audAddedNice(shelfId,asin){const f=audFirstOn(shelfId,asin);return f?new Date(f+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';}
+function audMineSave(asins){const v={asins:[...new Set(asins)],at:nowIso(),who:me()};lsSet(AUD_MINE,v);audMineBust();
+  if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('audit-mine',v)]);return v.asins.length;}
+function audAsinsIn(text){return[...new Set((String(text||'').toUpperCase().match(/\b(B0[0-9A-Z]{8}|\d{9}[\dX])\b/g)||[]))];}
+/* b158 (Jack: "can I archive some I'm not bothered about auditing?"). Hidden from the list, the counts and "carry on" —
+   never deleted, one click brings a rival back. Shared, so it follows Jack to any browser. */
+function audArchived(){const v=lsGet(AUD_ARCH,null);return new Set(v&&Array.isArray(v.ids)?v.ids:[]);}
+function audArchSet(id,on){const a=audArchived();on?a.add(id):a.delete(id);const v={ids:[...a],at:nowIso(),who:me()};lsSet(AUD_ARCH,v);
+  if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('audit-archived',v)]);return a.size;}
 
 /* ---------- judging ---------- */
 let audUndoStack=[];
@@ -279,17 +349,26 @@ function auKeepFocusVisible(){if(auView.fromMouse){auView.fromMouse=false;return
   const el=document.querySelector('.aurow.focus');if(!el)return;
   const r=el.getBoundingClientRect();if(r.top>=64&&r.bottom<=innerHeight-20)return;
   window.scrollTo({top:Math.max(0,r.top+window.scrollY-Math.round(innerHeight/3)),behavior:'smooth'});}
+/* b160 (Jack, 26 Sep: "how do I see the rest haha"). The list stopped at 120 — "judge these and the rest follow" — with no way
+   to get the rest. Now: a button for the next 120 or all of them, more load by themselves as the bottom scrolls into view, and
+   moving down with the keys never runs off the end of what is drawn. Adding rows BELOW never moves the ones you are looking at. */
+function auLim(){return Math.max(AUD.PAGE,auView.limit||0);}
+function auPageHtml(vis,sh){if(auView.focus>=auLim()-2)auView.limit=Math.min(vis.length,auView.focus+AUD.PAGE);const lim=auLim();
+  return vis.slice(0,lim).map((it,i)=>auRow(it,i,sh)).join('')+(vis.length>lim?`<div class="aumore" id="auMore"><span>Showing ${lim.toLocaleString()} of ${vis.length.toLocaleString()}</span><button type="button" class="btn ghost sm" data-more="${AUD.PAGE}">Show ${Math.min(AUD.PAGE,vis.length-lim).toLocaleString()} more</button><button type="button" class="btn ghost sm" data-more="all">Show all ${vis.length.toLocaleString()}</button></div>`:'');}
+let auMoreObs=null;
+function auWatchMore(){const m=document.getElementById('auMore');if(!m||typeof IntersectionObserver==='undefined')return;
+  if(!auMoreObs)auMoreObs=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){auView.limit=auLim()+AUD.PAGE;auQuickRender();}},{rootMargin:'400px 0px'});
+  auMoreObs.disconnect();auMoreObs.observe(m);}
 function auQuickRender(){if(auView.mode!=='audit')return false;const sh=audShelf(auView.shelf);if(!sh)return false;
   const host=$('#page-audit');const list=host&&host.querySelector('.aulist');if(!list)return false;
   const tab=auView.tab[sh.id]||'todo';const c=auCounts(sh);
   if(tab==='todo'&&!c.todo&&!auView.q)return false;                 /* the shelf is finished — that screen is a different page */
   const vis=auVisible(sh);if(!vis.length)return false;
   if(auView.focus>=vis.length)auView.focus=Math.max(0,vis.length-1);
-  const page=vis.slice(0,AUD.PAGE);
-  list.innerHTML=page.map((it,i)=>auRow(it,i,sh)).join('')+(vis.length>AUD.PAGE?`<div class="aumore">Showing the first ${AUD.PAGE} of ${vis.length}. Judge these and the rest follow.</div>`:'');
+  list.innerHTML=auPageHtml(vis,sh);list.classList.toggle('compact',auView.compact!==false);
   const panel=host.querySelector('.aupanel');if(panel)panel.innerHTML=auPanel(vis[auView.focus],sh);
-  auPaintCounts(sh);auKeepFocusVisible();
-  const cur=vis[auView.focus];if(cur)auLoadGraph(cur.a);
+  auPaintCounts(sh);auKeepFocusVisible();auWatchMore();
+  const cur=vis[auView.focus];if(cur)auLoadGraph(cur.a,vis[auView.focus+1]&&vis[auView.focus+1].a);
   return true;}
 function auRefresh(){if(!auQuickRender())renderAudit();auPaintBulk();}
 /* b151 (Jack, 24 Sep: "add a way to bulk audit and click — a load of these are lead group, Discord, and I know which one").
@@ -297,7 +376,11 @@ function auRefresh(){if(!auQuickRender())renderAudit();auPaintBulk();}
    one press — including WHICH Discord, as one click. It floats over the page, so ticking never moves a single row. One press is
    one undo. The keyboard already worked this way (shift + arrow, then 1-6); now the mouse does too, and Q / W / E set the reason
    on every ticked row. */
-function auPaintBulk(){let el=document.getElementById('auBulk');const pg=document.getElementById('page-audit');
+/* b159: the filter bar's own "Tick all N shown / N ticked · Clear" — repainted in place, so ticking never redraws the list */
+function auTickHtml(shown){const n=auView.sel.size;
+  return`${n?`<b>${n.toLocaleString()}</b> ticked <button type="button" class="bl2" data-tclear="1">Clear</button>`:''}${shown&&n<shown?`<button type="button" class="bl2 tall" data-tall="1" title="Tick every row shown — then press 1–6, or use the bar at the bottom">Tick all ${shown.toLocaleString()} shown</button>`:''}`;}
+function auPaintTick(){const el=document.querySelector('#page-audit .autick');if(!el)return;const sh=audShelf(auView.shelf);if(!sh)return;el.innerHTML=auTickHtml(auVisible(sh).length);}
+function auPaintBulk(){auPaintTick();let el=document.getElementById('auBulk');const pg=document.getElementById('page-audit');
   const on=!!(pg&&pg.classList.contains('active'))&&auView.mode==='audit'&&auView.sel&&auView.sel.size>0&&!!audShelf(auView.shelf);
   document.body.classList.toggle('au-selecting',on);
   if(!on){if(el){el.hidden=true;el.innerHTML='';}return;}
@@ -323,7 +406,7 @@ function auToggleSel(asin,i,range){const sh=audShelf(auView.shelf);if(!sh)return
   if(range&&auView.lastSel!=null){const a=Math.min(auView.lastSel,i),b=Math.max(auView.lastSel,i);for(let k=a;k<=b;k++)if(vis[k])auView.sel.add(vis[k].a);}
   else{if(auView.sel.has(asin))auView.sel.delete(asin);else auView.sel.add(asin);}
   auView.lastSel=i;auRefresh();}
-function renderAudit(){const host=$('#page-audit');if(!host)return;
+function renderAudit(){const host=$('#page-audit');if(!host)return;audMineBust();
   document.body.classList.toggle('auditing',auView.mode==='audit');
   if(!isJack()){host.innerHTML=`<div class="card"><div class="empty"><span>The storefront audit is Jack's. Pick your name top right if this is you.</span></div></div>`;return;}
   if(auView.mode==='audit'&&auView.shelf&&audShelf(auView.shelf))auRenderOne();else auRenderList();
@@ -347,9 +430,11 @@ function auRankRivals(rows){const by={
   done:(a,b)=>String(a.la||'').localeCompare(String(b.la||''))||auOverlap(b.c)-auOverlap(a.c),
   name:(a,b)=>String(a.sh.name||'').localeCompare(String(b.sh.name||''))}[auRsort()];
   return rows.sort(by);}
-function auNextShelf(fromId){const L=audShelfList().map(sh=>({sh,c:auCounts(sh)})).filter(x=>x.sh.id!==fromId&&x.c.todo>0)
+function auNextShelf(fromId){const arch=audArchived();const L=audShelfList().filter(sh=>!arch.has(sh.id)).map(sh=>({sh,c:auCounts(sh)})).filter(x=>x.sh.id!==fromId&&x.c.todo>0)
   .sort((a,b)=>auOverlap(b.c)-auOverlap(a.c)||b.c.todo-a.c.todo);return L[0]?L[0].sh:null;}
-function auRenderList(){auView.mode='list';const shelves=audShelfList();
+function auRenderList(){auView.mode='list';const arch=audArchived();const allShelves=audShelfList();const shelves=allShelves.filter(sh=>!arch.has(sh.id));
+  const archRows=auRankRivals(allShelves.filter(sh=>arch.has(sh.id)).map(sh=>({sh,c:auCounts(sh),la:auLastAudit(sh),nw:auNewSince(sh)})));
+  const mineN=[...new Set([...audState.mineEver,...audState.mineNow,...audMineList()])].filter(a=>{const w=audMineWhy(a);return w&&w!=='before';}).length,mineList=audMineList().size;
   if(auView.cards===null)auView.cards=shelves.length<=8;   /* a few rivals read better as cards, 39 do not */const V=audAll();const O=auOurs();
   const rows=auRankRivals(shelves.map(sh=>({sh,c:auCounts(sh),la:auLastAudit(sh),nw:auNewSince(sh)})));
   const seen=new Set();let todo=0,had=0,sell=0,missed=0;
@@ -366,8 +451,15 @@ function auRenderList(){auView.mode='list';const shelves=audShelfList();
       ${k(seen.size.toLocaleString(),'Products','each judged once, everywhere')}
       ${k(todo.toLocaleString(),'Still to judge','','iris')}
       ${k(had.toLocaleString(),'Were our leads','on one of our filters, nobody said Yes','amber')}
-      ${k(sell.toLocaleString(),'You already sell','joint leads, auto-marked','jade')}</div>`:''}
+      ${k(sell.toLocaleString(),'You already sell',`auto-marked · your catalogue ${mineN.toLocaleString()}`,'jade')}</div>`:''}
+    ${(()=>{let rec=0,old=0;audState.mineEver.forEach(a=>{if(audState.mineNow.has(a))return;const w=audMineWhy(a);if(w==='recent')rec++;else if(w==='before')old++;});
+      return`<details class="aumine"${mineList?'':' open'}><summary><b>Your storefront</b>${audState.mineSrc==='storefront'?' <span class="aumsrc" title="From OA Overview\'s daily copy of your storefront (bdl_my_shelf)">· tracked daily</span>':''} · ${audState.mineNow.size.toLocaleString()} on it now · ${rec.toLocaleString()} left it in the last ${audJointDays()} days (still Joint)${mineList?` · ${mineList.toLocaleString()} on your inventory list`:''}${old?` · <span class="old">${old.toLocaleString()} left over ${audJointDays()} days ago</span>`:''}</summary>`;})()}
+      <p class="ssub">Anything here is marked <b>You sell this</b> on every rival's shelf, so it never lands in "to judge". Keepa's list misses products it hasn't seen for about a week (out of stock between restocks), so paste your full inventory for the rest: Seller Central → Inventory → Manage All Inventory → export, or the All Listings report — paste the whole thing, the ASINs are picked out.</p>
+      <div class="row"><textarea class="txt" id="auMineIn" rows="3" placeholder="Paste your inventory here (any text with ASINs in it)…"></textarea></div>
+      <div class="row"><label class="aujd">After it leaves your storefront, still Joint for <select id="auJointDays">${[14,30,45,60,90,'always'].map(d=>`<option value="${d}"${String(audJointDays())===String(d)?' selected':''}>${d==='always'?'always':d+' days'}</option>`).join('')}</select></label><span class="ssub">a rival that adds it inside that time → Joint automatically; a rival that adds it after → new, to check</span></div>
+      <div class="row"><button class="btn primary sm" id="auMineSave" type="button">Save as my inventory list</button>${mineList?`<button class="btn ghost sm" id="auMineClear" type="button">Clear the list (${mineList.toLocaleString()})</button>`:''}<span class="ssub" id="auMineMsg"></span></div></details>
     ${shelves.length?(auView.cards?`<div class="aucards">${rows.map(x=>`<button class="aucard" type="button" data-open="${escapeHtml(x.sh.id)}">
+      <span class="auarch" role="button" tabindex="0" data-arch="${escapeHtml(x.sh.id)}" title="Archive ${escapeHtml(x.sh.name)} — hide it from the audit (one click brings it back)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg></span>
       <div><div class="top"><span class="auav" style="background:${auAv(x.sh.name)}">${auIni(x.sh.name)}</span>
         <div><div class="nm">${escapeHtml(x.sh.name)}</div><div class="meta">${x.sh.items.length.toLocaleString()} products · ${x.la?'last audited '+auUk(x.la)+' ('+auAgo(x.la)+')':'not audited yet'}</div></div></div>
         <div class="facts">${stat(x)}${x.c.sell?`<span class="aupill p-joint">${Math.round(auOverlap(x.c)*100)}% you sell too · ${x.c.sell}</span>`:''}${x.c.had?`<span class="aupill p-had">${x.c.had} were our leads</span>`:''}</div>
@@ -379,8 +471,10 @@ function auRenderList(){auView.mode='list';const shelves=audShelfList();
         <td class="num"><b>${x.c.todo.toLocaleString()}</b>${x.c.byHand?`<div class="chg">${x.c.byHand} judged</div>`:''}</td>
         <td class="num">${x.c.all.toLocaleString()}</td>
         <td class="lwhen">${x.la?auAgo(x.la):'—'}</td>
-        <td class="num"><span class="btn primary xs">Audit →</span></td></tr>`).join('')}</tbody></table></div></div>`)
+        <td class="num"><span class="auarch inl" role="button" tabindex="0" data-arch="${escapeHtml(x.sh.id)}" title="Archive — hide it from the audit">Archive</span> <span class="btn primary xs">Audit →</span></td></tr>`).join('')}</tbody></table></div></div>`)
       :`<div class="empty"><span>${cloudEnabled()?'No shelves yet. OA Overview saves each rival’s shelf on its next fetch, or add a list below.':'Cloud is off in the sandbox, so OA Overview’s rival shelves are not here. Paste a list of ASINs below to try the screen.'}</span></div>`}
+    ${archRows.length?`<div class="auarchbar"><span>${archRows.length} rival${archRows.length===1?'':'s'} archived — not in the counts or "carry on"</span><button class="btn ghost sm" id="auShowArch" type="button">${auView.showArch?'Hide them':'Show them'}</button></div>
+      ${auView.showArch?`<div class="auarchlist">${archRows.map(x=>`<div class="auarchrow"><span class="auav sm" style="background:${auAv(x.sh.name)}">${auIni(x.sh.name)}</span><b>${escapeHtml(x.sh.name)}</b><span class="ssub">${x.sh.items.length.toLocaleString()} products · ${x.c.todo.toLocaleString()} left to judge</span><button class="btn ghost sm" type="button" data-unarch="${escapeHtml(x.sh.id)}">Bring back</button></div>`).join('')}</div>`:''}`:''}
     <details class="auadd"><summary>Add a shelf that is not on the list</summary>
     <div class="ausplit">
       <div class="aubox"><h3>Pull any storefront</h3><p class="ssub">A seller who is not on OA Overview's list. Keepa returns their whole shelf through your Worker.</p>
@@ -417,10 +511,12 @@ function auVisible(sh){const V=audAll();const q=auView.q.toLowerCase();const tab
     if(tab==='sell'&&!(audSells(sh.id,it.a)||st==='joint'))return false;
     if(audType(tab)&&st!==tab&&!(tab==='joint'&&st==='jointauto'))return false;
     const p=audState.prod[it.a]||{};const pr=+p.price||0,mo=+p.mo||0;
+    if(auView.band==='u10'&&!(pr&&pr<10))return false;   /* b159: the "under" filters only keep products whose number is KNOWN — a bulk Not lead must never sweep up an unloaded row */
     if(auView.band==='a'&&!(pr&&pr<20))return false;
     if(auView.band==='b'&&!(pr>=20&&pr<60))return false;
     if(auView.band==='c'&&!(pr>=60))return false;
-    if(+auView.vol>0&&!(mo>=+auView.vol))return false;
+    if(/^u\d+$/.test(auView.vol)){if(!(p.mo!=null&&p.mo!==''&&mo<+auView.vol.slice(1)))return false;}
+    else if(+auView.vol>0&&!(mo>=+auView.vol))return false;
     const sellers=+p.fba||+p.offers||0;
     if(+auView.sellers>0&&sellers&&sellers>=+auView.sellers)return false;   /* unknown counts stay: they are not "many sellers", they are "not loaded" */
     if(q){if(!((it.a+' '+(p.title||'')+' '+(p.brand||'')).toLowerCase().includes(q)))return false;}return true;});
@@ -461,7 +557,8 @@ function auReview(o,nowPrice){
 }
 function auLinks(asin){return[['Amazon','https://www.amazon.co.uk/dp/'+asin,'O','amazon'],['Keepa','https://keepa.com/#!product/2-'+asin,'K','keepa'],['SellerAmp','https://sas.selleramp.com/sas/lookup?search_term='+asin,'S','sas']]
     .map(([l,h,key,ic])=>`<a class="aulk ${ic}" href="${h}" target="_blank" rel="noopener" title="Open on ${l} · key ${key}" data-stop>${AU_LINK_ICON[ic]}<span>${l}</span></a>`).join('');}
-function auRow(it,i,sh){const V=audAll();const v=V[it.a];const p=audState.prod[it.a]||{};const sells=audSells(sh.id,it.a);const st=audStatus(v,sells);
+function auRow(it,i,sh){const V=audAll();let v=V[it.a];const vOld=audExpired(v)?v:null;if(vOld)v=null;   /* b163: an expired answer shows as a chip, not as the answer */
+  const p=audState.prod[it.a]||{};const sells=audSells(sh.id,it.a);const st=audStatus(v,sells);
   const o=auOurs()[it.a];const t=audType(st);const newShelf=!it.base&&auDays(it.first)<=14;
   const btns=audTypes().map((x,n)=>{const on=(v&&v.verdict===x.code)||(st==='jointauto'&&x.code==='joint');
     return`<button type="button" class="aub ${on?'on':''}${st==='jointauto'&&x.code==='joint'?' auto':''}" style="--c:${x.hex}" data-v="${x.code}" data-a="${it.a}" title="${escapeHtml(x.label)} · key ${n+1}"><kbd>${n+1}</kbd>${AU_ICON[x.icon]||''}<span class="lab">${escapeHtml(x.short||x.label)}</span></button>`;}).join('');
@@ -493,10 +590,12 @@ function auRow(it,i,sh){const V=audAll();const v=V[it.a];const p=audState.prod[i
         ${money?`<span class="aumoney">${money}</span>`:''}
         ${newShelf?`<span class="new">new · ${auDays(it.first)}d</span>`:''}
       </div>
-      ${sells||ourChip?`<div class="auchips">${sells?'<span class="aupill p-joint">You sell this too</span>':''}${ourChip}</div>`:''}</div>
+      ${(()=>{const why=audMineWhy(it.a,sh.id);const old=why==='before'?`<span class="aupill p-had" title="Your storefront last had it on ${escapeHtml(audMineLastNice(it.a))}. ${escapeHtml(sh.name)} added it ${audAddedNice(sh.id,it.a)?'on '+escapeHtml(audAddedNice(sh.id,it.a)):'later'} — more than ${audJointDays()} days after — so it's new to check">You had it until ${escapeHtml(audMineLastNice(it.a))} · they added it ${escapeHtml(audAddedNice(sh.id,it.a)||'after')}</span>`:'';
+        const again=vOld?`<span class="aupill p-had" title="${escapeHtml((audType(vOld.verdict)||{}).label+' · '+vOld.who+' · '+auUk(vOld.at)+(vOld.reason?' · '+vOld.reason:'')+' — answers like this stop counting after '+AUD_EXPIRE_DAYS+' days, in case the price has come back')}">You said ${escapeHtml((audType(vOld.verdict)||{}).short||vOld.verdict)} ${Math.round((Date.now()-new Date(vOld.at).getTime())/864e5)} days ago · check again</span>`:'';
+        return sells||ourChip||old||again?`<div class="auchips">${again}${sells?`<span class="aupill p-joint">${escapeHtml(AUD_MINE_WORDS[why]||'You sell this')}${why==='recent'?' · until '+escapeHtml(audMineLastNice(it.a)):''}</span>`:''}${old}${ourChip}</div>`:'';})()}</div>
     <div class="auright"><div class="aulinks">${links}</div>
       <div class="aumark">${v?`<span class="aupill big" style="--c:${(audType(v.verdict)||{}).hex}" title="${escapeHtml((audType(v.verdict)||{}).label+' · '+(v.who==='auto'?'marked for you':v.who+' · '+auUk(v.at))+(v.reason?' · '+v.reason:''))}"><i class="sq" style="background:${(audType(v.verdict)||{}).hex}"></i>${escapeHtml((audType(v.verdict)||{}).short||v.verdict)}${v.who==='auto'?' <i class="auauto">auto</i>':''}${elsewhere?` <i class="auelse" title="${escapeHtml('You gave this product that answer on '+fromShelf+' on '+auUk(v.at)+'. One answer per product — it shows on every shelf that carries it.')}">from ${escapeHtml(auSrcShort(fromShelf))}</i>`:''}</span>`
-      :st==='jointauto'?`<span class="aupill big" style="--c:#2CE38B"><i class="sq" style="background:#2CE38B"></i>You sell this</span>`:''}</div></div>
+      :st==='jointauto'?`<span class="aupill big" style="--c:#2CE38B" title="${escapeHtml({now:'On your storefront now',list:'On the inventory list you pasted',recent:'Your storefront last had it on '+audMineLastNice(it.a)+(audAddedNice(sh.id,it.a)?'; '+sh.name+' added it on '+audAddedNice(sh.id,it.a):'')+' — inside your '+audJointDays()+' days, so it is Joint'}[audMineWhy(it.a,sh.id)]||'On OA Overview\'s overlap for this rival')}"><i class="sq" style="background:#2CE38B"></i>${escapeHtml(AUD_MINE_WORDS[audMineWhy(it.a,sh.id)]||'You sell this')}</span>`:''}</div></div>
     <div class="aubtns">${btns}<button type="button" class="aunext" data-next="1" title="Leave it and move to the next one · down arrow">Next <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button></div>${reasons}</div>`;}
 function auRenderOne(){const sh=audShelf(auView.shelf);const c=auCounts(sh);const vis=auVisible(sh);const tab=auView.tab[sh.id]||'todo';
   if(auView.focus>=vis.length)auView.focus=Math.max(0,vis.length-1);
@@ -509,7 +608,7 @@ function auRenderOne(){const sh=audShelf(auView.shelf);const c=auCounts(sh);cons
      you decided. The dot colour is the verdict's own, matching the 1-6 buttons on the row. */
   const tb=(key,label,n,col,dot)=>`<button type="button" class="${tab===key?'on':''}${n?'':' zero'}" data-tab="${key}" style="--c:${col||'var(--muted)'}" title="${escapeHtml(label+' · '+n)}">`
     +`${dot?'<i class="d"></i>':''}<span>${label}</span><b>${n}</b></button>`;
-  const page=vis.slice(0,AUD.PAGE);
+  const page=vis;   /* b160: auPageHtml decides how many are drawn */
   $('#page-audit').innerHTML=`<div class="card">
     <div class="auhead"><button class="back" id="auBack" type="button" aria-label="Back to audits">${ICONS.back}</button>
       <span class="auav" style="background:${auAv(sh.name)}">${auIni(sh.name)}</span>
@@ -525,16 +624,18 @@ function auRenderOne(){const sh=audShelf(auView.shelf);const c=auCounts(sh);cons
     <div class="autabs">${tb('todo','To do',c.todo,'var(--iris)')}<i class="sep"></i>${tb('had','We had it',c.had,'#93A3BC',1)}${tb('sell','You sell',c.sell,'#2CE38B',1)}<i class="sep"></i>${audTypes().map(t=>tb(t.code,t.short||t.label,c[t.code],t.hex,1)).join('')}<i class="sep"></i>${tb('all','All',c.all)}
       <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="auQ" placeholder="Search title or ASIN" value="${escapeHtml(auView.q)}" autocomplete="off"><kbd>/</kbd></label></div>
     <div class="autools"><span class="l">Order</span><select id="auSort">${AU_SORTS.map(([v,l])=>`<option value="${v}"${auView.sort===v?' selected':''}>${l}</option>`).join('')}</select>
-      <span class="l">Price</span><select id="auBand"><option value="ALL"${auView.band==='ALL'?' selected':''}>Any</option><option value="a"${auView.band==='a'?' selected':''}>Under £20</option><option value="b"${auView.band==='b'?' selected':''}>£20 – £60</option><option value="c"${auView.band==='c'?' selected':''}>£60+</option></select>
-      <span class="l">Sells</span><select id="auVol"><option value="0"${auView.vol==='0'?' selected':''}>Any</option><option value="100"${auView.vol==='100'?' selected':''}>100+ a month</option><option value="500"${auView.vol==='500'?' selected':''}>500+ a month</option><option value="1000"${auView.vol==='1000'?' selected':''}>1,000+ a month</option></select>
+      <span class="l">Price</span><select id="auBand"><option value="ALL"${auView.band==='ALL'?' selected':''}>Any</option><option value="u10"${auView.band==='u10'?' selected':''}>Under £10</option><option value="a"${auView.band==='a'?' selected':''}>Under £20</option><option value="b"${auView.band==='b'?' selected':''}>£20 – £60</option><option value="c"${auView.band==='c'?' selected':''}>£60+</option></select>
+      <span class="l">Sells</span><select id="auVol"><option value="0"${auView.vol==='0'?' selected':''}>Any</option><option value="u20"${auView.vol==='u20'?' selected':''}>Under 20 a month</option><option value="u50"${auView.vol==='u50'?' selected':''}>Under 50 a month</option><option value="100"${auView.vol==='100'?' selected':''}>100+ a month</option><option value="500"${auView.vol==='500'?' selected':''}>500+ a month</option><option value="1000"${auView.vol==='1000'?' selected':''}>1,000+ a month</option></select>
       <span class="l">Sellers</span><select id="auSell"><option value="0"${auView.sellers==='0'?' selected':''}>Any</option><option value="3"${auView.sellers==='3'?' selected':''}>Under 3</option><option value="6"${auView.sellers==='6'?' selected':''}>Under 6</option><option value="11"${auView.sellers==='11'?' selected':''}>Under 11</option></select>
+      <button type="button" class="bl2 aucomp" id="auCompact" title="Compact = one line per product, about ten on screen. Amazon / Keepa / SellerAmp stay in the side panel and on O / K / S">${auView.compact!==false?'Compact rows ✓':'Compact rows'}</button>
+      <span class="autick">${auTickHtml(vis.length)}</span>
       <span class="autoolsn">${vis.length.toLocaleString()} shown${(()=>{if(auView.sellers==='0')return'';const n=vis.filter(it=>{const p=audState.prod[it.a]||{};return !(+p.fba||+p.offers);}).length;return n?` · ${n} with no seller count yet`:'';})()}</span></div>
     ${loaded===0&&!audAuto()?`<div class="aunodet"><div><b>These are just ASINs so far.</b> Load the titles, pictures and prices and this list becomes readable.</div>
       <div class="row"><button class="btn primary sm" id="auViewer2" type="button">Open ${Math.min(250,sh.items.length)} in the Keepa Viewer · free</button><button class="btn ghost sm" id="auTokens2" type="button">Or load them now · about ${sh.items.length} tokens</button></div>
       <div class="ssub">The Viewer opens with the ASINs already in. Export all columns, then drop the file anywhere on this page.</div></div>`:''}
     ${tab==='todo'&&!c.todo&&!auView.q?auDone(sh,c):
       !vis.length?'<div class="empty"><span>Nothing in this tab.</span></div>':
-      `<div class="augrid"><div class="aulist">${page.map((it,i)=>auRow(it,i,sh)).join('')}${vis.length>AUD.PAGE?`<div class="aumore">Showing the first ${AUD.PAGE} of ${vis.length}. Judge these and the rest follow.</div>`:''}</div>
+      `<div class="augrid"><div class="aulist${auView.compact!==false?' compact':''}">${auPageHtml(page,sh)}</div>
         <aside class="aupanel">${auPanel(vis[auView.focus],sh)}</aside></div>`}
     <div class="aukeys"><span><kbd>1</kbd>–<kbd>${audTypes().length}</kbd> judge</span><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>X</kbd> tick · <kbd>⇧↓</kbd> tick a run</span><span><kbd>G</kbd> back to the next one waiting</span><span><kbd>U</kbd> undo</span><span><kbd>O</kbd><kbd>K</kbd><kbd>S</kbd> Amazon · Keepa · SellerAmp</span><span><kbd>/</kbd> search</span></div></div>`;
   /* b92 (Jack: "isn't smooth at all - very very jumpy"). Judging changes a row's height — the six
@@ -559,11 +660,11 @@ function auRenderOne(){const sh=audShelf(auView.shelf);const c=auCounts(sh);cons
   }else{AU_ANCHOR.want=false;
     const top=f.getBoundingClientRect().top;
     if(top<0||top>innerHeight-120)f.scrollIntoView({block:'nearest',behavior:'auto'});}
-  const cur=vis[auView.focus];if(cur)auLoadGraph(cur.a);}
+  auWatchMore();const cur=vis[auView.focus];if(cur)auLoadGraph(cur.a,vis[auView.focus+1]&&vis[auView.focus+1].a);}
 /* b71: the price graph. Keepa's free chart is limited by IP address, and when it trips it returns a small PNG that says
    "blocked" rather than an error — so a real chart is judged by its width, never by onload alone. It loads only for the
    product you are sitting on, after a moment, and a chart already fetched is reused. */
-const AU_GRAPH={cache:{},worker:null,MAX_FREE:6,free:0};
+const AU_GRAPH={cache:{},pending:{},worker:null,MAX_FREE:6,free:0};
 const AU_GRAPH_Q='domain=2&range=90&width=600&height=230&amazon=1&new=1&bb=1&salesrank=1';
 /* Keepa's free chart is limited by IP address and, when it trips, answers with a small PNG that reads "blocked" rather than
    failing — so a chart is judged by its size. The Worker's chart costs about 1 token and does not care about the address,
@@ -581,15 +682,20 @@ async function auFetchGraph(asin){
     if(ok)return ok;}
   return null;}
 let auGraphT=null;
-function auLoadGraph(asin){clearTimeout(auGraphT);if(!asin)return;
+/* b160 (Jack: "look at the graph and move on quickly"): a graph already fetched shows at once, and the next product's graph is
+   fetched while you look at this one — going down the list in order costs nothing extra, it just arrives before you do. */
+function auPrefetchGraph(asin){if(!asin||AU_GRAPH.cache[asin]!==undefined||AU_GRAPH.pending[asin])return;AU_GRAPH.pending[asin]=1;
+  auFetchGraph(asin).then(u=>{AU_GRAPH.cache[asin]=u||false;delete AU_GRAPH.pending[asin];}).catch(()=>{delete AU_GRAPH.pending[asin];});}
+function auLoadGraph(asin,next){clearTimeout(auGraphT);if(!asin)return;
+  const box0=$('#auGraph');if(box0&&box0.dataset.a===asin&&AU_GRAPH.cache[asin]){box0.classList.add('has');box0.innerHTML=`<img src="${AU_GRAPH.cache[asin]}" alt="Keepa price history">`;setTimeout(()=>auPrefetchGraph(next),250);return;}
   auGraphT=setTimeout(async()=>{const box=$('#auGraph');if(!box||box.dataset.a!==asin)return;
     if(AU_GRAPH.cache[asin]===false){box.innerHTML=auGraphFallback(asin);return;}
     if(AU_GRAPH.cache[asin]){box.classList.add('has');box.innerHTML=`<img src="${AU_GRAPH.cache[asin]}" alt="Keepa price history">`;return;}
     box.innerHTML='<span class="auglab">Loading the price history…</span>';
-    const url=await auFetchGraph(asin);AU_GRAPH.cache[asin]=url||false;
-    const b=$('#auGraph');if(!b||b.dataset.a!==asin)return;
+    const url=AU_GRAPH.pending[asin]?await new Promise(res=>{const w=()=>AU_GRAPH.pending[asin]?setTimeout(w,120):res(AU_GRAPH.cache[asin]||null);w();}):await auFetchGraph(asin);AU_GRAPH.cache[asin]=url||false;
+    const b=$('#auGraph');if(!b||b.dataset.a!==asin)return;auPrefetchGraph(next);
     if(url){b.classList.add('has');b.innerHTML=`<img src="${url}" alt="Keepa price history">`;}
-    else b.innerHTML=auGraphFallback(asin,AU_GRAPH.worker===false?'Charts need one line adding to your Keepa Worker — the file is in Downloads.':'Keepa is holding the free charts back for a moment.');},450);}
+    else b.innerHTML=auGraphFallback(asin,AU_GRAPH.worker===false?'Charts need one line adding to your Keepa Worker — the file is in Downloads.':'Keepa is holding the free charts back for a moment.');},250);}
 function auGraphFallback(asin,why){return`<span class="auglab">${why?escapeHtml(why)+' ':''}<a class="aulk keepa" href="https://keepa.com/#!product/2-${asin}" target="_blank" rel="noopener" data-stop>Open the full graph on Keepa <kbd>K</kbd></a></span>`;}
 function auPanel(it,sh){if(!it)return'<div class="empty"><span>Pick a product.</span></div>';const p=audState.prod[it.a]||{};
   if(!p.title)return`<div class="aupimg none">${escapeHtml(it.a.slice(0,2))}</div><h3>${it.a}</h3>
@@ -598,12 +704,13 @@ function auPanel(it,sh){if(!it)return'<div class="empty"><span>Pick a product.</
     ${(()=>{const o=auOurs()[it.a];return o?`<div class="ausec"><div class="h">On our filters</div><div class="auours ${o.said==='Yes'?'yes':''}"><b>${o.said?escapeHtml((o.saidBy||'we')+' said '+o.said):'Was a lead · nobody said Yes'}</b><div>${escapeHtml(o.src||'')} · ${auUk(o.day)}${o.score?' · score '+o.score:''}</div></div></div>`:'';})()}`;const v=audGet(it.a);const o=auOurs()[it.a];
   const also=audShelfList().filter(x=>x.id!==sh.id&&x.items.some(y=>y.a===it.a)).map(x=>x.name);
   const fact=(k,val)=>`<div><div class="k">${k}</div><div class="v">${val}</div></div>`;
-  return`<div class="aupimg ${p.image?'':'none'}">${p.image?`<img src="${escapeHtml(p.image)}" alt="">`:escapeHtml(it.a.slice(0,2))}</div>
-    <h3>${escapeHtml(p.title||it.a)}</h3><div class="ssub">${escapeHtml(p.brand||'')}${p.root?' · '+escapeHtml(p.root):''} · ${it.a}</div>
+  /* b160: the graph is what Jack reads — it comes first and big; the picture shrinks to a thumbnail beside the title */
+  return`<div class="ausec aug1"><div class="augraph big" id="auGraph" data-a="${it.a}"></div></div>
+    <div class="auphead"><div class="aupimg sm ${p.image?'':'none'}">${p.image?`<img src="${escapeHtml(p.image)}" alt="">`:escapeHtml(it.a.slice(0,2))}</div>
+      <div><h3>${escapeHtml(p.title||it.a)}</h3><div class="ssub">${escapeHtml(p.brand||'')}${p.root?' · '+escapeHtml(p.root):''} · ${it.a}</div></div></div>
     <div class="aufgrid">${fact('Buy Box',gbp(p.price))}${fact('Sales rank',p.rank?'#'+(+p.rank).toLocaleString():'—')}${fact('Bought / month',p.mo?(+p.mo).toLocaleString():'—')}
       ${fact('Sellers on it',(p.fba||p.offers)||(p.asked?'none listed':'<span class="pend">loading\u2026</span>'))}${fact('On their shelf',it.base?'Already there':auDays(it.first)+'d')}${fact('Other shelves',also.length)}</div>
     <div class="aulinksbig sticky">${auLinks(it.a)}</div>
-    <div class="ausec"><div class="h">Price history · 90 days</div><div class="augraph" id="auGraph" data-a="${it.a}"></div></div>
     <div class="ausec"><div class="h">On our filters</div>${o?`<div class="auours ${o.said==='Yes'?'yes':''}"><b>${o.said?escapeHtml((o.saidBy||'we')+' said '+o.said):'Was a lead · nobody said Yes'}</b>
       <div>${escapeHtml(o.src||'')} · ${escapeHtml(o.owner||'')} · ${auUk(o.day)} · ${o.runs} run${o.runs===1?'':'s'}${o.score?' · score '+o.score:''}${o.buy?' · buy '+gbp(o.buy)+' → sell '+gbp(o.sell)+' · '+o.roi+'% ROI':''}</div>
       ${(()=>{const rv=auReview(o,+p.price);return rv?`<div class="aurev ${rv.tone}"><b>Marking our own homework</b><span>${escapeHtml(rv.line)}</span>${rv.now?`<span>${escapeHtml(rv.now)}</span>`:''}</div>`:'';})()}</div>`
@@ -617,7 +724,7 @@ function auDone(sh,c){const disc=sh.items.filter(it=>(audGet(it.a)||{}).verdict=
     <div class="row">${disc.length?`<button class="btn solid sm" id="auDisc" type="button">Open the ${disc.length} Discord one${disc.length===1?'':'s'} in Keepa</button>`:''}${ws.length?`<button class="btn solid sm" id="auWs" type="button">Copy ${ws.length} WS ASIN${ws.length===1?'':'s'}</button>`:''}${(()=>{const n=auNextShelf(sh.id);return n?`<button class="btn primary sm" type="button" data-open="${escapeHtml(n.id)}">Next rival · ${escapeHtml(n.name)} · ${auCounts(n).todo} to do →</button>`:'';})()}<button class="btn ghost sm" id="auBack2" type="button">Back to audits</button></div></div>`;}
 
 /* ============ actions and wiring ============ */
-function auOpen(id){auView.mode='audit';auView.shelf=id;auView.q='';auView.order=null;auView.stay=new Set();auView.sel=new Set();auView.lastAt=0;
+function auOpen(id){auView.mode='audit';auView.shelf=id;auView.q='';auView.limit=0;auView.order=null;auView.stay=new Set();auView.sel=new Set();auView.lastAt=0;
   location.hash='#audit='+id;const sh=audShelf(id);if(!sh)return;
   const vis=auVisible(sh);const V=audAll();const first=vis.findIndex(it=>audStatus(V[it.a],audSells(sh.id,it.a))==='todo');
   const autoN=audAutoMissed(sh);if(autoN)toast(autoN+' marked Missed it for you — leads we had and never bought');
@@ -724,9 +831,34 @@ async function auTakeFiles(list){const files=[...list].filter(f=>/\.csv$/i.test(
     all[id]={id,name,seller:'',kind:'list',asins:uniq.map(p=>p.asin),at:today(),by:me()};audShelvesSave(all);
     if(cloudEnabled())audQueue({op:'up',table:'src_audit_shelves',rows:[{seller_id:id,name,kind:'list',asins:all[id].asins,pulled_at:nowIso(),pulled_by:me()}]});
     toast(uniq.length+' products in — opening the audit');auOpen(id);}}
+/* b159 (Jack: "better and easier to bulk do it"): press on a picture and drag down — every row you pass is ticked
+   (or unticked, if the first one was already ticked). One sweep instead of twenty clicks. */
+let auDrag=null;
+function auDragRowAt(t){const r=t&&t.closest&&t.closest('.aulist .aurow');return r&&r.dataset.a?r:null;}
 function auInit(){const host=$('#page-audit');if(!host)return;
+  host.addEventListener('mousedown',e=>{if(e.button!==0||e.shiftKey||e.metaKey||e.ctrlKey)return;const img=e.target.closest('.aulist .aurow > .auimg');if(!img)return;
+    const row=auDragRowAt(img);if(!row)return;auDrag={add:!auView.sel.has(row.dataset.a),seen:new Set([row.dataset.a]),moved:false};});
+  host.addEventListener('mouseover',e=>{if(!auDrag)return;const row=auDragRowAt(e.target);if(!row||auDrag.seen.has(row.dataset.a))return;
+    if(!auDrag.moved){auDrag.moved=true;const first=[...auDrag.seen][0];auDrag.add?auView.sel.add(first):auView.sel.delete(first);}
+    auDrag.seen.add(row.dataset.a);auDrag.add?auView.sel.add(row.dataset.a):auView.sel.delete(row.dataset.a);
+    row.classList.toggle('sel',auView.sel.has(row.dataset.a));const f=document.querySelector(`.aulist .aurow[data-a="${[...auDrag.seen][0]}"]`);if(f)f.classList.toggle('sel',auView.sel.has(f.dataset.a));auPaintBulk();});
+  document.addEventListener('mouseup',()=>{if(!auDrag)return;const moved=auDrag.moved;auDrag=null;if(moved){auView.dragJustEnded=Date.now();auRefresh();}});
   host.addEventListener('click',async e=>{const t=e.target;
     if(t.closest('[data-stop]')){e.stopPropagation();return;}
+    const mo=t.closest('[data-more]');if(mo){const sh=audShelf(auView.shelf);if(sh){auView.limit=mo.dataset.more==='all'?auVisible(sh).length:auLim()+(+mo.dataset.more||AUD.PAGE);auQuickRender();}return;}
+    if(t.closest('#auCompact')){auView.compact=auView.compact===false;auSave();renderAudit();return;}
+    /* b159: tick all shown / clear, from the filter bar */
+    if(t.closest('[data-tall]')){const sh=audShelf(auView.shelf);if(sh){auView.sel=new Set(auVisible(sh).map(it=>it.a));auRefresh();}return;}
+    if(t.closest('[data-tclear]')){auView.sel=new Set();auView.lastSel=null;auRefresh();return;}
+    /* b158: archive / bring back a rival, your inventory list */
+    const ar=t.closest('[data-arch]');if(ar){e.stopPropagation();const sh=audShelf(ar.dataset.arch);audArchSet(ar.dataset.arch,true);renderAudit();
+      toast((sh?sh.name:'Rival')+' archived',false,{label:'Undo',fn:()=>{audArchSet(ar.dataset.arch,false);renderAudit();}});return;}
+    const un=t.closest('[data-unarch]');if(un){audArchSet(un.dataset.unarch,false);renderAudit();toast('Back in the audit');return;}
+    if(t.closest('#auShowArch')){auView.showArch=!auView.showArch;auSave();renderAudit();return;}
+    if(t.closest('#auMineSave')){const a=audAsinsIn($('#auMineIn').value);const msg=$('#auMineMsg');
+      if(!a.length){msg.textContent='No ASINs found in that — paste the export or a list of ASINs.';return;}
+      const n=audMineSave([...audMineList(),...a]);renderAudit();toast(n.toLocaleString()+' products on your inventory list — they are marked You sell this everywhere');return;}
+    if(t.closest('#auMineClear')){if(!confirm('Clear your inventory list? Keepa\'s list and everything seen before still count.'))return;audMineSave([]);renderAudit();toast('Inventory list cleared');return;}
     const cp=t.closest('[data-copy]');if(cp){copy(cp.dataset.copy,cp.dataset.copy+' copied');e.stopPropagation();return;}
     const op=t.closest('[data-open]');if(op){auOpen(op.dataset.open);return;}
     const trOpen=t.closest('tr[data-open]');if(trOpen){auOpen(trOpen.dataset.open);return;}
@@ -751,13 +883,17 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     const vb=t.closest('[data-v]');if(vb){const sh=audShelf(auView.shelf);const vis=auVisible(sh);const k=vis.findIndex(it=>it.a===vb.dataset.a);if(k>=0)auView.focus=k;
       auJudgeNow(auView.sel.size?[...auView.sel]:[vb.dataset.a],vb.dataset.v);return;}
     if(t.closest('[data-next]')){const sh=audShelf(auView.shelf);const vis=auVisible(sh);if(auView.focus<vis.length-1)auView.focus++;auRefresh();auFollow();return;}
+    if(auView.dragJustEnded&&Date.now()-auView.dragJustEnded<300&&t.closest('.aulist .aurow > .auimg'))return;   /* b159: the mouse-up of a drag is not a click */
     const tick=t.closest('[data-sel]')||(t.closest('.aulist .aurow > .auimg')&&t.closest('.aurow'));
     if(tick){e.preventDefault();const r=tick.closest('.aurow')||tick;auToggleSel(r.dataset.a||tick.dataset.sel,+(r.dataset.i||tick.dataset.i),e.shiftKey);return;}   /* b153: the whole picture ticks, not just the little box */
     const rs=t.closest('[data-r]');if(rs){audSetReason(rs.dataset.a,rs.dataset.r);auAdvance();auRefresh();return;}
     const row=t.closest('.aurow');if(row){if(e.metaKey||e.ctrlKey){auToggleSel(row.dataset.a,+row.dataset.i,false);return;}auView.focus=+row.dataset.i;auRefresh();auFollow();return;}});
   host.addEventListener('change',e=>{const id=e.target.id;
     const map={auSort:'sort',auBand:'band',auVol:'vol',auSell:'sellers'};
-    if(map[id]){auView[map[id]]=e.target.value;auView.order=null;auView.focus=0;auSave();renderAudit();}});
+    if(map[id]){auView[map[id]]=e.target.value;auView.order=null;auView.focus=0;auView.limit=0;auSave();renderAudit();}
+    if(id==='auJointDays'){const v=e.target.value==='always'?'always':+e.target.value;lsSet(AUD_JDAYS,v);
+      if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('audit-jointdays',v)]);
+      auView.order=null;renderAudit();toast(v==='always'?'Anything you have ever sold counts as yours':'Sold out within '+v+' days still counts as yours');}});
   host.addEventListener('input',e=>{if(e.target.id==='auQ'){auView.q=e.target.value;auView.focus=0;auView.order=null;const pos=e.target.selectionStart;renderAudit();
       const q=$('#auQ');if(q){q.focus();q.setSelectionRange(pos,pos);}}
     if(e.target.id==='auNote')audSetNote(e.target.dataset.a,e.target.value);});
@@ -774,7 +910,8 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     if(e.key==='Escape'){if(auView.sel.size){auView.sel=new Set();auView.lastSel=null;auView.bulkOpen=null;auRefresh();}return;}
     if((e.key==='x'||e.key==='X')&&it&&!e.metaKey&&!e.ctrlKey){e.preventDefault();auToggleSel(it.a,auView.focus,e.shiftKey);return;}   /* b153: X ticks the row you are on, like Gmail */
     if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const d=e.key==='ArrowDown'?1:-1;const nf=Math.min(vis.length-1,Math.max(0,auView.focus+d));
-      if(e.shiftKey){if(it)auView.sel.add(it.a);if(vis[nf])auView.sel.add(vis[nf].a);}else auView.sel=new Set();
+      /* b159: moving no longer wipes the ticks (tick six with the mouse, press ↓, all six were gone). Esc clears. */
+      if(e.shiftKey){if(it)auView.sel.add(it.a);if(vis[nf])auView.sel.add(vis[nf].a);}
       auView.focus=nf;auRefresh();auFollow();return;}
     const types=audTypes();const n=parseInt(e.key,10);
     if(n>=1&&n<=types.length&&it){e.preventDefault();auJudgeNow(auView.sel.size?[...auView.sel]:[it.a],types[n-1].code);return;}

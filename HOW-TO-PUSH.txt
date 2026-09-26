@@ -1,50 +1,62 @@
-BDL SOURCING — b156 · 25 Sep 2026
+BDL SOURCING — b165 · 26 Sep 2026
 
-This folder is the whole app. Upload all of it every time; anything you already pushed is simply replaced.
+(b157-b164 were not pushed yet - this folder has all of them plus b165. Live is b156.)
 
-1. UPLOAD
-   GitHub → Add file → Upload files. Drag in index.html, css, js, tests, README-DEPLOY.txt. Commit.
-   Hard-refresh once (Cmd+Shift+R) — the header should say b156.
+1. UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
+   Then Cmd+Shift+R. The header should say b165.
 
-2. SIGN YOURSELF IN (no email, no Supabase step)
-   Settings → the "Who am I" box → jack@bdl.local + your usual password → Sign in.
-   Your Team row already says jack@bdl.local.
+2. THE LINK-MAKER — ONCE, ABOUT A MINUTE, NO KEYS
+   Supabase → Edge Functions → "Deploy a new function" → "Via Editor"
+   Name it exactly:  sourcing-link
+   Select everything in the editor, paste the whole of
+     ~/Downloads/2026-09-25-SUPABASE-FUNCTION-sourcing-link-PASTE-THIS.ts
+   → Deploy. Leave "Verify JWT" on. Supabase gives it its own keys - there is nothing to copy.
+   (Ignore the Cloudflare/Worker steps from b156 - not needed any more.)
 
-3. LINKS FOR SUZ AND MERA — ONCE
-   a) Supabase → Authentication → Users → Add user → CREATE NEW USER, one for each of them.
-      Any email - it does NOT need a real inbox (e.g. suz@bdl.local, mera@bdl.local).
-      Any password (nobody types it). Tick "Auto Confirm User".
-   b) App → Settings → Team: type the same email in Suz's row and Mera's row.
-   c) Cloudflare → Workers & Pages → bdl-sourcing → Edit code: select all, paste the whole of
-      ~/Downloads/2026-09-25-BDL-SOURCING-WORKER-v3-PASTE-THIS.js, Deploy.
-      (It is your v2 exactly, plus the link-maker. The Keepa key is not in it and does not change.)
-   d) bdl-sourcing → Settings → Variables and Secrets → Add:
-        SUPABASE_URL                Type: Text    Value: Supabase → Project Settings → Data API → Project URL
-        SUPABASE_SERVICE_ROLE_KEY   Type: SECRET  Value: Supabase → Project Settings → API Keys → service_role (Reveal, copy)
-      The service_role key is the master key of the project. It goes ONLY there, as a Secret - never in a chat or a file.
-      Deploy again if it asks.
+3. SIGN YOURSELF IN
+   Settings → jack@bdl.local + your password → Sign in.
 
-4. EVERY TIME SOMEONE NEEDS IN
-   Settings → Team → "Copy link" next to their name → paste it to them in Discord.
-   They open it on their WORK computer and they're signed in (it signs in whichever browser opens it).
-   Each link works ONCE, for about an hour. Need another? Press Copy link again.
+4. SEND THEIR LINKS
+   Settings → Team → "Copy link" next to Suz (and Mera) → paste it to them in Discord.
+   Their logins are already in (suz@bdl.local, mera@bdl.local) - nothing to type.
+   Tell them: open it on your WORK computer, in the browser you use for Sourcing.
+   Each link works ONCE, for about an hour. Need another? Copy link again.
 
 5. THE LOCK
    When all three show "Signed in", flip "Sign-in required for everyone".
-   Not signed in = the sign-in screen and nothing else. Their name comes from the sign-in.
 
-GUEST MODE (b155) - RUN EVERYTHING, SAVE NOTHING
-   Settings > Guest mode > Start guest mode. Amber bar = nothing goes to Supabase.
-   Leave guest mode = everything you did is thrown away and this browser goes back exactly as it was.
-   Keepa API buttons still spend real tokens. Sign-in links and the lock are paused inside it.
+GUEST MODE: Settings > Guest mode > Start. Amber bar = nothing saves. Leave = back exactly as it was.
+
+STOREFRONT AUDIT (b158)
+   Your catalogue: open the green "Your catalogue" bar at the top of Storefront audits and paste your
+   inventory (Seller Central > Inventory > Manage All Inventory > export, or the All Listings report -
+   paste the whole thing). Everything on it is marked "You sell this" on every rival's shelf.
+   Archive: hover a rival card > the box icon (top right). Undo in the message; "Show them" at the
+   bottom brings any back.
+   Joint rule: on your storefront = Joint. After it leaves, a rival that adds it within 45 days = Joint
+   automatically; a rival that adds it after your 45 days = new, to check ("You had it until ... · they added it ...").
+   Change the 45 in the green "Your storefront" bar (14 / 30 / 45 / 60 / 90 days / always).
+   Not lead / Missed it / Unsure come back to check after 90 days ("You said Not lead 95 days ago · check again").
+   Discord / WS / Diff method / Joint last.
+   New answer: 7 = Diff method (wholesale / PL - not your model), then Q / W / E for Wholesale / PL / Other.
+   Bulk on a rival: set a filter (e.g. Sells: Under 20 a month) > "Tick all N shown" > press 1 (Not lead).
+   Or press on a picture and drag down to tick a run. Arrows keep your ticks; Esc clears.
+   Quick flow: one line per product now (switch "Compact rows" off for the big rows). Look at the graph
+   (top of the right panel), press 1-6, the next one's graph is already there. The rest of a long shelf
+   loads as you scroll - or "Show all" at the bottom.
 
 WHAT LANDS, NEWEST FIRST
-   b156 SIGN IN YOUR WAY + COPY-A-LINK + A CALMER BRANDS LIST.
-        You: email + password, straight in. Suz and Mera: a link you copy and send - no email.
-        Brands list: rows no longer one maroon wall (a clear red edge on late ones instead), each
-        owner shows in their own colour (Jack violet, Suz blue, Mera orange, VAs pink - none of
-        them now clash with "late" red or "to review" amber), "44 to review" is an amber chip, and
-        only Run is a filled button. Tested: 275 checks.
-   b155 GUEST MODE.
-   b154 Due / late in plain words, Lead / Not a lead in the Keepa console.
-   b153 The lock, Mac type, nothing moves when you click, bulk audit.
+   b165 The audit reads your storefront from OA Overview (bdl_my_shelf) - 199 more rows auto Joint today.
+   b164 Missed it asks just four: Never looked at (Q), Passed on it (W), Never found it (E), Other (R).
+   b163 Not lead / Missed it / Unsure come back to check after 90 days, in case the price drops again.
+   b162 Joint decided by WHEN the rival added it, against your last day + 45 days.
+   b161 Diff method answer (key 7: Wholesale / PL / Other) and 45 days as the "still yours" window.
+   b160 Audit: see the whole shelf, one line a product (about 16 on screen), graph first and pre-loaded.
+   b159 Bulk audit you can see (Tick all, drag, Under-20 / Under-£10 filters, arrows keep ticks) and
+        how long a sold-out product still counts as yours (default 30 days).
+   b158 The audit knows your catalogue (236 products you'd sold were sitting in "to judge"), and you can
+        archive rivals you're not bothered about.
+   b157 Links without keys: the link-maker lives in Supabase itself; Suz's and Mera's logins built in.
+   b156 Sign in with your own login (jack@bdl.local + password), Copy link, calmer Brands list,
+        each person in their own colour.
+   b155 Guest mode.   b154 Due / late in plain words, Keepa console Lead / Not a lead.

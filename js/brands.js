@@ -444,7 +444,7 @@ function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='func
   const when=iso=>{if(!iso)return'';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});};
   const si=signinsAll();const team=teamAll();
   const me_=u?`<div class="authnow"><i></i><span><b>Signed in</b> as ${escapeHtml(u.name)} <em>${escapeHtml(u.email)}</em></span><button type="button" class="btn ghost sm" id="abOut">Sign out</button></div>`
-    :`<div class="authnow off"><i></i><span><b>Not signed in on this computer.</b> Your email and password signs you straight in. Email on its own sends a one-click link instead (that's the way for Suz and Mera).</span></div>
+    :`<div class="authnow off"><i></i><span><b>Not signed in on this computer.</b> Your login and password signs you straight in. Suz and Mera don't sign in here — you send them a link from Team below.</span></div>
       <div class="authsend"><input type="email" id="abEmail" placeholder="you@… — your login email" autocomplete="username" spellcheck="false"><input type="password" id="abPass" placeholder="Password" autocomplete="current-password"><button type="button" class="btn solid sm" id="abSend">Send me a link</button></div><div class="wgmsg" id="abMsg"></div>`;
   const allIn=team.every(t=>si[t.name]);
   const teamHtml=!jack?'':`<div class="teambox"><div class="tbh"><b>Team</b><span>Each person's email. The name on everything they mark comes from here, never from a dropdown.</span></div>
@@ -463,8 +463,8 @@ function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='func
     ${sand?' <em>(This is the test sandbox — the lock never applies here.)</em>':''}</p>
     <details class="lksteps"><summary>Set-up, once (yours)</summary><ol>
       <li><b>You:</b> your login is <code>jack@bdl.local</code> — type it with your password above. No email needed.</li>
-      <li><b>Suz and Mera</b> — Supabase → Authentication → Users → Add user → <b>Create new user</b>: any email for each (it does not need a real inbox, e.g. <code>suz@bdl.local</code>), any password, tick <b>Auto Confirm User</b>. Then type the same email in their Team row above.</li>
-      <li><b>The Worker, once</b> — paste <code>2026-09-25-BDL-SOURCING-WORKER-v3-PASTE-THIS.js</code> (Downloads) over bdl-sourcing's code and Deploy, then add two settings to it: <code>SUPABASE_URL</code> (Text — Supabase → Project Settings → Data API → Project URL) and <code>SUPABASE_SERVICE_ROLE_KEY</code> (<b>Secret</b> — Project Settings → API Keys → service_role). That key only ever lives in the Worker.</li>
+      <li><b>Suz and Mera</b> are already in Supabase as <code>suz@bdl.local</code> and <code>mera@bdl.local</code> (you made them, 25 Sep) and already in the Team above. Anyone new: Supabase → Authentication → Users → Add user → <b>Create new user</b> (any email, any password, tick <b>Auto Confirm User</b>), then type it in their Team row.</li>
+      <li><b>The link-maker, once</b> — Supabase → <b>Edge Functions</b> → Deploy a new function → <b>Via Editor</b> → name it <code>sourcing-link</code> → paste <code>2026-09-25-SUPABASE-FUNCTION-sourcing-link-PASTE-THIS.ts</code> (Downloads) over everything → <b>Deploy</b>. No keys to copy — Supabase gives it its own.</li>
       <li>Then <b>Copy link</b> next to Suz or Mera, paste it to them in Discord, and they are in. Each link works once, for about an hour.</li>
       <li>Emailing links instead (only for real inboxes): Authentication → URL Configuration → Redirect URLs → add <code>${escapeHtml(location.origin+location.pathname)}</code>.</li></ol></details></div>`;
   el.innerHTML=me_+teamHtml+lockHtml;

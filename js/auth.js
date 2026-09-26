@@ -42,9 +42,11 @@ const AUTH_NAMES={'jackbithellamazon@gmail.com':'Jack','jack@bdl.local':'Jack'};
    ============================================================================ */
 const TEAM_KEY='bdl-sourcing-team',LOCK_KEY='bdl-sourcing-lock',SIGNIN_KEY='bdl-sourcing-signins';
 function teamAll(){const t=lsGet(TEAM_KEY,null);
-  const base=[{name:'Jack',email:'jack@bdl.local'},{name:'Suz',email:''},{name:'Mera',email:''}];   /* b156: Jack's own login on the project */
+  /* b156: Jack's own login on the project · b157: Suz's and Mera's logins built in (Jack made them in Supabase, 25 Sep) — nothing to type */
+  const base=[{name:'Jack',email:'jack@bdl.local'},{name:'Suz',email:'suz@bdl.local'},{name:'Mera',email:'mera@bdl.local'}];
   if(!Array.isArray(t))return base;
-  return base.map(b=>Object.assign({},b,t.find(x=>x&&x.name===b.name)||{}));}
+  /* a saved row only changes an email when it has one — an old blank save must not wipe the built-in logins */
+  return base.map(b=>{const x=t.find(y=>y&&y.name===b.name);return x&&String(x.email||'').trim()?Object.assign({},b,x):b;});}
 function teamSave(list){if(guestOn()){toast('Guest mode — the Team list is not changed from here. Leave guest mode first.',true);return;}lsSet(TEAM_KEY,list);if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('team',list)]);}
 function teamNameFor(email){const e=String(email||'').trim().toLowerCase();if(!e)return'';const t=teamAll().find(x=>(x.email||'').trim().toLowerCase()===e);return t?t.name:'';}
 function signinsAll(){return lsGet(SIGNIN_KEY,{})||{};}
@@ -128,15 +130,18 @@ async function authSubmit(email,password){email=String(email||'').trim();
   if(authNoInbox(email))throw new Error(email+' has no inbox, so a link cannot reach it — type your password too.');
   await authSendLink(email);return'sent';}
 /* b156 (Jack, 25 Sep: "I want to copy and send a magic link to them — I send the URL and they are auto logged in").
-   The Worker (v3) holds the project's admin key and makes a one-time code, for Team emails only and only when Jack asks.
+   b157: made by the Supabase Edge Function "sourcing-link" (Supabase hands it the project's admin key itself — no key for
+   Jack to copy anywhere). It makes a one-time code, for Suz / Mera / Team emails only and only when Jack asks.
    The link is the app address + #join=<code>. Chat apps that preview links never see the part after #, so Discord can't
    use the code up before Suz clicks it; the page itself trades it for a sign-in when it opens. */
 async function authMakeLink(email){
   if(guestOn())throw new Error('Guest mode — no sign-in links are made. Leave guest mode first.');
   await authRefresh();const s=authSession();if(!s)throw new Error('Sign yourself in first (above).');
-  const r=await fetch(WORKER+'/auth/link',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.access_token},body:JSON.stringify({email})});
+  let r;try{r=await fetch(CLOUD.url+'/functions/v1/sourcing-link',{method:'POST',headers:{'Content-Type':'application/json',apikey:authKey(),Authorization:'Bearer '+s.access_token},body:JSON.stringify({email})});}
+  catch(e){throw new Error('Could not reach Supabase — check the connection and try again.');}
   const j=await r.json().catch(()=>({}));
-  if(!r.ok||!j.ok||!j.token_hash)throw new Error(j.error||('The Worker said no ('+r.status+')'));
+  if(r.status===404)throw new Error('The link-maker is not in Supabase yet — Edge Functions → Deploy a new function → Via Editor, name it sourcing-link, paste the file from Downloads, Deploy.');
+  if(!r.ok||!j.ok||!j.token_hash)throw new Error(j.error||j.msg||j.message||('Supabase said no ('+r.status+')'));
   return location.origin+location.pathname+'#join='+encodeURIComponent(j.token_hash);}
 async function authFromJoin(){const m=/[#&]join=([^&]+)/.exec(location.hash||'');if(!m)return false;
   const token_hash=decodeURIComponent(m[1]);try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}

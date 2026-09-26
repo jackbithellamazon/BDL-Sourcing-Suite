@@ -366,7 +366,7 @@ window.SourcingChecks=(function(){
         const m=AUDIT_TYPES.find(t=>t.code==='missed');
         return [m.reasons.length,m.reasons.indexOf('Never found it'),m.reasons[m.reasons.length-1],
                 AU_RKEYS.length>=m.reasons.length,AU_RKEYS[m.reasons.indexOf('Never found it')]];
-      })(),[7,5,'Other',true,'y']);
+      })(),[4,2,'Other',true,'e']);   /* b164: trimmed to the four Jack uses — Never looked at (Q), Passed on it (W), Never found it (E), Other (R) */
       ok('Audit · every reason on every verdict still has a key',
         AUDIT_TYPES.filter(t=>t.reasons).every(t=>t.reasons.length<=AU_RKEYS.length),true);
       /* b92 (Jack: "isn't smooth at all - very very jumpy"). Judging changes a row's height, the list is
@@ -447,9 +447,9 @@ window.SourcingChecks=(function(){
                    {code:'not',label:'Not lead',short:'Not lead',hex:'#FF5C6C',icon:'x'}]);
         const t=audTypes();const d=t.find(x=>x.code==='discord');
         if(keep==null)localStorage.removeItem(key);else localStorage.setItem(key,keep);
-        return [t.length,(d.reasons||[]).join('/'),d.prompt,d.hex];
-      })(),[2,'PS/THC/FFB','Which Discord?','#8C95FF']);
-      ok('Audit · with nothing saved it is simply the six in the code',(()=>{
+        return [t.slice(0,2).map(x=>x.code).join(','),t.length===AUDIT_TYPES.length,(d.reasons||[]).join('/'),d.prompt,d.hex];
+      })(),['discord,not',true,'PS/THC/FFB','Which Discord?','#8C95FF']);   /* b161: the saved two keep their order, and every answer in the code still appears after them */
+      ok('Audit · with nothing saved it is simply the answers in the code',(()=>{
         const key='bdl-sourcing-audit-types',keep=localStorage.getItem(key);
         localStorage.removeItem(key);const n=audTypes().length;
         if(keep!=null)localStorage.setItem(key,keep);
@@ -890,6 +890,9 @@ window.SourcingChecks=(function(){
       ok('Guest · the snapshot leaves the sign-in session and the Keepa caches alone (Supabase rotates the session; the caches cost tokens)',['bdl-sourcing-session','bdl-sourcing-api-rows','bdl-sourcing-eu-price'].every(k=>GUEST_SKIP.includes(k))&&!guestKeys().includes('bdl-sourcing-session'),true);
       ok('Guest · viewing as Suz or Mera is not overridden by the signed-in name',[/!guestOn\(\)&&typeof me/.test(String(lockCheck)),/if\(!guestOn\(\)&&typeof lsSet/.test(String(authBoot)),/&&!guestOn\(\)\)\{/.test(String(whoSet))],[true,true,true]);
       /* b156 (Jack, 25 Sep: "I am jack@bdl.local — that is my login anyway") */
+      {const tWas=localStorage.getItem(TEAM_KEY);localStorage.removeItem(TEAM_KEY);const t=teamAll();tWas==null?localStorage.removeItem(TEAM_KEY):localStorage.setItem(TEAM_KEY,tWas);
+        ok('Sign-in · the three logins are built in (nothing to type in Team)',t.map(x=>x.email),['jack@bdl.local','suz@bdl.local','mera@bdl.local']);}
+      ok('Links · Copy link asks the Supabase function (no key in the page, no Worker step)',/functions\/v1\/sourcing-link/.test(String(authMakeLink))&&!/WORKER/.test(String(authMakeLink)),true);
       ok('Sign-in · jack@bdl.local is Jack, and a .local address has no inbox',[authNameFor('jack@bdl.local'),authNoInbox('jack@bdl.local'),authNoInbox('suz@gmail.com')],['Jack',true,false]);
       {const realFetch=window.fetch,calls=[],keep={s:localStorage.getItem('bdl-sourcing-session'),si:localStorage.getItem(SIGNIN_KEY),m:me()};let noPw='',dump='';
         try{window.fetch=async(u,o)=>{u=String(u);calls.push(u.replace(/^https?:\/\/[^/]+/,'').split('?')[0]);
@@ -905,7 +908,7 @@ window.SourcingChecks=(function(){
         }finally{window.fetch=realFetch;const put=(k,v)=>v==null?localStorage.removeItem(k):localStorage.setItem(k,v);put('bdl-sourcing-session',keep.s);put(SIGNIN_KEY,keep.si);lsSet(ME_KEY,keep.m);lockCheck();}}
       {const realFetch=window.fetch,keep={s:localStorage.getItem('bdl-sourcing-session'),t:localStorage.getItem(TEAM_KEY),si:localStorage.getItem(SIGNIN_KEY),m:me(),u:location.pathname+location.search+location.hash};let noSess='',link='',joined=null,who='',used=null,urlAfter='';
         try{window.fetch=async(u,o={})=>{u=String(u);
-            if(u.endsWith('/auth/link'))return new Response(JSON.stringify({ok:true,token_hash:'pkce_CHECK1'}),{status:200});
+            if(u.endsWith('/functions/v1/sourcing-link'))return new Response(JSON.stringify({ok:true,token_hash:'pkce_CHECK1'}),{status:200});
             if(/\/verify$/.test(u)){const b=JSON.parse(o.body);return b.token_hash==='pkce_CHECK1'?new Response(JSON.stringify({access_token:'S1',refresh_token:'R',expires_in:3600}),{status:200}):new Response('{}',{status:400});}
             if(/\/auth\/v1\/user$/.test(u))return new Response(JSON.stringify({id:'s',email:'suz@bdl.local'}),{status:200});
             return new Response('{}',{status:404});};
@@ -923,6 +926,57 @@ window.SourcingChecks=(function(){
         const rgb=h=>{const n=parseInt(h.slice(1),16);return`rgb(${n>>16&255}, ${n>>8&255}, ${n&255})`;};
         const got=[getComputedStyle(tb.querySelector('.ownsel')).color,getComputedStyle(tb.querySelector('.whochip')).color];tb.remove();
         ok('People · owner and name chips wear the person\'s own colour, and no person shares a status colour',[got[0]===rgb(hex('--p-suz')),got[1]===rgb(hex('--p-mera')),['--p-jack','--p-suz','--p-mera','--p-vas'].map(hex).some(c=>['--coral','--amber','--jade'].map(hex).includes(c))],[true,true,false]);}
+      /* b158 (Jack, 26 Sep: "stuff I'm selling hasn't been auto done as joint"; "can I archive some I'm not bothered about?") */
+      {const keep={st:{sellers:audState.sellers,shelf:audState.shelf,shared:audState.shared,now:audState.mineNow,ever:audState.mineEver,last:audState.mineLast,latest:audState.mineLatest},mine:localStorage.getItem(AUD_MINE),arch:localStorage.getItem(AUD_ARCH)};
+        try{const A=n=>'B0CHKMINE'+n;audState.sellers=[{seller_id:'R1',name:'R1'},{seller_id:'R2',name:'R2'}];
+          audState.shelf={R1:[1,2,3,4].map(n=>({a:A(n)})),R2:[3,4,5].map(n=>({a:A(n)}))};audState.shared={R1:new Set([A(1)]),R2:new Set()};
+          audState.mineNow=new Set([A(1)]);audState.mineEver=new Set([A(1),A(2),A(3)]);localStorage.removeItem(AUD_MINE);audMineBust();localStorage.removeItem(AUD_ARCH);
+          audState.mineLast={[A(1)]:'2026-09-24',[A(2)]:'2026-09-19',[A(3)]:'2026-08-01'};audState.mineLatest='2026-09-24';const jdWas=localStorage.getItem(AUD_JDAYS);localStorage.removeItem(AUD_JDAYS);
+          ok('Audit · sold out lately still counts as yours on every shelf (default 45 days since it left your list); gone longer comes back to look at',[audSells('R1',A(2)),audMineWhy(A(2)),audSells('R2',A(3)),audMineWhy(A(3)),audSells('R2',A(5)),audMineWhy(A(1))],[true,'recent',false,'before',false,'now']);
+          lsSet(AUD_JDAYS,'always');const always=audSells('R2',A(3));lsSet(AUD_JDAYS,14);const d14=[audMineWhy(A(2)),audMineWhy(A(3))];jdWas==null?localStorage.removeItem(AUD_JDAYS):localStorage.setItem(AUD_JDAYS,jdWas);
+          ok('Audit · the window is yours to set: "always" keeps everything, 14 days lets an older one go',[always,d14],[true,['recent','before']]);
+          audMineSave(audAsinsIn('sku,asin\nx,'+A(5).toLowerCase()+'\ny,0141036141 and ean 9780141036144')); 
+          ok('Audit · a pasted inventory (any text) adds its ASINs — case and ISBNs too',[audSells('R2',A(5)),audMineWhy(A(5)),audMineList().has('0141036141'),audMineList().has('9780141036144')],[true,'list',true,false]);
+          audArchSet('R2',true);
+          ok('Audit · an archived rival leaves "carry on" and comes back with one click',[audArchived().has('R2'),(auNextShelf('R1')||{}).id||null,(audArchSet('R2',false),audArchived().has('R2'))],[true,null,false]);
+        }finally{Object.assign(audState,{sellers:keep.st.sellers,shelf:keep.st.shelf,shared:keep.st.shared,mineNow:keep.st.now,mineEver:keep.st.ever,mineLast:keep.st.last||{},mineLatest:keep.st.latest||''});
+          const put=(k,v)=>v==null?localStorage.removeItem(k):localStorage.setItem(k,v);put(AUD_MINE,keep.mine);put(AUD_ARCH,keep.arch);audMineBust();}}
+      ok('Audit · the overlap rows are no longer cut at the last 400 (39 rivals × 16 days is 600+)',/shared_asins&order=date\.desc'\)/.test(String(audPullShelves))&&!/limit=400/.test(String(audPullShelves)),true);
+      /* b159 (Jack, 26 Sep: "better and easier to bulk do it") */
+      ok('Bulk · ↑/↓ no longer wipe the ticks (Esc does)',/if\(e\.shiftKey\)\{if\(it\)auView\.sel\.add\(it\.a\);if\(vis\[nf\]\)auView\.sel\.add\(vis\[nf\]\.a\);\}\s*auView\.focus=nf/.test(String(auInit))&&!/else auView\.sel=new Set\(\);\s*auView\.focus=nf/.test(String(auInit)),true);
+      ok('Bulk · "Tick all N shown" sits in the filter bar before anything is ticked',[/data-tall/.test(auTickHtml(75)),/Tick all 75 shown/.test(auTickHtml(75))],[true,true]);
+      ok('Bulk · the "under" filters only keep rows whose number is known, so a bulk Not lead never sweeps up an unloaded row',/p\.mo!=null&&p\.mo!==''&&mo</.test(String(auVisible)),true);
+      /* b160 (Jack, 26 Sep: "how do I see the rest"; "easy and quick — look at the graph and move on") */
+      {const keep={st:{sellers:audState.sellers,shelf:audState.shelf,shared:audState.shared},v:{limit:auView.limit,focus:auView.focus,shelf:auView.shelf,mode:auView.mode}};
+        try{const A=n=>'B0CHKPAGE'+String(n).padStart(3,'0');audState.sellers=[{seller_id:'RP',name:'RP'}];audState.shelf={RP:Array.from({length:130},(_,i)=>({a:A(i)}))};audState.shared={RP:new Set()};
+          auView.shelf='RP';auView.limit=0;auView.focus=0;const sh=audShelf('RP'),vis=auVisible(sh);
+          const h1=auPageHtml(vis,sh);const n1=(h1.match(/class="aurow /g)||[]).length;
+          auView.focus=119;const h2=auPageHtml(vis,sh);const n2=(h2.match(/class="aurow /g)||[]).length;
+          ok('Audit · past 120: a Show more / Show all button, and arrowing to the end draws the rest',[n1,/data-more="all"/.test(h1),n2],[120,true,130]);
+        }finally{Object.assign(audState,{sellers:keep.st.sellers,shelf:keep.st.shelf,shared:keep.st.shared});Object.assign(auView,keep.v);}}
+      ok('Audit · compact rows are the default, and the graph comes first in the side panel',[/auView\.compact!==false\?' compact'/.test(String(auRenderOne)),/aug1/.test(String(auPanel))&&String(auPanel).indexOf('aug1')<String(auPanel).indexOf('aufgrid')],[true,true]);
+      ok('Audit · the next product\'s graph is fetched while you look at this one (once, never twice)',[/auPrefetchGraph\(next\)/.test(String(auLoadGraph)),/AU_GRAPH\.cache\[asin\]!==undefined\|\|AU_GRAPH\.pending\[asin\]/.test(String(auPrefetchGraph))],[true,true]);
+      /* b161 (Jack, 26 Sep: "a new option — diff method — e.g. wholesale or PL"; "45 days instead of 30") */
+      {const t=audType('diff');ok('Audit · Diff method is answer 7 (1–6 unchanged), asking Wholesale / PL / Other',[audTypes().map(x=>x.code).indexOf('diff')+1,audTypes().slice(0,6).map(x=>x.code),t&&t.reasons],[7,['not','unsure','discord','ws','joint','missed'],['Wholesale','PL','Other']]);}
+      {const w=localStorage.getItem(AUD_JDAYS);localStorage.removeItem(AUD_JDAYS);const d=audJointDays();w==null?localStorage.removeItem(AUD_JDAYS):localStorage.setItem(AUD_JDAYS,w);ok('Audit · a sold-out product counts as yours for 45 days by default',d,45);}
+      /* b162 (Jack, 26 Sep: "if a competitor adds it within the 45 days it auto does joint; if they add it after my 45 days it becomes new and to check again") */
+      {const keep={shelf:audState.shelf,shared:audState.shared,now:audState.mineNow,ever:audState.mineEver,last:audState.mineLast,latest:audState.mineLatest,first:audState._first},jd=localStorage.getItem(AUD_JDAYS),mine=localStorage.getItem(AUD_MINE);
+        try{localStorage.removeItem(AUD_JDAYS);localStorage.removeItem(AUD_MINE);audMineBust();audState._first={};
+          const X='B0CHKADD01';audState.mineNow=new Set();audState.mineEver=new Set([X]);audState.mineLast={[X]:'2026-08-01'};audState.mineLatest='2026-10-30';
+          audState.shared={EARLY:new Set(),INSIDE:new Set(),LATE:new Set()};
+          audState.shelf={EARLY:[{a:X,first:'2026-07-10'}],INSIDE:[{a:X,first:'2026-09-14'}],LATE:[{a:X,first:'2026-09-16'}]};
+          ok('Audit · the rival\'s add date decides: had it before you left, or added within your 45 days → Joint; added after → new',[audSells('EARLY',X),audSells('INSIDE',X),audSells('LATE',X),audMineWhy(X,'LATE')],[true,true,false,'before']);
+          audState.mineNow=new Set([X]);ok('Audit · on your storefront now is always Joint, whenever they added it',audSells('LATE',X),true);
+        }finally{Object.assign(audState,{shelf:keep.shelf,shared:keep.shared,mineNow:keep.now,mineEver:keep.ever,mineLast:keep.last,mineLatest:keep.latest,_first:keep.first});
+          jd==null?localStorage.removeItem(AUD_JDAYS):localStorage.setItem(AUD_JDAYS,jd);mine==null?localStorage.removeItem(AUD_MINE):localStorage.setItem(AUD_MINE,mine);audMineBust();}}
+      /* b163 (Jack, 26 Sep: "maybe expires after 90 days? just in case it comes back and the price drops again") */
+      {const ago=d=>new Date(Date.now()-d*864e5).toISOString();
+        ok('Audit · Not lead / Missed it / Unsure come back to check after 90 days; Discord, WS, Diff method and Joint last',
+          [audStatus({verdict:'not',at:ago(91)},false),audStatus({verdict:'not',at:ago(89)},false),audStatus({verdict:'missed',at:ago(120)},false),audStatus({verdict:'unsure',at:ago(95)},false),
+           audStatus({verdict:'discord',at:ago(200)},false),audStatus({verdict:'diff',at:ago(200)},false),audStatus({verdict:'not',at:ago(100)},true)],
+          ['todo','not','todo','todo','discord','diff','jointauto']);}
+      /* b165: OA Overview's bdl_my_shelf is the truth for "yours" when it is there */
+      ok('Audit · reads your storefront from OA Overview (bdl_my_shelf: on_now + last_seen), overlap rows only as the fallback',[/cloudGetAll\('bdl_my_shelf','select=asin,last_seen,on_now'\)/.test(String(audPullShelves)),/catch\(e\)\{\/\* table not there/.test(String(audPullShelves))],[true,true]);
       ok('History · builds from stored leads',typeof hsRows==='function'&&Array.isArray(hsRows())&&Array.isArray(hsFiltered()),true);
       /* b59: Rule 3 keyword fix — the drink's form wins over incidental words (tea & coffee export 15 Sep: 14 of 84 rows went 20%) */
       ok('R3 VAT · jar / caddy / biscuit / "espresso machine" in a coffee title stay 0%',[
