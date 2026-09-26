@@ -2231,3 +2231,91 @@ body.au-selecting .toast{bottom:calc(var(--bulk-h,56px) + 30px)}   /* b153: sit 
 .aumine2 .ampaste textarea{width:100%;min-height:64px;resize:vertical;box-sizing:border-box}
 .aumine2 .ampaste .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .aumine2 .ampaste .ssub{color:#D6DCE8}
+
+/* ===== b167 · thicker rows (Jack, 26 Sep, on live b166: "they are all confusing buttons — write what they are";
+   "prefer the thicker rows with the 1–7 buttons under it, then the right of the row says the result when it has one";
+   "make the whole row the colour once it's had the decision"; "more fun, not as rigid, more smooth").
+   Line one: title, facts, the three sites by name. Line two: the seven answers by name, the result at the right end.
+   A judged row is tinted in its answer's colour. Same height on every row, mouse or no mouse. ===== */
+#page-audit .aulist .aurow{grid-template-columns:24px 56px minmax(0,1fr) auto;grid-template-areas:"chk img main links" "chk img btn btn";
+  gap:7px 14px;padding:10px 14px 10px 12px;min-height:0;align-items:center;transition:background-color .18s,box-shadow .18s}
+#page-audit .aulist .aurow > .ausel,#page-audit .aulist .aurow > .auimg{align-self:center}
+#page-audit .aulist .aurow > .auimg{width:56px;height:56px}
+#page-audit .aulist .aurow > .aumain{align-self:center}
+#page-audit .aulist .aurow .aut{font-size:15.5px}
+#page-audit .aulist .aurow .aufacts{gap:9px;margin-top:5px;padding-right:20px;mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}
+#page-audit .aulist .aurow .aufacts .auchips{display:inline-flex;gap:5px;margin:0 0 0 2px;flex:none}
+/* the sites, by name */
+#page-audit .aulist .aurow > .aulinks{grid-area:links;align-self:center;gap:6px}
+#page-audit .aulist .aurow .aulk{width:auto;height:32px;padding:0 11px 0 9px;gap:6px}
+#page-audit .aulist .aurow .aulk span{display:inline;font-size:12.5px;font-weight:700;color:#E3E8F2}
+#page-audit .aulist .aurow .aulk:hover span{color:inherit}
+/* the answers, by name, under the title */
+#page-audit .aulist .aurow > .aubtns,#page-audit .aulist .aurow:not(:hover):not(.focus) > .aubtns,#page-audit .aulist .aurow:hover > .aubtns,#page-audit .aulist .aurow.focus > .aubtns{
+  grid-area:btn;justify-content:flex-start;align-items:center;gap:5px;min-height:34px}
+#page-audit .aulist .aurow .aub{height:34px;min-width:0;flex:none;padding:0 8px 0 6px;gap:5px;font-size:12px}
+#page-audit .aulist .aurow .aub kbd{width:17px;height:17px;font-size:10.5px}
+#page-audit .aulist .aurow .aub svg{display:none;width:13px;height:13px}
+/* no icons on the answers any more: the name is the identity, the colour the accent, and seven named buttons plus the result fit one line */
+#page-audit .aulist .aurow .aub .lab{display:inline-block;font-weight:700}
+#page-audit .aulist .aurow .aub.on{padding-right:10px}
+#page-audit .aulist .aurow .aub.on .lab{max-width:none}
+#page-audit .aulist .aurow > .aubtns,#page-audit .aulist .aurow:not(:hover):not(.focus) > .aubtns,#page-audit .aulist .aurow:hover > .aubtns,#page-audit .aulist .aurow.focus > .aubtns{flex-wrap:wrap}   /* a narrow window drops the result under the answers instead of clipping it */
+#page-audit .aulist .aurow > .aureasons{justify-content:flex-start;min-height:34px;font-size:13px;color:#FFD08A;font-weight:600}
+/* the result: what · why · who · when, at the right end of the answers line */
+#page-audit .aulist .aurow .aumark{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px 0 9px;margin-left:auto;border-radius:9px;font-size:12.5px;font-weight:800;color:var(--c);
+  border:1.5px solid color-mix(in srgb,var(--c) 60%,transparent);background:color-mix(in srgb,var(--c) 16%,transparent);white-space:nowrap;max-width:300px;overflow:hidden;text-overflow:ellipsis;flex:none}
+#page-audit .aulist .aurow .aumark .sq{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+#page-audit .aulist .aurow .aumark .who,#page-audit .aulist .aurow .aumark .auelse{color:#E3E8F2;font-weight:600;font-style:normal;margin-left:2px}
+#page-audit .aulist .aurow .aumark .who::before,#page-audit .aulist .aurow .aumark .auelse::before{content:'·';margin-right:6px;color:var(--c)}
+#page-audit .aulist .aurow .aumark .who.date{display:none}   /* the date lives in the tooltip; the pill stays short enough to share the line */
+/* the whole row wears its answer */
+#page-audit .aulist .aurow.judged{background:color-mix(in srgb,var(--edge) 11%,var(--surface2))}
+#page-audit .aulist .aurow.judged:hover{background:color-mix(in srgb,var(--edge) 15%,var(--surface2))}
+#page-audit .aulist .aurow.judged::before{opacity:1;width:4px}
+#page-audit .aulist .aurow.judged.focus{background:color-mix(in srgb,var(--edge) 19%,var(--raise));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--edge) 60%,transparent)}
+#page-audit .aulist .aurow.judged.focus::before{background:var(--edge)}
+#page-audit .aulist .aurow.sel{background:color-mix(in srgb,var(--iris) 14%,var(--surface2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--iris) 60%,transparent)}
+/* fun, not rigid: buttons lift, the lit answer pops in, the result slides in */
+#page-audit .aulist .aurow .aub,#page-audit .aulist .aurow .aulk,#page-audit .aulist .aurow .aurs{transition:transform .12s ease,background-color .15s,border-color .15s,color .15s}
+#page-audit .aulist .aurow .aub:hover,#page-audit .aulist .aurow .aulk:hover,#page-audit .aulist .aurow .aurs:hover{transform:translateY(-1px)}
+#page-audit .aulist .aurow .aub:active,#page-audit .aulist .aurow .aurs:active{transform:scale(.96)}
+@media (prefers-reduced-motion:no-preference){
+  #page-audit .aulist .aurow.landed .aub.on{animation:auPop .38s cubic-bezier(.2,.9,.3,1.3)}
+  #page-audit .aulist .aurow.landed .aumark{animation:auSlide .32s ease-out}}
+@keyframes auPop{0%{transform:scale(.8)}70%{transform:scale(1.07)}100%{transform:scale(1)}}
+@keyframes auSlide{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+@media (max-width:1100px){
+  #page-audit .aulist .aurow{grid-template-columns:24px 56px minmax(0,1fr);grid-template-areas:"chk img main" "chk img links" "btn btn btn"}
+  #page-audit .aulist .aurow > .aulinks{justify-content:flex-start;margin-top:0}
+  #page-audit .aulist .aurow > .aubtns,#page-audit .aulist .aurow > .aureasons{margin-top:0;flex-wrap:wrap}
+  #page-audit .aulist .aurow .aumark{margin-left:0}}
+/* the rival cards: the number you need, the name you know, and a hand that says "open me" */
+#page-audit .aucard{border-radius:16px;padding:16px 18px 18px;gap:14px;grid-template-columns:1fr 84px;transition:transform .15s ease,border-color .15s,background-color .15s}
+#page-audit .aucard:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--iris) 55%,var(--line));background:var(--raise)}
+#page-audit .aucard .nm{font-size:16px;font-weight:700}
+#page-audit .aucard .meta{font-size:12.5px;color:var(--au-sub);margin-top:2px}
+#page-audit .aucard .facts{gap:6px;margin-top:11px}
+#page-audit .aucard .prog{font-size:13px;color:var(--au-sub);margin-top:9px;padding-right:56px}
+#page-audit .aucard .prog b{font-size:15px;color:var(--text)}
+#page-audit .aucard::after{content:'Open →';position:absolute;right:16px;bottom:13px;font-size:12.5px;font-weight:700;color:var(--iris);opacity:.85;transition:opacity .15s,transform .15s}
+#page-audit .aucard:hover::after{opacity:1;transform:translateX(2px)}
+#page-audit .aucard .audonut{width:84px;height:84px}
+#page-audit .ausortby>span{font-size:12.5px;letter-spacing:0;text-transform:none;font-family:var(--sans);color:var(--au-sub);font-weight:600}
+/* the five numbers at the top: each wears its colour; "Still to judge" opens the next rival */
+#page-audit .aukpis .kpi{position:relative;overflow:hidden;padding:14px 16px 14px 18px;border-radius:16px;--kc:var(--text);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--kc) 9%,var(--surface2)),var(--surface2));border:1px solid color-mix(in srgb,var(--kc) 28%,var(--line));transition:transform .15s ease,border-color .15s}
+#page-audit .aukpis .kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--kc)}
+#page-audit .aukpis .kpi.k-plain{--kc:#CBD2DF}
+#page-audit .aukpis .kpi.k-violet{--kc:#A78BFA}
+#page-audit .aukpis .kpi.k-sky{--kc:#22D3EE}
+#page-audit .aukpis .kpi.k-iris{--kc:#8C95FF}
+#page-audit .aukpis .kpi.k-amber{--kc:#FFB224}
+#page-audit .aukpis .kpi.k-jade{--kc:#2CE38B}
+#page-audit .aukpis .kv{font-size:28px;color:var(--kc)}
+#page-audit .aukpis .kpi.k-plain .kv,#page-audit .aukpis .kpi.k-violet .kv,#page-audit .aukpis .kpi.k-sky .kv{color:var(--text)}
+#page-audit .aukpis .kl{font-size:13px;color:var(--text);font-weight:600;margin-top:4px}
+#page-audit .aukpis .ks{font-size:12px;color:var(--au-sub)}
+#page-audit .aukpis .kpi.go{cursor:pointer}
+#page-audit .aukpis .kpi.go:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--kc) 60%,var(--line))}
+#page-audit .aukpis .kpi.go .ks{color:var(--kc);font-weight:700}

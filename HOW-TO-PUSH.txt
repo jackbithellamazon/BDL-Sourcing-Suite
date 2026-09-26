@@ -1,14 +1,17 @@
-BDL SOURCING — b166 · 26 Sep 2026
+BDL SOURCING — b167 · 26 Sep 2026
 
-(Live is b165. This folder is b166 = the audit shelf screen redone.)
+(Live is b166. This folder is b167 = thicker rows, answers by name, the result on the right, judged rows in colour.)
 
 1. UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes for GitHub to publish, then Cmd+Shift+R. The header should say b166.
+   Wait a couple of minutes for GitHub to publish, then Cmd+Shift+R. The header should say b167.
 
-WHAT CHANGED ON THE AUDIT (your 26 Sep complaints, all of them)
-   · One row size. Tick box (its own column) · picture · title · facts · Amazon / Keepa / SellerAmp · answers 1–7.
-     All of it on EVERY row, whether or not the mouse is over it, so nothing appears, grows or shifts under your hand.
-   · The answer you gave is the lit button. It shows the reason too ("3 · PS"); hover it for who / when.
+WHAT CHANGED ON THE AUDIT (b166 + b167, your 26 Sep complaints)
+   · Thicker rows, two lines. Line one: tick · picture · title · facts · Amazon / Keepa / SellerAmp BY NAME.
+     Line two: the seven answers BY NAME (1 Not lead · 2 Unsure · 3 Discord · 4 WS · 5 Joint · 6 Missed it · 7 Diff method).
+     All of it on EVERY row, mouse or no mouse, so nothing appears, grows or shifts under your hand.
+   · Once a row has its answer: the whole row is tinted in that colour, the button is lit, and the right end of the
+     answers line says the result — what · why · who · when (hover it for the full story).
+   · A key press repaints only the row you judged and the one you moved to, not the whole list — no flicker.
    · Grey text lifted everywhere on the audit pages. "Compact rows" toggle is gone.
    · "Sent me back to the top": fixed. The page only moves for a key you just pressed (arrows, 1–7, G, U).
      More rows loading, details landing, refreshes — none of them move the page any more.
