@@ -1,24 +1,43 @@
-BDL SOURCING — b165 · 26 Sep 2026
+BDL SOURCING — b166 · 26 Sep 2026
 
-(b157-b164 were not pushed yet - this folder has all of them plus b165. Live is b156.)
+(Live is b165. This folder is b166 = the audit shelf screen redone.)
 
 1. UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Then Cmd+Shift+R. The header should say b165.
+   Wait a couple of minutes for GitHub to publish, then Cmd+Shift+R. The header should say b166.
 
-2. THE LINK-MAKER — ONCE, ABOUT A MINUTE, NO KEYS
+WHAT CHANGED ON THE AUDIT (your 26 Sep complaints, all of them)
+   · One row size. Tick box (its own column) · picture · title · facts · Amazon / Keepa / SellerAmp · answers 1–7.
+     All of it on EVERY row, whether or not the mouse is over it, so nothing appears, grows or shifts under your hand.
+   · The answer you gave is the lit button. It shows the reason too ("3 · PS"); hover it for who / when.
+   · Grey text lifted everywhere on the audit pages. "Compact rows" toggle is gone.
+   · "Sent me back to the top": fixed. The page only moves for a key you just pressed (arrows, 1–7, G, U).
+     More rows loading, details landing, refreshes — none of them move the page any more.
+   · "Stuff not loading": details now trickle in. The audit keeps 250 Keepa tokens back for Suz and Mera's
+     runs, so it loads what it can straight away (the rows you can see first), then a batch a minute as Keepa
+     refills (21 a minute). The note sits just above the list. "load the rest now" spends past the floor,
+     only when you press it.
+   · Bulk: tick the box or the picture · shift-click ticks a run · drag down the ticks · "Tick all N shown" ·
+     X ticks the row you are on. The bar at the bottom judges them all in one press.
+   · Answer tabs at the top carry their key numbers (1 Not lead · 2 Unsure · 3 Discord · 4 WS · 5 Joint ·
+     6 Missed it · 7 Diff method) — that row is the legend.
+   · "Your storefront" is one line (on it now · left it in the last 45 days · the window). The paste box is
+     folded away behind "Paste inventory" — only needed if Keepa missed something you sell.
+
+2. THE LINK-MAKER (optional — only for "Copy link"; skip it if you give Suz and Mera passwords instead)
    Supabase → Edge Functions → "Deploy a new function" → "Via Editor"
    Name it exactly:  sourcing-link
    Select everything in the editor, paste the whole of
      ~/Downloads/2026-09-25-SUPABASE-FUNCTION-sourcing-link-PASTE-THIS.ts
    → Deploy. Leave "Verify JWT" on. Supabase gives it its own keys - there is nothing to copy.
-   (Ignore the Cloudflare/Worker steps from b156 - not needed any more.)
+   THE PASSWORD ROUTE INSTEAD: Supabase → Authentication → Users → delete suz@bdl.local → Add user →
+   Create new user → suz@bdl.local + a password, tick Auto Confirm. Same for mera@bdl.local. Tell them the
+   password in Discord; they sign in on the lock screen with email + password, like you.
 
 3. SIGN YOURSELF IN
    Settings → jack@bdl.local + your password → Sign in.
 
-4. SEND THEIR LINKS
+4. SEND THEIR LINKS (if you did step 2)
    Settings → Team → "Copy link" next to Suz (and Mera) → paste it to them in Discord.
-   Their logins are already in (suz@bdl.local, mera@bdl.local) - nothing to type.
    Tell them: open it on your WORK computer, in the browser you use for Sourcing.
    Each link works ONCE, for about an hour. Need another? Copy link again.
 
@@ -27,36 +46,6 @@ BDL SOURCING — b165 · 26 Sep 2026
 
 GUEST MODE: Settings > Guest mode > Start. Amber bar = nothing saves. Leave = back exactly as it was.
 
-STOREFRONT AUDIT (b158)
-   Your catalogue: open the green "Your catalogue" bar at the top of Storefront audits and paste your
-   inventory (Seller Central > Inventory > Manage All Inventory > export, or the All Listings report -
-   paste the whole thing). Everything on it is marked "You sell this" on every rival's shelf.
-   Archive: hover a rival card > the box icon (top right). Undo in the message; "Show them" at the
-   bottom brings any back.
-   Joint rule: on your storefront = Joint. After it leaves, a rival that adds it within 45 days = Joint
-   automatically; a rival that adds it after your 45 days = new, to check ("You had it until ... · they added it ...").
-   Change the 45 in the green "Your storefront" bar (14 / 30 / 45 / 60 / 90 days / always).
-   Not lead / Missed it / Unsure come back to check after 90 days ("You said Not lead 95 days ago · check again").
-   Discord / WS / Diff method / Joint last.
-   New answer: 7 = Diff method (wholesale / PL - not your model), then Q / W / E for Wholesale / PL / Other.
-   Bulk on a rival: set a filter (e.g. Sells: Under 20 a month) > "Tick all N shown" > press 1 (Not lead).
-   Or press on a picture and drag down to tick a run. Arrows keep your ticks; Esc clears.
-   Quick flow: one line per product now (switch "Compact rows" off for the big rows). Look at the graph
-   (top of the right panel), press 1-6, the next one's graph is already there. The rest of a long shelf
-   loads as you scroll - or "Show all" at the bottom.
-
-WHAT LANDS, NEWEST FIRST
-   b165 The audit reads your storefront from OA Overview (bdl_my_shelf) - 199 more rows auto Joint today.
-   b164 Missed it asks just four: Never looked at (Q), Passed on it (W), Never found it (E), Other (R).
-   b163 Not lead / Missed it / Unsure come back to check after 90 days, in case the price drops again.
-   b162 Joint decided by WHEN the rival added it, against your last day + 45 days.
-   b161 Diff method answer (key 7: Wholesale / PL / Other) and 45 days as the "still yours" window.
-   b160 Audit: see the whole shelf, one line a product (about 16 on screen), graph first and pre-loaded.
-   b159 Bulk audit you can see (Tick all, drag, Under-20 / Under-£10 filters, arrows keep ticks) and
-        how long a sold-out product still counts as yours (default 30 days).
-   b158 The audit knows your catalogue (236 products you'd sold were sitting in "to judge"), and you can
-        archive rivals you're not bothered about.
-   b157 Links without keys: the link-maker lives in Supabase itself; Suz's and Mera's logins built in.
-   b156 Sign in with your own login (jack@bdl.local + password), Copy link, calmer Brands list,
-        each person in their own colour.
-   b155 Guest mode.   b154 Due / late in plain words, Keepa console Lead / Not a lead.
+JOINT RULE (unchanged): on your storefront = Joint. After it leaves, a rival that adds it within 45 days = Joint
+   automatically; after 45 days = new, to check. Change the 45 in the "Your storefront" strip.
+   Not lead / Missed it / Unsure come back to check after 90 days.

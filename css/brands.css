@@ -2088,30 +2088,8 @@ body.au-selecting .toast{bottom:calc(var(--bulk-h,56px) + 30px)}   /* b153: sit 
 .aumine .aujd select{height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--ink);color:var(--text);font:500 12.5px var(--sans);padding:0 8px}
 .aumine summary .old{color:var(--amber)}
 
-/* ===== b160 · audit: see the rest, compact rows, the graph first ===== */
+/* ===== b160 · audit: see the rest, the graph first (the compact rows went in b166) ===== */
 .aumore{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;color:var(--faint);font-size:12.5px}
-.autools .aucomp{border:1px solid var(--line2);border-radius:8px;padding:4px 10px;color:var(--muted);font-weight:600;margin-left:6px}
-.autools .aucomp:hover{color:var(--text)}
-/* compact: one line per product — picture, title + facts, the six keys, the answer */
-.aulist.compact .aurow{grid-template-columns:40px minmax(0,1fr) auto auto;grid-template-areas:"img main btn right";padding:6px 12px 6px 16px;gap:0 12px;align-items:center;min-height:0}
-.aulist.compact .aurow > .auimg{width:40px;height:40px;border-radius:8px}
-.aulist.compact .aurow .ausel{width:18px;height:18px;top:2px;left:2px}
-.aulist.compact .aurow .aut{font-size:13px;min-height:0;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:unset}
-.aulist.compact .aurow .aufacts{height:auto;min-height:0;margin-top:2px;gap:7px;flex-wrap:nowrap;overflow:hidden;white-space:nowrap}
-.aulist.compact .aurow .aufacts .auasin{font-size:11px}
-.aulist.compact .aurow .auchips{display:none}
-.aulist.compact .aurow .aulinks{display:none}
-.aulist.compact .aurow > .auright{grid-area:right;align-self:center}
-.aulist.compact .aurow > .aubtns,
-.aulist.compact .aurow:not(:hover):not(.focus) > .aubtns{grid-area:btn;display:flex;flex-wrap:nowrap;gap:4px;margin:0;align-self:center}
-.aulist.compact .aurow.reasoning > .aubtns{display:none}
-.aulist.compact .aurow > .aureasons{grid-area:btn;margin:0;min-height:0;flex-wrap:wrap;justify-content:flex-end;max-width:520px}
-.aulist.compact .aurow .aub{height:30px;padding:0 7px;gap:5px;border-radius:8px}
-.aulist.compact .aurow .aub .lab{display:none}
-.aulist.compact .aurow .aub kbd{width:18px;height:18px;font-size:11px}
-.aulist.compact .aurow .aunext{display:none}
-.aulist.compact .aurow .aupill.big{font-size:11.5px;padding:3px 9px}
-.aulist.compact .aurow .aurs{height:28px;font-size:12px}
 /* the side panel reads top-down: graph, then what it is */
 .aupanel .aug1{margin-top:0}
 .aupanel .augraph.big{min-height:230px;border-radius:12px;background:#fff;display:grid;place-items:center;overflow:hidden}
@@ -2121,3 +2099,135 @@ body.au-selecting .toast{bottom:calc(var(--bulk-h,56px) + 30px)}   /* b153: sit 
 .aupanel .aupimg.sm{height:64px;width:64px;border-radius:10px}
 .aupanel .auphead h3{margin:0 0 3px;font-size:14px}
 .aumine summary .aumsrc{color:var(--jade);font-weight:600}
+
+/* ===== b166 · the audit row: ONE size, everything on it, readable on a Mac (Jack, 26 Sep: "everything is jumping around",
+   "I wanna be able to open and click SAS and stuff", "rows are too small to bulk edit", "can't read grey on black").
+   Every rule is keyed on #page-audit so it wins over the b68–b160 history above without touching it. Nothing on a row
+   appears, grows or moves on hover or focus — that is the whole point. ===== */
+#page-audit{--au-sub:#CBD2DF;--au-dim:#AEB6C6}
+#page-audit .aulist .aurow{display:grid;grid-template-columns:24px 52px minmax(0,1fr) auto auto;grid-template-areas:"chk img main links btn";
+  align-items:center;gap:0 14px;padding:8px 14px 8px 12px;min-height:70px;border-bottom:1px solid var(--line);cursor:pointer;position:relative;transition:background-color .12s}
+#page-audit .aulist .aurow::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--edge);opacity:.35}
+#page-audit .aulist .aurow.judged::before{opacity:.9}
+#page-audit .aulist .aurow:hover{background:rgba(255,255,255,.03)}
+#page-audit .aulist .aurow.focus{background:var(--raise);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--iris) 45%,transparent)}
+#page-audit .aulist .aurow.focus::before{opacity:1;width:4px;background:var(--iris)}
+#page-audit .aulist .aurow.sel{background:color-mix(in srgb,var(--iris) 13%,var(--surface2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--iris) 60%,transparent)}
+#page-audit .aulist .aurow.sel > .aumain{background:transparent}
+#page-audit .aulist .aurow.judged:not(.focus) .auimg,#page-audit .aulist .aurow.judged:not(.focus) .aut{opacity:1}
+/* the tick: its own column, always there, big enough to hit; drag down the ticks to tick a run */
+#page-audit .aulist .aurow > .ausel{grid-area:chk;position:static;width:24px;height:24px;border-radius:7px;border:2px solid rgba(255,255,255,.4);background:var(--ink);
+  color:transparent;display:grid;place-items:center;cursor:pointer;padding:0;margin:0;backdrop-filter:none;transition:border-color .12s,background-color .12s}
+#page-audit .aulist .aurow > .ausel svg{width:14px;height:14px}
+#page-audit .aulist .aurow > .ausel:hover,#page-audit .aulist .aurow:hover > .ausel{border-color:var(--iris);background:color-mix(in srgb,var(--iris) 22%,var(--ink))}
+#page-audit .aulist .aurow.sel > .ausel{background:var(--iris);border-color:var(--iris);color:#fff}
+#page-audit .aulist .aurow > .auimg{grid-area:img;width:52px;height:52px;border-radius:10px;overflow:hidden;background:#fff;position:relative;margin:0;opacity:1;
+  display:grid;place-items:center;font-family:var(--sans);font-size:12px;font-weight:800;color:#55607a}
+#page-audit .aulist .aurow > .auimg:not(:has(img)){background:var(--ink);color:var(--au-dim);border:1px solid var(--line2)}
+#page-audit .aulist .aurow > .auimg img{width:100%;height:100%;object-fit:contain;background:#fff}
+#page-audit .aulist .aurow > .aumain{grid-area:main;min-width:0;display:block;margin:0}
+#page-audit .aulist .aurow .aut{display:block;font-size:15px;font-weight:600;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  min-height:0;max-width:100%;margin:0;-webkit-line-clamp:unset;opacity:1}
+#page-audit .aulist .aurow.judged:not(.focus) .aut{color:var(--text)}
+#page-audit .aulist .aurow .aufacts{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;margin-top:4px;min-height:0;max-height:none;height:auto;overflow:hidden;white-space:nowrap;font-size:13px;color:var(--au-sub)}
+#page-audit .aulist .aurow .auasin{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:7px;border:1px solid var(--line2);background:var(--ink);
+  color:var(--au-sub);font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.02em;cursor:pointer}
+#page-audit .aulist .aurow .auasin svg{width:12px;height:12px;opacity:.85}
+#page-audit .aulist .aurow .auasin:hover{color:var(--text);border-color:var(--iris)}
+#page-audit .aulist .aurow .aumoney{display:inline-flex;align-items:center;gap:7px;color:var(--au-sub);font-weight:500;font-variant-numeric:tabular-nums}
+#page-audit .aulist .aurow .aumoney .sep{font-style:normal;color:var(--faint)}
+#page-audit .aulist .aurow .aumoney .aup{font-weight:800;color:var(--text);font-size:13.5px}
+#page-audit .aulist .aurow .aumoney .aupf{font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.05em;padding:1px 5px;border-radius:5px;border:1px solid;margin-left:-2px;vertical-align:1px}
+#page-audit .aulist .aurow .aumoney .aupf.amz{color:#FFB224;border-color:rgba(255,178,36,.5);background:rgba(255,178,36,.1)}
+#page-audit .aulist .aurow .aumoney .aupf.p3{color:#5EC8FF;border-color:rgba(94,200,255,.5);background:rgba(94,200,255,.1)}
+#page-audit .aulist .aurow .aumoney .aurk,#page-audit .aulist .aurow .aumoney .ausl{color:var(--au-sub)}
+#page-audit .aulist .aurow .aumoney .aumo{font-weight:700;color:var(--text)}
+#page-audit .aulist .aurow .aumoney .aunop{font-style:normal;color:var(--amber);opacity:1}
+#page-audit .aulist .aurow .aumoney .aunop.dim{color:#FFD08A;opacity:.9}
+#page-audit .aulist .aurow .aufacts .new{color:#C4B5FF;font-weight:700}
+#page-audit .aulist .aurow .auchips{display:flex;flex-wrap:nowrap;gap:5px;margin-top:5px;overflow:hidden}
+#page-audit .aulist .aurow .auchips:empty{display:none}
+/* the three sites, on every row, one click each */
+#page-audit .aulist .aurow > .aulinks{grid-area:links;display:flex;gap:5px;margin:0;align-self:center}
+#page-audit .aulist .aurow .aulk{width:34px;height:34px;padding:0;justify-content:center;border-radius:9px;border:1.5px solid var(--line2);background:var(--ink);opacity:1;gap:0}
+#page-audit .aulist .aurow .aulk span{display:none}
+#page-audit .aulist .aurow .aulk svg{width:16px;height:16px}
+#page-audit .aulist .aurow .aulk.amazon{color:#FFB84D}
+#page-audit .aulist .aurow .aulk.keepa{color:#8FB3FF}
+#page-audit .aulist .aurow .aulk.sas{color:#5EE8B5}
+#page-audit .aulist .aurow .aulk.amazon:hover{border-color:#FF9900;background:rgba(255,153,0,.16)}
+#page-audit .aulist .aurow .aulk.keepa:hover{border-color:#7FA8FF;background:rgba(127,168,255,.16)}
+#page-audit .aulist .aurow .aulk.sas:hover{border-color:var(--jade);background:rgba(44,227,139,.14)}
+#page-audit .aulist .aurow:not(:hover):not(.focus) .aulk,#page-audit .aulist .aurow.judged:not(.focus) .aulk{opacity:1}
+/* the seven answers: same size on every row, mouse or no mouse; the lit one wears its colour and its reason */
+#page-audit .aulist .aurow > .aubtns,#page-audit .aulist .aurow:not(:hover):not(.focus) > .aubtns,#page-audit .aulist .aurow:hover > .aubtns,#page-audit .aulist .aurow.focus > .aubtns{
+  grid-area:btn;display:flex;flex-wrap:nowrap;gap:5px;margin:0;padding:0;min-height:0;align-self:center;justify-content:flex-end}
+#page-audit .aulist .aurow.reasoning > .aubtns,#page-audit .aulist .aurow.reasoning:hover > .aubtns,#page-audit .aulist .aurow.reasoning.focus > .aubtns,#page-audit .aulist .aurow.reasoning:not(:hover):not(.focus) > .aubtns{display:none}
+#page-audit .aulist .aurow .aub{height:36px;min-width:46px;padding:0 8px;gap:5px;border-radius:9px;font-size:12.5px;font-weight:700;opacity:1;
+  border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);background:var(--ink);color:var(--text)}
+#page-audit .aulist .aurow .aub kbd{width:18px;height:18px;border-radius:5px;font-size:11px;font-weight:800;opacity:1;background:color-mix(in srgb,var(--c) 18%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);color:var(--c)}
+#page-audit .aulist .aurow .aub svg{width:15px;height:15px;color:var(--c);display:inline-block}
+#page-audit .aulist .aurow .aub .lab{display:none}
+#page-audit .aulist .aurow .aub:hover{background:color-mix(in srgb,var(--c) 22%,transparent);border-color:var(--c)}
+#page-audit .aulist .aurow .aub.on{background:var(--c);border-color:var(--c);color:#08101a;padding-right:11px}
+#page-audit .aulist .aurow .aub.on .lab{display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#page-audit .aulist .aurow .aub.on kbd{background:rgba(0,0,0,.22);border-color:rgba(0,0,0,.3);color:#08101a}
+#page-audit .aulist .aurow .aub.on svg{color:#08101a}
+#page-audit .aulist .aurow .aub.on .auelse{font-style:normal;font-size:10.5px;font-weight:700;opacity:.8;margin-left:3px}
+#page-audit .aulist .aurow:not(.focus):not(:hover) .aub,#page-audit .aulist .aurow:not(.focus):not(:hover) .aub kbd,#page-audit .aulist .aurow:hover:not(.focus) .aub{opacity:1}
+/* the reason chips take the buttons' slot at the same height, so the row never grows */
+#page-audit .aulist .aurow > .aureasons{grid-area:btn;display:flex;align-items:center;flex-wrap:nowrap;gap:6px;margin:0;min-height:36px;justify-content:flex-end;font-size:12.5px;color:var(--au-sub);white-space:nowrap}
+#page-audit .aulist .aurow .aurs{height:32px;padding:0 10px;font-size:12.5px}
+@media (max-width:1100px){
+  #page-audit .aulist .aurow{grid-template-columns:24px 52px minmax(0,1fr);grid-template-areas:"chk img main" "links links btn"}
+  #page-audit .aulist .aurow > .aulinks{justify-content:flex-start;margin-top:8px}
+  #page-audit .aulist .aurow > .aubtns,#page-audit .aulist .aurow > .aureasons{margin-top:8px;justify-content:flex-start;flex-wrap:wrap}}
+/* the words around the list, readable at arm's length */
+#page-audit .auhead .meta,#page-audit .aupline,#page-audit .aupline .audet,#page-audit .autoolsn,#page-audit .autools .autick,#page-audit .aukeys,#page-audit .aumore,#page-audit .aucard .meta,#page-audit .aucard .prog,#page-audit .autbl .chg,#page-audit .aupanel .ssub,#page-audit .aupanel .augraph.big .auglab{color:var(--au-sub)}
+#page-audit .auhead .meta{font-size:13px}
+#page-audit .aupline{font-size:13.5px}
+#page-audit .aupline .audet{font-size:13px}
+#page-audit .autools .l{font-size:13px;color:var(--au-sub);font-weight:600;letter-spacing:0;text-transform:none}
+#page-audit .autabs button{color:#D2D8E4}
+#page-audit .autabs button.zero{color:var(--au-dim)}
+#page-audit .autabs button kbd{width:18px;height:18px;border-radius:5px;display:inline-grid;place-items:center;font-size:10.5px;font-weight:800;font-family:var(--sans);
+  color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+#page-audit .autabs button.on kbd{color:#08101a;background:var(--c);border-color:var(--c)}
+#page-audit .aufgrid .k{font-size:11.5px;color:var(--au-dim);font-weight:600}
+#page-audit .aufgrid .v{font-size:16px}
+#page-audit .ausec .h{color:var(--au-dim)}
+#page-audit .auours{color:#D6DCE8;font-size:13px}
+#page-audit .aukpis .kl{font-size:12px;color:#D2D8E4}
+#page-audit .aukpis .ks{font-size:11.5px;color:var(--au-dim)}
+#page-audit .aumore{font-size:13px}
+/* the loading note sits just above the list, where you are, and survives a redraw */
+#page-audit .aunote{flex:none;margin:0 0 10px;padding:9px 14px;border-radius:12px;font-size:13px;color:#D6DCE8;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:color-mix(in srgb,var(--iris) 10%,var(--surface2));border:1px solid color-mix(in srgb,var(--iris) 40%,transparent)}
+#page-audit .aunote:empty{display:none}
+#page-audit .aunote .auload{margin:0;flex:0 0 160px}
+#page-audit .aunote .linkbtn{color:#C4B5FF;font-weight:700;font-size:13px}
+.aubulk .bn,.aubulk .bwhy,.aubulk .bl2{color:#D2D8E4}
+/* your storefront: one strip that says what it knows; the paste box folds away behind one link */
+.aumine2{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;margin:4px 0 16px;padding:10px 14px;border-radius:14px;font-size:13.5px;color:#D6DCE8;
+  border:1px solid color-mix(in srgb,var(--jade) 38%,var(--line));background:color-mix(in srgb,var(--jade) 6%,var(--surface2))}
+.aumine2.warn{border-color:color-mix(in srgb,var(--amber) 45%,var(--line));background:color-mix(in srgb,var(--amber) 6%,var(--surface2))}
+.aumine2 .amdot{width:9px;height:9px;border-radius:50%;background:var(--jade);flex:none}
+.aumine2.warn .amdot{background:var(--amber)}
+.aumine2 .amt{color:var(--jade);font-size:14px}
+.aumine2.warn .amt{color:var(--amber)}
+.aumine2 .amsrc{color:var(--au-dim,#AEB6C6);font-size:12.5px}
+.aumine2 .amn{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:9px;background:var(--ink);border:1px solid var(--line2);font-size:12.5px;color:#D6DCE8;white-space:nowrap}
+.aumine2 .amn b{color:var(--text);font-size:14px;font-family:var(--disp)}
+.aumine2 .amn.old{border-color:color-mix(in srgb,var(--amber) 55%,transparent);color:#FFD08A}
+.aumine2 .amn.old b{color:var(--amber)}
+.aumine2 .aujd{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#D6DCE8;margin-left:auto;white-space:nowrap}
+.aumine2 .aujd select{height:28px;border-radius:8px;border:1px solid var(--line2);background:var(--ink);color:var(--text);font:600 12.5px var(--sans);padding:0 8px;cursor:pointer}
+.aumine2 .ampaste{flex:0 0 auto}
+.aumine2 .ampaste summary{cursor:pointer;list-style:none;font-size:12.5px;font-weight:700;color:#C4B5FF;height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:8px;border:1px dashed color-mix(in srgb,var(--iris) 50%,transparent)}
+.aumine2 .ampaste summary::-webkit-details-marker{display:none}
+.aumine2 .ampaste summary:hover{background:color-mix(in srgb,var(--iris) 12%,transparent)}
+.aumine2 .ampaste[open]{flex:1 1 100%}
+.aumine2 .ampaste .ampbox{margin-top:10px;display:grid;gap:8px}
+.aumine2 .ampaste textarea{width:100%;min-height:64px;resize:vertical;box-sizing:border-box}
+.aumine2 .ampaste .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.aumine2 .ampaste .ssub{color:#D6DCE8}
