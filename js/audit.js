@@ -24,7 +24,7 @@ const AUDIT_TYPES=[
   {code:'missed',label:'Missed it',short:'Missed it',hex:'#FF8A3D',icon:'clock',prompt:'Why missed?',reasons:['Never looked at','Passed on it','Never found it','Other']},   /* b164 (Jack, 26 Sep: yes to trimming — only these were ever used; Q W E R) */
   /* b161 (Jack, 26 Sep: "a new option — diff method — e.g. wholesale or PL stuff, not stuff I would sell and source for").
      Key 7, so 1–6 stay where his hands already are. Three reasons, so the bulk bar shows them inline like Discord's. */
-  {code:'diff',label:'Diff method',short:'Diff method',hex:'#F472B6',icon:'tag',prompt:'Which method?',reasons:['Wholesale','PL','Other']}];
+  {code:'diff',label:'Diff method',short:'Diff method',hex:'#F472B6',icon:'tag'}];   /* b169 (Jack, 27 Sep: "get rid of the double click on diff method") — one press, no which */
 /* b91 (Jack, 17 Sep): "never found it" is a different answer from "never looked at", and it is the one that
    points at a filter rather than at a person. Never looked at = it reached our list and nobody judged it.
    Never found it = our filters never surfaced it at all, and the rival is selling it anyway. Slotted before
@@ -199,7 +199,7 @@ async function audLoadDetails(asins,quiet,onBatch){const need=asins.filter(a=>!a
   for(let i=0;i<need.length;i+=100){const part=need.slice(i,i+100);
     try{const r=await fetch(WORKER+'/keepa?path=product&domain=2&stats=30&asin='+part.join(','));const j=await r.json();
       const rows=(j.products||[]).map(audFromKeepa).filter(Boolean);
-      if(rows.length){audSaveProducts(rows);got+=rows.length;if(onBatch)onBatch(got,need.length);}
+      if(rows.length){audSaveProducts(rows);got+=rows.length;if(onBatch)onBatch(got,need.length,rows.map(r=>r.asin));}   /* b168: which rows, so the screen repaints only those */
       if(j.error)break;}
     catch(e){break;}}
   return got;}
@@ -389,11 +389,12 @@ function auQuickRender(){if(auView.mode!=='audit')return false;const sh=audShelf
 function auPatch(rows){if(auView.mode!=='audit')return false;const sh=audShelf(auView.shelf);if(!sh)return false;
   const host=$('#page-audit');const list=host&&host.querySelector('.aulist');if(!list)return false;
   const tab=auView.tab[sh.id]||'todo';const c=auCounts(sh);if(tab==='todo'&&!c.todo&&!auView.q)return false;
-  const vis=auVisible(sh);if(!vis.length||vis.length!==auView._visLen)return false;
+  const osig=auView._osig;const vis=auVisible(sh);if(!vis.length||vis.length!==auView._visLen||auView._osig!==osig)return false;   /* b168: a re-sort (prices landing under "dearest first") is a full draw */
   if(auView.focus>=vis.length)auView.focus=Math.max(0,vis.length-1);
-  const want=new Set(rows||[]);const cur=list.querySelector('.aurow.focus');if(cur)want.add(cur.dataset.a);want.add(vis[auView.focus].a);
   const idx={};vis.forEach((it,i)=>idx[it.a]=i);
-  for(const a of want){if(idx[a]==null)return false;const el=list.querySelector(`.aurow[data-a="${a}"]`);if(!el)return false;el.outerHTML=auRow(vis[idx[a]],idx[a],sh);}
+  const fa=vis[auView.focus].a;if(!list.querySelector(`.aurow[data-a="${fa}"]`))return false;   /* the row you are on must be drawn */
+  const want=new Set(rows||[]);const cur=list.querySelector('.aurow.focus');if(cur)want.add(cur.dataset.a);want.add(fa);
+  for(const a of want){if(idx[a]==null)continue;const el=list.querySelector(`.aurow[data-a="${a}"]`);if(!el){if(idx[a]>=auLim())continue;return false;}el.outerHTML=auRow(vis[idx[a]],idx[a],sh);}   /* b168: filtered-out or not-yet-drawn rows are simply skipped */
   const panel=host.querySelector('.aupanel');if(panel)panel.innerHTML=auPanel(vis[auView.focus],sh);
   auPaintCounts(sh);auKeepFocusVisible();
   const it=vis[auView.focus];if(it)auLoadGraph(it.a,vis[auView.focus+1]&&vis[auView.focus+1].a);
@@ -681,8 +682,8 @@ function auRenderOne(){const sh=audShelf(auView.shelf);const c=auCounts(sh);cons
     ${loaded===0&&!audAuto()?`<div class="aunodet"><div><b>These are just ASINs so far.</b> Load the titles, pictures and prices and this list becomes readable.</div>
       <div class="row"><button class="btn primary sm" id="auViewer2" type="button">Open ${Math.min(250,sh.items.length)} in the Keepa Viewer · free</button><button class="btn ghost sm" id="auTokens2" type="button">Or load them now · about ${sh.items.length} tokens</button></div>
       <div class="ssub">The Viewer opens with the ASINs already in. Export all columns, then drop the file anywhere on this page.</div></div>`:''}
-    ${tab==='todo'&&!c.todo&&!auView.q?auDone(sh,c):
-      !vis.length?'<div class="empty"><span>Nothing in this tab.</span></div>':
+    ${tab==='todo'&&!c.todo&&!auView.q?auDone(sh,c):''}
+    ${!vis.length?(tab==='todo'&&!c.todo&&!auView.q?'':'<div class="empty"><span>Nothing in this tab.</span></div>'):
       `<div class="augrid"><div class="aulist">${auPageHtml(page,sh)}</div>
         <aside class="aupanel">${auPanel(vis[auView.focus],sh)}</aside></div>`}
     <div class="aukeys"><span><kbd>1</kbd>–<kbd>${audTypes().length}</kbd> judge</span><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>X</kbd> tick · <kbd>⇧↓</kbd> tick a run</span><span><kbd>G</kbd> back to the next one waiting</span><span><kbd>U</kbd> undo</span><span><kbd>O</kbd><kbd>K</kbd><kbd>S</kbd> Amazon · Keepa · SellerAmp</span><span><kbd>/</kbd> search</span></div></div>`;
@@ -761,11 +762,15 @@ function auPanel(it,sh){if(!it)return'<div class="empty"><span>Pick a product.</
       :'<div class="auours none">Never a lead on our filters. Only leads the rules kept are remembered, not rows they cut.</div>'}</div>
     ${also.length?`<div class="ausec"><div class="h">Also sold by</div><div class="ssub">${also.map(escapeHtml).join(', ')}</div></div>`:''}
     <div class="ausec"><div class="h">Note</div><input class="txt" id="auNote" placeholder="${v?'one line, saved with the answer':'judge it first, then add a note'}" value="${escapeHtml(v&&v.note||'')}" ${v?'':'disabled'} data-a="${it.a}"></div>`;}
+/* b169 (Jack, 27 Sep: the done screen "looks a bit shit and very rigid — very jumpy"). Judging the last product used to swap the whole
+   list for a card, so the page collapsed under you. Now a banner slides in above the rows you just judged, which stay where they are. */
 function auDone(sh,c){const disc=sh.items.filter(it=>(audGet(it.a)||{}).verdict==='discord');const ws=sh.items.filter(it=>(audGet(it.a)||{}).verdict==='ws');
-  return`<div class="audone"><div class="tick">${CHECK}</div><h3>${escapeHtml(sh.name)} is done</h3><p class="ssub">${c.all.toLocaleString()} products judged</p>
-    <div class="audgrid">${auDonut(c,130)}<div><div class="aucounts">${audTypes().map(t=>`<button type="button" data-tab="${t.code}"><i style="background:${t.hex}"></i><b>${c[t.code]||0}</b> ${escapeHtml(t.short||t.label)}</button>`).join('')}</div>
-      <div class="ssub">${sh.items.filter(it=>!it.base).length} products have appeared on this shelf since we started watching · ${c.sell} you already sell.</div></div></div>
-    <div class="row">${disc.length?`<button class="btn solid sm" id="auDisc" type="button">Open the ${disc.length} Discord one${disc.length===1?'':'s'} in Keepa</button>`:''}${ws.length?`<button class="btn solid sm" id="auWs" type="button">Copy ${ws.length} WS ASIN${ws.length===1?'':'s'}</button>`:''}${(()=>{const n=auNextShelf(sh.id);return n?`<button class="btn primary sm" type="button" data-open="${escapeHtml(n.id)}">Next rival · ${escapeHtml(n.name)} · ${auCounts(n).todo} to do →</button>`:'';})()}<button class="btn ghost sm" id="auBack2" type="button">Back to audits</button></div></div>`;}
+  const nx=auNextShelf(sh.id);
+  return`<div class="audone2"><div class="tick">${CHECK}</div>
+    <div class="txt"><h3>${escapeHtml(sh.name)} is done</h3><p>${c.all.toLocaleString()} products judged · ${sh.items.filter(it=>!it.base).length} appeared since we started watching · ${c.sell} you already sell</p>
+      <div class="aucounts">${audTypes().map(t=>c[t.code]?`<button type="button" data-tab="${t.code}" style="--c:${t.hex}"><i style="background:${t.hex}"></i><b>${c[t.code]}</b> ${escapeHtml(t.short||t.label)}</button>`:'').join('')}</div></div>
+    <div class="acts">${disc.length?`<button class="btn solid sm" id="auDisc" type="button">Open the ${disc.length} Discord one${disc.length===1?'':'s'} in Keepa</button>`:''}${ws.length?`<button class="btn solid sm" id="auWs" type="button">Copy ${ws.length} WS ASIN${ws.length===1?'':'s'}</button>`:''}${nx?`<button class="btn primary sm" type="button" data-open="${escapeHtml(nx.id)}">Next rival · ${escapeHtml(nx.name)} · ${auCounts(nx).todo} to do →</button>`:''}<button class="btn ghost sm" id="auBack2" type="button">Back to audits</button></div>
+    ${auDonut(c,96)}</div>`;}
 
 /* ============ actions and wiring ============ */
 function auOpen(id){auView.mode='audit';auView.shelf=id;auView.q='';auView.limit=0;auView.order=null;auView.stay=new Set();auView.sel=new Set();auView.lastAt=0;
@@ -799,7 +804,7 @@ async function auTrickle(id,force){clearTimeout(AU_TRICKLE.t);const sh=audShelf(
   AU_TRICKLE.busy=true;
   try{const more=need.length>batch.length?` · ${(need.length-batch.length).toLocaleString()} more as the tokens refill`:'';
     auNote(`Getting the pictures, prices and sales ranks from Keepa · 0 of ${batch.length}${more}`,0);
-    const got=await audLoadDetails(batch,true,(n,t)=>{auNote(`Getting the pictures, prices and sales ranks from Keepa · ${n} of ${t}${more}`,n/t*100);if(auView.shelf===id)auRefresh();});
+    const got=await audLoadDetails(batch,true,(n,t,landed)=>{auNote(`Getting the pictures, prices and sales ranks from Keepa · ${n} of ${t}${more}`,n/t*100);if(auView.shelf===id)auRefresh(landed||[]);});   /* b168: no blink — only the rows that just got details repaint */
     if(auView.shelf===id)renderAudit();
     const left2=auNeed(sh).length;
     auNote(left2?`${left2.toLocaleString()} products still need details · the next batch loads itself in about a minute as Keepa refills · <button type="button" class="linkbtn" id="auLoadRest">load the rest now · about ${left2} tokens</button>`

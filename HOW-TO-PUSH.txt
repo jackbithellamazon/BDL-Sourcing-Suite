@@ -1,9 +1,9 @@
-BDL SOURCING — b167 · 26 Sep 2026
+BDL SOURCING — b169 · 27 Sep 2026
 
-(Live is b166. This folder is b167 = thicker rows, answers by name, the result on the right, judged rows in colour.)
+(Live is b168. This folder is b169 = Diff method is one press, and finishing a rival shows a banner above the rows you just judged instead of swapping the list for a card.)
 
 1. UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes for GitHub to publish, then Cmd+Shift+R. The header should say b167.
+   Wait a couple of minutes for GitHub to publish, then Cmd+Shift+R. The header should say b169.
 
 WHAT CHANGED ON THE AUDIT (b166 + b167, your 26 Sep complaints)
    · Thicker rows, two lines. Line one: tick · picture · title · facts · Amazon / Keepa / SellerAmp BY NAME.

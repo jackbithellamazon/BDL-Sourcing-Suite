@@ -2319,3 +2319,78 @@ body.au-selecting .toast{bottom:calc(var(--bulk-h,56px) + 30px)}   /* b153: sit 
 #page-audit .aukpis .kpi.go{cursor:pointer}
 #page-audit .aukpis .kpi.go:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--kc) 60%,var(--line))}
 #page-audit .aukpis .kpi.go .ks{color:var(--kc);font-weight:700}
+
+/* ===== b168 · "grey I can't read — hurting my eyes" (Jack, 27 Sep, on live b167). The seven answers and the three sites
+   were black boxes with a thin coloured line and small white text: a wall of outlines. Now each one is filled with a tint of
+   its own colour, with its text in that colour, bigger and bolder. Every small grey label on the audit pages comes up too. ===== */
+#page-audit .aulist .aurow .aub{height:36px;padding:0 11px 0 7px;gap:6px;font-size:13px;font-weight:700;border-width:1.5px;
+  background:color-mix(in srgb,var(--c) 13%,var(--ink));border-color:color-mix(in srgb,var(--c) 42%,transparent);color:color-mix(in srgb,var(--c) 78%,#fff)}
+#page-audit .aulist .aurow .aub kbd{width:19px;height:19px;font-size:11px;background:color-mix(in srgb,var(--c) 32%,transparent);border-color:color-mix(in srgb,var(--c) 40%,transparent);color:#fff}
+#page-audit .aulist .aurow .aub .lab{font-weight:700}
+#page-audit .aulist .aurow .aub:hover{background:color-mix(in srgb,var(--c) 26%,var(--ink));border-color:var(--c);color:#fff}
+#page-audit .aulist .aurow .aub.on{background:var(--c);border-color:var(--c);color:#08101a}
+#page-audit .aulist .aurow .aub.on kbd{background:rgba(0,0,0,.24);border-color:rgba(0,0,0,.3);color:#08101a}
+#page-audit .aulist .aurow .aulk{height:34px;padding:0 12px 0 10px;font-size:13px;border-width:1.5px}
+#page-audit .aulist .aurow .aulk span{font-size:13px;color:inherit}
+#page-audit .aulist .aurow .aulk.amazon{color:#FFC46B;background:rgba(255,153,0,.13);border-color:rgba(255,153,0,.42)}
+#page-audit .aulist .aurow .aulk.keepa{color:#B3CDFF;background:rgba(127,168,255,.14);border-color:rgba(127,168,255,.42)}
+#page-audit .aulist .aurow .aulk.sas{color:#8AF2CB;background:rgba(44,227,139,.12);border-color:rgba(44,227,139,.42)}
+#page-audit .aulist .aurow .aulk.amazon:hover{background:rgba(255,153,0,.24);border-color:#FF9900;color:#FFD699}
+#page-audit .aulist .aurow .aulk.keepa:hover{background:rgba(127,168,255,.26);border-color:#7FA8FF;color:#D2E0FF}
+#page-audit .aulist .aurow .aulk.sas:hover{background:rgba(44,227,139,.22);border-color:#2CE38B;color:#B6F8DF}
+#page-audit .aulist .aurow .aulk svg{width:15px;height:15px}
+/* the facts: a touch bigger, the ASIN chip brighter, the tick easier to see */
+#page-audit .aulist .aurow .aufacts{font-size:13.5px;color:#D6DCE8}
+#page-audit .aulist .aurow .auasin{color:#E3E8F2;font-size:12.5px;height:23px;border-color:rgba(255,255,255,.16)}
+#page-audit .aulist .aurow .aumoney{color:#D6DCE8}
+#page-audit .aulist .aurow .aumoney .aup{font-size:14px}
+#page-audit .aulist .aurow .aumoney .sep{color:#8B93A7}
+#page-audit .aulist .aurow > .ausel{border-color:rgba(255,255,255,.55)}
+#page-audit .aulist .aurow .aureasons{font-size:13.5px}
+#page-audit .aulist .aurow .aurs{height:34px;font-size:13px;color:#FFD08A;background:color-mix(in srgb,var(--c,#FF8A3D) 12%,var(--ink))}
+/* the side panel: labels you can read, values that stand out */
+#page-audit .aufgrid div{padding:10px 12px;border-radius:12px}
+#page-audit .aufgrid .k{font-size:12.5px;color:#D2D8E4;font-weight:600}
+#page-audit .aufgrid .v{font-size:18px;margin-top:2px}
+#page-audit .ausec .h{font-family:var(--sans);font-size:12px;letter-spacing:.06em;color:#C9D0DD;font-weight:700}
+#page-audit .auours{font-size:13.5px;color:#E3E8F2;line-height:1.45}
+#page-audit .aupanel .ssub{font-size:13px;color:#D2D8E4}
+#page-audit .aupanel .auphead h3{font-size:14.5px}
+#page-audit .aulinksbig .aulk{font-size:13.5px}
+#page-audit .aupanel .txt::placeholder{color:#8B93A7}
+/* the rest of the page: nothing under 12.5px, nothing dimmer than #C9D0DD */
+#page-audit .aukeys{font-size:13px;color:#C9D0DD}
+#page-audit .aukeys kbd{color:#fff}
+#page-audit .autoolsn,#page-audit .autools .autick{font-size:13px}
+#page-audit .autabs button{font-size:13.5px;color:#DCE1EB}
+#page-audit .autabs button.zero{color:#AEB6C6}
+#page-audit .aupline{font-size:14px}
+#page-audit .auhead .meta{font-size:13.5px}
+#page-audit .aunote{font-size:13.5px}
+#page-audit .aumore{font-size:13.5px;color:#D2D8E4}
+.aubulk .bn,.aubulk .bwhy,.aubulk .bl2{font-size:13px;color:#DCE1EB}
+.aubulk .bb{font-size:13px}
+
+/* ===== b169 · Diff method is one press; the done moment is a banner, not a page swap (Jack, 27 Sep: "looks a bit shit and very
+   rigid — very jumpy"). The rows you just judged stay under it, so you can still change one. Softer corners everywhere on the shelf. ===== */
+#page-audit .audone2{display:grid;grid-template-columns:auto minmax(0,1fr) auto 96px;gap:16px;align-items:center;padding:16px 18px;margin:0 0 12px;border-radius:16px;
+  border:1px solid color-mix(in srgb,var(--jade) 45%,var(--line));background:linear-gradient(135deg,color-mix(in srgb,var(--jade) 14%,var(--surface2)),color-mix(in srgb,var(--iris) 8%,var(--surface2)))}
+@media (prefers-reduced-motion:no-preference){#page-audit .audone2{animation:auSlideDown .35s ease-out}}
+@keyframes auSlideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+#page-audit .audone2 .tick{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--jade);color:#08101a}
+#page-audit .audone2 .tick svg{width:28px;height:28px}
+#page-audit .audone2 .txt{min-width:0}
+#page-audit .audone2 h3{font-family:var(--disp);font-size:20px;margin:0 0 2px;color:var(--text)}
+#page-audit .audone2 p{margin:0 0 8px;font-size:13.5px;color:#D6DCE8}
+#page-audit .audone2 .aucounts{margin:0;gap:6px}
+#page-audit .audone2 .aucounts button{height:28px;padding:0 10px;border-radius:9px;font-size:12.5px;color:color-mix(in srgb,var(--c) 78%,#fff);background:color-mix(in srgb,var(--c) 13%,var(--ink));border:1.5px solid color-mix(in srgb,var(--c) 42%,transparent);transition:transform .12s ease,background-color .15s}
+#page-audit .audone2 .aucounts button:hover{transform:translateY(-1px);background:color-mix(in srgb,var(--c) 26%,var(--ink))}
+#page-audit .audone2 .aucounts button b{color:#fff}
+#page-audit .audone2 .acts{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+#page-audit .audone2 .acts .btn{justify-content:center}
+#page-audit .audone2 .audonut{width:96px;height:96px}
+@media (max-width:1100px){#page-audit .audone2{grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto}#page-audit .audone2 .acts{grid-column:1/3;flex-direction:row;flex-wrap:wrap}#page-audit .audone2 .audonut{display:none}}
+#page-audit .auprog,#page-audit .autabs,#page-audit .autools,#page-audit .aulist,#page-audit .aupanel{border-radius:16px}
+#page-audit .auprog{margin-bottom:12px}
+#page-audit .autabs{margin-bottom:12px}
+#page-audit .autools{margin-bottom:12px}
