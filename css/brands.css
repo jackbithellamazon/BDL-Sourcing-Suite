@@ -2394,3 +2394,53 @@ body.au-selecting .toast{bottom:calc(var(--bulk-h,56px) + 30px)}   /* b153: sit 
 #page-audit .auprog{margin-bottom:12px}
 #page-audit .autabs{margin-bottom:12px}
 #page-audit .autools{margin-bottom:12px}
+
+/* ===== b172 · the header (Jack, 27 Sep: "add this as a home button — improve the UI/UX design visually"). The logo is Home.
+   The right-hand pills are one family: same height, same font, readable, each with its own colour. Page tiles read at arm's
+   length and never cut their line off. Dark mode only — light mode keeps its own tuned colours. ===== */
+.brand.home{text-decoration:none;color:inherit;border-radius:14px;padding:6px 12px 6px 6px;margin:-6px 0 -6px -6px;transition:background-color .15s}
+.brand.home:hover{background:rgba(255,255,255,.04)}
+.brand.home:hover .mark{transform:translateY(-1px) rotate(-4deg)}
+.brand.home:active .mark{transform:scale(.94)}
+.brand.home:focus-visible{outline:2px solid var(--iris);outline-offset:2px}
+.brand.home .mark{transition:transform .18s ease}
+.brand.home h1{font-size:23px}
+.brand.home h1::after{content:'Home';display:inline-block;margin-left:10px;vertical-align:3px;padding:2px 8px;border-radius:7px;font:700 11px var(--sans);letter-spacing:.02em;
+  color:#C4B5FF;background:rgba(140,149,255,.14);border:1px solid rgba(140,149,255,.35);opacity:0;transform:translateX(-4px);transition:opacity .15s,transform .15s}
+.brand.home:hover h1::after{opacity:1;transform:none}
+html:not([data-theme="light"]) .brand .tag{font-size:13px;color:#C9D0DD}
+/* one family of pills on the right */
+.top-actions{gap:8px}
+html:not([data-theme="light"]) .build{font-family:var(--sans);font-size:12px;color:#AEB6C6;font-weight:500;margin-right:4px}
+.theme-toggle,.whosel,.pill.tok,.cloudpill,.top-actions .authme{height:34px;border-radius:10px}
+.pill.tok{display:inline-flex;align-items:center;gap:7px;padding:0 12px;margin-right:0;font-family:var(--sans);font-size:12.5px;font-weight:700;letter-spacing:0}
+.pill.tok::before{content:'';width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+html:not([data-theme="light"]) .pill.tok{color:#6EF0BE;background:rgba(44,227,139,.12);border-color:rgba(44,227,139,.38)}
+html:not([data-theme="light"]) .pill.tok.bad{color:#FFD08A;background:rgba(255,178,36,.12);border-color:rgba(255,178,36,.4)}
+.cloudpill{font-family:var(--sans);font-size:12.5px;font-weight:700;letter-spacing:0;text-transform:none;padding:0 12px}
+html:not([data-theme="light"]) .cloudpill.ok{color:#6EF0BE;background:rgba(44,227,139,.08)}
+.cloudpill.ok i{box-shadow:none}
+html:not([data-theme="light"]) .theme-toggle{color:#DCE1EB;font-size:12.5px}
+html:not([data-theme="light"]) .whosel{font-size:13px;color:#fff}
+/* the page tiles */
+.pagebtn{padding:14px 16px;border-radius:16px}
+.pagebtn .pt{font-size:15.5px}
+.pagebtn .ps{font-size:12.5px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
+html:not([data-theme="light"]) .pagebtn .pt{color:#E3E8F2}
+html:not([data-theme="light"]) .pagebtn .ps{color:#B8C0CF}
+html:not([data-theme="light"]) .pagebtn.active .pt{color:#fff}
+html:not([data-theme="light"]) .pagebtn.active .ps{color:#DCE1EB}
+html:not([data-theme="light"]) .pagebtn .pic{color:#C9D0DD}
+.pagebtn:active{transform:scale(.985)}
+/* the signed-in name pill joins the family (it was 30px, and in Arial because a button does not inherit the page font) */
+.authpill{height:34px;border-radius:10px;padding:0 12px;font-family:var(--sans);font-size:13px;font-weight:700;gap:8px}
+.authpill i{width:8px;height:8px}
+html:not([data-theme="light"]) .authpill{color:#fff;background:var(--ink)}
+
+/* ===== b173 · no flash (Jack, 27 Sep: "still see a flash of that grey box"). The graph box never empties: the last graph stays,
+   faded, with a small tag, and the new one fades in over it. ===== */
+.aupanel .augraph.big{position:relative;min-height:230px;background:#fff;border:none;padding:0}
+.aupanel .augraph.big.stale img{opacity:.35;filter:grayscale(.4);transition:opacity .2s}
+.aupanel .augraph.big .augwait{position:absolute;top:10px;right:10px;padding:4px 10px;border-radius:8px;font:700 12px var(--sans);color:#3b4252;background:rgba(255,255,255,.92);border:1px solid rgba(0,0,0,.12)}
+@media (prefers-reduced-motion:no-preference){.aupanel .augraph.big img.augin{animation:auFade .22s ease-out}}
+@keyframes auFade{from{opacity:.35}to{opacity:1}}

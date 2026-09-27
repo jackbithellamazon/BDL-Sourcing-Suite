@@ -1,54 +1,21 @@
-BDL SOURCING — b169 · 27 Sep 2026
+BDL SOURCING — b173 · 27 Sep 2026
 
-(Live is b168. This folder is b169 = Diff method is one press, and finishing a rival shows a banner above the rows you just judged instead of swapping the list for a card.)
+(Live is b169. This folder has b170 + b171 + b172 + b173.)
 
-1. UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes for GitHub to publish, then Cmd+Shift+R. The header should say b169.
+UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b173.
 
-WHAT CHANGED ON THE AUDIT (b166 + b167, your 26 Sep complaints)
-   · Thicker rows, two lines. Line one: tick · picture · title · facts · Amazon / Keepa / SellerAmp BY NAME.
-     Line two: the seven answers BY NAME (1 Not lead · 2 Unsure · 3 Discord · 4 WS · 5 Joint · 6 Missed it · 7 Diff method).
-     All of it on EVERY row, mouse or no mouse, so nothing appears, grows or shifts under your hand.
-   · Once a row has its answer: the whole row is tinted in that colour, the button is lit, and the right end of the
-     answers line says the result — what · why · who · when (hover it for the full story).
-   · A key press repaints only the row you judged and the one you moved to, not the whole list — no flicker.
-   · Grey text lifted everywhere on the audit pages. "Compact rows" toggle is gone.
-   · "Sent me back to the top": fixed. The page only moves for a key you just pressed (arrows, 1–7, G, U).
-     More rows loading, details landing, refreshes — none of them move the page any more.
-   · "Stuff not loading": details now trickle in. The audit keeps 250 Keepa tokens back for Suz and Mera's
-     runs, so it loads what it can straight away (the rows you can see first), then a batch a minute as Keepa
-     refills (21 a minute). The note sits just above the list. "load the rest now" spends past the floor,
-     only when you press it.
-   · Bulk: tick the box or the picture · shift-click ticks a run · drag down the ticks · "Tick all N shown" ·
-     X ticks the row you are on. The bar at the bottom judges them all in one press.
-   · Answer tabs at the top carry their key numbers (1 Not lead · 2 Unsure · 3 Discord · 4 WS · 5 Joint ·
-     6 Missed it · 7 Diff method) — that row is the legend.
-   · "Your storefront" is one line (on it now · left it in the last 45 days · the window). The paste box is
-     folded away behind "Paste inventory" — only needed if Keepa missed something you sell.
+WHAT'S IN IT
+   · b173  No flash: the audit's graph never goes blank (the last one stays, faded, until the new one fades in); small
+           detail loads fill the rows without a box popping up; the Keepa tokens pill starts with its last number.
+   · b172  The BDL Sourcing logo is a Home button (a "Home" tag shows on hover): Brands / Filters, the brand list,
+           any open run closed, back to the top. The header pills are one family — same height, readable font, own colours.
+           Page tiles: bigger titles, subtitles that no longer cut off.
+   · b171  Refresh while you're in a rival and it reopens that rival (it used to drop you on the list with the rival's
+           ID left in the address).
+   · b170  Sign-in link messages say "within 24 hours".
 
-2. THE LINK-MAKER (optional — only for "Copy link"; skip it if you give Suz and Mera passwords instead)
-   Supabase → Edge Functions → "Deploy a new function" → "Via Editor"
-   Name it exactly:  sourcing-link
-   Select everything in the editor, paste the whole of
-     ~/Downloads/2026-09-25-SUPABASE-FUNCTION-sourcing-link-PASTE-THIS.ts
-   → Deploy. Leave "Verify JWT" on. Supabase gives it its own keys - there is nothing to copy.
-   THE PASSWORD ROUTE INSTEAD: Supabase → Authentication → Users → delete suz@bdl.local → Add user →
-   Create new user → suz@bdl.local + a password, tick Auto Confirm. Same for mera@bdl.local. Tell them the
-   password in Discord; they sign in on the lock screen with email + password, like you.
-
-3. SIGN YOURSELF IN
-   Settings → jack@bdl.local + your password → Sign in.
-
-4. SEND THEIR LINKS (if you did step 2)
-   Settings → Team → "Copy link" next to Suz (and Mera) → paste it to them in Discord.
-   Tell them: open it on your WORK computer, in the browser you use for Sourcing.
-   Each link works ONCE, for about an hour. Need another? Copy link again.
-
-5. THE LOCK
-   When all three show "Signed in", flip "Sign-in required for everyone".
-
-GUEST MODE: Settings > Guest mode > Start. Amber bar = nothing saves. Leave = back exactly as it was.
-
-JOINT RULE (unchanged): on your storefront = Joint. After it leaves, a rival that adds it within 45 days = Joint
-   automatically; after 45 days = new, to check. Change the 45 in the "Your storefront" strip.
-   Not lead / Missed it / Unsure come back to check after 90 days.
+SIGN-IN, WHERE IT STANDS
+   · Link-maker deployed and working. Links last 24 hours (Supabase Email OTP Expiration = 86400).
+   · Copy link next to Suz / Mera → Discord. Each link works once; a new Copy link cancels the old one.
+   · Lock: Settings → "Sign-in required for everyone". A link still signs them in while it's on.

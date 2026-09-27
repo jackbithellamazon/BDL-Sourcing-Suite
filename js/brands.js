@@ -465,7 +465,7 @@ function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='func
       <li><b>You:</b> your login is <code>jack@bdl.local</code> — type it with your password above. No email needed.</li>
       <li><b>Suz and Mera</b> are already in Supabase as <code>suz@bdl.local</code> and <code>mera@bdl.local</code> (you made them, 25 Sep) and already in the Team above. Anyone new: Supabase → Authentication → Users → Add user → <b>Create new user</b> (any email, any password, tick <b>Auto Confirm User</b>), then type it in their Team row.</li>
       <li><b>The link-maker, once</b> — Supabase → <b>Edge Functions</b> → Deploy a new function → <b>Via Editor</b> → name it <code>sourcing-link</code> → paste <code>2026-09-25-SUPABASE-FUNCTION-sourcing-link-PASTE-THIS.ts</code> (Downloads) over everything → <b>Deploy</b>. No keys to copy — Supabase gives it its own.</li>
-      <li>Then <b>Copy link</b> next to Suz or Mera, paste it to them in Discord, and they are in. Each link works once, for about an hour.</li>
+      <li>Then <b>Copy link</b> next to Suz or Mera, paste it to them in Discord, and they are in. Each link works once, within 24 hours (Supabase → Authentication → Sign In / Providers → Email → Email OTP Expiration = 86400).</li>
       <li>Emailing links instead (only for real inboxes): Authentication → URL Configuration → Redirect URLs → add <code>${escapeHtml(location.origin+location.pathname)}</code>.</li></ol></details></div>`;
   el.innerHTML=me_+teamHtml+lockHtml;
   const out=$('#abOut');if(out)out.addEventListener('click',()=>{if(confirm('Sign out of '+u.name+'?')){authSignOut();paintAuthBox();}});
@@ -491,7 +491,7 @@ function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='func
     btn.disabled=true;const was=btn.textContent;btn.textContent='Making…';msgEl.textContent='';msgEl.className='wgmsg';
     try{const link=await authMakeLink(t.email);
       try{await navigator.clipboard.writeText(link);}catch(e){}
-      msgEl.innerHTML=`<b>${escapeHtml(t.name)}'s link is copied</b> — paste it to ${escapeHtml(t.name)} in Discord. It works <b>once</b>, for about an hour, and signs in whichever browser opens it, so tell ${escapeHtml(t.name)} to open it on the work computer. <input class="tlink" readonly value="${escapeHtml(link)}">`;msgEl.className='wgmsg good';
+      msgEl.innerHTML=`<b>${escapeHtml(t.name)}'s link is copied</b> — paste it to ${escapeHtml(t.name)} in Discord. It works <b>once</b>, within 24 hours, and signs in whichever browser opens it, so tell ${escapeHtml(t.name)} to open it on the work computer. <input class="tlink" readonly value="${escapeHtml(link)}">`;msgEl.className='wgmsg good';
       const li=msgEl.querySelector('.tlink');if(li){li.addEventListener('focus',()=>li.select());}
       btn.textContent='Copied ✓';setTimeout(()=>{btn.textContent=was;btn.disabled=false;},2200);}
     catch(e){msgEl.textContent=String(e.message||e);msgEl.className='wgmsg bad';btn.textContent=was;btn.disabled=false;}}));
@@ -1413,8 +1413,9 @@ const ONE_UNIT={share:0.50,drops:10,roi:50,profit:10};
    Above this many drops a missing figure is treated as LOST, not as proof of a small seller. */
 const LOST_FIGURE_DROPS=50;
 const WORKER='https://bdl-sourcing.jackbithellbusiness.workers.dev';
-async function paintTokens(){let el=$('#tokPill');const cp=$('#cloudPill');if(!cp)return;if(!el){el=document.createElement('span');el.id='tokPill';el.className='pill tok';cp.parentNode.insertBefore(el,cp);}
-  try{const r=await fetch(WORKER+'/health');const t=await r.json();if(t.ok&&t.tokensLeft!=null){el.textContent='Keepa · '+t.tokensLeft.toLocaleString()+' tokens';el.title=`Keepa API balance via the Worker · refills ${t.refillRate}/min · nothing runs automatically yet`;el.classList.remove('bad');}
+/* b173: the pill is born with the last number it showed, so it never pops in empty and grows on every page load */
+async function paintTokens(){let el=$('#tokPill');const cp=$('#cloudPill');if(!cp)return;if(!el){el=document.createElement('span');el.id='tokPill';el.className='pill tok';el.textContent=lsGet('bdl-sourcing-tokens-last','Keepa · … tokens');cp.parentNode.insertBefore(el,cp);}
+  try{const r=await fetch(WORKER+'/health');const t=await r.json();if(t.ok&&t.tokensLeft!=null){el.textContent='Keepa · '+t.tokensLeft.toLocaleString()+' tokens';lsSet('bdl-sourcing-tokens-last',el.textContent);el.title=`Keepa API balance via the Worker · refills ${t.refillRate}/min · nothing runs automatically yet`;el.classList.remove('bad');}
     else{el.textContent='Keepa · no key';el.title=t.error||'Worker answered without a balance';el.classList.add('bad');}}
   catch(e){el.textContent='Keepa · offline';el.title='Could not reach the Worker';el.classList.add('bad');}}
 /* b53: deep links for AVM HQ tasks — #run=<source key> opens that run screen, #due opens the Brands list on what's due */

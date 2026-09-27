@@ -462,7 +462,7 @@ function auRankRivals(rows){const by={
   return rows.sort(by);}
 function auNextShelf(fromId){const arch=audArchived();const L=audShelfList().filter(sh=>!arch.has(sh.id)).map(sh=>({sh,c:auCounts(sh)})).filter(x=>x.sh.id!==fromId&&x.c.todo>0)
   .sort((a,b)=>auOverlap(b.c)-auOverlap(a.c)||b.c.todo-a.c.todo);return L[0]?L[0].sh:null;}
-function auRenderList(){auView.mode='list';const arch=audArchived();const allShelves=audShelfList();const shelves=allShelves.filter(sh=>!arch.has(sh.id));
+function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);const arch=audArchived();const allShelves=audShelfList();const shelves=allShelves.filter(sh=>!arch.has(sh.id));
   const archRows=auRankRivals(allShelves.filter(sh=>arch.has(sh.id)).map(sh=>({sh,c:auCounts(sh),la:auLastAudit(sh),nw:auNewSince(sh)})));
   const mineN=[...new Set([...audState.mineEver,...audState.mineNow,...audMineList()])].filter(a=>{const w=audMineWhy(a);return w&&w!=='before';}).length,mineList=audMineList().size;
   if(auView.cards===null)auView.cards=shelves.length<=8;   /* a few rivals read better as cards, 39 do not */const V=audAll();const O=auOurs();
@@ -731,16 +731,17 @@ let auGraphT=null;
    fetched while you look at this one — going down the list in order costs nothing extra, it just arrives before you do. */
 function auPrefetchGraph(asin){if(!asin||AU_GRAPH.cache[asin]!==undefined||AU_GRAPH.pending[asin])return;AU_GRAPH.pending[asin]=1;
   auFetchGraph(asin).then(u=>{AU_GRAPH.cache[asin]=u||false;delete AU_GRAPH.pending[asin];}).catch(()=>{delete AU_GRAPH.pending[asin];});}
+function auGraphShow(box,url){box.classList.add('has');box.classList.remove('stale');box.innerHTML=`<img class="augin" src="${url}" alt="Keepa price history">`;auView.lastGraph=url;}
 function auLoadGraph(asin,next){clearTimeout(auGraphT);if(!asin)return;
-  const box0=$('#auGraph');if(box0&&box0.dataset.a===asin&&AU_GRAPH.cache[asin]){box0.classList.add('has');box0.innerHTML=`<img src="${AU_GRAPH.cache[asin]}" alt="Keepa price history">`;setTimeout(()=>auPrefetchGraph(next),250);return;}
+  const box0=$('#auGraph');if(box0&&box0.dataset.a===asin&&AU_GRAPH.cache[asin]){if(!box0.classList.contains('has')||box0.classList.contains('stale'))auGraphShow(box0,AU_GRAPH.cache[asin]);else auView.lastGraph=AU_GRAPH.cache[asin];setTimeout(()=>auPrefetchGraph(next),250);return;}
   auGraphT=setTimeout(async()=>{const box=$('#auGraph');if(!box||box.dataset.a!==asin)return;
-    if(AU_GRAPH.cache[asin]===false){box.innerHTML=auGraphFallback(asin);return;}
-    if(AU_GRAPH.cache[asin]){box.classList.add('has');box.innerHTML=`<img src="${AU_GRAPH.cache[asin]}" alt="Keepa price history">`;return;}
-    box.innerHTML='<span class="auglab">Loading the price history…</span>';
+    if(AU_GRAPH.cache[asin]===false){box.classList.remove('has','stale');box.innerHTML=auGraphFallback(asin);return;}
+    if(AU_GRAPH.cache[asin]){auGraphShow(box,AU_GRAPH.cache[asin]);return;}
+    if(!box.classList.contains('stale'))box.innerHTML='<span class="auglab">Loading the price history…</span>';   /* b173: a faded last graph stays up while this one comes */
     const url=AU_GRAPH.pending[asin]?await new Promise(res=>{const w=()=>AU_GRAPH.pending[asin]?setTimeout(w,120):res(AU_GRAPH.cache[asin]||null);w();}):await auFetchGraph(asin);AU_GRAPH.cache[asin]=url||false;
     const b=$('#auGraph');if(!b||b.dataset.a!==asin)return;auPrefetchGraph(next);
-    if(url){b.classList.add('has');b.innerHTML=`<img src="${url}" alt="Keepa price history">`;}
-    else b.innerHTML=auGraphFallback(asin,AU_GRAPH.worker===false?'Charts need one line adding to your Keepa Worker — the file is in Downloads.':'Keepa is holding the free charts back for a moment.');},250);}
+    if(url)auGraphShow(b,url);
+    else{b.classList.remove('has','stale');b.innerHTML=auGraphFallback(asin,AU_GRAPH.worker===false?'Charts need one line adding to your Keepa Worker — the file is in Downloads.':'Keepa is holding the free charts back for a moment.');}},250);}
 function auGraphFallback(asin,why){return`<span class="auglab">${why?escapeHtml(why)+' ':''}<a class="aulk keepa" href="https://keepa.com/#!product/2-${asin}" target="_blank" rel="noopener" data-stop>Open the full graph on Keepa <kbd>K</kbd></a></span>`;}
 function auPanel(it,sh){if(!it)return'<div class="empty"><span>Pick a product.</span></div>';const p=audState.prod[it.a]||{};
   if(!p.title)return`<div class="aupimg none">${escapeHtml(it.a.slice(0,2))}</div><h3>${it.a}</h3>
@@ -750,7 +751,12 @@ function auPanel(it,sh){if(!it)return'<div class="empty"><span>Pick a product.</
   const also=audShelfList().filter(x=>x.id!==sh.id&&x.items.some(y=>y.a===it.a)).map(x=>x.name);
   const fact=(k,val)=>`<div><div class="k">${k}</div><div class="v">${val}</div></div>`;
   /* b160: the graph is what Jack reads — it comes first and big; the picture shrinks to a thumbnail beside the title */
-  return`<div class="ausec aug1"><div class="augraph big" id="auGraph" data-a="${it.a}"></div></div>
+  /* b173 (Jack, 27 Sep: "still see a flash of that grey box"). The panel is rebuilt on every move, and the graph box came back empty
+     until the new graph arrived. Now it starts with this product's graph if we have it, or the last graph faded with a small
+     "loading" tag, and the new one fades in over it. */
+  const gHave=AU_GRAPH.cache[it.a],gPrev=auView.lastGraph;
+  const gInner=gHave?`<img src="${gHave}" alt="Keepa price history">`:gPrev?`<img src="${gPrev}" alt=""><span class="augwait">Loading this graph…</span>`:'';
+  return`<div class="ausec aug1"><div class="augraph big${gHave?' has':gPrev?' has stale':''}" id="auGraph" data-a="${it.a}">${gInner}</div></div>
     <div class="auphead"><div class="aupimg sm ${p.image?'':'none'}">${p.image?`<img src="${escapeHtml(p.image)}" alt="">`:escapeHtml(it.a.slice(0,2))}</div>
       <div><h3>${escapeHtml(p.title||it.a)}</h3><div class="ssub">${escapeHtml(p.brand||'')}${p.root?' · '+escapeHtml(p.root):''} · ${it.a}</div></div></div>
     <div class="aufgrid">${fact('Buy Box',gbp(p.price))}${fact('Sales rank',p.rank?'#'+(+p.rank).toLocaleString():'—')}${fact('Bought / month',p.mo?(+p.mo).toLocaleString():'—')}
@@ -773,7 +779,7 @@ function auDone(sh,c){const disc=sh.items.filter(it=>(audGet(it.a)||{}).verdict=
     ${auDonut(c,96)}</div>`;}
 
 /* ============ actions and wiring ============ */
-function auOpen(id){auView.mode='audit';auView.shelf=id;auView.q='';auView.limit=0;auView.order=null;auView.stay=new Set();auView.sel=new Set();auView.lastAt=0;
+function auOpen(id){auView.pendingOpen=null;auView.mode='audit';auView.shelf=id;auView.q='';auView.limit=0;auView.order=null;auView.stay=new Set();auView.sel=new Set();auView.lastAt=0;
   location.hash='#audit='+id;const sh=audShelf(id);if(!sh)return;
   const vis=auVisible(sh);const V=audAll();const first=vis.findIndex(it=>audStatus(V[it.a],audSells(sh.id,it.a))==='todo');
   const autoN=audAutoMissed(sh);if(autoN)toast(autoN+' marked Missed it for you — leads we had and never bought');
@@ -802,13 +808,18 @@ async function auTrickle(id,force){clearTimeout(AU_TRICKLE.t);const sh=audShelf(
     auNote(`${need.length} products still need details · Keepa has ${left.toLocaleString()} tokens and ${AUD_TOKEN_FLOOR} stay back for the VAs' runs · the next batch loads itself in about ${mins} min · ${rest}`);
     AU_TRICKLE.t=setTimeout(()=>auTrickle(id),60e3);return;}
   AU_TRICKLE.busy=true;
+  /* b173: a handful of new lines load in a second — no box pops up for that, the rows just fill in. The note only appears for a
+     real load (over 20), and the "loaded" line fades away by itself after a few seconds. */
+  const loud=batch.length>20;
   try{const more=need.length>batch.length?` · ${(need.length-batch.length).toLocaleString()} more as the tokens refill`:'';
-    auNote(`Getting the pictures, prices and sales ranks from Keepa · 0 of ${batch.length}${more}`,0);
-    const got=await audLoadDetails(batch,true,(n,t,landed)=>{auNote(`Getting the pictures, prices and sales ranks from Keepa · ${n} of ${t}${more}`,n/t*100);if(auView.shelf===id)auRefresh(landed||[]);});   /* b168: no blink — only the rows that just got details repaint */
-    if(auView.shelf===id)renderAudit();
+    if(loud)auNote(`Getting the pictures, prices and sales ranks from Keepa · 0 of ${batch.length}${more}`,0);
+    const got=await audLoadDetails(batch,true,(n,t,landed)=>{if(loud)auNote(`Getting the pictures, prices and sales ranks from Keepa · ${n} of ${t}${more}`,n/t*100);if(auView.shelf===id)auRefresh(landed||[]);});   /* b168: no blink — only the rows that just got details repaint */
+    if(auView.shelf===id&&loud)renderAudit();
     const left2=auNeed(sh).length;
-    auNote(left2?`${left2.toLocaleString()} products still need details · the next batch loads itself in about a minute as Keepa refills · <button type="button" class="linkbtn" id="auLoadRest">load the rest now · about ${left2} tokens</button>`
-      :`Details loaded · about ${got} tokens · <button type="button" class="linkbtn" id="auAutoOff">stop doing this automatically</button>`);
+    if(left2)auNote(`${left2.toLocaleString()} products still need details · the next batch loads itself in about a minute as Keepa refills · <button type="button" class="linkbtn" id="auLoadRest">load the rest now · about ${left2} tokens</button>`);
+    else if(loud){auNote(`Details loaded · about ${got} tokens · <button type="button" class="linkbtn" id="auAutoOff">stop doing this automatically</button>`);
+      const said=auView.noteHtml;setTimeout(()=>{if(auView.noteHtml===said)auNote('');},6000);}
+    else auNote('');
     if(left2&&auView.shelf===id)AU_TRICKLE.t=setTimeout(()=>auTrickle(id),60e3);}
   finally{AU_TRICKLE.busy=false;}}
 function auNote(html,pct){auView.noteHtml=(pct!=null?`<span class="auload"><i style="width:${Math.round(pct)}%"></i></span>`:'')+(html||'');
@@ -1000,10 +1011,24 @@ function auInit(){const host=$('#page-audit');if(!host)return;
   const btn=document.querySelector('.pagebtn[data-page="page-audit"]');
   if(btn)btn.addEventListener('click',async()=>{renderAudit();if(cloudEnabled()){await audPullShelves();await audPullVerdicts();renderAudit();}});
   renderAudit();}
+/* b171 (Jack, 27 Sep: "why is the audit seller ID like this still?" — the list on screen, #audit=A3MFSZUHG9XVSC in the address).
+   A refresh on a shelf ran this 50ms after load, before the shelves had come from the database, so it could not find the rival,
+   showed the list and left the ID behind. Now it shows the list, waits for the shelves, then opens the rival you were on. If that
+   rival really is gone, the address is put back to #audit. It also no longer opens a shelf twice (auOpen's own hash change came
+   back through here). */
 function auHash(){const m=/^#audit(?:=([\w-]+))?/i.exec(location.hash||'');if(!m)return false;
   const b=document.querySelector('.pagebtn[data-page="page-audit"]');if(b&&!b.classList.contains('active'))b.click();
-  if(m[1]&&audShelf(m[1]))auOpen(m[1]);else{auView.mode='list';renderAudit();}
+  const id=m[1];
+  if(id&&auView.mode==='audit'&&auView.shelf===id)return true;          /* already there */
+  if(id&&audShelf(id)){auOpen(id);return true;}
+  auView.mode='list';auView.pendingOpen=id||null;renderAudit();
+  if(id&&cloudEnabled())(async()=>{try{await audPullShelves();}catch(e){}
+    if(auView.pendingOpen!==id)return;auView.pendingOpen=null;
+    if(audShelf(id)&&auView.mode==='list')auOpen(id);else auFixHash();})();
+  else{auView.pendingOpen=null;auFixHash();}
   return true;}
+/* the address says what is on screen: #audit on the list, #audit=<id> inside a rival. replaceState, so no history entry and no hashchange */
+function auFixHash(){if(auView.mode!=='list'||auView.pendingOpen)return;if(/^#audit=/i.test(location.hash||''))try{history.replaceState(null,'','#audit');}catch(e){}}
 
 /* b100: the rival order, saved so it is still there tomorrow */
 document.addEventListener('change',e=>{const sel=e.target&&e.target.closest&&e.target.closest('#auRsort');
