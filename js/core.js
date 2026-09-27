@@ -51,13 +51,17 @@ function today(){return stamp().slice(0,10);}
    queued, nothing reached Supabase. Now a failed write (1) makes room by dropping this app's own caches, the audit's product
    details first (they reload free from Supabase), and tries again; (2) if there is still no room, keeps the value in memory
    so the app carries on and the outbox still sends to Supabase; and (3) says so, in a red bar, instead of saying nothing. */
-const LS_MEM={};const LS_SHED=['bdl-sourcing-option-sales','bdl-sourcing-api-looks','bdl-sourcing-rlog'];let LS_FULL_AT=0;
+const LS_MEM={};const LS_SHED=['bdl-sourcing-howto-hidden','bdl-sourcing-guidefull'];let LS_FULL_AT=0;
 /* b178 (Jack, 27 Sep: "I don't want this to happen again"). The browser gives every app on this address ONE shared pot of about
    5 MB (localStorage). The big things Sourcing keeps — product pictures and prices for the audit, the lead history, run results,
    Keepa rows, EU prices, console rows — now live in the browser's big store instead (IndexedDB: hundreds of MB, guest mode
    already uses it). They are loaded into memory once at boot and written back a moment after each change, so the rest of the
    app reads and writes them exactly as before. The 5 MB pot keeps only small settings and the unsent-changes queue. */
-const BIG_KEYS=['bdl-sourcing-audit-prod','bdl-sourcing-api-rows','bdl-sourcing-eu-price','bdl-sourcing-leadstate','bdl-sourcing-runs','bdl-sourcing-kc','bdl-sourcing-history'];
+const BIG_KEYS=['bdl-sourcing-audit-prod','bdl-sourcing-api-rows','bdl-sourcing-eu-price','bdl-sourcing-leadstate','bdl-sourcing-runs','bdl-sourcing-kc','bdl-sourcing-history',
+  /* b181 (Jack, 27 Sep: "we shouldn't be storing much here locally — it should be 99% online"): every other copy of Supabase goes to the big store too.
+     The shared pot keeps only the sign-in, this browser's view settings, a few small shared settings and the unsent queue — a few KB. */
+  'bdl-sourcing-verdicts','bdl-sourcing-audit-v','bdl-sourcing-sources','bdl-sourcing-facts','bdl-sourcing-blacklist','bdl-sourcing-brandbl','bdl-sourcing-discounts','bdl-sourcing-audit-shelves',
+  'bdl-sourcing-option-sales','bdl-sourcing-api-looks','bdl-sourcing-rlog'];
 const BIG={};const BIG_T={};const BIG_HOOKS=[];let BIG_READY=false,BIG_LOAD=null;
 function isBig(k){return BIG_KEYS.includes(k);}
 function bigIdb(mode,fn){return new Promise((res,rej)=>{let r;try{r=indexedDB.open('bdl-sourcing-big',1);}catch(e){rej(e);return;}
@@ -83,7 +87,8 @@ function lsSet(k,v){let s;try{s=JSON.stringify(v);}catch(e){return false;}
   for(const c of LS_SHED){if(c===k)continue;try{if(localStorage.getItem(c)==null)continue;localStorage.removeItem(c);}catch(e){continue;}
     try{localStorage.setItem(k,s);delete LS_MEM[k];console.warn('storage was full — cleared the cache '+c+' to make room');return true;}catch(e){}}
   LS_MEM[k]=s;lsFullBar();return false;}
-function lsUsage(){let ours=0,all=0,big=0;try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);const n=(k.length+(localStorage.getItem(k)||'').length)*2;all+=n;if(/^(bdl-sourcing|sourcing-suite)/.test(k))ours+=n;}}catch(e){}Object.values(BIG).forEach(v=>{big+=(v?v.length:0)*2;});return{ours,all,others:all-ours,big,cap:5*1048576};}
+/* b181: Chrome's limit is about 5.2 million characters per address, so the meter counts characters and calls 1,048,576 of them a MB (it counted bytes before, which read 7.75 MB of 5) */
+function lsUsage(){let ours=0,all=0,big=0;try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);const n=k.length+(localStorage.getItem(k)||'').length;all+=n;if(/^(bdl-sourcing|sourcing-suite)/.test(k))ours+=n;}}catch(e){}Object.values(BIG).forEach(v=>{big+=v?v.length:0;});return{ours,all,others:all-ours,big,cap:5*1048576};}
 function lsFullBar(){if(Date.now()-LS_FULL_AT<30000&&document.getElementById('lsFullBar'))return;LS_FULL_AT=Date.now();
   const paint=()=>{let el=document.getElementById('lsFullBar');if(!el){el=document.createElement('div');el.id='lsFullBar';el.className='lsfullbar';document.body.prepend(el);}
     const u=lsUsage(),mb=n=>(n/1048576).toFixed(1)+' MB';

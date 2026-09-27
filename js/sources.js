@@ -340,7 +340,7 @@ function discId(e){return(e.name||'').trim().toLowerCase().replace(/[^a-z0-9]+/g
 function discRow(e){return{id:discId(e),data:e,updated_at:nowIso(),updated_by:me()};}
 function discSave(list){const old=discAll().map(discId);const now=new Set(list.map(discId));lsSet(DISC_KEY,list);
   cloudQueue('src_discounts','delete',{col:'id',vals:old.filter(id=>!now.has(id))});cloudQueue('src_discounts','upsert',list.map(discRow));}
-function discReset(){const old=discAll().map(discId);localStorage.removeItem(DISC_KEY);const seed=discAll();
+function discReset(){const old=discAll().map(discId);lsRemove(DISC_KEY);const seed=discAll();
   cloudQueue('src_discounts','delete',{col:'id',vals:old.filter(id=>!seed.some(e=>discId(e)===id))});cloudQueue('src_discounts','upsert',seed.map(discRow));}
 /* the brand's own channel for a product, if we have one */
 function discForBrand(brand){const b=(brand||'').toLowerCase().trim();if(!b)return null;const w=b.split(/\s+/)[0];

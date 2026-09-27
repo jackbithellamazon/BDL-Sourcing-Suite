@@ -1,7 +1,7 @@
-BDL SOURCING — b180 · 27 Sep 2026  ← PUSH THIS ONE (it includes b176 → b179)
+BDL SOURCING — b181 · 27 Sep 2026  ← PUSH THIS ONE (it includes b176 → b180)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b180.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b181.
    First load moves the heavy things out of the small store by itself — nothing to do.
 
 THEN LOOK: Settings → Shared storage
@@ -18,5 +18,6 @@ THEN LOOK: Settings → Shared storage
    Screenshot that section and send it — it tells us which OTHER apps are filling the pot.
 
 WHAT'S IN IT
+   b181 every remaining copy of Supabase leaves the shared pot (Sourcing now uses a few KB of it); the meter measures the real limit
    b180 the item-by-item list + clear button · b179 which apps use the pot · b178 heavy things in the big store
    b177 a full store never fails silently (red bar) · b176 Settings is yours only; Team shows device · IP · seen

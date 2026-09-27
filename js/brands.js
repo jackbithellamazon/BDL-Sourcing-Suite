@@ -1389,7 +1389,7 @@ const STORE_CAT=[
   ['session','Your sign-in','local']];
 function storeCat(k){const id=k.replace(/^bdl-sourcing-/,'').replace(/^sourcing-suite-/,'');const c=STORE_CAT.find(x=>x[0]===id);return c?{name:c[1],kind:c[2]}:{name:'View settings for this browser',kind:'local'};}
 function storeItems(){const by={};lsKeys().filter(k=>/^(bdl-sourcing|sourcing-suite)/.test(k)).forEach(k=>{const raw=lsRaw(k);if(raw==null)return;const c=storeCat(k);const id=c.name;
-    const x=by[id]||(by[id]={name:c.name,kind:c.kind,bytes:0,big:false,keys:[]});x.bytes+=(k.length+raw.length)*2;x.keys.push(k);if(isBig(k))x.big=true;});
+    const x=by[id]||(by[id]={name:c.name,kind:c.kind,bytes:0,big:false,keys:[]});x.bytes+=k.length+raw.length;x.keys.push(k);if(isBig(k))x.big=true;});
   return Object.values(by).sort((a,b)=>b.bytes-a.bytes);}
 async function storeClearCopies(btn){
   if(typeof guestOn==='function'&&guestOn()){toast('Guest mode — leave it first',true);return;}
@@ -1405,8 +1405,8 @@ async function storeClearCopies(btn){
 document.addEventListener('click',e=>{const b=e.target.closest('#storeClearCopies');if(b)storeClearCopies(b);});
 /* b179 (Jack, 27 Sep: "what apps are taking the most"). Every key in the pot belongs to some app; the first word or two of the key
    says which. Grouped and sorted, biggest first. */
-const LS_APP_NAMES={'bdl-sourcing':'Sourcing','sourcing-suite':'Sourcing','bdl-oa':'OA Overview','oa':'OA Overview','bdl-prephub':'PrepHub','prephub':'PrepHub','prep':'PrepHub','a2a':'A2A / OA dashboard','ub':'UB Bundle Tracker','bdl-pl':'PL Sourcing','pl':'PL Sourcing','spend':'spend.dash','sellerfuse':'SellerFuse','removals':'Removals','bdl-hq':'Business HQ','hq':'Business HQ','shifttrack':'ShiftTrack / AVM HQ','avm':'AVM HQ','shift':'ShiftTrack / AVM HQ','keepa':'Keepa alerts','loan':'Loan Tracker','shipment':'Shipment Deck','webapp':'Web App Tracker','woj':'World of Jack'};
-function lsByApp(){const by={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);const n=(k.length+(localStorage.getItem(k)||'').length)*2;
+const LS_APP_NAMES={'st':'AVM HQ (ShiftTrack)','bdl-decisions':'AVM HQ (ShiftTrack)','bdl-saved':'AVM HQ (ShiftTrack)','bdl-reimb':'SellerFuse reimbursements','sd':'Spend / A2A dashboard','lv3':'PrepHub (Lavarion)','bdl-sourcing':'Sourcing','sourcing-suite':'Sourcing','bdl-oa':'OA Overview','oa':'OA Overview','bdl-prephub':'PrepHub','prephub':'PrepHub','prep':'PrepHub','a2a':'A2A / OA dashboard','ub':'UB Bundle Tracker','bdl-pl':'PL Sourcing','pl':'PL Sourcing','spend':'spend.dash','sellerfuse':'SellerFuse','removals':'Removals','bdl-hq':'Business HQ','hq':'Business HQ','shifttrack':'AVM HQ (ShiftTrack)','avm':'AVM HQ','shift':'AVM HQ (ShiftTrack)','keepa':'Keepa alerts','loan':'Loan Tracker','shipment':'Shipment Deck','webapp':'Web App Tracker','woj':'World of Jack'};
+function lsByApp(){const by={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);const n=k.length+(localStorage.getItem(k)||'').length;
     const m=/^([a-z0-9]+)(?:[-_:.]([a-z0-9]+))?/i.exec(k)||[];let id=(m[1]||k).toLowerCase();if(id==='bdl'&&m[2])id='bdl-'+m[2].toLowerCase();
     const name=LS_APP_NAMES[id]||(id.charAt(0).toUpperCase()+id.slice(1));by[name]=(by[name]||0)+n;}}catch(e){}
   return Object.entries(by).map(([name,bytes])=>({name,bytes})).sort((a,b)=>b.bytes-a.bytes);}
