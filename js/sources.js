@@ -239,7 +239,7 @@ function leadSave(key,map){const all=leadAll();const old=all[key]||{};all[key]=m
   const gone=Object.keys(old).filter(a=>!map[a]).map(a=>key+'|'+a);
   cloudQueue('src_leads','upsert',rows);cloudQueue('src_leads','delete',{col:'id',vals:gone});}
 function histForget(key){const all=leadAll();const old=all[key]||{};delete all[key];lsSet(LEAD_KEY,all);
-  cloudQueue('src_leads','delete',{col:'id',vals:Object.keys(old).map(a=>key+'|'+a)});try{localStorage.removeItem('bdl-sourcing-history');}catch(e){}}
+  cloudQueue('src_leads','delete',{col:'id',vals:Object.keys(old).map(a=>key+'|'+a)});lsRemove('bdl-sourcing-history');}
 
 /* ---- verdicts: who said what about an ASIN. The learning layer, test-mode edition. ---- */
 const VERD_KEY='bdl-sourcing-verdicts',ME_KEY='bdl-sourcing-me',REASONS_KEY='bdl-sourcing-reasons';

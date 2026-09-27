@@ -47,8 +47,10 @@ function whoPaint(){['#whoSel','#meIn'].forEach(id=>{const el=$(id);if(el&&el.va
     pill.hidden=false;pill.innerHTML=`<i></i>${escapeHtml(n)}`;pill.title=(authUser()||{}).email+' — click to sign out';}
   else{sel.hidden=false;if(pill)pill.hidden=true;}}
 /* the storefront audit is Jack's page — the tile is not there for anyone else */
+/* b176 (Jack, 27 Sep: "this is Jack only and so is Settings, Jack only"). Settings joins the audit: Suz and Mera see neither tile,
+   and if one of them is somehow on either page they are moved to Brands / Filters. */
 function paintJackOnly(){document.querySelectorAll('.jackonly').forEach(el=>{el.hidden=!isJack();});
-  if(!isJack()){const p=$('#page-audit');if(p&&p.classList.contains('active')){document.querySelector('.pagebtn[data-page="page-brands"]').click();}}}
+  if(!isJack()){if(['#page-audit','#page-settings'].some(id=>{const p=$(id);return p&&p.classList.contains('active');})){document.querySelector('.pagebtn[data-page="page-brands"]').click();}}}
 function whoSet(v){if(typeof lockOn==='function'&&lockOn()&&authedName()&&v!==authedName()&&!guestOn()){toast('You are signed in as '+authedName()+' — sign out first to be someone else',true);return;}
   lsSet(ME_KEY,v);whoPaint();paintJackOnly();if(typeof renderAudit==='function')renderAudit();renderList();if(result)renderTable();
   if(v&&pendingFiles){const f=pendingFiles;pendingFiles=null;whoGate(false);handleFiles(f);}   /* b131: the held export goes through */toast(v?'You are '+v+' — everything you mark carries your name':'No name set — nothing can be marked until you pick one',!v);}
@@ -453,8 +455,8 @@ function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='func
       <input type="email" class="temail" data-team="${escapeHtml(t.name)}" value="${escapeHtml(t.email||'')}" placeholder="${escapeHtml(t.name.toLowerCase())}@…" autocomplete="off" spellcheck="false">
       ${t.name==='Jack'?`<span class="tpw" title="You sign in with your email and password">Password login</span>`
         :`<span class="tbtns"><button type="button" class="btn solid sm" data-tcopy="${escapeHtml(t.name)}" ${t.email&&u?'':'disabled'} title="${!t.email?'Type their email first':!u?'Sign yourself in first (above)':'Make a one-time sign-in link and copy it — paste it to them in Discord'}">Copy link</button>${t.email&&!authNoInbox(t.email)?`<button type="button" class="btn ghost sm" data-tsend="${escapeHtml(t.name)}" title="Email the link to ${escapeHtml(t.email)} instead">Email it</button>`:''}</span>`}
-      <span class="tstat ${s_?'in':''}">${s_?`<b>Signed in ${when(s_.at)}</b>${s_.dev||s_.ip||s_.seenAt?`<em>${[s_.dev,s_.ip?'IP '+escapeHtml(s_.ip):'',s_.seenAt?'seen '+seenWhen(s_.seenAt):''].filter(Boolean).join(' · ')}</em>`:''}`:'Not signed in yet'}</span></div>`;}).join('')}
-    ${team.some(t=>si[t.name]&&!si[t.name].ip)?`<div class="tipnote">An IP shows once that person opens the app after the updated link-maker is in Supabase — <code>2026-09-27-SUPABASE-FUNCTION-sourcing-link-UPDATE-PASTE-THIS.ts</code> (Downloads): Edge Functions → sourcing-link → Code → paste over index.ts → Deploy updates.</div>`:''}
+      <span class="tstat ${s_?'in':''}">${s_?`<i class="tdot"></i><b>Signed in ${when(s_.at)}</b>${[s_.dev,s_.ip?'IP '+escapeHtml(s_.ip):'',s_.seenAt?'seen '+seenWhen(s_.seenAt):''].filter(Boolean).map(x=>`<em>${x}</em>`).join('')}`:'<i class="tdot off"></i>Not signed in yet — Copy link and send it to them'}</span></div>`;}).join('')}
+    ${(()=>{const w=team.filter(t=>si[t.name]&&!si[t.name].ip).map(t=>t.name);return w.length?`<div class="tipnote">${w.join(' and ')} signed in before this version — ${w.length===1?'their':'their'} device and IP show the next time ${w.length===1?'they open':'they open'} the app (or press Cmd+R).</div>`:'';})()}
     <div class="wgmsg" id="tMsg"></div></div>`;
   /* b175: sign-in is always required on the live app — the switch is gone, this just says so */
   const lockHtml=!jack?'':`<div class="lockbox on"><div class="lkh"><b>Sign-in required for everyone</b><span class="lkalways">Always on</span></div>
@@ -1353,8 +1355,61 @@ function renderSettings(){whoPaint();paintFx();
   const w=vat0Words();if(document.activeElement!==$('#vatZero'))$('#vatZero').value=w.zero.join(', ');if(document.activeElement!==$('#vatNot'))$('#vatNot').value=w.not.join(', ');
   if(document.activeElement!==$('#catWords'))$('#catWords').value=catWords().join(', ');
   paintCloud();
-  const sz=Object.keys(localStorage).filter(k=>k.startsWith('bdl-sourcing')).reduce((s,k)=>s+(localStorage.getItem(k)||'').length,0);
-  $('#dataInfo').textContent=`${srcAll().length} sources · ${runsAll().length} runs · ${Object.keys(verdAll()).length} verdicts · ${Object.keys(blAll()).length} blacklisted · ${(sz/1024).toFixed(0)} KB in this browser`;}
+  const u=lsUsage();
+  $('#dataInfo').textContent=`${srcAll().length} sources · ${runsAll().length} runs · ${Object.keys(verdAll()).length} verdicts · ${Object.keys(blAll()).length} blacklisted · ${(u.ours/1024).toFixed(0)} KB small store + ${(u.big/1048576).toFixed(1)} MB big store in this browser`;
+  paintStoreMeter();}
+/* b178: the meter. The small store is the shared 5 MB pot; the big store is where the heavy things went. */
+function paintStoreMeter(){const el=$('#storeMeter');if(!el||typeof lsUsage!=='function')return;const u=lsUsage();
+  const mb=n=>(n/1048576).toFixed(2)+' MB';const pct=n=>Math.min(100,Math.round(n/u.cap*1000)/10);const full=u.all>u.cap*0.8;
+  el.innerHTML=`<div class="smh"><b>This browser's small store</b><span>${mb(u.all)} of about 5 MB — one pot shared by every app on ${escapeHtml(location.hostname)}</span></div>
+    <div class="smbar ${full?'warn':''}"><i class="ours" style="width:${pct(u.ours)}%" title="Sourcing"></i><i class="theirs" style="width:${pct(u.others)}%" title="Your other apps"></i></div>
+    <div class="smleg"><span><i class="ours"></i>Sourcing ${mb(u.ours)}</span><span><i class="theirs"></i>Your other apps here ${mb(u.others)}</span><span class="big">Pictures, prices, lead history, runs: <b>${mb(u.big)}</b> in the big store, which has no 5 MB limit</span></div>
+    ${full?'<div class="smwarn">Nearly full. If a save ever fails a red bar says so and Sourcing keeps working from memory — but another app on this address is using most of the pot.</div>':''}
+    ${(()=>{const apps=lsByApp();return apps.length>1?`<div class="smapps"><b>Who is using the pot</b>${apps.slice(0,8).map(a=>`<div class="smapp"><span class="nm">${escapeHtml(a.name)}</span><i style="width:${Math.max(1,Math.round(a.bytes/u.cap*100))}%"></i><span class="sz">${mb(a.bytes)}</span></div>`).join('')}</div>`:'';})()}
+    ${(()=>{const it=storeItems();const tot=it.reduce((a,x)=>a+x.bytes,0);const copy=it.filter(x=>x.kind==='copy').reduce((a,x)=>a+x.bytes,0);
+      return`<div class="smitems"><b>What Sourcing keeps in this browser</b><span class="smsum">${mb(tot)} in all · <em class="k-copy">${Math.round(copy/Math.max(1,tot)*100)}% is a copy of Supabase</em></span>
+        ${it.map(x=>`<div class="smitem"><span class="nm">${escapeHtml(x.name)}</span><span class="kind k-${x.kind}">${STORE_KIND[x.kind]}</span><span class="where">${x.big?'big store':'small pot'}</span><span class="sz">${mb(x.bytes)}</span></div>`).join('')}
+        <div class="smclear"><button type="button" class="btn ghost sm" id="storeClearCopies">Clear the Supabase copies and reload them</button><span>Throws away every <b>copy of Supabase</b> in this browser and brings it back fresh. Keepa results, your settings and anything still waiting to send are kept.</span></div></div>`;})()}`;}
+/* b180 (Jack, 27 Sep: "can you figure out what is storing the most in MB — most things should be Supabase for this app").
+   Every item Sourcing keeps in this browser, in plain words, biggest first, with what it is:
+     copy  — a copy of what is in Supabase, kept so the app opens instantly; safe to throw away, it comes back on the next load
+     keepa — Keepa results cached for a few hours; not in Supabase, costs tokens to fetch again
+     queue — changes waiting to go to Supabase; never thrown away
+     local — this browser's own settings (who you are, your sign-in, what view you left open) */
+const STORE_KIND={copy:'copy of Supabase',keepa:'Keepa results',queue:'waiting to send',local:'this browser only'};
+const STORE_CAT=[
+  ['audit-prod','Audit product details (pictures, prices)','copy'],['leadstate','Lead history','copy'],['runs','Run results','copy'],
+  ['audit-v','Audit answers','copy'],['sources','Brands & filters','copy'],['verdicts','Yes / No on leads','copy'],['kc','Keepa console Lead / Not a lead','copy'],
+  ['audit-shelves','Pasted and pulled audit lists','copy'],['history','Old lead history (from before 13 Sep)','copy'],
+  ['facts','Rules, lists and team settings','copy'],['blacklist','Rules, lists and team settings','copy'],['brandbl','Rules, lists and team settings','copy'],['discounts','Rules, lists and team settings','copy'],
+  ['catblock','Rules, lists and team settings','copy'],['vat0','Rules, lists and team settings','copy'],['reasons','Rules, lists and team settings','copy'],['team','Rules, lists and team settings','copy'],
+  ['signins','Rules, lists and team settings','copy'],['lock','Rules, lists and team settings','copy'],['audit-mine','Rules, lists and team settings','copy'],['audit-archived','Rules, lists and team settings','copy'],['audit-jointdays','Rules, lists and team settings','copy'],
+  ['api-rows','Keepa API results (kept 24 hours)','keepa'],['eu-price','EU prices from Keepa (kept 12 hours)','keepa'],['option-sales','Keepa sales lookups (kept 7 days)','keepa'],['api-looks','Keepa sales lookups (kept 7 days)','keepa'],
+  ['outbox','Changes waiting to send','queue'],['audit-out','Changes waiting to send','queue'],
+  ['session','Your sign-in','local']];
+function storeCat(k){const id=k.replace(/^bdl-sourcing-/,'').replace(/^sourcing-suite-/,'');const c=STORE_CAT.find(x=>x[0]===id);return c?{name:c[1],kind:c[2]}:{name:'View settings for this browser',kind:'local'};}
+function storeItems(){const by={};lsKeys().filter(k=>/^(bdl-sourcing|sourcing-suite)/.test(k)).forEach(k=>{const raw=lsRaw(k);if(raw==null)return;const c=storeCat(k);const id=c.name;
+    const x=by[id]||(by[id]={name:c.name,kind:c.kind,bytes:0,big:false,keys:[]});x.bytes+=(k.length+raw.length)*2;x.keys.push(k);if(isBig(k))x.big=true;});
+  return Object.values(by).sort((a,b)=>b.bytes-a.bytes);}
+async function storeClearCopies(btn){
+  if(typeof guestOn==='function'&&guestOn()){toast('Guest mode — leave it first',true);return;}
+  if(!cloudEnabled()){toast('The shared database is off in this browser, so there is nothing to reload the copies from',true);return;}
+  const left=outbox().length+(typeof audOut==='function'?audOut().length:0);
+  if(left){toast(left+' change'+(left===1?' is':'s are')+' still waiting to send — try again in a moment',true);return;}
+  btn.disabled=true;btn.textContent='Checking Supabase…';
+  try{await cloudGetAll('src_sources','select=key&limit=1');}catch(e){btn.disabled=false;btn.textContent='Clear the Supabase copies and reload them';toast('Supabase is not answering — nothing cleared',true);return;}
+  const it=storeItems().filter(x=>x.kind==='copy');const n=it.reduce((a,x)=>a+x.bytes,0);
+  if(!confirm(`Throw away ${(n/1048576).toFixed(2)} MB of copies and reload them from Supabase?\n\nNothing is lost — it all comes straight back. Keepa results, your settings and your sign-in stay.`)){btn.disabled=false;btn.textContent='Clear the Supabase copies and reload them';return;}
+  it.forEach(x=>x.keys.forEach(k=>lsRemove(k)));if(typeof audState!=='undefined')audState.prod={};
+  btn.textContent='Reloading…';setTimeout(()=>location.reload(),700);}
+document.addEventListener('click',e=>{const b=e.target.closest('#storeClearCopies');if(b)storeClearCopies(b);});
+/* b179 (Jack, 27 Sep: "what apps are taking the most"). Every key in the pot belongs to some app; the first word or two of the key
+   says which. Grouped and sorted, biggest first. */
+const LS_APP_NAMES={'bdl-sourcing':'Sourcing','sourcing-suite':'Sourcing','bdl-oa':'OA Overview','oa':'OA Overview','bdl-prephub':'PrepHub','prephub':'PrepHub','prep':'PrepHub','a2a':'A2A / OA dashboard','ub':'UB Bundle Tracker','bdl-pl':'PL Sourcing','pl':'PL Sourcing','spend':'spend.dash','sellerfuse':'SellerFuse','removals':'Removals','bdl-hq':'Business HQ','hq':'Business HQ','shifttrack':'ShiftTrack / AVM HQ','avm':'AVM HQ','shift':'ShiftTrack / AVM HQ','keepa':'Keepa alerts','loan':'Loan Tracker','shipment':'Shipment Deck','webapp':'Web App Tracker','woj':'World of Jack'};
+function lsByApp(){const by={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);const n=(k.length+(localStorage.getItem(k)||'').length)*2;
+    const m=/^([a-z0-9]+)(?:[-_:.]([a-z0-9]+))?/i.exec(k)||[];let id=(m[1]||k).toLowerCase();if(id==='bdl'&&m[2])id='bdl-'+m[2].toLowerCase();
+    const name=LS_APP_NAMES[id]||(id.charAt(0).toUpperCase()+id.slice(1));by[name]=(by[name]||0)+n;}}catch(e){}
+  return Object.entries(by).map(([name,bytes])=>({name,bytes})).sort((a,b)=>b.bytes-a.bytes);}
 function renderBlacklists(){const B=Object.entries(blAll()).sort((a,b)=>(b[1].at||'').localeCompare(a[1].at||''));
   $('#blTbl').innerHTML=`<thead><tr><th>ASIN</th><th>Product</th><th>Reason</th><th>Who</th><th>When</th><th></th></tr></thead><tbody>`+(B.length?B.map(([a,b])=>`<tr><td class="num"><a href="https://keepa.com/#!product/2-${a}" target="_blank" rel="noopener">${a}</a></td><td class="dnote" title="${escapeHtml(b.title||'')}">${escapeHtml(b.title||'')}</td><td><b>${escapeHtml(b.reason)}</b>${b.note?`<span class="sub">${escapeHtml(b.note)}</span>`:''}</td><td>${escapeHtml(b.who||'')}</td><td class="num">${b.at?fmtWhen(b.at):''}</td><td><button class="btn ghost xs" data-blx="${a}" title="Remove from the blacklist">×</button></td></tr>`).join(''):'<tr><td colspan="6" style="color:var(--faint);text-align:center;padding:14px">Empty. The ⃠ button on a lead adds to it.</td></tr>')+'</tbody>';
   const BB=Object.entries(bbAll()).sort((a,b)=>(a[1].status==='pending'?0:1)-(b[1].status==='pending'?0:1)||(b[1].at||'').localeCompare(a[1].at||''));
@@ -1389,9 +1444,9 @@ function settingsInit(){
   $('#vatReset').addEventListener('click',()=>{vat0Save({zero:R4.ZERO.slice(),not:R4.NOT.slice()});renderSettings();toast('Rule 3 words reset');if(result)run();});
   $('#cloudPullBtn').addEventListener('click',async()=>{if(!cloudEnabled()){toast('Cloud is off in the sandbox',true);return;}toast('Refreshing…');const ok=await cloudPull();onCloudPulled(ok);toast(ok?'Up to date with the shared project':'Could not refresh — '+cloud.err,!ok);});
   $('#cloudSendBtn').addEventListener('click',()=>{if(!outbox().length){toast('Nothing queued');return;}cloudFlush();toast('Sending '+outbox().length+'…');});
-  $('#dataExport').addEventListener('click',()=>{const o={};Object.keys(localStorage).filter(k=>k.startsWith('bdl-sourcing')).forEach(k=>o[k]=localStorage.getItem(k));download(today()+'-BDL-SOURCING-BACKUP.json',JSON.stringify(o),'application/json');});
-  $('#dataImport').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await readFileText(f));if(!confirm('Replace this browser\'s sourcing data with the backup ('+Object.keys(o).length+' keys)? The shared copy is not touched until you change something.'))return;Object.entries(o).forEach(([k,v])=>{if(k.startsWith('bdl-sourcing'))localStorage.setItem(k,v);});toast('Imported — reloading');setTimeout(()=>location.reload(),600);}catch(err){toast('Not a backup file',true);}e.target.value='';});
-  $('#dataReset').addEventListener('click',()=>{if(!confirm('Reset the brand list to the seed? Runs, history and verdicts are kept.'))return;localStorage.removeItem(SRC_KEY);const v=srcAll();cloudQueue('src_sources','upsert',v.map(srcRow));renderSettings();renderList();toast('Brand list reset');});}
+  $('#dataExport').addEventListener('click',()=>{const o={};lsKeys().filter(k=>k.startsWith('bdl-sourcing')).forEach(k=>{const v=lsRaw(k);if(v!=null)o[k]=v;});download(today()+'-BDL-SOURCING-BACKUP.json',JSON.stringify(o),'application/json');});   /* b178: both stores */
+  $('#dataImport').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await readFileText(f));if(!confirm('Replace this browser\'s sourcing data with the backup ('+Object.keys(o).length+' keys)? The shared copy is not touched until you change something.'))return;Object.entries(o).forEach(([k,v])=>{if(k.startsWith('bdl-sourcing'))lsRawSet(k,v);});toast('Imported — reloading');setTimeout(()=>location.reload(),900);}catch(err){toast('Not a backup file',true);}e.target.value='';});
+  $('#dataReset').addEventListener('click',()=>{if(!confirm('Reset the brand list to the seed? Runs, history and verdicts are kept.'))return;lsRemove(SRC_KEY);const v=srcAll();cloudQueue('src_sources','upsert',v.map(srcRow));renderSettings();renderList();toast('Brand list reset');});}
 
 /* after the shared copy lands: repaint everything from it */
 function onCloudPulled(ok){whoPaint();renderList();renderLog();renderSettings();

@@ -128,5 +128,5 @@ document.addEventListener('keydown',e=>{if(!$('#filter')||!$('#filter').classLis
   const k=e.key.toLowerCase();if((k==='y'||k==='n')&&kcHover){if(!needMe(null))return;e.preventDefault();kcJudge(kcHover,k==='y'?'lead':'not');}});
 /* pull the day rows when the page opens, and again whenever someone opens the Keepa console (at most once a minute) */
 let kcPulledAt=0;function kcMaybePull(){if(Date.now()-kcPulledAt<60000)return;kcPulledAt=Date.now();kcPull();}
-document.addEventListener('DOMContentLoaded',()=>{kcPaintTeam();setTimeout(kcMaybePull,2500);
+document.addEventListener('DOMContentLoaded',()=>{kcPaintTeam();bigOnReady(kcPaintTeam);setTimeout(kcMaybePull,2500);
   const pb=document.querySelector('.pagebtn[data-page="page-keepa"]');if(pb)pb.addEventListener('click',()=>{kcPaintTeam();kcMaybePull();});});

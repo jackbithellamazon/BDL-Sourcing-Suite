@@ -1,13 +1,15 @@
 /* BDL Sourcing — boot. Bump BUILD every ship. */
-const BUILD={version:'1.2',date:'2026-09-27',n:175};
+const BUILD={version:'1.2',date:'2026-09-27',n:180};
 const THEME_KEY='sourcing-suite-theme';
 function setTheme(theme){const mode=theme==='dark'?'dark':'light';document.documentElement.dataset.theme=mode;
   $('#themeLabel').textContent=mode==='dark'?'Dark':'Light';
   $('#themeToggle').setAttribute('aria-pressed',mode==='dark'?'true':'false');
   $('#themeToggle').setAttribute('aria-label',mode==='dark'?'Switch to light mode':'Switch to dark mode');
   try{localStorage.setItem(THEME_KEY,mode);}catch(e){}}
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
   $('#buildTag').textContent=`v${BUILD.version} · ${BUILD.date} · b${BUILD.n}`;
+  try{await bigLoad();}catch(e){}   /* b178: the caches and history come from the browser's big store before anything is drawn */
+  if(typeof audState!=='undefined')audState.prod=lsGet(AUD_PROD,{})||{};   /* audit.js read this at parse time, before the big store was in */
   if(typeof authBoot==='function')authBoot().catch(()=>{});   /* b126: take a sign-in link if one just arrived, keep the session fresh */
   setTheme(document.documentElement.dataset.theme);
   $('#themeToggle').addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));

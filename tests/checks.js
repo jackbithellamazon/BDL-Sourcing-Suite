@@ -244,8 +244,8 @@ window.SourcingChecks=(function(){
          eupCents({stats:{current:[-1,1999,-1]}}),
          eupCents(null)],[null,null,null]);
       ok('EU prices · the cost is ASINs x markets, and a cached one is free',(()=>{
-        const key=EUP_KEY,keep=localStorage.getItem(key);
-        localStorage.removeItem(key);
+        const key=EUP_KEY,keep=lsRaw(key);
+        lsRemove(key);
         const asins=['B0TEST00013','B0TEST00014'],mk=['DE','FR','IT','ES'];
         const before=eupCost(asins,mk);
         const c={};c['DE|B0TEST00013']={at:Date.now(),row:null};
@@ -253,7 +253,7 @@ window.SourcingChecks=(function(){
         c['FR|B0TEST00013']={at:Date.now()-13*3600e3,row:null};
         lsSet(key,c);
         const after=eupCost(asins,mk);
-        if(keep==null)localStorage.removeItem(key);else localStorage.setItem(key,keep);
+        if(keep==null)lsRemove(key);else lsRawSet(key,keep);
         return [before,after];
       })(),[8,7]);
       ok('EU prices · the list has a home to be dropped into',(()=>{const s=SRC_SEED.find(z=>z.key==='eu-alert-list');
@@ -444,7 +444,7 @@ window.SourcingChecks=(function(){
         lsSet(key,[{code:'discord',label:'Discord',short:'Discord',hex:'#8C95FF',icon:'msg'},
                    {code:'not',label:'Not lead',short:'Not lead',hex:'#FF5C6C',icon:'x'}]);
         const t=audTypes();const d=t.find(x=>x.code==='discord');
-        if(keep==null)localStorage.removeItem(key);else localStorage.setItem(key,keep);
+        if(keep==null)lsRemove(key);else lsRawSet(key,keep);
         return [t.slice(0,2).map(x=>x.code).join(','),t.length===AUDIT_TYPES.length,(d.reasons||[]).join('/'),d.prompt,d.hex];
       })(),['discord,not',true,'PS/THC/FFB','Which Discord?','#A78BFA']);   /* b175: the colour comes from the code, not the saved list */   /* b161: the saved two keep their order, and every answer in the code still appears after them */
       ok('Audit · with nothing saved it is simply the answers in the code',(()=>{
@@ -844,19 +844,19 @@ window.SourcingChecks=(function(){
       ok('Leads · a lead you answer in this sitting keeps its place (b144 sent it to page 2, out from under the mouse)',/verdGet\(o\.ASIN\)&&!touched\.has\(o\.ASIN\)/.test(String(visible)),true);
       ok('Leads · a No waiting for its reason shows the reasons in place of the note and name, so the row does not grow',[/const waiting=v\.v==='No'&&!v\.reason/.test(String(verdCell)),/&&!waiting\?`<input class="vnote"/.test(String(verdCell))],[true,true]);
       /* b154 (Jack, 25 Sep: "improve font and UI UX design of due now and overdue"; "a way to do it on keepa console — for them to have the lead and not leads") */
-      {const runsWas=localStorage.getItem(RUN_KEY);
+      {const runsWas=lsRaw(RUN_KEY);
         try{const at=n=>{const d=new Date();d.setDate(d.getDate()-n);d.setHours(9,40,0,0);return d.toISOString();};
           lsSet(RUN_KEY,[{source:'zz-late',at:at(10),day:at(10).slice(0,10),asins:[]},{source:'zz-today',at:at(1),day:at(1).slice(0,10),asins:[]}]);
           const L=dueState({key:'zz-late',cadence:'daily',status:'active'}),T=dueState({key:'zz-today',cadence:'daily',status:'active'}),F=dueState({key:'zz-never',cadence:'daily',status:'active'});
           ok('Due · plain words — "9 days late", "Due today", "First run" — and the latest sort first',[L.label,L.kind,L.rank,T.label,T.kind,F.label,F.kind,L.rank<T.rank&&T.rank<F.rank],['9 days late','late',-9,'Due today','today','First run','first',true]);
-        }finally{runsWas==null?localStorage.removeItem(RUN_KEY):localStorage.setItem(RUN_KEY,runsWas);}}
+        }finally{runsWas==null?lsRemove(RUN_KEY):lsRawSet(RUN_KEY,runsWas);}}
       {const tb=document.createElement('table');tb.className='btbl';tb.style.cssText='position:absolute;left:-9999px';tb.innerHTML='<tbody><tr><td class="nextc"><span class="nx due late"><i></i>9 days late</span></td></tr></tbody>';document.body.appendChild(tb);
         const cs=getComputedStyle(tb.querySelector('.nx')),got=[cs.textTransform,/-apple-system|system-ui/.test(cs.fontFamily),getComputedStyle(tb.querySelector('.nx'),'::before').display];tb.remove();
         ok('Due · the pill is sentence case in the system font, one dot (the old amber ::before dot is off)',got,['none',true,'none']);}
       ok('Due · unassigned counts as Jack\'s on his screen, never a VA\'s',[ownsIt({owner:'—'},'Jack'),ownsIt({owner:''},'Jack'),ownsIt({owner:'—'},'Suz'),ownsIt({owner:'Suz'},'Suz'),ownsIt({owner:'VAs'},'Jack')],[true,true,false,true,false]);
       ok('KPIs · "Seen" stamps are not counted as judged',/x\.v!=='Seen'\)judged\+\+/.test(String(renderKpis)),true);
-      {const kcWas=localStorage.getItem(KC_KEY),vWas=localStorage.getItem(VERD_KEY),meWas=me();
-        try{localStorage.removeItem(KC_KEY);lsSet(ME_KEY,'Suz');
+      {const kcWas=lsRaw(KC_KEY),vWas=localStorage.getItem(VERD_KEY),meWas=me();
+        try{lsRemove(KC_KEY);lsSet(ME_KEY,'Suz');
           kcSet('B0CHECK001','lead',{src:'suz-deep-drops'});kcSet('B0CHECK002','not',{});kcReason('B0CHECK002','too slow');
           const ix=kcIndex('Suz');
           ok('Console · Lead / Not a lead saves under the person and the day, with the reason',[ix.B0CHECK001&&ix.B0CHECK001.v,ix.B0CHECK002&&ix.B0CHECK002.reason,Object.keys(kcAll()),kcCloudKey('Suz','2026-09-24')],['lead','too slow',['Suz|2026-09-24'],'kc:Suz:2026-09-24']);
@@ -866,7 +866,7 @@ window.SourcingChecks=(function(){
           kcIdx=kcIndex('Suz');kcJudge('B0CHECK003','not');const re=kcIndex('Suz').B0CHECK003;
           kcIdx=kcIndex('Suz');kcJudge('B0CHECK001','lead');
           ok('Console · an old call clicked again is re-confirmed today with its reason; today\'s call clicked again clears it',[re.day,re.reason,kcIndex('Suz').B0CHECK001||null],['2026-09-24','price wrong',null]);
-        }finally{clearTimeout(kcT);kcDirty.clear();kcPopClose();kcWas==null?localStorage.removeItem(KC_KEY):localStorage.setItem(KC_KEY,kcWas);vWas==null?localStorage.removeItem(VERD_KEY):localStorage.setItem(VERD_KEY,vWas);lsSet(ME_KEY,meWas);kcIdx=kcIndex(meWas);}}
+        }finally{clearTimeout(kcT);kcDirty.clear();kcPopClose();kcWas==null?lsRemove(KC_KEY):lsRawSet(KC_KEY,kcWas);vWas==null?localStorage.removeItem(VERD_KEY):localStorage.setItem(VERD_KEY,vWas);lsSet(ME_KEY,meWas);kcIdx=kcIndex(meWas);}}
       ok('Console · the boot pull leaves the day rows out (they come down on their own)',/key=not\.like\.kc:\*/.test(String(cloudPull)),true);
       {const cssTxt=await(await fetch('css/brands.css')).text();
         ok('Console · the reasons float over the list and the column has a fixed width, so a click never moves a row',[/\.kcpop\{position:fixed/.test(cssTxt),/#tableF td\.kcj,#tableF th\.kcj\{width:250px;min-width:250px/.test(cssTxt)],[true,true]);}
@@ -985,6 +985,26 @@ window.SourcingChecks=(function(){
       ok('Audit · no flicker on the rivals page: a placeholder until the shelves arrive, and the same page is never drawn twice (b174)',[/auSkeleton\(\)/.test(String(auRenderList)),/!audState\.shelfAt&&!audState\.shelfErr/.test(String(auRenderList)),/auView\._listHtml===h&&host\.querySelector\('\.card'\)\)return/.test(String(auRenderList)),/auView\._listHtml=null/.test(String(auRenderOne))],[true,true,true,true]);
       ok('Lock · always on for the live app (b175), open only in the localhost sandbox; the who-gate offers no "carry on" off the sandbox',[/return !lockSandbox\(\)/.test(String(lockOn)),/lockSandbox\(\)\?'':/.test(String(whoGate))],[true,true]);
       ok('Team · each sign-in records the device and, via the link-maker, the IP — only your own, refreshed at most every 6 hours (b175)',[/action:'whoami'/.test(String(signinSeen)),/6\*3600e3/.test(String(signinSeen)),/guestOn\(\)\)return/.test(String(signinSeen)),typeof authDevice()==='string'],[true,true,true,true]);
+      ok('Pages · Settings and Storefront audits are Jack-only, tagged "Only you", and a VA on either is moved to Brands (b176)',[!!document.querySelector('.pagebtn.jackonly[data-page="page-settings"]'),!!document.querySelector('.pagebtn.jackonly[data-page="page-audit"]'),document.querySelectorAll('.pagebtn .ponly').length,/#page-settings/.test(String(paintJackOnly))],[true,true,2,true]);
+      /* b177: a full browser storage can never swallow a click again */
+      {const realSet=Storage.prototype.setItem;const keep=localStorage.getItem('bdl-sourcing-option-sales');let shed=false,mem=false,read=null,bar=false;
+        try{let calls=0;Storage.prototype.setItem=function(k,v){if(k==='bdl-sourcing-b177-test'&&!shed){calls++;throw new DOMException('full','QuotaExceededError');}return realSet.call(this,k,v);};
+          localStorage.setItem('bdl-sourcing-option-sales','{}');
+          const r1=lsSet('bdl-sourcing-b177-test',{a:1});shed=localStorage.getItem('bdl-sourcing-option-sales')==null;
+          Storage.prototype.setItem=function(k,v){if(k==='bdl-sourcing-b177-test')throw new DOMException('full','QuotaExceededError');return realSet.call(this,k,v);};
+          const r2=lsSet('bdl-sourcing-b177-test',{a:2});mem=r2===false;read=lsGet('bdl-sourcing-b177-test',null);bar=!!document.getElementById('lsFullBar');
+        }finally{Storage.prototype.setItem=realSet;delete LS_MEM['bdl-sourcing-b177-test'];localStorage.removeItem('bdl-sourcing-b177-test');if(keep!=null)localStorage.setItem('bdl-sourcing-option-sales',keep);const b=document.getElementById('lsFullBar');if(b)b.remove();}
+        ok('Storage · a full small store clears a cache and tries again; still full = kept in memory, still readable, and a red bar says so (b177)',[shed,mem,read&&read.a,bar],[true,true,2,true]);}
+      /* b178: the heavy things live in the big store, never in the shared 5 MB pot */
+      {const was=lsRaw('bdl-sourcing-runs');let inPot=null,fromMem=null,round=null;
+        try{lsSet('bdl-sourcing-runs',[{source:'b178-test',at:'2026-09-27T00:00:00Z'}]);inPot=localStorage.getItem('bdl-sourcing-runs');fromMem=runsAll().length===1&&runsAll()[0].source==='b178-test';
+          await new Promise(r=>setTimeout(r,400));const [ks,vs]=await bigIdb('readonly',st=>[st.getAllKeys(),st.getAll()]);round=vs[ks.indexOf('bdl-sourcing-runs')]===JSON.stringify([{source:'b178-test',at:'2026-09-27T00:00:00Z'}]);
+        }finally{was==null?lsRemove('bdl-sourcing-runs'):lsRawSet('bdl-sourcing-runs',was);}
+        ok('Storage · runs, lead history, product and Keepa caches live in the big store (IndexedDB), not the shared 5 MB pot (b178)',[BIG_KEYS.length,inPot,fromMem,round,BIG_READY],[7,null,true,true,true]);}
+      ok('Storage · the meter names which app is using the pot, biggest first (b179)',(()=>{try{localStorage.setItem('zz-otherapp-x','y'.repeat(3000));const a=lsByApp();return[a.some(x=>x.name==='Zz'&&x.bytes>=6000),a.length>=2&&a[0].bytes>=a[1].bytes,(lsByApp().find(x=>x.name==='Sourcing')||{}).bytes>0];}finally{localStorage.removeItem('zz-otherapp-x');}})(),[true,true,true]);
+      ok('Storage · every item Sourcing keeps is named and sorted by size; runs, leads and audit details are copies of Supabase, the outbox is waiting to send, Keepa rows are Keepa (b180)',[storeCat('bdl-sourcing-runs').kind,storeCat('bdl-sourcing-leadstate').kind,storeCat('bdl-sourcing-audit-prod').kind,storeCat('bdl-sourcing-outbox').kind,storeCat('bdl-sourcing-api-rows').kind,storeCat('bdl-sourcing-me').kind,(()=>{const i=storeItems();return i.every((x,n)=>!n||i[n-1].bytes>=x.bytes);})()],['copy','copy','copy','queue','keepa','local',true]);
+      ok('Storage · "clear the copies" never touches the queue, Keepa results or settings, and refuses while changes wait or in guest mode',[/outbox\(\)\.length\+/.test(String(storeClearCopies)),/guestOn\(\)/.test(String(storeClearCopies)),/x\.kind==='copy'/.test(String(storeClearCopies)),/cloudGetAll\('src_sources'/.test(String(storeClearCopies))],[true,true,true,true]);
+      ok('Storage · the meter in Settings shows the small store against 5 MB, Sourcing vs other apps, and the big store',[/of about 5 MB/.test(String(paintStoreMeter)),/big store/.test(String(paintStoreMeter)),!!document.getElementById('storeMeter')],[true,true,true]);
       ok('Audit · a redraw scrolls only for a key pressed in the last 400ms or the moment a shelf opens',[/auKeyed\(\)\|\|auView\.opened/.test(String(auRenderOne)),/Date\.now\(\)-auView\.keyAt<400/.test(String(auKeyed)),/AU_ANCHOR\.want/.test(String(auRenderOne))],[true,true,false]);
       ok('Audit · the storefront strip is one line with the paste box folded away (b166), and the answer tabs carry their key numbers',[/class="aumine2/.test(String(auRenderList)),/<details class="ampaste"/.test(String(auRenderList)),/<textarea class="txt" id="auMineIn"/.test(String(auRenderList)),/k\?`<kbd>\$\{k\}<\/kbd>`/.test(String(auRenderOne))],[true,true,true,true]);
       ok('Audit · the next product\'s graph is fetched while you look at this one (once, never twice)',[/auPrefetchGraph\(next\)/.test(String(auLoadGraph)),/AU_GRAPH\.cache\[asin\]!==undefined\|\|AU_GRAPH\.pending\[asin\]/.test(String(auPrefetchGraph))],[true,true]);

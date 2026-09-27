@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b175">
-<link rel="stylesheet" href="css/brands.css?v=b175">
+<link rel="stylesheet" href="css/base.css?v=b180">
+<link rel="stylesheet" href="css/brands.css?v=b180">
 </head>
 <body>
 <div class="wrap">
@@ -51,12 +51,12 @@
     </button>
     <button class="pagebtn jackonly" data-page="page-audit" hidden>
       <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-7h6v7"/></svg></span>
-      <span class="ptxt"><span class="pt">Storefront audits</span><span class="ps">Go down a rival's shelf · one answer each</span></span>
+      <span class="ptxt"><span class="pt">Storefront audits <i class="ponly" title="Suz and Mera do not see this page">Only you</i></span><span class="ps">Go down a rival's shelf · one answer each</span></span>
       <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
     </button>
-    <button class="pagebtn" data-page="page-settings">
+    <button class="pagebtn jackonly" data-page="page-settings" hidden>
       <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
-      <span class="ptxt"><span class="pt">Settings</span><span class="ps">Who you are · rates · what the rules know</span></span>
+      <span class="ptxt"><span class="pt">Settings <i class="ponly" title="Suz and Mera do not see this page">Only you</i></span><span class="ps">Who you are · rates · what the rules know</span></span>
       <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
     </button>
   </nav>
@@ -449,6 +449,7 @@
           <div class="authbox" id="authBox"></div></div>
         <div class="sbox"><h3>Shared storage <span class="scope shared">shared</span></h3><p class="ssub" id="cloudInfo">…</p>
           <div class="row"><button class="btn solid sm" id="cloudPullBtn" type="button">Refresh from shared</button><button class="btn ghost sm" id="cloudSendBtn" type="button">Send queued changes</button></div>
+          <div class="storemeter" id="storeMeter"></div>
           <p class="hint">Every click saves in this browser first, then goes to the shared database. Lose the connection and it queues, then sends itself. Nothing is lost on a refresh.</p></div>
         <!-- b155: guest mode — run and check everything with nothing saved to Supabase -->
         <div class="sbox wide guestbox" id="guestBox"></div>
@@ -504,25 +505,25 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b175"></script>
-<script src="js/parse.js?v=b175"></script>
-<script src="js/rule1.js?v=b175"></script>
-<script src="js/rule2.js?v=b175"></script>
-<script src="js/export.js?v=b175"></script>
-<script src="js/rule4.js?v=b175"></script>
-<script src="js/queue.js?v=b175"></script>
-<script src="js/sources.js?v=b175"></script>
-<script src="js/cloud.js?v=b175"></script>
-<script src="js/auth.js?v=b175"></script>
-<script src="js/leadtools.js?v=b175"></script>
-<script src="js/keepaconsole.js?v=b175"></script>
-<script src="js/euprice.js?v=b175"></script>
-<script src="js/apirun.js?v=b175"></script>
-<script src="js/brands.js?v=b175"></script>
-<script src="js/history.js?v=b175"></script>
-<script src="js/audit.js?v=b175"></script>
-<script src="js/kcjudge.js?v=b175"></script>
-<script src="js/guest.js?v=b175"></script>
-<script src="js/boot.js?v=b175"></script>
+<script src="js/core.js?v=b180"></script>
+<script src="js/parse.js?v=b180"></script>
+<script src="js/rule1.js?v=b180"></script>
+<script src="js/rule2.js?v=b180"></script>
+<script src="js/export.js?v=b180"></script>
+<script src="js/rule4.js?v=b180"></script>
+<script src="js/queue.js?v=b180"></script>
+<script src="js/sources.js?v=b180"></script>
+<script src="js/cloud.js?v=b180"></script>
+<script src="js/auth.js?v=b180"></script>
+<script src="js/leadtools.js?v=b180"></script>
+<script src="js/keepaconsole.js?v=b180"></script>
+<script src="js/euprice.js?v=b180"></script>
+<script src="js/apirun.js?v=b180"></script>
+<script src="js/brands.js?v=b180"></script>
+<script src="js/history.js?v=b180"></script>
+<script src="js/audit.js?v=b180"></script>
+<script src="js/kcjudge.js?v=b180"></script>
+<script src="js/guest.js?v=b180"></script>
+<script src="js/boot.js?v=b180"></script>
 </body>
 </html>

@@ -2478,3 +2478,61 @@ html:not([data-theme="light"]) .authpill{color:#fff;background:var(--ink)}
 .teambox .tipnote code{font-size:11.5px}
 .lockbox .lkalways{margin-left:auto;padding:3px 10px;border-radius:8px;font:700 12px var(--sans);color:#6EF0BE;background:rgba(44,227,139,.12);border:1px solid rgba(44,227,139,.38)}
 .whogate .wgor em{font-style:normal;opacity:.8}
+
+/* ===== b176 · Jack-only tiles say so; the Team status is one clear line under each person ===== */
+.pagebtn .pt .ponly{font-style:normal;display:inline-block;margin-left:6px;vertical-align:2px;padding:1px 7px;border-radius:6px;font:700 10.5px var(--sans);letter-spacing:.02em;
+  color:#C4B5FF;background:rgba(140,149,255,.14);border:1px solid rgba(140,149,255,.35)}
+.teambox .trow{grid-template-columns:90px minmax(0,1fr) auto;row-gap:4px;padding:8px 0;border-bottom:1px solid var(--line)}
+.teambox .trow:last-of-type{border-bottom:none}
+.teambox .tstat{grid-column:2/-1;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:4px 8px;text-align:left;font-size:13px;color:#D2D8E4}
+.teambox .tstat.in b{color:#6EF0BE}
+.teambox .tstat em{font-style:normal;font-size:12.5px;color:#DCE1EB;padding:2px 8px;border-radius:7px;background:var(--ink);border:1px solid var(--line2)}
+.teambox .tstat .tdot{width:8px;height:8px;border-radius:50%;background:#2CE38B;flex:none}
+.teambox .tstat .tdot.off{background:#8B93A7}
+@media (max-width:720px){.teambox .tstat{grid-column:1/-1}}
+
+/* ===== b177 · a full browser storage says so ===== */
+.lsfullbar{position:sticky;top:0;z-index:90;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;font:500 13.5px var(--sans);color:#fff;
+  background:#B42335;border-bottom:1px solid #FF4D5E}
+.lsfullbar b{font-weight:800}
+.lsfullbar button{margin-left:auto;height:28px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,255,255,.6);background:transparent;color:#fff;font:700 12.5px var(--sans);cursor:pointer}
+
+/* ===== b178 · the storage meter in Settings ===== */
+.storemeter{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--ink);border:1px solid var(--line2)}
+.storemeter .smh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-size:13px;color:#D2D8E4;margin-bottom:8px}
+.storemeter .smh b{color:#fff;font-size:13.5px}
+.storemeter .smbar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:rgba(255,255,255,.08)}
+.storemeter .smbar i{display:block;height:100%}
+.storemeter .smbar .ours{background:var(--iris)}.storemeter .smbar .theirs{background:var(--amber)}
+.storemeter .smbar.warn .theirs{background:#FF4D5E}
+.storemeter .smleg{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:12.5px;color:#D2D8E4}
+.storemeter .smleg span{display:inline-flex;align-items:center;gap:6px}
+.storemeter .smleg i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.storemeter .smleg .ours{background:var(--iris)}.storemeter .smleg .theirs{background:var(--amber)}
+.storemeter .smleg .big b{color:#6EF0BE}
+.storemeter .smwarn{margin-top:8px;font-size:12.5px;color:#FFD08A}
+/* b179 · who is using the pot */
+.storemeter .smapps{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;color:#D2D8E4}
+.storemeter .smapps > b{display:block;color:#fff;margin-bottom:6px}
+.storemeter .smapp{display:grid;grid-template-columns:150px 1fr 70px;gap:10px;align-items:center;padding:3px 0}
+.storemeter .smapp i{display:block;height:8px;border-radius:5px;background:var(--amber);min-width:2px}
+.storemeter .smapp:first-of-type i{background:var(--iris)}
+.storemeter .smapp .sz{text-align:right;color:#fff;font-weight:600}
+/* b180 · what Sourcing keeps, item by item */
+.storemeter .smitems{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;color:#D2D8E4}
+.storemeter .smitems > b{color:#fff;margin-right:10px}
+.storemeter .smsum{color:#D2D8E4}
+.storemeter .smsum em{font-style:normal;font-weight:700}
+.storemeter .smitem{display:grid;grid-template-columns:minmax(0,1fr) 130px 80px 70px;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.storemeter .smitem:first-of-type{margin-top:8px}
+.storemeter .smitem .nm{color:#fff;font-weight:600}
+.storemeter .smitem .kind{justify-self:start;padding:1px 8px;border-radius:6px;font-weight:700;font-size:11.5px}
+.storemeter .k-copy{color:#6EF0BE}.storemeter .smitem .k-copy{background:rgba(44,227,139,.12);border:1px solid rgba(44,227,139,.35)}
+.storemeter .smitem .k-keepa{color:#B3CDFF;background:rgba(127,168,255,.13);border:1px solid rgba(127,168,255,.35)}
+.storemeter .smitem .k-queue{color:#FFD08A;background:rgba(255,178,36,.12);border:1px solid rgba(255,178,36,.38)}
+.storemeter .smitem .k-local{color:#DCE1EB;background:rgba(255,255,255,.06);border:1px solid var(--line2)}
+.storemeter .smitem .where{color:#C9D0DD}
+.storemeter .smitem .sz{text-align:right;color:#fff;font-weight:600}
+.storemeter .smclear{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.storemeter .smclear span{flex:1;min-width:240px;color:#D2D8E4}
+@media (max-width:720px){.storemeter .smitem{grid-template-columns:minmax(0,1fr) 70px}.storemeter .smitem .kind,.storemeter .smitem .where{display:none}}

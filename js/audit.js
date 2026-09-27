@@ -112,10 +112,10 @@ function audGet(asin){return audAll()[asin]||null;}
 function audOut(){return lsGet(AUD.OUT,[]);}
 function audQueue(op){if(typeof guestOn==='function'&&guestOn())return;   /* b155: guest mode queues nothing, so nothing can be sent later */
   const q=audOut();q.push(op);lsSet(AUD.OUT,q);audFlush();}
-const AUD_PROD='bdl-sourcing-audit-prod';
+const AUD_PROD='bdl-sourcing-audit-prod';   /* b178: read again in boot.js once the big store is in — this line runs before it is */
 const audState={tables:null,pulled:0,shelfAt:0,sellers:[],shelf:{},shared:{},mineNow:new Set(),mineEver:new Set(),mineLast:{},mineLatest:'',prod:lsGet(AUD_PROD,{})||{},checking:false};
 /* the picture cache also lives in this browser, capped, so a refresh never blanks the list */
-function audProdSaveLocal(){const e=Object.entries(audState.prod);const keep=e.length>4000?e.slice(e.length-4000):e;
+function audProdSaveLocal(){const e=Object.entries(audState.prod);const keep=e.length>1500?e.slice(e.length-1500):e;   /* b177: was 4000 — the product cache was the biggest thing in a shared 5 MB; Supabase holds them all anyway */
   lsSet(AUD_PROD,Object.fromEntries(keep));}
 function audShelvesLocal(){return lsGet(AUD.SHELF,{});}
 function audShelvesSave(v){lsSet(AUD.SHELF,v);}

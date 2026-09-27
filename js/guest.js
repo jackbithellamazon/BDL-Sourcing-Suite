@@ -9,7 +9,7 @@
    Kept across the snapshot on purpose: the sign-in session (Supabase rotates it — an old copy would sign Jack out), the
    Keepa caches (real data that cost real tokens), the £/€ rate, the theme and this browser's lock id. */
 const GUEST_SKIP=['bdl-sourcing-session','bdl-sourcing-api-rows','bdl-sourcing-eu-price','bdl-sourcing-fx','bdl-sourcing-lockid','sourcing-suite-theme',GUEST_KEY];
-function guestKeys(){return Object.keys(localStorage).filter(k=>(k.startsWith('bdl-sourcing')||k.startsWith('sourcing-suite'))&&!GUEST_SKIP.includes(k));}
+function guestKeys(){return lsKeys().filter(k=>(k.startsWith('bdl-sourcing')||k.startsWith('sourcing-suite'))&&!GUEST_SKIP.includes(k));}   /* b178: both stores */
 function guestIdb(mode,fn){return new Promise((res,rej)=>{let r;try{r=indexedDB.open('bdl-sourcing-guest',1);}catch(e){rej(e);return;}
   r.onupgradeneeded=()=>r.result.createObjectStore('snap');r.onerror=()=>rej(r.error);
   r.onsuccess=()=>{const db=r.result;let out;const tx=db.transaction('snap',mode);const q=fn(tx.objectStore('snap'));if(q)q.onsuccess=()=>{out=q.result;};
@@ -28,7 +28,7 @@ async function guestStart(btn){if(guestBusy||guestOn())return;if(!isJack()){toas
       const left=outbox().length+(typeof audOut==='function'?audOut().length:0);
       if(left){toast(left+' change'+(left===1?' is':'s are')+' still waiting to go to the shared database — guest mode starts once they have gone',true);return;}
       await cloudPull();if(typeof cloudPullLeadsAll==='function')await cloudPullLeadsAll();if(typeof kcPull==='function')await kcPull();}
-    const keys={};guestKeys().forEach(k=>{keys[k]=localStorage.getItem(k);});
+    const keys={};guestKeys().forEach(k=>{keys[k]=lsRaw(k);});
     await guestSnapPut({at:nowIso(),by:me(),keys});
     const back=await guestSnapGet();if(!back||!back.keys||Object.keys(back.keys).length!==Object.keys(keys).length)throw new Error('the snapshot did not save');
     lsSet(GUEST_KEY,{on:true,since:nowIso(),by:me()});
@@ -38,8 +38,9 @@ async function guestStart(btn){if(guestBusy||guestOn())return;if(!isJack()){toas
 async function guestLeave(){if(!guestOn())return;
   if(!confirm('Leave guest mode?\n\nEverything done in guest mode is thrown away — runs, Yes / No, audits, blacklists, edits — and this browser goes back to the real shared data. None of it was ever sent.'))return;
   let snap=null;try{snap=await guestSnapGet();}catch(e){}
-  guestKeys().forEach(k=>localStorage.removeItem(k));   /* both outboxes included: anything in them was made in guest mode */
-  if(snap&&snap.keys)Object.entries(snap.keys).forEach(([k,v])=>{try{localStorage.setItem(k,v);}catch(e){}});
+  guestKeys().forEach(k=>lsRemove(k));   /* both outboxes included: anything in them was made in guest mode */
+  if(snap&&snap.keys)Object.entries(snap.keys).forEach(([k,v])=>{try{if(v!=null)lsRawSet(k,v);}catch(e){}});
+  await new Promise(r=>setTimeout(r,400));   /* b178: let the big store finish writing before the reload */
   localStorage.removeItem(GUEST_KEY);try{await guestSnapDel();}catch(e){}
   location.reload();}   /* no snapshot (browser data cleared) = an empty browser, and the boot pull refills it from the shared data */
 

@@ -1,28 +1,22 @@
-BDL SOURCING — b175 · 27 Sep 2026
+BDL SOURCING — b180 · 27 Sep 2026  ← PUSH THIS ONE (it includes b176 → b179)
 
-(Live is b169. This folder has everything since: b170 → b175.)
+UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b180.
+   First load moves the heavy things out of the small store by itself — nothing to do.
 
-1. UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b175.
+THEN LOOK: Settings → Shared storage
+   · The bar: the small 5 MB pot, Sourcing vs your other apps.
+   · Who is using the pot: every app on jackbithellamazon.github.io, biggest first.
+   · What Sourcing keeps in this browser: every item, biggest first, marked
+       copy of Supabase  — safe to throw away, comes straight back
+       Keepa results     — cached a few hours, costs tokens to fetch again
+       waiting to send   — changes on their way to Supabase
+       this browser only — your sign-in and view settings
+     and the % of it all that is just a copy of Supabase.
+   · "Clear the Supabase copies and reload them" — proves it: throws the copies away and brings them back fresh.
 
-2. UPDATE THE LINK-MAKER (for the IP addresses — about a minute, no keys)
-   Supabase → Edge Functions → sourcing-link → Code tab → click in index.ts → Cmd+A → paste the whole of
-     ~/Downloads/2026-09-27-SUPABASE-FUNCTION-sourcing-link-UPDATE-PASTE-THIS.ts
-   → "Deploy updates". Copy link keeps working exactly as before.
+   Screenshot that section and send it — it tells us which OTHER apps are filling the pot.
 
 WHAT'S IN IT
-   · b175  Sign in or nothing: on the live app the sign-in screen is always on (the switch is gone) and there is no
-           "carry on without signing in". One "Sign in" button. Suz / Mera without a password are told to open your link.
-           Team shows where each person signed in from: device (Mac · Chrome), IP address and when they were last seen
-           (the IP appears once step 2 is done and they next open the app).
-           Missed it is one press (no "why missed?"). The seven answers are seven different colours:
-           Not lead red · Unsure yellow · Discord purple · WS cyan · Joint green · Missed it orange · Diff method blue.
-   · b174  No flicker on the rivals page; the add-a-shelf boxes styled like the rest.
-   · b173  No flash: the graph never goes blank; small loads are quiet; the tokens pill starts filled.
-   · b172  The BDL Sourcing logo is Home; a tidier header.
-   · b171  A refresh on a rival reopens it.
-   · b170  Link wording "within 24 hours".
-
-SIGN-IN, WHERE IT STANDS
-   · Jack and Mera signed in. Suz: her link works until 24 hours after you copied it — if it runs out, Copy link again.
-   · A new Copy link cancels the old one, so only press it if she needs a new one.
+   b180 the item-by-item list + clear button · b179 which apps use the pot · b178 heavy things in the big store
+   b177 a full store never fails silently (red bar) · b176 Settings is yours only; Team shows device · IP · seen
