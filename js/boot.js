@@ -1,5 +1,5 @@
 /* BDL Sourcing — boot. Bump BUILD every ship. */
-const BUILD={version:'1.2',date:'2026-09-27',n:181};
+const BUILD={version:'1.2',date:'2026-09-27',n:183};
 const THEME_KEY='sourcing-suite-theme';
 function setTheme(theme){const mode=theme==='dark'?'dark':'light';document.documentElement.dataset.theme=mode;
   $('#themeLabel').textContent=mode==='dark'?'Dark':'Light';
@@ -8,6 +8,8 @@ function setTheme(theme){const mode=theme==='dark'?'dark':'light';document.docum
   try{localStorage.setItem(THEME_KEY,mode);}catch(e){}}
 document.addEventListener('DOMContentLoaded',async()=>{
   $('#buildTag').textContent=`v${BUILD.version} · ${BUILD.date} · b${BUILD.n}`;
+  /* b182: a copy of the app opened from a file on this Mac (file://) is not the live app — say so before anything else */
+  if(location.protocol==='file:'){const b=document.createElement('div');b.className='lsfullbar';b.innerHTML='<b>This is a copy of the app from a file on this Mac, not the live app.</b> Nothing here is saved or shared. Open <a href="https://jackbithellamazon.github.io/BDL-Sourcing-Suite/" style="color:#fff;font-weight:800">jackbithellamazon.github.io/BDL-Sourcing-Suite</a> instead.';document.body.prepend(b);}
   try{await bigLoad();}catch(e){}   /* b178: the caches and history come from the browser's big store before anything is drawn */
   if(typeof audState!=='undefined')audState.prod=lsGet(AUD_PROD,{})||{};   /* audit.js read this at parse time, before the big store was in */
   if(typeof authBoot==='function')authBoot().catch(()=>{});   /* b126: take a sign-in link if one just arrived, keep the session fresh */

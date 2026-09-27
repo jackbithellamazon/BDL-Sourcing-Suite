@@ -9,6 +9,8 @@
 const VAT0_KEY='bdl-sourcing-vat0';
 const R4={
   STANDARD:0.20,
+  /* b183 (Jack, 27 Sep: "Durex — 5% VAT as it's condoms"). HMRC's reduced rate for contraceptives. A VA's own setting on the row still wins. */
+  REDUCED:0.05,REDUCED_WORDS:['condom','condoms','contraceptive','contraceptives','durex','skyn'],
   /* whole words — 'pods' alone would catch AirPods, so capsules/pods only count next to a coffee word */
   ZERO:['coffee','tea','teabags','teabag','espresso','matcha','earl grey','english breakfast','nespresso','dolce gusto','tassimo','decaf','ristretto','lungo','cocoa','hot chocolate','drinking chocolate'],
   /* the drink is zero-rated; anything made FROM it or NAMED after it is not: machines, syrups, perfumes, cosmetics, supplements */
@@ -34,6 +36,7 @@ function vatFor(row,fact){
   if(fact&&fact.vat!=null&&fact.vat!=='')return{rate:(+fact.vat)/100,why:(+fact.vat===0?'0%':fact.vat+'%')+' VAT set by '+(fact.who||'a VA'),src:'va'};
   const text=((row.Title||'')+' | '+(row['Categories: Root']||'')+' | '+(row['Categories: Sub']||'')+' | '+(row['Categories: Tree']||'')).toLowerCase();
   const w=vat0Words();
+  if(R4.REDUCED_WORDS.some(x=>new RegExp('(^|[^a-z])'+x+'([^a-z]|$)').test(text)))return{rate:R4.REDUCED,why:'5% VAT — contraceptives, HMRC reduced rate',src:'rule'};
   if(r4has(text,w.zero)&&r4isDrinkForm(text))return{rate:0,why:'0% VAT — tea / coffee, the product not the machine',src:'rule'};
   if(r4has(text,w.zero)&&!r4has(text,w.not))return{rate:0,why:'0% VAT assumed (tea / coffee) — confirm on the row',src:'rule'};
   return{rate:R4.STANDARD,why:'',src:'default'};}

@@ -2536,3 +2536,7 @@ html:not([data-theme="light"]) .authpill{color:#fff;background:var(--ink)}
 .storemeter .smclear{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
 .storemeter .smclear span{flex:1;min-width:240px;color:#D2D8E4}
 @media (max-width:720px){.storemeter .smitem{grid-template-columns:minmax(0,1fr) 70px}.storemeter .smitem .kind,.storemeter .smitem .where{display:none}}
+/* b182 */
+.ausync.guest{color:#FFD08A;border-color:rgba(255,178,36,.45);background:rgba(255,178,36,.1)}
+/* b183 */
+#keepaRow .apihint{color:#AEB6C6;font-size:12.5px;margin:0 4px}

@@ -42,6 +42,11 @@ const SRC_SEED=[
   {key:'asus',name:'ASUS',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'2 days',note:'major recurring brand',status:'active',link:LINKS.asus},
   {key:'bosch',name:'Bosch',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'3 days',note:'Bosch + Bosch Professional · Amazon down 10% · Buy Box £20+ · run with Tassimo',brands:['Bosch','Bosch Professional'],status:'active',link:LINKS.bosch},
   {key:'canon',name:'Canon',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'3 days',status:'active',note:'Amazon down 9% · every market · Jack, 20 Sep',brands:['Canon']},   /* b124 */
+  /* b183 (Jack, 27 Sep: "want a Brita adding for Suz — weekly — all EU and UK"; "Durex — 5% VAT as it's condoms — UK only — will have
+     Sub & Save and business discount — every 3 days for Suz"). Durex runs Rule 2, because Rule 2 is the one that takes S&S, business
+     discount and coupons off the buy price and asks Rule 4 for the VAT (5% for contraceptives). migV:12 so the b126 owner reset skips them. */
+  {key:'brita',name:'Brita',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'weekly',status:'active',owner:'Suz',migV:12,note:'Amazon down 9% · every market · Suz, weekly · Jack, 27 Sep',brands:['Brita']},
+  {key:'durex',name:'Durex',type:'brand',rule:2,markets:['UK'],cadence:'3 days',status:'active',owner:'Suz',migV:12,note:'UK only · S&S and business discount come off the buy price · 5% VAT (contraceptives, Rule 4) · Suz, every 3 days · Jack, 27 Sep',brands:['Durex']},
   /* b150 (Jack, 23 Sep: "instax add - all eu's and uk"). His own filter, kept verbatim: brand instax, Amazon down 8%+ on its 90-day
      average, products only, sorted by rank then monthly sold. Lands unassigned like every brand (b126), so only Jack sees it until he hands it out. */
   {key:'instax',name:'Instax',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'3 days',status:'active',note:'Amazon down 8% · every market · Jack, 23 Sep',brands:['instax'],
@@ -132,6 +137,11 @@ function srcAll(){let v=lsGet(SRC_KEY,null);if(!v||!v.length){v=SRC_SEED.map(s=>
   /* b126: brand runs become unassigned once, so Jack hands them out himself. A brand he has already
      given to a person keeps that person; only the seeded 'VAs' pool is cleared. */
   v.forEach(x=>{if(x.type==='brand'&&(x.migV||0)<11){if(!x.owner||x.owner==='VAs')x.owner=NO_OWNER;x.migV=11;changed=true;}});
+  /* b183 (Jack, 27 Sep: "let's work on Replen as viewer — the filter needs to be empty then, get it to a Viewer and check all
+     marketplaces"). Replen stops being a Keepa search of UK drops: its list is Lavarion's own storefront (bdl_my_shelf, kept daily
+     by OA Overview), loaded into the Product Viewer in the UK and each EU market, and Rule 1 keeps whatever pays. Once. */
+  v.forEach(x=>{if(x.key==='repken'&&(x.migV||0)<12){x.list='storefront';x.name='Replen · my storefront, all markets';x.type='filter';x.rule=1;x.markets=['UK','DE','FR','IT','ES'];x.link='';x.owner='Jack';x.cadence='weekly';
+    x.note='Every product on your storefront, priced in the UK and DE/FR/IT/ES through the Keepa Product Viewer (free) or the API button. Rule 1 keeps the ones that pay — UK drops and EU buys alike.';x.migV=12;changed=true;}});
   /* b126: the two Mera lists read the same at a glance — renamed */
   /* b131: b126's names were wrong — I read the notes, not the filters. Decoded today: £60+ has NO upper bound and is
      restricted to a chosen category list; £150+ is a 150–2,000 band across everything. Named for what they search. */

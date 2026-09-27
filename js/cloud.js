@@ -13,6 +13,9 @@ const cloud={busy:false,last:null,err:'',tables:true,pulled:false,pulling:false}
    way in and puts it back on the way out. */
 const GUEST_KEY='bdl-sourcing-guest';
 function guestOn(){try{const g=JSON.parse(localStorage.getItem(GUEST_KEY)||'null');return!!(g&&g.on);}catch(e){return false;}}
+/* b182: guest mode sends nothing, but it may still READ the live shelves and storefront, so the audit is not an empty page. The
+   sandbox on localhost and a copy opened from a file read nothing. */
+function cloudReadable(){if(cloudEnabled())return true;const h=location.hostname;return guestOn()&&!(h==='localhost'||h==='127.0.0.1'||h==='');}
 function cloudEnabled(){if(guestOn())return false;const h=location.hostname;const local=h==='localhost'||h==='127.0.0.1'||h==='';return !local||/[?&]cloud/.test(location.search);}
 function nowIso(){return new Date().toISOString();}
 function cloudHdr(extra){return Object.assign({apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json'},extra||{});}

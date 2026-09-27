@@ -1,23 +1,20 @@
-BDL SOURCING — b181 · 27 Sep 2026  ← PUSH THIS ONE (it includes b176 → b180)
+BDL SOURCING — b183 · 27 Sep 2026
+
+(Live is b181. This folder has b182 + b183.)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b181.
-   First load moves the heavy things out of the small store by itself — nothing to do.
-
-THEN LOOK: Settings → Shared storage
-   · The bar: the small 5 MB pot, Sourcing vs your other apps.
-   · Who is using the pot: every app on jackbithellamazon.github.io, biggest first.
-   · What Sourcing keeps in this browser: every item, biggest first, marked
-       copy of Supabase  — safe to throw away, comes straight back
-       Keepa results     — cached a few hours, costs tokens to fetch again
-       waiting to send   — changes on their way to Supabase
-       this browser only — your sign-in and view settings
-     and the % of it all that is just a copy of Supabase.
-   · "Clear the Supabase copies and reload them" — proves it: throws the copies away and brings them back fresh.
-
-   Screenshot that section and send it — it tells us which OTHER apps are filling the pot.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b183.
 
 WHAT'S IN IT
-   b181 every remaining copy of Supabase leaves the shared pot (Sourcing now uses a few KB of it); the meter measures the real limit
-   b180 the item-by-item list + clear button · b179 which apps use the pot · b178 heavy things in the big store
-   b177 a full store never fails silently (red bar) · b176 Settings is yours only; Team shows device · IP · seen
+   · REPLEN is now "Replen · my storefront, all markets" (yours, weekly). Open it and under "Open in Keepa" there is one
+     button per market — 🇬🇧 UK, 🇩🇪 DE, 🇫🇷 FR, 🇮🇹 IT, 🇪🇸 ES — each opens the Keepa Product Viewer with every product on your
+     storefront already loaded (from OA Overview's bdl_my_shelf, 519 products → 3 buttons per market, 250 each).
+     Export all columns from each, drop the files here, and Rule 1 keeps what pays: UK drops AND cheap EU buys.
+     Or press "Run via Keepa API · priced first" and it does the lot in one go (about 5,000 tokens the first time — it asks first).
+   · BRITA for Suz — brand, UK + all EU, weekly.
+   · DUREX for Suz — brand, UK only, every 3 days, Rule 2 (S&S and business discount come off the buy price), 5% VAT
+     (Rule 4 now knows contraceptives are 5%). Rule 1 was not touched.
+   · b182: the audit says "Guest mode" / "a copy on this Mac" instead of "Sandbox"; guest mode still shows the real shelves.
+
+ALSO IN DOWNLOADS
+   · "ShiftTrack - replace the VAs saved filters with Sourcing - 2026-09-27.md" — send to the ShiftTrack chat.

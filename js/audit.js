@@ -120,7 +120,7 @@ function audProdSaveLocal(){const e=Object.entries(audState.prod);const keep=e.l
 function audShelvesLocal(){return lsGet(AUD.SHELF,{});}
 function audShelvesSave(v){lsSet(AUD.SHELF,v);}
 /* ---------- cloud (its own outbox, never the app's) ---------- */
-async function audCheckTables(){if(!cloudEnabled()||audState.checking)return audState.tables;audState.checking=true;
+async function audCheckTables(){if(!cloudReadable()||audState.checking)return audState.tables;audState.checking=true;
   try{await cloudGetAll('src_audit_verdicts','select=id&limit=1');audState.tables=true;}
   catch(e){audState.tables=missingTables(e)?false:audState.tables;}
   audState.checking=false;return audState.tables;}
@@ -146,13 +146,13 @@ async function audFlush(){if(!cloudEnabled())return;if(audState.tables===null)aw
     }catch(e){if(missingTables(e)){audState.tables=false;return;}
       it.tries=(it.tries||0)+1;q[0]=it;lsSet(AUD.OUT,q);if(it.tries>=3){q.shift();lsSet(AUD.OUT,q);console.warn('audit: dropped a change',it,e.message);}return;}}
   audPaintSync();}
-async function audPullVerdicts(force){if(!cloudEnabled()||!(await audCheckTables()))return false;
+async function audPullVerdicts(force){if(!cloudReadable()||!(await audCheckTables()))return false;
   if(!force&&Date.now()-audState.pulled<600e3)return true;
   try{const rows=await cloudGetAll('src_audit_current','select=*');const m={};rows.forEach(r=>{m[r.asin]=r;});
     const local=audAll();Object.entries(local).forEach(([a,r])=>{if(!m[a]||new Date(r.at)>new Date(m[a].at))m[a]=r;});
     audSave(m);audState.pulled=Date.now();return true;}catch(e){return false;}}
 /* OA Overview's saved rivals and shelves — read only */
-async function audPullShelves(force){if(!cloudEnabled())return false;if(!force&&Date.now()-audState.shelfAt<600e3&&audState.sellers.length)return true;
+async function audPullShelves(force){if(!cloudReadable())return false;if(!force&&Date.now()-audState.shelfAt<600e3&&audState.sellers.length)return true;
   try{const [sellers,shelf]=await Promise.all([cloudGetAll('bdl_sellers','select=seller_id,name,seller_order&order=seller_order'),
       cloudGetAll('bdl_competitor_shelf','select=seller_id,asin,first_seen,baseline&gone_on=is.null')]);
     const by={};shelf.forEach(r=>{(by[r.seller_id]=by[r.seller_id]||[]).push({a:r.asin,first:String(r.first_seen||'').slice(0,10),base:!!r.baseline});});
@@ -174,7 +174,7 @@ async function audPullShelves(force){if(!cloudEnabled())return false;if(!force&&
     catch(e){/* table not there — the overlap rows carry on */}
     audState.shelfAt=Date.now();return true;}
   catch(e){audState.shelfErr=e.message;return false;}}
-async function audPullProducts(asins){if(!cloudEnabled()||!(await audCheckTables()))return;
+async function audPullProducts(asins){if(!cloudReadable()||!(await audCheckTables()))return;
   const want=asins.filter(a=>!audState.prod[a]);if(!want.length)return;
   for(let i=0;i<want.length;i+=150){const part=want.slice(i,i+150);
     try{const rows=await cloudGetAll('src_products','select=*&asin=in.('+part.join(',')+')');rows.forEach(r=>{if(r.source==='keepa'){r.asked=1;if(r.offers==null&&r.fba!=null)r.offers=r.fba;}audState.prod[r.asin]=r;});audProdSaveLocal();}catch(e){return;}}}
@@ -317,7 +317,7 @@ function auIni(n){return String(n).split(/[\s·]+/).filter(Boolean).slice(0,2).m
 function auDonut(c,size){const segs=audTypes().map(t=>[c[t.code]||0,t.hex]).concat([[c.todo,'rgba(255,255,255,.10)']]);
   const tot=segs.reduce((a,[n])=>a+n,0)||1;let off=25;const R=15.9155;
   return`<svg class="audonut" viewBox="0 0 42 42" style="width:${size||78}px;height:${size||78}px">${segs.filter(([n])=>n).map(([n,col])=>{const p=n/tot*100;const el=`<circle cx="21" cy="21" r="${R}" fill="none" stroke="${col}" stroke-width="6" stroke-dasharray="${p} ${100-p}" stroke-dashoffset="${off}"/>`;off-=p;return el;}).join('')}<text x="21" y="21.6" text-anchor="middle" font-size="9" font-weight="800" fill="currentColor">${c.todo.toLocaleString()}</text><text x="21" y="26.4" text-anchor="middle" font-size="3.4" font-weight="700" fill="currentColor" opacity=".6">LEFT</text></svg>`;}
-function auSyncNote(){const n=audOut().length;if(!cloudEnabled())return'<span class="ausync off">Sandbox · nothing leaves this browser</span>';
+function auSyncNote(){const n=audOut().length;if(!cloudEnabled())return guestOn()?'<span class="ausync guest">Guest mode · nothing you do is saved</span>':location.protocol==='file:'?'<span class="ausync bad">A copy on this Mac — not the live app</span>':'<span class="ausync off">Sandbox · nothing leaves this browser</span>';   /* b182: says which */
   if(audState.tables===false)return'<span class="ausync bad">Audit tables not created yet — run the SQL once. Your answers are saved here and will send themselves.</span>';
   return n?`<span class="ausync">${n} answer${n===1?'':'s'} to send</span>`:'<span class="ausync ok">Saved for everyone</span>';}
 function audPaintSync(){const el=$('#auSync');if(el)el.outerHTML=auSyncNote().replace('<span class="','<span id="auSync" class="');}
@@ -474,7 +474,7 @@ function auSkeleton(){const card=`<div class="auskc"><i class="sk a"></i><i clas
     <div class="aucards">${card.repeat(8)}</div></div>`;}
 function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);
   const host0=$('#page-audit');
-  if(cloudEnabled()&&!audState.shelfAt&&!audState.shelfErr){
+  if(cloudReadable()&&!audState.shelfAt&&!audState.shelfErr){
     if(!host0.querySelector('.auskel')){host0.innerHTML=auSkeleton();auView._listHtml=null;}
     if(!auView._pulling){auView._pulling=true;audPullShelves().then(()=>{auView._pulling=false;if(auView.mode==='list')renderAudit();});}
     return;}const arch=audArchived();const allShelves=audShelfList();const shelves=allShelves.filter(sh=>!arch.has(sh.id));
@@ -504,10 +504,10 @@ function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);
          missed something; OA Overview now saves the storefront every day, so the box is folded away behind one link and the
          strip just says what it knows: how many are on it, how many left recently and still count as Joint, and the window. */
       const tracked=audState.mineSrc==='storefront';const jd=audJointDays();
-      return`<div class="aumine2 ${tracked?'ok':'warn'}"><i class="amdot"></i><b class="amt">Your storefront</b><span class="amsrc">${tracked?'tracked daily by OA Overview · anything on it is Joint everywhere':'from Keepa’s list — OA Overview is not saving your storefront yet'}</span>
+      return`<div class="aumine2 ${tracked?'ok':'warn'}"><i class="amdot"></i><b class="amt">Your storefront</b><span class="amsrc">${tracked?'tracked daily by OA Overview · anything on it is Joint everywhere':!cloudReadable()?'not loaded — this copy is not connected to Supabase':'from Keepa’s list — OA Overview is not saving your storefront yet'}</span>
         <span class="amn"><b>${audState.mineNow.size.toLocaleString()}</b> on it now</span><span class="amn"><b>${rec.toLocaleString()}</b> ${jd==='always'?'sold before · still Joint':`left it in the last ${jd} days · still Joint`}</span>${mineList?`<span class="amn"><b>${mineList.toLocaleString()}</b> on your pasted list</span>`:''}${old?`<span class="amn old" title="A rival added these more than ${jd} days after your storefront last had them — so they come back to judge"><b>${old.toLocaleString()}</b> left over ${jd} days ago · to judge</span>`:''}
         <label class="aujd" title="A rival that adds it inside this window is Joint automatically; one that adds it after is new, to check">Still Joint for <select id="auJointDays">${[14,30,45,60,90,'always'].map(d=>`<option value="${d}"${String(audJointDays())===String(d)?' selected':''}>${d==='always'?'ever':d+' days'}</option>`).join('')}</select> after it leaves</label>
-        <details class="ampaste"${tracked||mineList?'':' open'}><summary>Paste inventory</summary><div class="ampbox">
+        <details class="ampaste"><summary>Paste inventory</summary><div class="ampbox">
           <textarea class="txt" id="auMineIn" rows="3" placeholder="Only if Keepa missed something you sell — paste your Seller Central inventory export, or any list with ASINs in it"></textarea>
           <div class="row"><button class="btn primary sm" id="auMineSave" type="button">Save as my inventory list</button>${mineList?`<button class="btn ghost sm" id="auMineClear" type="button">Clear the list (${mineList.toLocaleString()})</button>`:''}<span class="ssub" id="auMineMsg"></span></div></div></details></div>`;})()}
     ${shelves.length?(auView.cards?`<div class="aucards">${rows.map(x=>`<button class="aucard" type="button" data-open="${escapeHtml(x.sh.id)}">
@@ -1026,7 +1026,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
   document.addEventListener('click',e=>{if(e.target.closest('.pagebtn'))setTimeout(auPaintBulk,0);});   /* b151: the bulk bar belongs to the audit page only */
   /* first paint + shared data when the page opens */
   const btn=document.querySelector('.pagebtn[data-page="page-audit"]');
-  if(btn)btn.addEventListener('click',async()=>{renderAudit();if(cloudEnabled()){await audPullShelves();await audPullVerdicts();renderAudit();}});
+  if(btn)btn.addEventListener('click',async()=>{renderAudit();if(cloudReadable()){await audPullShelves();await audPullVerdicts();renderAudit();}});
   renderAudit();}
 /* b171 (Jack, 27 Sep: "why is the audit seller ID like this still?" — the list on screen, #audit=A3MFSZUHG9XVSC in the address).
    A refresh on a shelf ran this 50ms after load, before the shelves had come from the database, so it could not find the rival,
@@ -1039,7 +1039,7 @@ function auHash(){const m=/^#audit(?:=([\w-]+))?/i.exec(location.hash||'');if(!m
   if(id&&auView.mode==='audit'&&auView.shelf===id)return true;          /* already there */
   if(id&&audShelf(id)){auOpen(id);return true;}
   auView.mode='list';auView.pendingOpen=id||null;renderAudit();
-  if(id&&cloudEnabled())(async()=>{try{await audPullShelves();}catch(e){}
+  if(id&&cloudReadable())(async()=>{try{await audPullShelves();}catch(e){}
     if(auView.pendingOpen!==id)return;auView.pendingOpen=null;
     if(audShelf(id)&&auView.mode==='list')auOpen(id);else auFixHash();})();
   else{auView.pendingOpen=null;auFixHash();}
