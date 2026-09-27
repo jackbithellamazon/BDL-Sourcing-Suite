@@ -16,15 +16,17 @@ const AUD={V:'bdl-sourcing-audit-v',OUT:'bdl-sourcing-audit-out',SHELF:'bdl-sour
   COLLAPSE_MIN:15,   /* the same person pressing again within 15 minutes corrects the row instead of writing a new one */
   PAGE:120};
 const AUDIT_TYPES=[
-  {code:'not',label:'Not lead',short:'Not lead',hex:'#FF5C6C',icon:'x'},
-  {code:'unsure',label:"Can't find / unsure",short:'Unsure',hex:'#FFB224',icon:'help'},
-  {code:'discord',label:'Discord',short:'Discord',hex:'#8C95FF',icon:'msg',prompt:'Which Discord?',reasons:['PS','THC','FFB']},
+  /* b175 (Jack, 27 Sep: "colours very similar"). Tinted, amber Unsure and orange Missed it came out the same brown, and red / orange /
+     pink sat together. Seven hues spread round the wheel now: red · yellow · purple · cyan · green · orange · blue. */
+  {code:'not',label:'Not lead',short:'Not lead',hex:'#FF4D5E',icon:'x'},
+  {code:'unsure',label:"Can't find / unsure",short:'Unsure',hex:'#FDE047',icon:'help'},
+  {code:'discord',label:'Discord',short:'Discord',hex:'#A78BFA',icon:'msg',prompt:'Which Discord?',reasons:['PS','THC','FFB']},
   {code:'ws',label:'WS',short:'WS',hex:'#22D3EE',icon:'box'},
   {code:'joint',label:'Joint lead',short:'Joint',hex:'#2CE38B',icon:'check'},
-  {code:'missed',label:'Missed it',short:'Missed it',hex:'#FF8A3D',icon:'clock',prompt:'Why missed?',reasons:['Never looked at','Passed on it','Never found it','Other']},   /* b164 (Jack, 26 Sep: yes to trimming — only these were ever used; Q W E R) */
+  {code:'missed',label:'Missed it',short:'Missed it',hex:'#FF8A3D',icon:'clock'},   /* b175 (Jack: "make missed it just one button too — cba with 2 clicks"). Auto-marked ones still carry their reason. */   /* b164 (Jack, 26 Sep: yes to trimming — only these were ever used; Q W E R) */
   /* b161 (Jack, 26 Sep: "a new option — diff method — e.g. wholesale or PL stuff, not stuff I would sell and source for").
      Key 7, so 1–6 stay where his hands already are. Three reasons, so the bulk bar shows them inline like Discord's. */
-  {code:'diff',label:'Diff method',short:'Diff method',hex:'#F472B6',icon:'tag'}];   /* b169 (Jack, 27 Sep: "get rid of the double click on diff method") — one press, no which */
+  {code:'diff',label:'Diff method',short:'Diff method',hex:'#3B82F6',icon:'tag'}];   /* b169 (Jack, 27 Sep: "get rid of the double click on diff method") — one press, no which */
 /* b91 (Jack, 17 Sep): "never found it" is a different answer from "never looked at", and it is the one that
    points at a filter rather than at a person. Never looked at = it reached our list and nobody judged it.
    Never found it = our filters never surfaced it at all, and the rival is selling it anyway. Slotted before
@@ -38,7 +40,7 @@ const AU_RKEYS=['q','w','e','r','t','y','u'];
 function audTypes(){const v=lsGet('bdl-sourcing-audit-types',null);
   if(!Array.isArray(v)||!v.length)return AUDIT_TYPES;
   const out=v.map(t=>{const base=AUDIT_TYPES.find(b=>b.code===t.code);if(!base)return t;
-    return Object.assign({},base,t,{reasons:base.reasons,prompt:base.prompt});});
+    return Object.assign({},base,t,{reasons:base.reasons,prompt:base.prompt,hex:base.hex});});   /* b175: colours come from the code too */
   /* b161: an answer added in the code (Diff method) always appears, even under an older saved list */
   AUDIT_TYPES.forEach(b=>{if(!out.some(t=>t.code===b.code))out.push(b);});return out;}
 function audType(code){return audTypes().find(t=>t.code===code)||null;}
@@ -438,7 +440,7 @@ function auToggleSel(asin,i,range){const sh=audShelf(auView.shelf);if(!sh)return
   auView.lastSel=i;auRefresh(touched);}
 function renderAudit(){const host=$('#page-audit');if(!host)return;audMineBust();
   document.body.classList.toggle('auditing',auView.mode==='audit');
-  if(!isJack()){host.innerHTML=`<div class="card"><div class="empty"><span>The storefront audit is Jack's. Pick your name top right if this is you.</span></div></div>`;return;}
+  if(!isJack()){auView._listHtml=null;host.innerHTML=`<div class="card"><div class="empty"><span>The storefront audit is Jack's. Pick your name top right if this is you.</span></div></div>`;return;}
   if(auView.mode==='audit'&&auView.shelf&&audShelf(auView.shelf))auRenderOne();else auRenderList();
   if(typeof auPaintBulk==='function')auPaintBulk();}
 /* b69 (Jack: "highest % of products I sell too") — the rival you overlap with most is the one worth auditing,
@@ -462,7 +464,20 @@ function auRankRivals(rows){const by={
   return rows.sort(by);}
 function auNextShelf(fromId){const arch=audArchived();const L=audShelfList().filter(sh=>!arch.has(sh.id)).map(sh=>({sh,c:auCounts(sh)})).filter(x=>x.sh.id!==fromId&&x.c.todo>0)
   .sort((a,b)=>auOverlap(b.c)-auOverlap(a.c)||b.c.todo-a.c.todo);return L[0]?L[0].sh:null;}
-function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);const arch=audArchived();const allShelves=audShelfList();const shelves=allShelves.filter(sh=>!arch.has(sh.id));
+/* b174 (Jack, 27 Sep: "it flickers here" / "shows me my Keepa … first then flickers"). After a fresh load the list drew at once from
+   an empty browser — "from Keepa's list" in amber, zeros, "No shelves yet" — and redrew half a second later when the shelves arrived.
+   Until the first shelves are in, it now shows the page's own shape with soft placeholders, then the real thing once. */
+function auSkeleton(){const card=`<div class="auskc"><i class="sk a"></i><i class="sk b"></i><i class="sk c"></i><i class="sk d"></i></div>`;
+  return`<div class="card auskel"><div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg></span><h2>Storefront audits</h2><span class="sub">Getting the rivals' shelves…</span></div>
+    <div class="kpis aukpis">${'<div class="kpi"><div><i class="sk kvs"></i><i class="sk kls"></i></div></div>'.repeat(5)}</div>
+    <div class="aumine2 ok"><i class="amdot"></i><b class="amt">Your storefront</b><i class="sk strip"></i></div>
+    <div class="aucards">${card.repeat(8)}</div></div>`;}
+function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);
+  const host0=$('#page-audit');
+  if(cloudEnabled()&&!audState.shelfAt&&!audState.shelfErr){
+    if(!host0.querySelector('.auskel')){host0.innerHTML=auSkeleton();auView._listHtml=null;}
+    if(!auView._pulling){auView._pulling=true;audPullShelves().then(()=>{auView._pulling=false;if(auView.mode==='list')renderAudit();});}
+    return;}const arch=audArchived();const allShelves=audShelfList();const shelves=allShelves.filter(sh=>!arch.has(sh.id));
   const archRows=auRankRivals(allShelves.filter(sh=>arch.has(sh.id)).map(sh=>({sh,c:auCounts(sh),la:auLastAudit(sh),nw:auNewSince(sh)})));
   const mineN=[...new Set([...audState.mineEver,...audState.mineNow,...audMineList()])].filter(a=>{const w=audMineWhy(a);return w&&w!=='before';}).length,mineList=audMineList().size;
   if(auView.cards===null)auView.cards=shelves.length<=8;   /* a few rivals read better as cards, 39 do not */const V=audAll();const O=auOurs();
@@ -474,7 +489,7 @@ function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);const arch=au
   const nextSh=auNextShelf(null);
   const k=(v,l,s,cls,go)=>`<div class="kpi k-${cls||'plain'}${go?' go':''}"${go?` data-open="${escapeHtml(go)}" role="button" tabindex="0" title="Carry on with the next rival"`:''}><div><div class="kv">${v}</div><div class="kl">${l}</div>${s?`<div class="ks">${s}</div>`:''}</div></div>`;
   const stat=x=>!x.la?`<span class="aupill p-todo">Never audited</span>`:x.nw?`<span class="aupill p-todo">${x.nw} new since your audit</span>`:x.c.todo?`<span class="aupill p-todo">${x.c.todo} to do</span>`:`<span class="aupill p-joint">Up to date</span>`;
-  $('#page-audit').innerHTML=`<div class="card">
+  const h=`<div class="card">
     <div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg></span><h2>Storefront audits</h2>
       <span class="sub">One pass per rival. After that only their new lines come back. An answer belongs to the product, so it counts on every shelf.</span>
       <div class="right">${auSyncNote().replace('<span class="','<span id="auSync" class="')}<label class="ausortby"><span>Order</span><select id="auRsort">${AU_RSORTS.map(([v,l])=>`<option value="${v}"${auRsort()===v?' selected':''}>${l}</option>`).join('')}</select></label><button class="btn ghost sm" id="auCards" type="button">${auView.cards?'Show as a list':'Show as cards'}</button><button class="btn ghost sm" id="auRefresh" type="button">Refresh shelves</button>${(()=>{const n=auNextShelf(null);const c=n?auCounts(n):null;return n?`<button class="btn primary sm" type="button" data-open="${escapeHtml(n.id)}">${ICONS.run}${c.byHand?'Carry on':'Start'} · ${escapeHtml(n.name)} · ${c.todo.toLocaleString()} left</button>`:'';})()}</div></div>
@@ -519,7 +534,9 @@ function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);const arch=au
       <div class="aubox"><h3>Audit a list of ASINs</h3><p class="ssub">Paste ASINs, or drop any Keepa export here. An export brings the titles and pictures with it, free.</p>
         <div class="row"><input class="txt" id="auName" placeholder="Name this list" autocomplete="off" style="max-width:170px"><textarea class="txt" id="auAsins" placeholder="B0CNXZYW75, B07X63KLLH …" rows="2"></textarea><button class="btn solid sm" id="auAdd" type="button">Start</button></div>
         <div class="audrop" id="auDrop">Drop a Keepa export here</div><input type="file" id="auFile" accept=".csv,text/csv" multiple hidden></div>
-    </div></details></div>`;}
+    </div></details></div>`;
+  /* b174: the same page twice is not drawn twice — a redraw with nothing new used to blink every card and donut */
+  const host=$('#page-audit');if(auView._listHtml===h&&host.querySelector('.card'))return;auView._listHtml=h;host.innerHTML=h;}
 
 function auVisible(sh){const V=audAll();const q=auView.q.toLowerCase();const tab=auView.tab[sh.id]||'todo';const O=auOurs();
   /* b141 (Jack, 22 Sep: "how is highest ticket first showing a 16 pound lead?"). The order is frozen on purpose so rows
@@ -646,7 +663,7 @@ function auRow(it,i,sh){const V=audAll();let v=V[it.a];const vOld=audExpired(v)?
       </div></div>
     <div class="aulinks">${links}</div>
     <div class="aubtns">${btns}${mark}</div>${reasons}</div>`;}
-function auRenderOne(){const sh=audShelf(auView.shelf);const c=auCounts(sh);const vis=auVisible(sh);const tab=auView.tab[sh.id]||'todo';
+function auRenderOne(){auView._listHtml=null;const sh=audShelf(auView.shelf);const c=auCounts(sh);const vis=auVisible(sh);const tab=auView.tab[sh.id]||'todo';
   if(auView.focus>=vis.length)auView.focus=Math.max(0,vis.length-1);
   const secs=auView.secs.length?auView.secs.reduce((a,b)=>a+b,0)/auView.secs.length:6;
   const la=auLastAudit(sh);const loaded=sh.items.filter(it=>audState.prod[it.a]).length;

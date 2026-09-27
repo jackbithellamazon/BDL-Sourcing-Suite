@@ -52,10 +52,31 @@ function teamNameFor(email){const e=String(email||'').trim().toLowerCase();if(!e
 function signinsAll(){return lsGet(SIGNIN_KEY,{})||{};}
 function signinRecord(name,email){if(!name)return;const all=signinsAll();all[name]={at:new Date().toISOString(),email:email||''};lsSet(SIGNIN_KEY,all);
   /* one row per person, so two people signing in at once can never overwrite each other */
-  if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('signin:'+name,all[name])]);}
+  if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('signin:'+name,all[name])]);
+  setTimeout(()=>signinSeen(true),400);}
+/* b175 (Jack, 27 Sep: "write IP address here"). Where and on what each person signed in, and when they last opened the app:
+   the link-maker (Supabase) reads the address the request came from — only your own, nobody else's. Refreshed at most every
+   6 hours, so Jack's Team list shows "Mac · Chrome · IP 81.2.69.160 · seen today 15:40". */
+function authDevice(){const u=navigator.userAgent||'';
+  const os=/iPhone|iPad/.test(u)?'iPhone/iPad':/Android/.test(u)?'Android':/Mac OS X|Macintosh/.test(u)?'Mac':/Windows/.test(u)?'Windows':/CrOS/.test(u)?'Chromebook':/Linux/.test(u)?'Linux':'';
+  const br=/Edg\//.test(u)?'Edge':/OPR\//.test(u)?'Opera':/Firefox\//.test(u)?'Firefox':/Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':'';
+  return[os,br].filter(Boolean).join(' · ');}
+async function signinSeen(force){try{
+  if(typeof guestOn==='function'&&guestOn())return;if(typeof cloudEnabled==='function'&&!cloudEnabled())return;
+  const s=authSession();const n=authedName();if(!s||!n)return;
+  const all=signinsAll();const cur=all[n]||{at:new Date().toISOString(),email:(s.user&&s.user.email)||''};
+  if(!force&&cur.seenAt&&Date.now()-new Date(cur.seenAt).getTime()<6*3600e3&&cur.ip)return;
+  let ip='';try{const r=await fetch(CLOUD.url+'/functions/v1/sourcing-link',{method:'POST',headers:{'Content-Type':'application/json',apikey:authKey(),Authorization:'Bearer '+s.access_token},body:JSON.stringify({action:'whoami'})});
+    const j=await r.json().catch(()=>({}));if(r.ok&&j.ok&&j.ip)ip=String(j.ip).slice(0,64);}catch(e){}
+  const rec=Object.assign({},cur,{dev:authDevice(),seenAt:new Date().toISOString()},ip?{ip}:{});
+  all[n]=rec;lsSet(SIGNIN_KEY,all);
+  if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('signin:'+n,rec)]);
+  if(typeof paintAuthBox==='function')paintAuthBox();}catch(e){}}
 function lockSandbox(){return /^(localhost|127\.0\.0\.1)$/.test(location.hostname)&&!lsGet('bdl-sourcing-lock-test',false);}
 function lockState(){return lsGet(LOCK_KEY,{on:false})||{on:false};}
-function lockOn(){return !!lockState().on&&!lockSandbox();}
+/* b175 (Jack, 27 Sep: "nobody can carry on without signing in — they have to log in now via email and password or my link").
+   On the live app the lock is simply always on. Only the localhost sandbox (where the checks run) stays open. */
+function lockOn(){return !lockSandbox();}
 function lockSet(on){const n=authedName();
   if(guestOn()){toast('Guest mode — the lock is not changed from here. Leave guest mode first.',true);return false;}
   if(on&&n!=='Jack'){toast('Sign in as Jack on this browser first — otherwise the lock could shut you out',true);return false;}
@@ -71,17 +92,17 @@ function lockCheck(){const on=lockOn(),n=authedName();
   if(!el){el=document.createElement('div');el.id='lockScreen';el.className='lockscreen';document.body.appendChild(el);
     el.addEventListener('click',async e=>{const b=e.target.closest('#lkSend');if(!b)return;
       const i=document.getElementById('lkEmail'),p=document.getElementById('lkPass'),m=document.getElementById('lkMsg'),v=(i.value||'').trim(),pw=p?p.value:'';
+      if(!pw&&authNoInbox(v)){m.innerHTML='Type your password. <b>Suz and Mera:</b> you don\'t type anything — open the link Jack sent you in Discord. Run out? Ask him for a new one.';m.className='lkmsg bad';return;}
       b.disabled=true;b.textContent=pw?'Signing in…':'Sending…';m.textContent='';
       try{const got=await authSubmit(v,pw);if(got==='sent'){m.innerHTML=`Check <b>${escapeHtml(v)}</b> — open the link on this computer and you're in.`;m.className='lkmsg good';}}
-      catch(err){m.textContent=/not allowed|not found|signups/i.test(String(err.message||''))?'That address has not been set up yet — ask Jack.':String(err.message||err);m.className='lkmsg bad';}
-      b.disabled=false;b.textContent=(p&&p.value)?'Sign in':'Send me a link';});
-    el.addEventListener('input',e=>{if(e.target.id==='lkPass'){const b=document.getElementById('lkSend');if(b)b.textContent=e.target.value?'Sign in':'Send me a link';}});
+      catch(err){m.textContent=/invalid login|invalid_grant|credentials/i.test(String(err.message||''))?'That email and password do not match.':/not allowed|not found|signups/i.test(String(err.message||''))?'That address has not been set up yet — ask Jack.':String(err.message||err);m.className='lkmsg bad';}
+      b.disabled=false;b.textContent='Sign in';});
     el.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='lkEmail'||e.target.id==='lkPass')){e.preventDefault();document.getElementById('lkSend').click();}});}
   el.hidden=false;
   el.innerHTML=`<div class="lkcard"><div class="lklogo"><span class="lkmark"></span><b>BDL</b> <em>Sourcing</em></div>
-    <h1>Sign in to carry on</h1><p><b>Suz and Mera:</b> open the sign-in link Jack sent you — it signs this computer in and keeps it signed in. No link? Ask Jack for one.<br><b>Jack:</b> your email and password.</p>
-    <div class="lkrow"><input type="email" id="lkEmail" placeholder="you@…" autocomplete="username" spellcheck="false" autofocus></div>
-    <div class="lkrow lkrow2"><input type="password" id="lkPass" placeholder="Password — only if you have one" autocomplete="current-password"><button type="button" class="btn primary" id="lkSend">Send me a link</button></div>
+    <h1>Sign in to carry on</h1><p><b>Suz and Mera:</b> open the sign-in link Jack sent you in Discord — it signs this computer in and keeps it signed in. No link, or it has run out? Ask Jack for a new one.<br><b>Jack:</b> your email and password.</p>
+    <div class="lkrow"><input type="email" id="lkEmail" placeholder="Email" autocomplete="username" spellcheck="false" autofocus></div>
+    <div class="lkrow lkrow2"><input type="password" id="lkPass" placeholder="Password" autocomplete="current-password"><button type="button" class="btn primary" id="lkSend">Sign in</button></div>
     <div class="lkmsg" id="lkMsg"></div></div>`;
   setTimeout(()=>{const i=document.getElementById('lkEmail');if(i)i.focus();},60);}
 function authBase(){return(typeof CLOUD!=='undefined'&&CLOUD.url?CLOUD.url:'')+'/auth/v1';}
@@ -190,4 +211,5 @@ async function authBoot(){
     if(typeof whoPaint==='function')whoPaint();if(typeof paintJackOnly==='function')paintJackOnly();
     if(typeof whoGate==='function')whoGate(false);}
   lockCheck();
+  if(n)setTimeout(()=>signinSeen(false),1500);   /* b175: keeps "seen" and the IP current, at most every 6 hours */
   return n;}

@@ -61,19 +61,19 @@ function whoGate(show){let g=$('#whoGate');if(!g){g=document.createElement('div'
     /* b126: sign in with a one-click email link. The name picker stays underneath, so nobody is ever locked out. */
     g.innerHTML=`<div class="wg"><div class="wgt">Sign in</div><div class="wgs"><b>Suz and Mera:</b> open the sign-in link Jack sent you — it signs this browser in, and every verdict then carries your name. <b>Jack:</b> your email and password.</div>
       <div class="wgmail"><input type="email" id="wgEmail" placeholder="you@…" autocomplete="username" spellcheck="false"></div>
-      <div class="wgmail"><input type="password" id="wgPass" placeholder="Password — only if you have one" autocomplete="current-password"><button type="button" class="btn primary" id="wgSend">Send me a link</button></div>
+      <div class="wgmail"><input type="password" id="wgPass" placeholder="Password" autocomplete="current-password"><button type="button" class="btn primary" id="wgSend">Sign in</button></div>
       <div class="wgmsg" id="wgMsg"></div>
-      <div class="wgor">or carry on without signing in</div>
-      <div class="wgb">${USERS.map(u=>`<button type="button" data-who="${u}">${u}</button>`).join('')}</div></div>`;
+      ${typeof lockSandbox==='function'&&!lockSandbox()?'':`<div class="wgor">or carry on without signing in <em>(test sandbox only)</em></div>
+      <div class="wgb">${USERS.map(u=>`<button type="button" data-who="${u}">${u}</button>`).join('')}</div>`}</div>`;   /* b175: live = sign in or nothing */
     g.addEventListener('click',async e=>{
       const send=e.target.closest('#wgSend');
       if(send){const el=$('#wgEmail'),pw=($('#wgPass')||{}).value||'',msg=$('#wgMsg'),v=(el.value||'').trim();
+        if(!pw&&authNoInbox(v)){msg.innerHTML='Type your password. <b>Suz and Mera:</b> open the link Jack sent you in Discord instead.';msg.className='wgmsg bad';return;}
         send.disabled=true;msg.textContent=pw?'Signing in…':'Sending…';msg.className='wgmsg';
         try{const got=await authSubmit(v,pw);if(got==='sent'){msg.innerHTML='Sent. Open the email on <b>this</b> machine and click the link — you will land back here signed in.';msg.className='wgmsg good';}}
         catch(err){msg.textContent=String(err.message||err)+(/not found|signups/i.test(String(err.message||''))?' — ask Jack to set this address up.':'');msg.className='wgmsg bad';}
         send.disabled=false;return;}
       const b=e.target.closest('button[data-who]');if(!b)return;whoSet(b.dataset.who);whoGate(false);const t=whoPending;whoPending=null;if(t)onTableClick({target:t});});
-    g.addEventListener('input',e=>{if(e.target.id==='wgPass')$('#wgSend').textContent=e.target.value?'Sign in':'Send me a link';});
     g.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='wgEmail'||e.target.id==='wgPass')){e.preventDefault();$('#wgSend').click();}});
     document.body.appendChild(g);}
   g.classList.toggle('open',!!show);}
@@ -439,27 +439,26 @@ function euShow(wins,n){const res=$('#results');if(!res)return;let el=$('#euPane
 /* b153 (Jack, 25 Sep: "build it then please"): the sign-in panel. Everyone sees whether they are signed in. Jack also gets the Team —
    one email per person, a Send link button each and when they last signed in — and the lock, which will not switch on until he
    is signed in on this browser himself. */
+function seenWhen(iso){const d=new Date(iso);const t=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});const days=Math.round((new Date(new Date().toDateString())-new Date(d.toDateString()))/864e5);return days<=0?'today '+t:days===1?'yesterday '+t:d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+t;}
 function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='function')return;
   const u=(typeof authUser==='function')?authUser():null;const jack=isJack();const lk=lockState();const sand=lockSandbox();
   const when=iso=>{if(!iso)return'';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});};
   const si=signinsAll();const team=teamAll();
   const me_=u?`<div class="authnow"><i></i><span><b>Signed in</b> as ${escapeHtml(u.name)} <em>${escapeHtml(u.email)}</em></span><button type="button" class="btn ghost sm" id="abOut">Sign out</button></div>`
     :`<div class="authnow off"><i></i><span><b>Not signed in on this computer.</b> Your login and password signs you straight in. Suz and Mera don't sign in here — you send them a link from Team below.</span></div>
-      <div class="authsend"><input type="email" id="abEmail" placeholder="you@… — your login email" autocomplete="username" spellcheck="false"><input type="password" id="abPass" placeholder="Password" autocomplete="current-password"><button type="button" class="btn solid sm" id="abSend">Send me a link</button></div><div class="wgmsg" id="abMsg"></div>`;
+      <div class="authsend"><input type="email" id="abEmail" placeholder="you@… — your login email" autocomplete="username" spellcheck="false"><input type="password" id="abPass" placeholder="Password" autocomplete="current-password"><button type="button" class="btn solid sm" id="abSend">Sign in</button></div><div class="wgmsg" id="abMsg"></div>`;
   const allIn=team.every(t=>si[t.name]);
   const teamHtml=!jack?'':`<div class="teambox"><div class="tbh"><b>Team</b><span>Each person's email. The name on everything they mark comes from here, never from a dropdown.</span></div>
     ${team.map(t=>{const s_=si[t.name];return`<div class="trow"><span class="tn"><i class="pdot ${ownCls(t.name)}"></i>${escapeHtml(t.name)}</span>
       <input type="email" class="temail" data-team="${escapeHtml(t.name)}" value="${escapeHtml(t.email||'')}" placeholder="${escapeHtml(t.name.toLowerCase())}@…" autocomplete="off" spellcheck="false">
       ${t.name==='Jack'?`<span class="tpw" title="You sign in with your email and password">Password login</span>`
         :`<span class="tbtns"><button type="button" class="btn solid sm" data-tcopy="${escapeHtml(t.name)}" ${t.email&&u?'':'disabled'} title="${!t.email?'Type their email first':!u?'Sign yourself in first (above)':'Make a one-time sign-in link and copy it — paste it to them in Discord'}">Copy link</button>${t.email&&!authNoInbox(t.email)?`<button type="button" class="btn ghost sm" data-tsend="${escapeHtml(t.name)}" title="Email the link to ${escapeHtml(t.email)} instead">Email it</button>`:''}</span>`}
-      <span class="tstat ${s_?'in':''}">${s_?'Signed in '+when(s_.at):'Not signed in yet'}</span></div>`;}).join('')}
+      <span class="tstat ${s_?'in':''}">${s_?`<b>Signed in ${when(s_.at)}</b>${s_.dev||s_.ip||s_.seenAt?`<em>${[s_.dev,s_.ip?'IP '+escapeHtml(s_.ip):'',s_.seenAt?'seen '+seenWhen(s_.seenAt):''].filter(Boolean).join(' · ')}</em>`:''}`:'Not signed in yet'}</span></div>`;}).join('')}
+    ${team.some(t=>si[t.name]&&!si[t.name].ip)?`<div class="tipnote">An IP shows once that person opens the app after the updated link-maker is in Supabase — <code>2026-09-27-SUPABASE-FUNCTION-sourcing-link-UPDATE-PASTE-THIS.ts</code> (Downloads): Edge Functions → sourcing-link → Code → paste over index.ts → Deploy updates.</div>`:''}
     <div class="wgmsg" id="tMsg"></div></div>`;
-  const lockHtml=!jack?'':`<div class="lockbox ${lk.on?'on':''}"><div class="lkh"><b>Sign-in required for everyone</b>
-      <button type="button" class="lkswitch ${lk.on?'on':''}" id="lkToggle" role="switch" aria-checked="${lk.on?'true':'false'}" ${!lk.on&&(!u||u.name!=='Jack')?'disabled':''}><i></i></button></div>
-    <p>${lk.on?`<b>On</b> since ${escapeHtml(when(lk.at))}. Anyone not signed in sees the sign-in screen and nothing else. People already signed in keep working even if Supabase goes down.`
-      :(!u||u.name!=='Jack')?`Sign yourself in first (above). The switch stays off until you are, so it can never lock you out.`
-      :allIn?`Everyone has signed in — safe to switch on.`
-      :`Off. ${team.filter(t=>!si[t.name]).map(t=>t.name).join(' and ')} ${team.filter(t=>!si[t.name]).length===1?'has':'have'} not signed in yet — switch on now and they will see the sign-in screen until they open their link.`}
+  /* b175: sign-in is always required on the live app — the switch is gone, this just says so */
+  const lockHtml=!jack?'':`<div class="lockbox on"><div class="lkh"><b>Sign-in required for everyone</b><span class="lkalways">Always on</span></div>
+    <p>Anyone not signed in sees the sign-in screen and nothing else — Suz and Mera get in with the link you send them, you with your email and password. ${allIn?'Everyone has signed in.':`${team.filter(t=>!si[t.name]).map(t=>t.name).join(' and ')} ${team.filter(t=>!si[t.name]).length===1?'has':'have'} not signed in yet — send a link.`}
     ${sand?' <em>(This is the test sandbox — the lock never applies here.)</em>':''}</p>
     <details class="lksteps"><summary>Set-up, once (yours)</summary><ol>
       <li><b>You:</b> your login is <code>jack@bdl.local</code> — type it with your password above. No email needed.</li>
@@ -481,7 +480,7 @@ function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='func
       b.disabled=true;b.textContent='Signing in…';msgEl.textContent='';
       try{await authSubmit(v,pw);}catch(e){msgEl.textContent=String(e.message||e);msgEl.className='wgmsg bad';b.disabled=false;b.textContent='Sign in';}};
     b.addEventListener('click',go);
-    if(pwIn)pwIn.addEventListener('input',()=>{b.textContent=pwIn.value?'Sign in':'Send me a link';});
+
     [$('#abEmail'),pwIn].forEach(x=>x&&x.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go();}}));}
   el.querySelectorAll('.temail').forEach(i=>i.addEventListener('change',()=>{const list=teamAll().map(t=>t.name===i.dataset.team?Object.assign({},t,{email:i.value.trim().toLowerCase()}):t);
     teamSave(list);toast(i.dataset.team+(i.value.trim()?' — email saved':' — email cleared'));paintAuthBox();}));

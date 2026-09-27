@@ -1,21 +1,28 @@
-BDL SOURCING — b173 · 27 Sep 2026
+BDL SOURCING — b175 · 27 Sep 2026
 
-(Live is b169. This folder has b170 + b171 + b172 + b173.)
+(Live is b169. This folder has everything since: b170 → b175.)
 
-UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b173.
+1. UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b175.
+
+2. UPDATE THE LINK-MAKER (for the IP addresses — about a minute, no keys)
+   Supabase → Edge Functions → sourcing-link → Code tab → click in index.ts → Cmd+A → paste the whole of
+     ~/Downloads/2026-09-27-SUPABASE-FUNCTION-sourcing-link-UPDATE-PASTE-THIS.ts
+   → "Deploy updates". Copy link keeps working exactly as before.
 
 WHAT'S IN IT
-   · b173  No flash: the audit's graph never goes blank (the last one stays, faded, until the new one fades in); small
-           detail loads fill the rows without a box popping up; the Keepa tokens pill starts with its last number.
-   · b172  The BDL Sourcing logo is a Home button (a "Home" tag shows on hover): Brands / Filters, the brand list,
-           any open run closed, back to the top. The header pills are one family — same height, readable font, own colours.
-           Page tiles: bigger titles, subtitles that no longer cut off.
-   · b171  Refresh while you're in a rival and it reopens that rival (it used to drop you on the list with the rival's
-           ID left in the address).
-   · b170  Sign-in link messages say "within 24 hours".
+   · b175  Sign in or nothing: on the live app the sign-in screen is always on (the switch is gone) and there is no
+           "carry on without signing in". One "Sign in" button. Suz / Mera without a password are told to open your link.
+           Team shows where each person signed in from: device (Mac · Chrome), IP address and when they were last seen
+           (the IP appears once step 2 is done and they next open the app).
+           Missed it is one press (no "why missed?"). The seven answers are seven different colours:
+           Not lead red · Unsure yellow · Discord purple · WS cyan · Joint green · Missed it orange · Diff method blue.
+   · b174  No flicker on the rivals page; the add-a-shelf boxes styled like the rest.
+   · b173  No flash: the graph never goes blank; small loads are quiet; the tokens pill starts filled.
+   · b172  The BDL Sourcing logo is Home; a tidier header.
+   · b171  A refresh on a rival reopens it.
+   · b170  Link wording "within 24 hours".
 
 SIGN-IN, WHERE IT STANDS
-   · Link-maker deployed and working. Links last 24 hours (Supabase Email OTP Expiration = 86400).
-   · Copy link next to Suz / Mera → Discord. Each link works once; a new Copy link cancels the old one.
-   · Lock: Settings → "Sign-in required for everyone". A link still signs them in while it's on.
+   · Jack and Mera signed in. Suz: her link works until 24 hours after you copied it — if it runs out, Copy link again.
+   · A new Copy link cancels the old one, so only press it if she needs a new one.

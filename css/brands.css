@@ -2444,3 +2444,37 @@ html:not([data-theme="light"]) .authpill{color:#fff;background:var(--ink)}
 .aupanel .augraph.big .augwait{position:absolute;top:10px;right:10px;padding:4px 10px;border-radius:8px;font:700 12px var(--sans);color:#3b4252;background:rgba(255,255,255,.92);border:1px solid rgba(0,0,0,.12)}
 @media (prefers-reduced-motion:no-preference){.aupanel .augraph.big img.augin{animation:auFade .22s ease-out}}
 @keyframes auFade{from{opacity:.35}to{opacity:1}}
+
+/* ===== b174 · no flicker on the rivals page; the bottom of the page styled like the rest ===== */
+@keyframes auShim{0%{background-position:-240px 0}100%{background-position:240px 0}}
+.auskel .sk{display:block;border-radius:8px;background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.11),rgba(255,255,255,.05));background-size:480px 100%;animation:auShim 1.2s ease-in-out infinite}
+.auskel .sk.kvs{width:70px;height:26px;margin-bottom:10px}.auskel .sk.kls{width:130px;height:12px}
+.auskel .sk.strip{flex:1;height:14px;max-width:520px}
+.auskel .auskc{padding:18px;border-radius:16px;background:var(--surface2);border:1px solid var(--line);display:grid;gap:10px;min-height:150px}
+.auskel .sk.a{width:55%;height:16px}.auskel .sk.b{width:75%;height:12px}.auskel .sk.c{width:65%;height:22px}.auskel .sk.d{width:45%;height:12px}
+@media (prefers-reduced-motion:reduce){.auskel .sk{animation:none}}
+/* add a shelf / archived: readable, and the boxes are dark like every other field */
+#page-audit .auadd summary{font-size:14px;color:#DCE1EB}
+#page-audit .auadd summary::before{border-color:#C9D0DD}
+#page-audit .aubox{border-radius:16px;padding:16px 18px}
+#page-audit .aubox h3{font-size:15px;color:#fff;margin:0 0 4px}
+#page-audit .aubox .ssub{font-size:13.5px;color:#D2D8E4}
+#page-audit .aubox .row{display:flex;gap:8px;align-items:stretch}
+#page-audit .aubox input.txt,#page-audit .aubox textarea.txt{box-sizing:border-box;height:38px;padding:0 12px;border-radius:10px;border:1.5px solid var(--line2);background:var(--ink);color:var(--text);font:500 13.5px var(--sans);outline:none;transition:border-color .15s}
+#page-audit .aubox textarea.txt{flex:1;height:auto;min-height:38px;padding:9px 12px;resize:vertical}
+#page-audit .aubox input.txt{flex:1}
+#page-audit .aubox input.txt:focus,#page-audit .aubox textarea.txt:focus{border-color:var(--iris)}
+#page-audit .aubox input.txt::placeholder,#page-audit .aubox textarea.txt::placeholder{color:#8B93A7}
+#page-audit .aubox .btn{height:38px}
+#page-audit .audrop{font-size:13.5px;color:#D2D8E4;border-radius:12px;border-width:1.5px;padding:14px}
+#page-audit .audrop:hover{border-color:var(--iris);color:#fff}
+#page-audit .auarchbar{font-size:13.5px;color:#D2D8E4;border-radius:14px}
+
+/* ===== b175 · sign-in always on; the Team list says where and on what ===== */
+.teambox .tstat{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;font-size:12.5px}
+.teambox .tstat b{font-weight:700}
+.teambox .tstat em{font-style:normal;font-size:12px;color:#C9D0DD;white-space:nowrap}
+.teambox .tipnote{margin-top:10px;padding:9px 12px;border-radius:10px;font-size:12.5px;color:#D2D8E4;background:rgba(140,149,255,.08);border:1px solid rgba(140,149,255,.28)}
+.teambox .tipnote code{font-size:11.5px}
+.lockbox .lkalways{margin-left:auto;padding:3px 10px;border-radius:8px;font:700 12px var(--sans);color:#6EF0BE;background:rgba(44,227,139,.12);border:1px solid rgba(44,227,139,.38)}
+.whogate .wgor em{font-style:normal;opacity:.8}

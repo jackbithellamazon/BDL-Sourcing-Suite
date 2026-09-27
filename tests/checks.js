@@ -362,11 +362,9 @@ window.SourcingChecks=(function(){
       })(),[7.63,7.63]);
       /* b91: "never found it" (our filters never surfaced it) is a different answer from "never looked at"
          (it reached our list and nobody judged it). One blames a filter, the other a pair of eyes. */
-      ok('Audit · Missed it can say the filters never found it',(()=>{
-        const m=AUDIT_TYPES.find(t=>t.code==='missed');
-        return [m.reasons.length,m.reasons.indexOf('Never found it'),m.reasons[m.reasons.length-1],
-                AU_RKEYS.length>=m.reasons.length,AU_RKEYS[m.reasons.indexOf('Never found it')]];
-      })(),[4,2,'Other',true,'e']);   /* b164: trimmed to the four Jack uses — Never looked at (Q), Passed on it (W), Never found it (E), Other (R) */
+      /* b175 (Jack, 27 Sep: "make missed it just one button too — cba with 2 clicks"): one press, like Diff method. Discord keeps PS / THC / FFB. */
+      ok('Audit · Missed it and Diff method are one press; Discord still asks which',[!!AUDIT_TYPES.find(t=>t.code==='missed').reasons,!!AUDIT_TYPES.find(t=>t.code==='diff').reasons,AUDIT_TYPES.find(t=>t.code==='discord').reasons.join('/')],[false,false,'PS/THC/FFB']);
+      ok('Audit · the seven answers are seven different colours (b175)',new Set(AUDIT_TYPES.map(t=>t.hex.toLowerCase())).size,7);
       ok('Audit · every reason on every verdict still has a key',
         AUDIT_TYPES.filter(t=>t.reasons).every(t=>t.reasons.length<=AU_RKEYS.length),true);
       /* b92 (Jack: "isn't smooth at all - very very jumpy"). Judging changes a row's height, the list is
@@ -448,7 +446,7 @@ window.SourcingChecks=(function(){
         const t=audTypes();const d=t.find(x=>x.code==='discord');
         if(keep==null)localStorage.removeItem(key);else localStorage.setItem(key,keep);
         return [t.slice(0,2).map(x=>x.code).join(','),t.length===AUDIT_TYPES.length,(d.reasons||[]).join('/'),d.prompt,d.hex];
-      })(),['discord,not',true,'PS/THC/FFB','Which Discord?','#8C95FF']);   /* b161: the saved two keep their order, and every answer in the code still appears after them */
+      })(),['discord,not',true,'PS/THC/FFB','Which Discord?','#A78BFA']);   /* b175: the colour comes from the code, not the saved list */   /* b161: the saved two keep their order, and every answer in the code still appears after them */
       ok('Audit · with nothing saved it is simply the answers in the code',(()=>{
         const key='bdl-sourcing-audit-types',keep=localStorage.getItem(key);
         localStorage.removeItem(key);const n=audTypes().length;
@@ -969,7 +967,7 @@ window.SourcingChecks=(function(){
           ok('Audit row · every row carries the tick, the picture, Amazon / Keepa / SellerAmp and all 7 answers',[!!row.querySelector(':scope > .ausel'),!!row.querySelector(':scope > .auimg'),row.querySelectorAll(':scope > .aulinks .aulk').length,row.querySelectorAll(':scope > .aubtns .aub').length,!!row.querySelector('.auright'),!!row.querySelector('.aunext')],[true,true,3,7,false,false]);
           /* b167: the result sits at the right end of the answers line, and only once there is one */
           {const m0=audAll();const was=me();if(!was)whoSet('Jack');try{audJudge(['B0B166AAAA'],'discord','A1B166','THC');const hj=auRow(sh0.items[0],0,sh0);const dj=document.createElement('div');dj.innerHTML=hj;const rj=dj.firstElementChild;
-            ok('Audit row · judged: the row is .judged with --edge in the answer colour, the lit button is "3 Discord", the result says "Discord · THC · Jack"',[rj.classList.contains('judged'),/--edge:#8C95FF/.test(rj.getAttribute('style')),(rj.querySelector('.aub.on')||{}).textContent,!!rj.querySelector(':scope > .aubtns > .aumark'),/Discord · THC/.test((rj.querySelector('.aumark')||{}).textContent||''),!!row.querySelector('.aumark')],[true,true,'3Discord',true,true,false]);
+            ok('Audit row · judged: the row is .judged with --edge in the answer colour, the lit button is "3 Discord", the result says "Discord · THC · Jack"',[rj.classList.contains('judged'),/--edge:#A78BFA/.test(rj.getAttribute('style')),(rj.querySelector('.aub.on')||{}).textContent,!!rj.querySelector(':scope > .aubtns > .aumark'),/Discord · THC/.test((rj.querySelector('.aumark')||{}).textContent||''),!!row.querySelector('.aumark')],[true,true,'3Discord',true,true,false]);
           }finally{audUndo();localStorage.setItem(AUD.V,m0);if(!was)localStorage.removeItem(ME_KEY);}}
           ok('Audit row · price says which price (3P / AMZ) with its own colour class; rank, /mo and sellers are separate readable parts',[/aupf p3/.test(h),/class="aurk"/.test(h),/class="aumo"/.test(h),/class="ausl"/.test(h)],[true,true,true,true]);
           const h2=auRow(sh0.items[1],1,sh0);ok('Audit row · a product with no details says "details on their way" and stays the same shape',[/details on their way/.test(h2),(h2.match(/class="aub /g)||[]).length+(h2.match(/class="aub"/g)||[]).length],[true,7]);
@@ -984,6 +982,9 @@ window.SourcingChecks=(function(){
       ok('Audit · a refresh on a rival waits for the shelves and reopens it; the list never keeps a rival\'s ID in the address (b171)',[/await audPullShelves\(\)/.test(String(auHash)),/auView\.mode==='audit'&&auView\.shelf===id\)return true/.test(String(auHash)),/history\.replaceState\(null,'','#audit'\)/.test(String(auFixHash)),/setTimeout\(auFixHash,0\)/.test(String(auRenderList))],[true,true,true,true]);
       ok('Header · the logo is a Home button: Brands / Filters, the brand list, address cleared (b172)',[!!document.querySelector('a#homeBtn.brand.home'),/page-brands/.test(String(goHome)),/showTab\('brands'\)/.test(String(goHome)),/replaceState/.test(String(goHome))],[true,true,true,true]);
       ok('Audit · no flash: the graph box starts with the cached or last graph; small loads show no note; the token pill is born with its last number (b173)',[/gPrev\?`<img src="\$\{gPrev\}"/.test(String(auPanel)),/const loud=batch\.length>20/.test(String(auTrickle)),/bdl-sourcing-tokens-last/.test(String(paintTokens))],[true,true,true]);
+      ok('Audit · no flicker on the rivals page: a placeholder until the shelves arrive, and the same page is never drawn twice (b174)',[/auSkeleton\(\)/.test(String(auRenderList)),/!audState\.shelfAt&&!audState\.shelfErr/.test(String(auRenderList)),/auView\._listHtml===h&&host\.querySelector\('\.card'\)\)return/.test(String(auRenderList)),/auView\._listHtml=null/.test(String(auRenderOne))],[true,true,true,true]);
+      ok('Lock · always on for the live app (b175), open only in the localhost sandbox; the who-gate offers no "carry on" off the sandbox',[/return !lockSandbox\(\)/.test(String(lockOn)),/lockSandbox\(\)\?'':/.test(String(whoGate))],[true,true]);
+      ok('Team · each sign-in records the device and, via the link-maker, the IP — only your own, refreshed at most every 6 hours (b175)',[/action:'whoami'/.test(String(signinSeen)),/6\*3600e3/.test(String(signinSeen)),/guestOn\(\)\)return/.test(String(signinSeen)),typeof authDevice()==='string'],[true,true,true,true]);
       ok('Audit · a redraw scrolls only for a key pressed in the last 400ms or the moment a shelf opens',[/auKeyed\(\)\|\|auView\.opened/.test(String(auRenderOne)),/Date\.now\(\)-auView\.keyAt<400/.test(String(auKeyed)),/AU_ANCHOR\.want/.test(String(auRenderOne))],[true,true,false]);
       ok('Audit · the storefront strip is one line with the paste box folded away (b166), and the answer tabs carry their key numbers',[/class="aumine2/.test(String(auRenderList)),/<details class="ampaste"/.test(String(auRenderList)),/<textarea class="txt" id="auMineIn"/.test(String(auRenderList)),/k\?`<kbd>\$\{k\}<\/kbd>`/.test(String(auRenderOne))],[true,true,true,true]);
       ok('Audit · the next product\'s graph is fetched while you look at this one (once, never twice)',[/auPrefetchGraph\(next\)/.test(String(auLoadGraph)),/AU_GRAPH\.cache\[asin\]!==undefined\|\|AU_GRAPH\.pending\[asin\]/.test(String(auPrefetchGraph))],[true,true]);
