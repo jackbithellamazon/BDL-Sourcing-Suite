@@ -1,128 +1,297 @@
-/* BDL Sourcing — SHARED STORAGE (b10, 13 Sep 2026). Supabase REST, no SDK, anon key like every other BDL app.
-   Local first: every store writes localStorage, then queues a ROW-LEVEL upsert / delete here. The outbox drains in order and
-   survives a refresh, so a dropped connection loses nothing. Pull on boot replaces the local copies with the cloud's — but only
-   once the outbox is empty, so an unsent local change can never be overwritten by a stale cloud row.
-   Never a whole-dataset upload (the Aug-2026 OA Overview bug class): each write is the rows that changed.
-   Sandbox rule: on localhost the cloud is OFF unless ?cloud is in the URL. */
-const CLOUD={url:'https://ffbdazepqrsyurhouxif.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmYmRhemVwcXJzeXVyaG91eGlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4OTM5MjIsImV4cCI6MjA5MDQ2OTkyMn0.BAuodLUDGzO9A7IfoRRn0HZ1MgWOXNPeYKPDBNaNWeg'};
-const OUTBOX_KEY='bdl-sourcing-outbox';
-const cloud={busy:false,last:null,err:'',tables:true,pulled:false,pulling:false};
-/* b155 (Jack, 25 Sep: "a guest mode so it doesn't actually save to Supabase at all — I want to run them all and check them").
-   Guest mode = the sandbox switch on the live site: cloudEnabled() goes false, so nothing is queued, sent or pulled (the same
-   path every sandbox test already runs), and cloudReq refuses any write as a second lock. guest.js takes the snapshot on the
-   way in and puts it back on the way out. */
-const GUEST_KEY='bdl-sourcing-guest';
-function guestOn(){try{const g=JSON.parse(localStorage.getItem(GUEST_KEY)||'null');return!!(g&&g.on);}catch(e){return false;}}
-/* b182: guest mode sends nothing, but it may still READ the live shelves and storefront, so the audit is not an empty page. The
-   sandbox on localhost and a copy opened from a file read nothing. */
-function cloudReadable(){if(cloudEnabled())return true;const h=location.hostname;return guestOn()&&!(h==='localhost'||h==='127.0.0.1'||h==='');}
-function cloudEnabled(){if(guestOn())return false;const h=location.hostname;const local=h==='localhost'||h==='127.0.0.1'||h==='';return !local||/[?&]cloud/.test(location.search);}
-function nowIso(){return new Date().toISOString();}
-function cloudHdr(extra){return Object.assign({apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json'},extra||{});}
-async function cloudReq(method,path,body,prefer,keepalive){
-  if(guestOn()&&method!=='GET'){const e=new Error('guest mode — nothing is sent');e.status=0;throw e;}
-  const r=await fetch(CLOUD.url+'/rest/v1/'+path,{method,headers:cloudHdr(prefer?{Prefer:prefer}:{}),body:body==null?undefined:JSON.stringify(body),keepalive:!!keepalive});
-  if(!r.ok){const t=await r.text();const e=new Error(method+' '+path.split('?')[0]+' → '+r.status+' '+t.slice(0,160));e.status=r.status;e.body=t;throw e;}
-  const t=await r.text();return t?JSON.parse(t):null;}   /* 201/204 with return=minimal have no body */
-async function cloudGetAll(table,query){const out=[];let from=0;const page=1000;
-  while(true){const r=await fetch(CLOUD.url+'/rest/v1/'+table+'?'+(query||'select=*'),{headers:cloudHdr({Range:from+'-'+(from+page-1),'Range-Unit':'items'})});
-    if(!r.ok){const t=await r.text();const e=new Error('GET '+table+' → '+r.status+' '+t.slice(0,160));e.status=r.status;e.body=t;throw e;}
-    const rows=await r.json();out.push(...rows);if(rows.length<page)break;from+=page;}
-  return out;}
-/* b106. "Could not find the 'asked' column of 'src_products' in the schema cache" is a missing COLUMN (PGRST204,
-   HTTP 400) — the table is there. Matching 'schema cache' alone read that as a missing TABLE, switched the whole
-   audit sync off, and left every verdict queued behind a row that could never send. Only a missing table
-   (404 / PGRST205 / relation does not exist) counts now. */
-function missingTables(e){if(!e)return false;const b=e.body||'';
-  if(/PGRST204|column/i.test(b)&&!/PGRST205|relation .* does not exist/i.test(b))return false;
-  return e.status===404||/PGRST205|does not exist|schema cache/i.test(b);}
-/* ---- outbox ---- */
-function outbox(){return lsGet(OUTBOX_KEY,[]);}
-/* op 'upsert' → payload = rows[] · op 'delete' → payload = {col, vals[]} */
-function cloudQueue(table,op,payload){if(!cloudEnabled())return;if(op==='upsert'&&!payload.length)return;if(op==='delete'&&!payload.vals.length)return;
-  const q=outbox();q.push({t:Date.now(),table,op,payload,tries:0});lsSet(OUTBOX_KEY,q);paintCloud();cloudFlush();}
-let flushTimer=null;
-async function cloudFlush(){if(!cloudEnabled()||cloud.busy)return;if(!outbox().length){paintCloud();return;}cloud.busy=true;paintCloud();
-  try{while(true){const q=outbox();if(!q.length)break;const it=q[0];
-      try{
-        if(it.op==='upsert'){for(let i=0;i<it.payload.length;i+=200)await cloudReq('POST',it.table,it.payload.slice(i,i+200),'resolution=merge-duplicates,return=minimal');}
-        else if(it.op==='delete'){const vals=it.payload.vals;for(let i=0;i<vals.length;i+=200)await cloudReq('DELETE',it.table+'?'+it.payload.col+'=in.('+vals.slice(i,i+200).map(v=>'"'+encodeURIComponent(v)+'"').join(',')+')',null,'return=minimal');}
-        const q2=outbox();q2.shift();lsSet(OUTBOX_KEY,q2);cloud.last=Date.now();cloud.err='';cloud.tables=true;
-      }catch(e){
-        if(missingTables(e)){cloud.tables=false;cloud.err='shared tables not created yet';throw e;}
-        /* a row the server refuses (400/409/422) must not block everything behind it — three tries then drop it, loudly */
-        if(e.status&&e.status>=400&&e.status<500&&e.status!==429){const q2=outbox();q2[0].tries=(q2[0].tries||0)+1;
-          if(q2[0].tries>=3){console.warn('BDL Sourcing: dropped an unsendable change',q2[0],e.message);q2.shift();}lsSet(OUTBOX_KEY,q2);cloud.err=e.message;if(q2.length&&q2[0].tries>=1&&q2[0].tries<3)throw e;continue;}
-        throw e;}}
-  }catch(e){cloud.err=cloud.err||e.message;clearTimeout(flushTimer);flushTimer=setTimeout(cloudFlush,cloud.tables?20000:120000);}
-  cloud.busy=false;paintCloud();}
-/* ---- pull: cloud → local. Called on boot and on demand. ---- */
-async function cloudPull(){if(!cloudEnabled()||cloud.pulling)return false;cloud.pulling=true;paintCloud();let ok=false;
-  try{await cloudFlush();if(outbox().length)throw new Error('unsent changes — pull skipped');
-    /* b154: the Keepa console's day rows (kc:<Name>:<day>) live in src_settings too — they come down on their own (kcPull), not with every boot */
-    const [S,R,V,F,B,BB,D,ST]=await Promise.all(['src_sources','src_runs','src_verdicts','src_facts','src_blacklist','src_brand_blacklist','src_discounts','src_settings'].map(t=>cloudGetAll(t,t==='src_settings'?'key=not.like.kc:*':undefined)));
-    cloud.tables=true;
-    /* an EMPTY cloud table means nobody has synced it yet — push what this browser has, never wipe it */
-    if(!S.length)cloudQueue('src_sources','upsert',srcAll().map(srcRow));else lsSet(SRC_KEY,S.map(r=>r.data));
-    const LR=runsAll();if(!R.length&&LR.length)cloudQueue('src_runs','upsert',LR.map(run=>({id:run.source+'|'+(run.day||run.at.slice(0,10)),source_key:run.source,day:run.day||run.at.slice(0,10),at:run.at,who:run.who||'',data:run})));
-    else lsSet(RUN_KEY,R.map(r=>r.data).sort((a,b)=>a.at<b.at?-1:1));
-    const LV=verdAll();if(!V.length&&Object.keys(LV).length)cloudQueue('src_verdicts','upsert',Object.entries(LV).map(([asin,row])=>({asin,v:row.v,reason:row.reason||'',note:row.note||'',who:row.who||'',at:row.at||nowIso(),source_key:row.source||'',state:row.state||null})));
-    else{const vo={};V.forEach(r=>vo[r.asin]={v:r.v,reason:r.reason||'',note:r.note||'',who:r.who||'',at:r.at,source:r.source_key||'',state:r.state||null});lsSet(VERD_KEY,vo);}
-    const LF=factsAll();if(!F.length&&Object.keys(LF).length)cloudQueue('src_facts','upsert',Object.entries(LF).map(([asin,f])=>{const {who,at,...data}=f;return{asin,data,who:who||'',at:at||nowIso()};}));
-    else{const fo={};F.forEach(r=>fo[r.asin]=Object.assign({},r.data||{},{who:r.who||'',at:r.at}));lsSet(FACT_KEY,fo);}
-    const LB=blAll();if(!B.length&&Object.keys(LB).length)cloudQueue('src_blacklist','upsert',Object.entries(LB).map(([asin,b])=>({asin,reason:b.reason,note:b.note||'',title:b.title||'',who:b.who||'',at:b.at||nowIso(),source_key:b.source||''})));
-    else{const bo={};B.forEach(r=>bo[r.asin]={reason:r.reason,note:r.note||'',title:r.title||'',who:r.who||'',at:r.at,source:r.source_key||''});lsSet(BL_KEY,bo);}
-    const LBB=bbAll();if(!BB.length&&Object.keys(LBB).length)cloudQueue('src_brand_blacklist','upsert',Object.entries(LBB).map(([k,r])=>bbRow(k,r)));
-    else{const bb={};BB.forEach(r=>bb[r.brand]={display:r.display||r.brand,reason:r.reason,by:r.requested_by||'',at:r.requested_at,status:r.status,decidedBy:r.decided_by||'',decidedAt:r.decided_at||''});lsSet(BB_KEY,bb);}
-    if(!D.length)cloudQueue('src_discounts','upsert',discAll().map(discRow));else lsSet(DISC_KEY,D.map(r=>r.data).sort((a,b)=>a.name.localeCompare(b.name)));
-    const st={};ST.forEach(r=>st[r.key]=r.value);
-    if(st.reasons)lsSet(REASONS_KEY,st.reasons);else cloudQueue('src_settings','upsert',[settingRow('reasons',noReasons())]);
-    if(st.vat0)lsSet(VAT0_KEY,st.vat0);else cloudQueue('src_settings','upsert',[settingRow('vat0',vat0Words())]);
-    if(st.catBlock)lsSet(CAT_KEY,st.catBlock);else cloudQueue('src_settings','upsert',[settingRow('catBlock',catWords())]);
-    /* b158: the audit's inventory list and archived rivals follow Jack to any browser */
-    if(st['audit-mine'])lsSet('bdl-sourcing-audit-mine',st['audit-mine']);
-    if(st['audit-archived'])lsSet('bdl-sourcing-audit-archived',st['audit-archived']);
-    if(st['audit-jointdays']!=null)lsSet('bdl-sourcing-audit-jointdays',st['audit-jointdays']);
-    /* b153: who is who, who has signed in, and whether the door is locked */
-    if(st.team&&typeof TEAM_KEY!=='undefined')lsSet(TEAM_KEY,st.team);
-    if(typeof SIGNIN_KEY!=='undefined'){const si={};Object.keys(st).filter(k=>k.startsWith('signin:')).forEach(k=>si[k.slice(7)]=st[k]);if(Object.keys(si).length)lsSet(SIGNIN_KEY,Object.assign(lsGet(SIGNIN_KEY,{})||{},si));}
-    if(st.lock&&typeof LOCK_KEY!=='undefined'){lsSet(LOCK_KEY,st.lock);if(typeof lockCheck==='function')lockCheck();}
-    /* lead states are pulled per source when a run opens; the ones this browser already holds go up if the cloud has none */
-    const LL=leadAll();for(const key of Object.keys(LL)){const m=LL[key];if(!m||!Object.keys(m).length)continue;
-      const have=await cloudGetAll('src_leads','select=id&source_key=eq.'+encodeURIComponent(key)+'&limit=1');
-      if(!have.length)cloudQueue('src_leads','upsert',Object.entries(m).map(([a,e])=>({id:key+'|'+a,source_key:key,asin:a,state:e.state,stamp:e.stamp,prev:e.prev||null,updated_at:nowIso()})));}
-    cloud.pulled=true;cloud.last=Date.now();cloud.err='';ok=true;
-  }catch(e){cloud.err=e.message;if(missingTables(e))cloud.tables=false;}
-  cloud.pulling=false;paintCloud();return ok;}
-/* light refresh of what other people change while the list is open: sources (locks) + runs */
-async function cloudPullLight(){if(!cloudEnabled()||!cloud.tables||outbox().length)return false;
-  try{const [S,R]=await Promise.all([cloudGetAll('src_sources'),cloudGetAll('src_runs')]);
-    if(S.length)lsSet(SRC_KEY,S.map(r=>r.data));lsSet(RUN_KEY,R.map(r=>r.data).sort((a,b)=>a.at<b.at?-1:1));cloud.last=Date.now();cloud.err='';paintCloud();return true;}
-  catch(e){cloud.err=e.message;paintCloud();return false;}}
-/* lead states for one source — pulled when its run view opens (the compare baseline must be shared, not per machine) */
-async function cloudPullLeads(sourceKey){if(!cloudEnabled()||!cloud.tables)return false;
-  if(outbox().length){await cloudFlush();if(outbox().length)return false;}  /* never replace a baseline that has unsent changes */
-  try{const rows=await cloudGetAll('src_leads','select=*&source_key=eq.'+encodeURIComponent(sourceKey));
-    const m={};rows.forEach(r=>m[r.asin]={state:r.state,stamp:r.stamp,prev:r.prev||null});const all=leadAll();all[sourceKey]=m;lsSet(LEAD_KEY,all);return true;}
-  catch(e){cloud.err=e.message;if(missingTables(e))cloud.tables=false;paintCloud();return false;}}
-/* b58: every source's lead states in one go — the Lead history view. Replaces the local map wholesale (never with unsent changes pending). */
-async function cloudPullLeadsAll(){if(!cloudEnabled()||!cloud.tables)return false;
-  if(outbox().length){await cloudFlush();if(outbox().length)return false;}
-  try{const rows=await cloudGetAll('src_leads','select=*');const all={};rows.forEach(r=>{(all[r.source_key]=all[r.source_key]||{})[r.asin]={state:r.state,stamp:r.stamp,prev:r.prev||null};});lsSet(LEAD_KEY,all);cloud.last=Date.now();cloud.err='';paintCloud();return true;}
-  catch(e){cloud.err=e.message;if(missingTables(e))cloud.tables=false;paintCloud();return false;}}
-/* ---- the pill in the header ---- */
-function paintCloud(){const el=document.getElementById('cloudPill');if(!el)return;const n=outbox().length;let cls='',txt='',title='';
-  if(guestOn()){cls='guest';txt='Guest · not saving';title='Guest mode: nothing you do is sent to the shared database, and it is all undone when you leave guest mode';}
-  else if(!cloudEnabled()){cls='off';txt='Local · sandbox';title='Cloud is off on localhost (add ?cloud to the URL to test it)';}
-  else if(!cloud.tables){cls='bad';txt='Shared storage not set up';title='Run the SQL file in Supabase once — until then everything stays in this browser and is queued ('+n+' waiting)';}
-  else if(cloud.pulling){cls='sync';txt='Loading shared data…';}
-  else if(n){cls='sync';txt=n+' change'+(n===1?'':'s')+' to send';title=cloud.err||'sending…';}
-  else if(cloud.err){cls='bad';txt='Sync problem';title=cloud.err;}
-  else{cls='ok';txt='Shared'+(cloud.last?' · '+new Date(cloud.last).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'');title='Everyone sees the same runs, verdicts and blacklist';}
-  el.className='cloudpill '+cls;el.innerHTML='<i></i>'+txt;el.title=title;
-  const s=document.getElementById('cloudInfo');if(s)s.textContent=!cloudEnabled()?'Cloud off (sandbox).':!cloud.tables?'Tables missing — run 2026-09-13-BDL-SOURCING-SUPABASE.sql in the shared project once. Local changes are queued: '+n+'.':(n?n+' queued · ':'')+(cloud.err?'last error: '+cloud.err:'in sync'+(cloud.last?' at '+new Date(cloud.last).toLocaleTimeString('en-GB'):''));}
-async function cloudInit(){paintCloud();if(!cloudEnabled())return;
-  const ok=await cloudPull();if(typeof onCloudPulled==='function')onCloudPulled(ok);
-  window.addEventListener('online',cloudFlush);setInterval(()=>{if(outbox().length)cloudFlush();},45000);
-  /* tables not there yet (SQL not run): look again every two minutes so the pill goes green by itself once Jack runs it */
-  setInterval(async()=>{if(cloud.tables||cloud.pulling)return;const ok=await cloudPull();if(ok&&typeof onCloudPulled==='function')onCloudPulled(ok);},120000);}
+/* ══════════ SAVE SAFETY NET ══════════════════════════════════════════════════
+   Five separate times this app has told Jack something was saved when it wasn't:
+   the autosave chip, the pay flag, the EOD submit, db_insert, and lead decisions.
+   Every one was the same shape — fire a write, swallow the error, report success.
+   Fixing them one at a time doesn't stop the sixth. So: one helper that every
+   data-critical write goes through, which VERIFIES the response and makes any
+   failure visible and retryable. Silence is not an option it offers. */
+var SAVE_FAILS = {};
+function dbWrite(label, url, opts, retry){
+  return fetchT(url, opts).then(function(r){
+    if(r && r.ok){ saveOk(label); return r; }
+    saveFail(label, 'the server said no ('+(r?r.status:'?')+')', retry);
+    return r;
+  }).catch(function(e){
+    saveFail(label, (e && e.timeout) ? 'it timed out' : 'you appear to be offline', retry);
+    throw e;
+  });
+}
+function saveOk(label){ if(SAVE_FAILS[label]){ delete SAVE_FAILS[label]; renderSaveBar(); } }
+function saveFail(label, why, retry){
+  SAVE_FAILS[label]={why:why, retry:retry||null, at:Date.now()};
+  renderSaveBar();
+  try{ errLog('save_fail',{msg:label+' \u2014 '+why}); }catch(e){}
+}
+/* ── ERRORS FROM THEIR MACHINES (v51.5) ────────────────────────────────────────
+   Hundreds of try/catch blocks keep this app on its feet, and the price was that a broken
+   screen on a VA's laptop was invisible until she messaged Jack. Every uncaught error, every
+   unhandled promise and every failed cloud save is now written to shift_events (kind error /
+   save_fail), once per distinct message per session, capped so a storm cannot flood the table.
+   Jack's Issues tab reads them back ("From their machines"). Never in preview. */
+var ERR_SENT={}, ERR_COUNT=0;
+function errLog(kind, meta){
+  try{
+    if(typeof IS_PREVIEW!=='undefined' && IS_PREVIEW) return;
+    if(typeof SUPABASE_URL==='undefined' || typeof DB_ENABLED==='undefined' || !DB_ENABLED) return;
+    var key=kind+'|'+String((meta&&meta.msg)||'').slice(0,80);
+    if(ERR_SENT[key]) return; ERR_SENT[key]=1;
+    if(++ERR_COUNT>25) return;
+    var va=(window.state&&state.currentVA&&state.currentVA!=='Test')?state.currentVA:'Jack';
+    var day=''; try{ day=shiftDayKey(); }catch(e){ day=new Date().toLocaleDateString('en-GB'); }
+    var row={va:va, day:day, kind:kind, client_ms:Date.now(), tab:(typeof SE_TAB!=='undefined'?SE_TAB:''),
+      meta:Object.assign({ver:(typeof APP_VERSION!=='undefined'?APP_VERSION:''), where:(location.hash||'').slice(0,40)}, meta||{})};
+    fetch(SUPABASE_URL+'/rest/v1/shift_events',{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+      body:JSON.stringify([row])}).catch(function(){});
+  }catch(e){}
+}
+try{
+  window.addEventListener('error',function(e){ errLog('error',{msg:String((e&&e.message)||'error').slice(0,200), src:String((e&&e.filename)||'').split('/').pop().split('?')[0].slice(0,50), line:(e&&e.lineno)||0}); });
+  window.addEventListener('unhandledrejection',function(e){ var r=e&&e.reason; errLog('error',{msg:'unhandled: '+String((r&&(r.message||r))||'').slice(0,200), src:String((r&&r.stack)||'').split('\n')[1]||''}); });
+}catch(e){}
+function renderSaveBar(){
+  var keys=Object.keys(SAVE_FAILS);
+  var bar=document.getElementById('save-fail-bar');
+  if(!keys.length){ if(bar) bar.remove(); document.body.classList.remove('has-save-bar'); return; }
+  if(!bar){
+    bar=document.createElement('div'); bar.id='save-fail-bar';
+    document.body.appendChild(bar); document.body.classList.add('has-save-bar');
+  }
+  var first=SAVE_FAILS[keys[0]];
+  bar.innerHTML='<span class="sf-i">&#9888;</span>'
+    +'<div><b>'+keys.length+' thing'+(keys.length===1?'':'s')+" didn't save.</b>"
+    +'<span>'+escHtml(keys.slice(0,3).join(', '))+(keys.length>3?' +'+(keys.length-3)+' more':'')
+    +' &mdash; '+escHtml(first.why)+'</span></div>'
+    +'<button onclick="retryAllSaves()">Retry</button>'
+    +'<button class="sf-x" onclick="dismissSaveBar()" title="Hide">&#10005;</button>';
+}
+function retryAllSaves(){
+  var keys=Object.keys(SAVE_FAILS);
+  if(!keys.length) return;
+  showToast('Retrying '+keys.length+'…');
+  keys.forEach(function(k){
+    var f=SAVE_FAILS[k];
+    if(typeof f.retry==='function'){ try{ f.retry(); }catch(e){} }
+    else { delete SAVE_FAILS[k]; }        // nothing to replay — clear so the bar is honest
+  });
+  setTimeout(renderSaveBar, 900);
+}
+function dismissSaveBar(){ SAVE_FAILS={}; renderSaveBar(); }
+function fetchT(url, opts, ms){
+  opts = opts || {}; ms = ms || 12000;
+  var timer, settled = false;
+  var ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var merged = {}; for (var k in opts) merged[k] = opts[k];
+  if (ac) merged.signal = ac.signal;
+
+  // RACE rather than relying on the abort alone. Aborting asks the request to stop,
+  // but nothing guarantees the promise then settles — so the deadline is enforced on
+  // our side too. Without this a request that ignores the signal still hangs for ever,
+  // which is the whole failure we are fixing.
+  var deadline = new Promise(function(_, reject){
+    timer = setTimeout(function(){
+      if (settled) return;
+      if (ac) { try{ ac.abort(); }catch(e){} }
+      var te = new Error('timeout'); te.timeout = true;
+      reject(te);
+    }, ms);
+  });
+
+  return Promise.race([fetch(url, merged), deadline]).then(
+    function(r){ settled = true; clearTimeout(timer); return r; },
+    function(e){
+      settled = true; clearTimeout(timer);
+      if (e && (e.timeout || e.name === 'AbortError')) { var te = new Error('timeout'); te.timeout = true; throw te; }
+      throw e;
+    }
+  );
+}
+/* Sandbox detection. The point is to stop TEST runs writing to live data — but it was
+   also blocking Jack, who genuinely works from the file on his disk, and his lead
+   decisions were dropped for four days because of it. So a `file://` copy can now be
+   unlocked in one click (`bdl_live_writes`); localhost stays hard-blocked because that
+   is only ever an automated preview. */
+var IS_PREVIEW = (function(){ try{
+  var h=location.hostname;
+  var isLocalServer = (h==='localhost'||h==='127.0.0.1'||h==='0.0.0.0');
+  if(isLocalServer) return true;                       // never writable — this is the test harness
+  if(location.protocol==='file:'){
+    try{ if(lsGet('bdl_live_writes')==='1') return false; }catch(e){}
+    return true;                                       // blocked until explicitly unlocked
+  }
+  return !h;
+}catch(e){ return false; } })();
+/* ── PREVIEW NEVER WRITES — enforced at the network, not by discipline (v51.5) ──────────
+   28/09: the ship gate's smoke run submitted a test shift on a 127.0.0.1 copy and the app
+   fired a real DELETE at Mera's cloud draft (eodSaved → deleteDraft was never gated). Dozens
+   of writes are individually guarded with IS_PREVIEW; one that is not can wipe a VA's live
+   day from a preview tab. So in preview every non-GET request to anywhere, and every Discord
+   URL, is swallowed here and answered with an empty 200 — the caller believes it saved, which
+   is exactly what a preview should do. Reads stay real, so the data on screen is real. */
+if(IS_PREVIEW){ (function(){
+  try{
+    var real=window.fetch; window._previewBlocked=[];
+    window.fetch=function(u,o){
+      var m=((o&&o.method)||'GET').toUpperCase(), url=String(u);
+      if(m!=='GET' || /discord\.com\/api\/webhooks/i.test(url)){
+        try{ window._previewBlocked.push(m+' '+url.replace(/^https?:\/\/[^/]+/,'').split('?')[0]); console.warn('[preview] blocked '+m+' '+url.slice(0,100)); }catch(e){}
+        return Promise.resolve(new Response('[]',{status:200,headers:{'Content-Type':'application/json'}}));
+      }
+      return real.apply(this,arguments);
+    };
+  }catch(e){}
+})(); }
+/* Turn saving on for this browser (file:// copies only). */
+function enableLiveWrites(){
+  try{
+    if(location.hostname) { showToast('This copy already saves normally.'); return; }
+    lsPut('bdl_live_writes','1');
+  }catch(e){}
+  showToast('Saving switched on \u2014 reloading\u2026');
+  setTimeout(function(){ location.reload(); }, 700);
+}
+function disableLiveWrites(){
+  try{ lsDrop('bdl_live_writes'); }catch(e){}
+  location.reload();
+}
+var DISCORD_PAY_WEBHOOK = '';
+var SUPABASE_URL      = 'https://ffbdazepqrsyurhouxif.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmYmRhemVwcXJzeXVyaG91eGlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4OTM5MjIsImV4cCI6MjA5MDQ2OTkyMn0.BAuodLUDGzO9A7IfoRRn0HZ1MgWOXNPeYKPDBNaNWeg';
+var DISCORD_WEBHOOK   = ''; // set in Jack Settings → Notifications
+var DISCORD_WEEKLY_WEBHOOK = '';
+var DISCORD_TASKS_WEBHOOK = '';
+var DISCORD_BREAK_WEBHOOK = '';
+var DISCORD_SHIFT_START_WEBHOOK = '';
+
+var DB_ENABLED = SUPABASE_URL !== 'YOUR_SUPABASE_URL';
+
+// ── SUPABASE HELPERS ─────────────────────────────────────
+async function db_insert(table, record) {
+  if(IS_PREVIEW) return null;
+  if (!DB_ENABLED) return null;
+  try {
+    var res = await fetch(SUPABASE_URL + '/rest/v1/' + table, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(record)
+    });
+    // It used to `return await res.json()` regardless — so a 4xx/5xx RESOLVED with the
+    // error body, and callers' .then() ran as if the write had succeeded. That is how an
+    // end-of-day Discord summary could go out for a shift that was never stored.
+    if (!res.ok) {
+      var body=''; try{ body=(await res.text()).slice(0,300); }catch(_){}
+      console.error('DB insert failed:', table, res.status, body);
+      throw new Error('insert failed: '+res.status);
+    }
+    return await res.json();
+  } catch(e) { console.error('DB insert error:', e); throw e; }
+}
+
+async function db_fetch(table, filters) {
+  if (!DB_ENABLED) return null;
+  try {
+    var qs = filters ? '?' + filters : '';
+    var res = await fetchT(SUPABASE_URL + '/rest/v1/' + table + qs, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+      }
+    });
+    return await res.json();
+  } catch(e) { console.error('DB fetch error:', e); return null; }
+}
+
+async function db_delete(table, id) {
+  if (!DB_ENABLED) return null;
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/' + table + '?id=eq.' + id, {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+      }
+    });
+  } catch(e) { console.error('DB delete error:', e); }
+}
+
+async function db_loadAll() {
+  if (!DB_ENABLED) return null;
+  var rows = await db_fetch('shifts', 'order=submitted_at.desc&limit=120');
+  if (!rows || !Array.isArray(rows)) return null;
+  return rows.map(function(r) { return r.data; }).filter(function(d){ return d && !d.archived; });   // v51.5: archived stays in Supabase, off the dashboard
+}
+
+/* ── THE VA'S OWN HISTORY, FROM SUPABASE (v50.9) ──────────────────────────────
+   Her machine used to keep her last 60 full shift reports in the browser (0.95M
+   characters) so the streak, the sparkline and Discord's "vs last shift" had
+   something to read. Those only ever need date, leads and hours. Pull exactly that
+   — about 5k characters — at login and keep it in memory. Jack's full pull, if it
+   has already happened in this browser, is never downgraded by it. */
+function vaHistLoad(va){
+  if(!(va==='Mera'||va==='Suz') || !DB_ENABLED) return Promise.resolve(mgr_getLog());
+  return fetchT(SUPABASE_URL+'/rest/v1/shifts?select=id,va,date,submitted_at,totalLeads:data->>totalLeads,hoursWorked:data->>hoursWorked'
+      +'&va=eq.'+encodeURIComponent(va)+'&data->>archived=neq.true&order=submitted_at.desc&limit=60',
+      {headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY}})
+    .then(function(r){ return r.ok?r.json():null; })
+    .then(function(rows){
+      if(!Array.isArray(rows) || window._shiftLogFull) return mgr_getLog();
+      window._shiftLog=rows.map(function(r){ return {id:r.id, va:r.va, date:r.date, totalLeads:r.totalLeads, hoursWorked:r.hoursWorked, _summary:true}; });
+      try{ if(typeof renderShiftKpiExtras==='function') renderShiftKpiExtras(); }catch(e){}
+      return window._shiftLog;
+    })
+    .catch(function(){ return mgr_getLog(); });
+}
+/* the shift she has just submitted, so "vs last shift" is right without a refetch */
+function vaHistRemember(rec){
+  if(!rec||!rec.va) return;
+  var log=mgr_getLog().filter(function(r){ return !(r.va===rec.va && r.date===rec.date); });
+  log.unshift({id:rec.id, va:rec.va, date:rec.date, totalLeads:rec.totalLeads, hoursWorked:rec.hoursWorked, _summary:true});
+  window._shiftLog=log;
+}
+/* ── RETIRE THE OLD BROWSER COPIES, WITHOUT LOSING A ROW (v50.9) ─────────────
+   `shifttrack_eod_log` and `bdl_decisions` are no longer read by anything. Before
+   deleting either, check every row it holds is in Supabase — a VA's copy could in
+   theory hold a shift whose upload failed long ago. If every row is in the cloud
+   the key goes and the pot gets its space back; if not, it stays and the console
+   names the rows. Read-only on the cloud; runs once per load, only if a key exists. */
+function legacyLogRetire(){
+  if(!DB_ENABLED) return;
+  var H={headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY}};
+  try{
+    var raw=lsGet('shifttrack_eod_log');
+    if(raw!=null){
+      var local=[]; try{ local=JSON.parse(raw)||[]; }catch(e){ local=[]; }
+      fetchT(SUPABASE_URL+'/rest/v1/shifts?select=va,date&limit=5000',H)
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(rows){
+          if(!Array.isArray(rows)) return;
+          var have={}; rows.forEach(function(r){ have[r.va+'|'+r.date]=1; });
+          var missing=(Array.isArray(local)?local:[]).filter(function(r){ return r && r.va && r.va!=='Test' && !have[r.va+'|'+r.date]; });
+          if(missing.length){ console.warn('[storage] keeping the old shift copy: '+missing.length+' row(s) are not in Supabase',
+                                           missing.map(function(r){ return r.va+' '+r.date; })); return; }
+          lsDrop('shifttrack_eod_log');
+          try{ console.log('[storage] old shift copy retired — every row is in Supabase'); }catch(e){}
+        }).catch(function(){});
+    }
+    var rawD=lsGet('bdl_decisions');
+    if(rawD!=null){
+      var localD=[]; try{ localD=JSON.parse(rawD)||[]; }catch(e){ localD=[]; }
+      fetchT(SUPABASE_URL+'/rest/v1/lead_decisions?select=id&limit=10000',H)
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(rows){
+          if(!Array.isArray(rows)) return;
+          var have={}; rows.forEach(function(r){ have[r.id]=1; });
+          var missing=(Array.isArray(localD)?localD:[]).filter(function(r){ return r && r.id!=null && !have[r.id]; });
+          if(missing.length){ console.warn('[storage] keeping the old decisions copy: '+missing.length+' not in Supabase',
+                                           missing.map(function(r){ return r.id; })); return; }
+          lsDrop('bdl_decisions');
+        }).catch(function(){});
+    }
+  }catch(e){}
+}
+try{ setTimeout(legacyLogRetire,4000); }catch(e){}
+
