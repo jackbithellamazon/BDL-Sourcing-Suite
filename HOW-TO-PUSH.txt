@@ -1,12 +1,31 @@
-HOW TO PUSH — BDL VA HQ (ShiftTrack) v51.6 · 28 Sep 2026
+BDL SOURCING — b199 · 28 Sep 2026   (includes b184 → b198)
 
-1. Open github.com/jackbithellamazon/shifttrack
-2. Click "Add file" → "Upload files"
-3. Drag ALL of these from this folder onto the page, together: index.html, the css folder, the js folder
-   (the tests folder and these txt files are optional)
-4. Click the green "Commit changes". Wait a minute.
-5. Open https://jackbithellamazon.github.io/shifttrack/ and hard-refresh (Cmd+Shift+R). The version label must say v51.6.
-6. Tell Claude it is up — it sets the latest-build flag so the VAs get the update nudge.
+UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b199.
 
-Nothing changes for the VAs: same address, same login. It is one app in several files now, like the Sourcing Suite and PrepHub.
-An index.html on its own will NOT run any more — it needs the css and js folders next to it.
+THEN — EU DROPS, STEP BY STEP
+   Brands / Filters → "EU drops · all markets (testing)" (yours) → Run.
+   1. Under "Open in Keepa" click 🇩🇪 DE. In Keepa click the flag (top right) → Amazon.de. Wait for the table.
+      Rows per page → maximum (bottom of the table). Export → All active columns → CSV.     (about 3,601 rows)
+   2. 🇫🇷 FR → switch Keepa to Amazon.fr → same.   (about 2,968)
+   3. 🇮🇹 IT → Amazon.it → same.                    (about 3,548)
+   4. 🇪🇸 ES → Amazon.es → same.                    (about 2,292)
+      Each button is THAT country's own filter (its own categories) — always use the matching button.
+   5. Drop all four files on the box.
+   6. Press "Open UK Product Viewer". With thousands of ASINs it copies them and opens an empty Viewer:
+      click in the Viewer's ASIN box, Cmd+V, load. Rows per page → maximum. Export → All active columns.
+      (If Keepa won't take them all at once, do it in two halves — send me the files and I'll split them.)
+   7. Drop the Viewer file. Rule 1 keeps what pays — and you see how much of it was noise.
+
+ALSO IN THIS BUILD
+   · b184 Keepa console → "3 · Check profit" (only you): paste ASINs, Keepa prices them, Rule 1 keeps what pays.
+
+   · b186: glassware, window film, pets and Clairefontaine are out in every country.
+   · b187: Exacompta and generic brands (Generic / Générique / Sans marque / Unbranded …) out in every country.
+   · b188: tablecloths and VEVOR out.
+   · b189: Funko, walther design, HELLA, KS Tools out; Amazon must hold the Buy Box (you only buy EU A2A from Amazon).
+   · b190: Xiaomi out; "Buy Box seller: Amazon" comes pre-ticked in every link.
+   · b191: book covers, food & drink, OtterBox, febi bilstein, BGS, ARTDECO, APS out.
+   · b192: 3M, Adam Hall, AZ FLAG, DUPLI-COLOR out.
+   · b193: Elizabeth Arden, Fairy, Joma, Petti Artigiani Italiani, Digitus out.
+   · b194: bed linen (duvet sets, sheets, pillows) out in every country.

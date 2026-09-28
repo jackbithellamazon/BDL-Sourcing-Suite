@@ -2540,3 +2540,15 @@ html:not([data-theme="light"]) .authpill{color:#fff;background:var(--ink)}
 .ausync.guest{color:#FFD08A;border-color:rgba(255,178,36,.45);background:rgba(255,178,36,.1)}
 /* b183 */
 #keepaRow .apihint{color:#AEB6C6;font-size:12.5px;margin:0 4px}
+/* b184 · Keepa console → Check profit */
+.kcc{display:grid;gap:10px;margin-top:12px}
+.kcc textarea.txt{width:100%;box-sizing:border-box;min-height:110px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line2);background:var(--ink);color:var(--text);font:500 13.5px var(--sans);resize:vertical}
+.kcc textarea.txt:focus{outline:none;border-color:var(--iris)}
+.kcc textarea.txt::placeholder{color:#8B93A7}
+.kccrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.kccrow .l{font-size:13px;color:#D2D8E4;font-weight:600;margin-right:4px}
+.kccmk{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:9px;border:1.5px solid var(--line2);background:var(--ink);font:600 13px var(--sans);color:#DCE1EB;cursor:pointer}
+.kccmk.on{border-color:color-mix(in srgb,var(--iris) 60%,transparent);background:color-mix(in srgb,var(--iris) 14%,var(--ink));color:#fff}
+.kccmk input{accent-color:var(--iris)}
+.kccn{margin-left:auto;font-size:13px;color:#D2D8E4;font-weight:600}
+.tab .ponly{font-style:normal;margin-left:6px;padding:1px 7px;border-radius:6px;font:700 10.5px var(--sans);color:#C4B5FF;background:rgba(140,149,255,.14);border:1px solid rgba(140,149,255,.35)}

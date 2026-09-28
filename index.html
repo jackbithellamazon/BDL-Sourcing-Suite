@@ -1,731 +1,549 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BDL VA HQ</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link rel="stylesheet" href="css/app.css?v=v51.6">
+<title>BDL Sourcing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
+<link rel="stylesheet" href="css/base.css?v=b199">
+<link rel="stylesheet" href="css/brands.css?v=b199">
 </head>
 <body>
-<div class="app-shell" data-view="va">
-<aside class="sidebar">
-  <div class="side-brand">
-    <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="bdlg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#8b5cff"/><stop offset="1" stop-color="#18c8f0"/>
-        </linearGradient>
-      </defs>
-      <rect x="1" y="1" width="30" height="30" rx="9" fill="url(#bdlg)"/>
-      <rect x="1" y="1" width="30" height="30" rx="9" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1"/>
-      <rect x="7.5" y="17" width="4" height="7.5" rx="2" fill="rgba(255,255,255,.55)"/>
-      <rect x="14" y="12.5" width="4" height="12" rx="2" fill="rgba(255,255,255,.78)"/>
-      <rect x="20.5" y="7.5" width="4" height="17" rx="2" fill="#fff"/>
-    </svg>
-    <span class="brand-txt">BDL <b>VA HQ</b> <i class="app-ver" id="app-ver"></i></span>
-    
-  </div>
-  <div class="side-cap">Workspace</div>
-  <div class="side-nav">
-    <button class="side-btn" id="side-va" onclick="showVAView()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-      Shift
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand home" href="#" id="homeBtn" title="Home — Brands / Filters: what is due today" aria-label="BDL Sourcing — home">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18"/><path d="M7 12h10"/><path d="M11 19h2"/></svg></div>
+      <div>
+        <h1>BDL <span class="b">Sourcing</span></h1>
+        <p class="tag">Keepa exports in, leads out. Lead maths on the side.</p>
+      </div>
+    </a>
+    <div class="top-actions">
+      <span class="build" id="buildTag"></span>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to light mode" aria-pressed="true">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.99 13.02A8 8 0 1 1 10.98 3.01 6.5 6.5 0 1 0 20.99 13.02Z"/></svg>
+        <span class="theme-label" id="themeLabel">Dark</span>
+      </button>
+      <select class="whosel" id="whoSel" title="Who am I — goes on every verdict, run and blacklist entry"><option value="">Who am I?</option><option>Jack</option><option>Mera</option><option>Suz</option></select>
+      <div class="cloudpill" id="cloudPill" title=""><i></i>…</div>
+    </div>
+  </header>
+
+  <nav class="pagenav" aria-label="Tool pages">
+    <button class="pagebtn active" data-page="page-lead">
+      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+      <span class="ptxt"><span class="pt">Lead tools</span><span class="ps">Score a lead · price the promos</span></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
     </button>
-    <button class="side-btn" id="side-mgr" onclick="navMgrToggle()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 13h4v8H4zM10 3h4v18h-4zM16 9h4v12h-4z"/></svg>
-      Jack
+    <button class="pagebtn" data-page="page-keepa">
+      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z"/></svg></span>
+      <span class="ptxt"><span class="pt">Keepa console</span><span class="ps">Combine ASINs · filter the viewer</span></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
     </button>
-    <button class="side-btn" id="side-leads" onclick="showLeadsView()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      Leads
-      <span class="side-badge" id="side-leads-badge" style="display:none;">0</span>
+    <button class="pagebtn" data-page="page-brands">
+      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span>
+      <span class="ptxt"><span class="pt">Brands / Filters</span><span class="ps">Saved searches · run what is due · mark the leads</span></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
     </button>
-  </div>
-  <div class="side-cap" id="side-sections-cap" style="display:none;">Sections</div>
-  <div class="side-mgrnav" id="side-mgrnav"></div>
-  <div class="side-spacer"></div>
-  <div class="topbar-clocks nav-clocks">
-    <div class="tb-clock"><span class="tb-flag">&#127468;&#127463;</span><div class="tb-body"><div class="tb-l">UK</div><div class="tb-t" id="uk-clock">--:--</div></div><div class="tb-d" id="uk-date">---</div></div>
-    <div class="tb-clock"><span class="tb-flag">&#127477;&#127469;</span><div class="tb-body"><div class="tb-l">PH</div><div class="tb-t" id="ph-clock">--:--</div></div><div class="tb-d" id="ph-date">---</div></div>
-  </div>
-  <div class="side-foot-btns">
-    <button class="side-btn" onclick="openCustomise()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>
-      VA Settings
+    <button class="pagebtn jackonly" data-page="page-audit" hidden>
+      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-7h6v7"/></svg></span>
+      <span class="ptxt"><span class="pt">Storefront audits <i class="ponly" title="Suz and Mera do not see this page">Only you</i></span><span class="ps">Go down a rival's shelf · one answer each</span></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
     </button>
-    <button class="jack-lock" id="jack-lock" onclick="lockJackMode()">Jack mode on &mdash; tap to lock</button>
-    <button class="report-btn" id="report-btn" onclick="openReportModal()">&#9888; Report Issue</button>
-  </div>
-</aside>
-<main class="app-main">
-<!-- VA VIEW -->
-<div class="view active" id="view-va">
-  <div class="login-screen" id="login-screen">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:40px;">
-      <div class="login-title">Who's starting<br><span>their shift?</span></div>
-      <div class="va-cards">
-        <div class="va-card va-card-mera" data-go="Start shift  &#8594;" onclick="selectVA('Mera')">
-          <div class="va-avatar" style="background:rgba(0,0,0,0.25);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.2);">M</div>
-          <div class="va-name" style="color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.3);">Mera</div>
-          <div class="va-role" style="color:rgba(255,255,255,0.7);">High Ticket A2A · OA</div>
+    <button class="pagebtn jackonly" data-page="page-settings" hidden>
+      <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
+      <span class="ptxt"><span class="pt">Settings <i class="ponly" title="Suz and Mera do not see this page">Only you</i></span><span class="ps">Who you are · rates · what the rules know</span></span>
+      <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+  </nav>
+
+  <!-- ======================================================= -->
+  <!-- PAGE 1 · LEAD TOOLS (unchanged)                          -->
+  <!-- ======================================================= -->
+  <div class="page active" id="page-lead">
+    <div class="tabs">
+      <button class="tab active" data-tab="lead"><span class="step">1</span>Score lead</button>
+      <button class="tab" data-tab="promo"><span class="step">2</span>Promo price</button>
+    </div>
+    <section class="panel active" id="lead">
+      <div class="card">
+        <p class="intro">Punch in the numbers from a lead. <span class="q">Scored 1–10 against the buying rules — volume first, then margin, with an ROI check on top.</span></p>
+        <div class="settings">
+          <div class="field"><label>Sales / month (SPM)</label><input type="number" id="laSpm" min="0" placeholder="300" inputmode="numeric"></div>
+          <div class="field"><label>Cost price £</label><input type="number" id="laCost" min="0" step="0.01" placeholder="5.00" inputmode="decimal"></div>
+          <div class="field"><label>Profit / unit £</label><input type="number" id="laProfit" min="0" step="0.01" placeholder="10.50" inputmode="decimal"></div>
+          <div class="field"><label>ROI %</label><input type="number" id="laRoi" step="0.1" placeholder="25" inputmode="decimal"></div>
+          <p class="rule">Scores live as you type. <span class="grp"><span class="chip">ROI &lt; 10%</span></span> docks two points off any buy.</p>
         </div>
-        <div class="va-card va-card-suz" data-go="Start shift  &#8594;" onclick="selectVA('Suz')">
-          <div class="va-avatar" style="background:rgba(0,0,0,0.25);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.2);">S</div>
-          <div class="va-name" style="color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.3);">Suz</div>
-          <div class="va-role" style="color:rgba(255,255,255,0.7);">EU · Fast SPM A2A</div>
+        <div class="empty" id="emptyL">
+          <span class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+          <span>Enter <b>SPM</b> and <b>profit per unit</b> — the score, tier and verdict appear here instantly.</span>
         </div>
-        <div class="va-card va-card-test" id="va-card-test" data-go="Open  &#8594;" style="display:none;" onclick="openTestPicker()">
-          <div class="va-avatar" style="background:rgba(0,0,0,0.25);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.2);">T</div>
-          <div class="va-name" style="color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.3);">Test</div>
-          <div class="va-role" style="color:rgba(255,255,255,0.7);">Jack · Testing mode</div>
-        </div>
-      </div>
-      <div class="login-alt">
-        <span class="login-alt-lbl">Not starting a shift?</span>
-        <button class="login-alt-btn" onclick="sbShowImport()">
-          <span class="login-alt-ico">&#128203;</span>
-          <span class="login-alt-txt"><b>Sarah</b><i>Import storefront ASINs</i></span>
-          <span class="login-alt-go">&#8594;</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="setup-screen" id="mera-setup">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:28px;max-width:460px;width:100%;">
-      <div style="text-align:center;">
-        <div style="font-family:var(--font-head);font-size:42px;font-weight:800;line-height:1.15;margin-bottom:6px;">One quick thing,</div>
-        <div style="font-family:var(--font-head);font-size:48px;font-weight:800;color:#b23bff;line-height:1.1;">Mera &#x1F44B;</div>
-      </div>
-      <div class="setup-card">
-        <div class="setup-q" id="mera-newsletter-hint">Is today your <strong>Newsletter day?</strong><br>This adds the Newsletter check to your shift in 2 spots.</div>
-        <div class="setup-btns">
-          <button class="btn btn-success" onclick="startShift('Mera',true)">&#10003; Yes, my day</button>
-          <button class="btn btn-ghost" onclick="startShift('Mera',false)">&#10007; Not today</button>
-        </div>
-      </div>
-      <button class="back-link" onclick="showLogin()">&#8592; Back to login</button>
-    </div>
-    <div style="background:#1f1b38;border:2px solid #7c6cff;border-radius:28px;padding:36px 40px;width:340px;align-self:center;box-shadow:0 12px 56px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.06);">
-      <div style="font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:3px;margin-bottom:24px;font-weight:600;">Newsletter Schedule</div>
-      <div id="mera-newsletter-schedule" style="font-size:15px;line-height:1;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:rgba(255,255,255,0.45);">Monday</span><span style="color:#8b7fff;font-weight:700;font-size:16px;">Suz</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#3d1721;border-radius:12px;margin:6px -16px;"><span style="color:#fff;font-weight:600;">Tuesday</span><span style="color:#ff6584;font-weight:800;font-size:15px;">Mera &#8592; You</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:rgba(255,255,255,0.45);">Wednesday</span><span style="color:#8b7fff;font-weight:700;font-size:16px;">Suz</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#3d1721;border-radius:12px;margin:6px -16px;"><span style="color:#fff;font-weight:600;">Thursday</span><span style="color:#ff6584;font-weight:800;font-size:15px;">Mera &#8592; You</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:rgba(255,255,255,0.45);">Friday</span><span style="color:#8b7fff;font-weight:700;font-size:16px;">Suz</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;"><span style="color:rgba(255,255,255,0.3);">Sat/Sun</span><span style="color:rgba(255,255,255,0.25);font-size:20px;">&#8212;</span></div>
-      </div>
-      <div style="margin-top:20px;font-size:11px;color:rgba(255,255,255,0.35);line-height:1.7;border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;">Only the assigned VA checks newsletter on their day.</div>
-    </div>
-  </div>
-
-  <div class="setup-screen" id="suz-setup">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:28px;max-width:460px;width:100%;">
-      <div style="text-align:center;">
-        <div style="font-family:var(--font-head);font-size:42px;font-weight:800;line-height:1.15;margin-bottom:6px;">One quick thing,</div>
-        <div style="font-family:var(--font-head);font-size:48px;font-weight:800;color:#f2c200;line-height:1.1;">Suz &#x1F44B;</div>
-      </div>
-      <div class="setup-card">
-        <div class="setup-q" id="suz-newsletter-hint">Is today your <strong>Newsletter day?</strong><br>This adds the Newsletter check to your shift in 2 spots.</div>
-        <div class="setup-btns">
-          <button class="btn btn-success" onclick="startShift('Suz',true)">&#10003; Yes, my day</button>
-          <button class="btn btn-ghost" onclick="startShift('Suz',false)">&#10007; Not today</button>
-        </div>
-      </div>
-      <button class="back-link" onclick="showLogin()">&#8592; Back to login</button>
-    </div>
-    <div style="background:#2d240c;border:2px solid #f2c200;border-radius:28px;padding:36px 40px;width:340px;align-self:center;box-shadow:0 12px 56px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.06);">
-      <div style="font-size:10px;color:var(--amber);text-transform:uppercase;letter-spacing:3px;margin-bottom:24px;font-weight:600;">Newsletter Schedule</div>
-      <div id="suz-newsletter-schedule" style="font-size:15px;line-height:1;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#42310d;border-radius:12px;margin:6px -16px;"><span style="color:#fff;font-weight:600;">Monday</span><span style="color:#FFEB3B;font-weight:800;font-size:15px;">Suz &#8592; You</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:rgba(255,255,255,0.45);">Tuesday</span><span style="color:#b23bff;font-weight:700;font-size:16px;">Mera</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#42310d;border-radius:12px;margin:6px -16px;"><span style="color:#fff;font-weight:600;">Wednesday</span><span style="color:#FFEB3B;font-weight:800;font-size:15px;">Suz &#8592; You</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:rgba(255,255,255,0.45);">Thursday</span><span style="color:#b23bff;font-weight:700;font-size:16px;">Mera</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#42310d;border-radius:12px;margin:6px -16px;"><span style="color:#fff;font-weight:600;">Friday</span><span style="color:#FFEB3B;font-weight:800;font-size:15px;">Suz &#8592; You</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;"><span style="color:rgba(255,255,255,0.3);">Sat/Sun</span><span style="color:rgba(255,255,255,0.25);font-size:20px;">&#8212;</span></div>
-      </div>
-      <div style="margin-top:20px;font-size:11px;color:rgba(255,255,255,0.35);line-height:1.7;border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;">Only the assigned VA checks newsletter on their day.</div>
-    </div>
-  </div>
-
-  <div id="shift-screen" style="display:none;">
-    <div class="shift-header">
-      <div class="shift-info">
-        <h2 id="shift-va-name">-</h2>
-        <p id="shift-date">-</p>
-      </div>
-      <div class="shift-controls" style="flex:1;">
-        <button id="preview-exit" onclick="exitTestPreview()" style="display:none;padding:9px 16px;font-size:12.5px;font-weight:800;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--line-2);color:var(--muted);cursor:pointer;margin-right:2px;">&#8592; Back to dashboard</button>
-        <div class="status-badge"><div class="status-dot"></div>ACTIVE</div>
-        <div class="timer" id="shift-timer" style="font-size:22px;letter-spacing:2px;padding:0 12px;">00:00:00</div>
-        <button onclick="saveShiftDraft(true)" id="save-btn" style="padding:10px 18px;font-size:13px;font-weight:700;border-radius:10px;background:color-mix(in srgb,var(--green) 14%,#0d0f16);border:1px solid color-mix(in srgb,var(--green) 34%,var(--line));color:#10d99a;letter-spacing:0.3px;transition:all 0.16s;cursor:pointer;" title="Save progress to cloud — use before restarting your laptop">💾 Save</button>
-        <span id="autosave-chip" style="display:none;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10.5px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);padding:5px 10px;border-radius:999px;white-space:nowrap;"></span>
-        <button onclick="shiftReportWrong()" id="timer-wrong-btn" title="Tell Jack the timer looks wrong — sends him your exact shift state" style="padding:7px 11px;font-size:11px;font-weight:700;border-radius:9px;background:transparent;border:1px solid var(--line-2);color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .14s;">&#9888; Timer wrong?</button>
-        <button class="btn" onclick="toggleBreak()" id="break-btn" style="margin-left:auto;padding:13px 30px;font-size:15px;font-weight:700;border-radius:12px;background:var(--amber);border:1px solid var(--amber);color:#241a00;letter-spacing:0.3px;min-width:172px;transition:all 0.16s;box-shadow:0 4px 16px -6px color-mix(in srgb,var(--amber) 70%,transparent);">&#9749; Take a Break</button>
-      </div>
-    </div>
-
-    <div id="jack-urgent"></div>
-    <div id="jack-adds"></div>
-    <div id="shift-dups"></div>
-    <div id="eu-banner"></div>
-    <div id="from-jack"></div>
-    <div id="va-filters"></div>
-    <div id="shift-oa"></div>
-    <div id="shift-momentum"></div>
-    <div id="va-results"></div>
-    <div class="stats-head">
-      <!-- MEASURED: her first actual task sat 1,509px down a 4,608px page — more than
-           two full screens of banners and stats before any work. This panel alone was
-           765px of it. It is worth having, so it stays; it just starts folded and
-           remembers what she chose. -->
-      <!-- Jack: "get rid of the dropdown — more about how they are doing this
-           week/month here". The pill hid everything behind a click; this strip is the
-           always-on one-line answer, and Details opens the full panel below. -->
-      <div class="va-strip" id="va-strip"></div>
-      <div class="cardstyle-toggle" id="cardstyle-toggle">
-        <button data-cs="bold"  onclick="setCardStyle('bold')">Bold</button>
-        <button data-cs="clean" onclick="setCardStyle('clean')">Clean</button>
-      </div>
-    </div>
-    <!-- How am I doing? — filled by vaPerfPaint() once the leads and hours land -->
-    <div id="va-perf" class="vp-collapsed"></div>
-    <div class="stats-grid" id="shift-kpis" data-cs="bold">
-      <div class="stat-card stat-card-leads" data-kpi="leads">
-        <div class="stat-top"><div class="stat-label">Leads today</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></span></div>
-        <div class="stat-val stat-val-leads" id="stat-leads">0</div>
-        <div class="kpi-extra" id="kpi-leads-extra"></div>
-      </div>
-      <div class="stat-card stat-card-tasks" data-kpi="tasks">
-        <div class="stat-top"><div class="stat-label">Tasks done</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12l3 3 5-6"/></svg></span></div>
-        <div class="stat-val stat-val-tasks" id="stat-tasks">0</div>
-        <div class="kpi-extra" id="kpi-tasks-extra"></div>
-      </div>
-      <div class="stat-card stat-card-hrs" data-kpi="hrs">
-        <div class="stat-top"><div class="stat-label">Hours worked</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span></div>
-        <div class="stat-val stat-val-hrs" id="stat-hrs">0.0</div>
-        <div class="kpi-extra" id="kpi-hrs-extra"></div>
-      </div>
-      <div class="stat-card stat-card-lph" data-kpi="lph">
-        <div class="stat-top"><div class="stat-label">Leads / hr</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span></div>
-        <div class="stat-val stat-val-lph" id="stat-lph">-</div>
-        <div class="kpi-extra" id="kpi-lph-extra"></div>
-      </div>
-      <div class="stat-card " data-kpi="week" style="--k:#4a86ff;">
-        <div class="stat-top"><div class="stat-label">Week leads</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="6" width="4" height="14" rx="1"/><rect x="17" y="9" width="4" height="11" rx="1"/></svg></span></div>
-        <div class="stat-val " id="stat-week">0</div>
-        <div class="kpi-extra" id="kpi-week-extra"></div>
-      </div>
-      <div class="stat-card " data-kpi="keepaadd" style="--k:#18c8f0;">
-        <div class="stat-top"><div class="stat-label">Trackers added</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span></div>
-        <div class="stat-val " id="stat-keepaadd">0</div>
-        <div class="kpi-extra" id="kpi-keepaadd-extra"></div>
-      </div>
-      <div class="stat-card " data-kpi="keepawk" style="--k:#38bdf8;">
-        <div class="stat-top"><div class="stat-label">Keepa leads</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></span></div>
-        <div class="stat-val " id="stat-keepawk">0</div>
-        <div class="kpi-extra" id="kpi-keepawk-extra"></div>
-      </div>
-      <div class="stat-card " data-kpi="over100" style="--k:#22d39a;">
-        <div class="stat-top"><div class="stat-label">&pound;100+ leads</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19V9M12 19V5M17 19v-7"/></svg></span></div>
-        <div class="stat-val " id="stat-over100">0</div>
-        <div class="kpi-extra" id="kpi-over100-extra"></div>
-      </div>
-      <div class="stat-card " data-kpi="premium" style="--k:#ffb02e;">
-        <div class="stat-top"><div class="stat-label">Premium &pound;200-500</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.8.8-5 4.6 1.3 6.8L12 17.3 6 20.5l1.3-6.8-5-4.6 6.8-.8z"/></svg></span></div>
-        <div class="stat-val " id="stat-premium">0</div>
-        <div class="kpi-extra" id="kpi-premium-extra"></div>
-      </div>
-      <div class="stat-card " data-kpi="flagship" style="--k:#a78bfa;">
-        <div class="stat-top"><div class="stat-label">Flagship &pound;500+</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4l14 4-14 4"/></svg></span></div>
-        <div class="stat-val " id="stat-flagship">0</div>
-        <div class="kpi-extra" id="kpi-flagship-extra"></div>
-      </div>
-      <div class="stat-card " data-kpi="thcwk" style="--k:#a78bfa;">
-        <div class="stat-top"><div class="stat-label">THC discord</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.2L4 21l1.9-5A8 8 0 1 1 21 12z"/></svg></span></div>
-        <div class="stat-val " id="stat-thcwk">0</div>
-        <div class="kpi-extra" id="kpi-thcwk-extra"></div>
-      </div>
-      <div class="stat-card " data-kpi="streak" style="--k:#f356a6;">
-        <div class="stat-top"><div class="stat-label">Submit streak</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s5 4 5 9a5 5 0 0 1-10 0c0-3 2-4 2-4s2 1 2 1c1-3-1-6-1-6z"/></svg></span></div>
-        <div class="stat-val " id="stat-streak">0</div>
-        <div class="kpi-extra" id="kpi-streak-extra"></div>
-      </div>
-      <div class="stat-card " data-kpi="break" style="--k:#f5455f;">
-        <div class="stat-top"><div class="stat-label">Break time</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9h2a2 2 0 0 1 0 4h-2M6 2v2M9 2v2M12 2v2"/></svg></span></div>
-        <div class="stat-val " id="stat-break">0</div>
-        <div class="kpi-extra" id="kpi-break-extra"></div>
-      </div>
-      <div class="stat-card " data-kpi="spend" style="--k:#c084fc;">
-        <div class="stat-top"><div class="stat-label">Spend this month</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9a4 4 0 0 1 0 8H6"/><path d="M6 8h11M4 12h10"/><path d="M9 11v10"/></svg></span></div>
-        <div class="stat-val " id="stat-spend">&mdash;</div>
-        <div class="kpi-extra" id="kpi-spend-extra"></div>
-      </div>
-      <div class="stat-card " data-kpi="month" style="--k:#10d99a;">
-        <div class="stat-top"><div class="stat-label">Leads this month</div><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span></div>
-        <div class="stat-val " id="stat-month">0</div>
-        <div class="kpi-extra" id="kpi-month-extra"></div>
-      </div>
-    </div>
-
-    <div class="tasks-head">
-      <span class="tasks-head-title">Mandatory Tasks</span>
-      <span class="tasks-count" id="mand-count"><b>0</b> / 0</span>
-      <div class="tasks-progwrap" id="mand-progwrap"><i id="mand-prog"></i></div>
-    </div>
-    <div id="mandatory-tasks"></div>
-    <div class="tasks-head">
-      <span class="tasks-head-title">Additional Tasks</span>
-      <span class="tasks-count" id="extra-count"><b>0</b> added</span>
-    </div>
-    <div id="extra-tasks"></div>
-    <button class="add-task-btn" onclick="addExtraTask()"><span>+</span> Add a task</button>
-
-    <!-- Jack, 31/08: "storefront is here 2 times". This manual logger predates the
-         storefront batch module and was used in 0 of 118 shifts — storefront work now
-         arrives as batches with their own timer/leads/Done. Hidden, not deleted: the
-         read side (sbManualIndex) still counts anything historical, and one attribute
-         brings it back if ever wanted. -->
-    <div class="sf-section" id="storefront-section" style="display:none;">
-      <div class="sf-head"><span class="sf-title">&#127978; Storefronts</span><span class="sf-sub">Log each storefront you scan &mdash; start the timer, add leads found. Jack sees which ones convert.</span></div>
-      <div id="storefront-list"></div>
-      <button class="sf-add" onclick="sfAdd()"><span>+</span> Add storefront</button>
-    </div>
-
-    <div style="margin-top:44px;"></div>
-    <div class="eod-section" id="eod-form">
-      <div class="eod-head">
-        <div>
-          <h3>Wrap up your shift</h3>
-          <p class="eod-sub">Quick check &#8212; then you're done for the day.</p>
-        </div>
-        <div class="eod-recap" id="eod-recap"></div>
-      </div>
-
-      <div class="eod-leadcheck" id="eod-leadcheck"></div>
-      <div class="eod-warning" id="eod-warning" style="display:none;"></div>
-
-      <div class="eod-grid">
-        <div class="eod-block">
-          <label class="eod-blabel">Keepa trackers<span>How many ASINs are you tracking right now?</span></label>
-          <div class="eod-keepa-row">
-            <input type="number" id="keepa-today" min="0" placeholder="e.g. 600" class="eod-keepa-input" oninput="updateKeepaTotal()">
-            <div class="eod-keepa-delta" id="keepa-total-display"><span class="eod-keepa-dl">vs last shift</span><span id="keepa-total-val">&#8212;</span></div>
+        <div id="leadResults" style="display:none">
+          <div class="stats">
+            <div class="stat"><span class="k">SPM</span><span class="v" id="laSpmV">0</span></div>
+            <div class="stat"><span class="k">Profit / unit</span><span class="v" id="laProfitV">£0.00</span></div>
+            <div class="stat"><span class="k">ROI</span><span class="v" id="laRoiV">0%</span></div>
+            <div class="stat"><span class="k">Tier</span><span class="v" id="laTierV" style="font-family:var(--sans);font-size:15px;display:flex;align-items:center">—</span></div>
           </div>
-          <!-- This box takes a TOTAL and files a DIFFERENCE. Typing 640 when the last
-               shift said 1,155 quietly records -515 against her tracker KPI, and a
-               dropped digit looks exactly like that. Say it in words, not just a red
-               number she is scrolling past on her way to Submit. -->
-          <div class="eod-keepa-warn" id="keepa-warn" style="display:none;"></div>
-        </div>
-        <div class="eod-block">
-          <label class="eod-blabel">Notes for Jack<span>Optional &#8212; issues, wins, anything you noticed. Tap a tag to add one.</span></label>
-          <div class="eod-tags" id="eod-issue-tags">
-            <button type="button" class="eod-tag" onclick="addIssueTag('Supplier problem')">Supplier problem</button>
-            <!-- &#39; is decoded by the HTML parser BEFORE the JS is parsed, so a
-                 single-quoted string containing it is a SyntaxError and the button
-                 silently does nothing. Delimit with &quot; instead. -->
-            <button type="button" class="eod-tag" onclick="addIssueTag(&quot;Can&#39;t source it&quot;)">Can't source it</button>
-            <button type="button" class="eod-tag" onclick="addIssueTag('Price changed')">Price changed</button>
-            <button type="button" class="eod-tag" onclick="addIssueTag('Amazon issue')">Amazon issue</button>
-            <button type="button" class="eod-tag win" onclick="addIssueTag('Good win','win')">&#9733; Good win</button>
+          <div class="scorebox">
+            <div class="row"><span class="head">Lead score</span><span class="pill" id="laTierPill">—</span></div>
+            <div class="scoreline">
+              <div class="scorenum" id="laScore">0<span class="of"> /10</span></div>
+              <div class="scoretrack">
+                <div class="track"><div class="fill" id="laFill"></div></div>
+                <div class="ticks"><span>1</span><span>pass</span><span>borderline</span><span>buy</span><span>10</span></div>
+              </div>
+            </div>
+            <div class="verdict" id="laNote"></div>
           </div>
-          <textarea id="eod-notes" class="eod-notes" placeholder="Anything worth telling Jack? A brand on sale, a storefront doing well, something that blocked you, anything odd &#8212; this is the one place he reads."></textarea>
+          <div class="toolbar">
+            <div class="spacer" style="margin-left:auto"></div>
+            <button class="btn ghost danger" id="clearL" type="button">Clear</button>
+          </div>
         </div>
       </div>
+    </section>
+    <section class="panel" id="promo">
+      <div class="card">
+        <p class="intro">Stack the live promos on a listing. <span class="q">See the true per-unit price a buyer pays after every discount compounds.</span></p>
+        <div class="promogrid">
+          <div class="pricebox">
+            <label for="prPrice">Full price</label>
+            <div class="money"><span class="cur">£</span><input type="number" id="prPrice" min="0" step="0.01" placeholder="10.99" inputmode="decimal"></div>
+            <p class="sub">The listing price before any promos apply.</p>
+          </div>
+          <div class="checksbox">
+            <span class="grouplab">Available promos · tick what's live</span>
+            <label class="check"><input type="checkbox" id="pr5off4"><span class="lab">5% off any 4 units</span><span class="off">−5%</span></label>
+            <label class="check"><input type="checkbox" id="prSS5"><span class="lab">5% Subscribe &amp; Save</span><span class="off">−5%</span></label>
+            <label class="check"><input type="checkbox" id="prSS15"><span class="lab">15% Subscribe &amp; Save</span><span class="off">−15%</span></label>
+          </div>
+        </div>
+        <div class="empty" id="emptyP">
+          <span class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span>
+          <span>Enter a <b>full price</b> and tick promos — the final per-unit price updates as you go.</span>
+        </div>
+        <div class="promobox" id="promoBox">
+          <div class="prow">
+            <div><div class="head">Final price per unit</div><div class="finalprice" id="prFinal">£0.00</div></div>
+            <span class="saveline" id="prSave"></span>
+          </div>
+          <div class="breakdown" id="prBreakdown"></div>
+          <div class="toolbar">
+            <button class="btn primary" id="copyP" type="button"><span class="lab">Copy final price</span></button>
+            <div class="spacer"></div>
+            <button class="btn ghost danger" id="clearP" type="button">Clear</button>
+          </div>
+        </div>
+        <p class="hint">Discounts compound in order and the result rounds up to the nearest penny — matching how Amazon applies stacked promos.</p>
+      </div>
+    </section>
+  </div>
 
-      <button class="eod-submit" onclick="submitEOD()">End shift &amp; submit &#10003;</button>
+  <!-- ======================================================= -->
+  <!-- PAGE 2 · KEEPA CONSOLE (unchanged)                       -->
+  <!-- ======================================================= -->
+  <div class="page" id="page-keepa">
+    <div class="tabs">
+      <button class="tab active" data-tab="combine"><span class="step">1</span>Combine ASINs</button>
+      <button class="tab" data-tab="filter"><span class="step">2</span>Filter &amp; sort</button>
+      <button class="tab jackonly" data-tab="kcCheck" hidden><span class="step">3</span>Check profit <i class="ponly" title="Spends Keepa tokens — only you">Only you</i></button>
     </div>
-
-    <div class="eod-report" id="eod-report">
-      <div class="locked-bar"><span>&#128274;</span> Shift submitted and locked &#8212; no further edits possible</div>
-      <div class="thankyou-wrap">
-        <div class="thankyou-inner">
-          <span class="thankyou-emoji">&#x1F389;</span>
-          <div class="thankyou-heading">Thank you for<br>your shift!</div>
-          <div class="thankyou-sub">Great work today. Jack can see everything you logged.</div>
-          <div class="thankyou-green">Rest up &#8212; see you tomorrow! &#x1F642;</div>
+    <section class="panel" id="kcCheck">
+      <div class="card">
+        <p class="intro">Paste ASINs, pick where to buy, and Keepa prices them today. <span class="q">Rule 1 then keeps only the ones that pay — UK Buy Box today against the UK or EU buy price, fees and VAT in. The same maths as a brand run.</span></p>
+        <div class="kcc">
+          <textarea class="txt" id="kcAsins" rows="5" placeholder="Paste anything with ASINs in it — a list, a message, a Keepa URL, a sheet column…"></textarea>
+          <div class="kccrow">
+            <span class="l">Buy from</span>
+            <label class="kccmk on"><input type="checkbox" value="UK" checked disabled> 🇬🇧 UK</label>
+            <label class="kccmk"><input type="checkbox" value="DE"> 🇩🇪 DE</label>
+            <label class="kccmk"><input type="checkbox" value="FR"> 🇫🇷 FR</label>
+            <label class="kccmk"><input type="checkbox" value="IT"> 🇮🇹 IT</label>
+            <label class="kccmk"><input type="checkbox" value="ES"> 🇪🇸 ES</label>
+            <span class="kccn" id="kcAsinN">0 ASINs</span>
+            <button class="btn primary sm" id="kcCheckBtn" type="button" disabled>Check these · via Keepa</button>
+          </div>
+          <p class="ssub">About 6 tokens a product for the UK today (1 if Keepa already had it recently) and 1 per product per EU market. It counts and asks before it spends. The result opens as a run under Brands / Filters — "Check these · Jack" — with Y / N and the graphs like any other. Suz and Mera do not see this tab.</p>
         </div>
       </div>
-      <div id="eod-report-content"></div>
-      <button class="btn btn-ghost" onclick="resetShift()" style="margin-top:20px;width:100%;padding:14px;">&#8592; Back to Login</button>
-    </div>
-  </div>
-</div>
+    </section>
+    <section class="panel active" id="combine">
+      <div class="card">
+        <p class="intro">Drop every country's ASIN export. <span class="q">Merged, de-duplicated, handed back as one clean list — copy it or open it straight in Keepa.</span></p>
 
-<!-- MANAGER VIEW -->
-<div id="view-import" class="view">
-  <div class="sbi-shell">
-    <div class="sbi-bar">
-      <div class="sbi-brand"><span>&#128203;</span> Storefront import</div>
-      <button class="sbi-exit" onclick="sbHideImport()">&#10005; Close</button>
-    </div>
-    <div id="sb-import-content"></div>
-  </div>
-</div>
-<div class="view" id="view-manager">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-    <div>
-      <h1 style="font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-0.5px;">Jack's Dashboard</h1>
-      <p id="dash-date" style="color:#555;font-size:12px;margin-top:3px;"></p>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div id="db-status" style="font-size:10px;font-family:var(--font-mono);padding:5px 12px;border-radius:7px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--muted-2);">⬤ local only</div>
-      <button onclick="mgr_syncFromDB();showToast('Syncing...')" style="background:rgba(155,143,255,0.1);border:1px solid rgba(155,143,255,0.3);color:#9b8fff;font-family:var(--font-mono);font-size:11px;padding:6px 14px;border-radius:8px;cursor:pointer;">↻ Sync</button>
-      <button onclick="stConfirm('Send the weekly review to Discord now?',function(){sendWeeklyReview();showToast('Weekly review sent \u2713');})" style="background:rgba(255,184,48,0.1);border:1px solid rgba(255,184,48,0.3);color:#FFB830;font-family:var(--font-mono);font-size:11px;padding:6px 14px;border-radius:8px;cursor:pointer;">Weekly Review</button>
-      <button class="btn btn-ghost" onclick="showVAView()" style="font-size:11px;">&#8592; VA View</button>
-    </div>
-  </div>
-  <div id="mgr-flag-banner"></div>
-  <div class="mgr-tabs-wrap" id="mgr-tabs-wrap">
-  <div class="mgr-tabs">
-    <button onclick="mgr_switchTab('overview')" id="tab-overview" class="mgr-tab active-tab">Overview</button>
-    <button onclick="mgr_switchTab('live')"     id="tab-live"     class="mgr-tab">Live</button>
-    <button onclick="mgr_switchTab('mera')"     id="tab-mera"     class="mgr-tab mera-tab">Mera</button>
-    <button onclick="mgr_switchTab('suz')"      id="tab-suz"      class="mgr-tab suz-tab">Suz</button>
-    <button onclick="mgr_switchTab('leadsdash')" id="tab-leadsdash" class="mgr-tab">Leads</button>
-    <button onclick="mgr_switchTab('perf')"     id="tab-perf"     class="mgr-tab">Performance</button>
-    <button onclick="mgr_switchTab('trends')"   id="tab-trends"   class="mgr-tab">Insights</button>
-    <button onclick="mgr_switchTab('audit')"    id="tab-audit"    class="mgr-tab" title="Temporary — remove when the audit is done">&#128269; Audit</button>
-    <button onclick="mgr_switchTab('filters')"  id="tab-filters"  class="mgr-tab">Filters</button>
-    <button onclick="mgr_switchTab('ticklist')" id="tab-ticklist" class="mgr-tab">Ticklist</button>
-    <button onclick="mgr_switchTab('storefronts')" id="tab-storefronts" class="mgr-tab">Storefronts</button>
-    <button onclick="mgr_switchTab('spend')"    id="tab-spend"    class="mgr-tab">Spend</button>
-    <button onclick="mgr_switchTab('keepa')"    id="tab-keepa"    class="mgr-tab">Keepa</button>
-    <button onclick="mgr_switchTab('issues')"   id="tab-issues"   class="mgr-tab issues-tab">Issues</button>
-    <button onclick="mgr_switchTab('settings')" id="tab-settings" class="mgr-tab settings-tab">Settings</button>
-    <button onclick="mgr_switchTab('test')"     id="tab-test"     class="mgr-tab" style="">Test</button>
-  </div>
-  </div>
-  <div id="mgr-tab-overview"><div id="mgr-overview-content"></div></div>
-  <div id="mgr-tab-trends" style="display:none;"><div id="mgr-trends-content"></div></div>
-  <div id="mgr-tab-audit" style="display:none;"><div id="mgr-audit-content"></div></div>
-  <div id="mgr-tab-perf" style="display:none;">
-    <div class="perf-seg" id="perf-seg">
-      <button data-p="today" onclick="perfShow('today')">Today</button>
-      <button data-p="week" class="on" onclick="perfShow('week')">This Week</button>
-      <button data-p="mtd" onclick="perfShow('mtd')">Month</button>
-    </div>
-    <div id="mgr-today-content"></div>
-    <div id="mgr-week-content" style="display:none;"></div>
-    <div id="mgr-mtd-content" style="display:none;"></div>
-  </div>
-  <div id="mgr-tab-mera"     style="display:none;"><div id="mgr-mera-content"></div></div>
-  <div id="mgr-tab-suz"      style="display:none;"><div id="mgr-suz-content"></div></div>
-  <div id="mgr-tab-leadsdash" style="display:none;"><div id="mgr-leadsdash-content"></div></div>
-  <div id="mgr-tab-filters"  style="display:none;"><div id="mgr-filters-content"></div></div>
-  <div id="mgr-tab-ticklist" style="display:none;"><div id="mgr-ticklist-content"></div></div>
-  <div id="mgr-tab-storefronts" style="display:none;"><div id="mgr-storefronts-content"></div></div>
-
-  <div id="mgr-tab-test"     style="display:none;"><div id="mgr-test-content"></div></div>
-  <div id="mgr-tab-issues"   style="display:none;"><div id="mgr-issues-content"></div></div>
-  <div id="mgr-tab-live"     style="display:none;"><div id="mgr-live-content"></div></div>
-  <div id="mgr-tab-keepa"    style="display:none;"><div id="mgr-keepa-content"></div></div>
-  <div id="mgr-tab-spend"    style="display:none;"><div id="mgr-spend-content"></div></div>
-  <div id="mgr-tab-settings" style="display:none;"><div id="mgr-settings-content"></div></div>
-
-  <div id="mgr-ai-panel" style="display:none;"></div>
-</div>
-
-<!-- LEADS VIEW (merged LeadDesk — Jack only) -->
-<div class="view" id="view-leads">
-<div class="shell">
-  <!-- ld filter rail removed: views/VA/score now live in the horizontal bar below the topbar -->
-  <div class="main">
-    <div class="topbar-ld">
-      <div class="topbar-title" id="view-title">New Leads</div>
-      <span class="tt-count" id="tt-count"></span>
-      <div class="filters">
-        <select id="f-date" onchange="fDateChange()"><option value="sheet" selected>Whatever months I&rsquo;ve ticked</option><option value="month">This calendar month</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="thisweek">This week (Mon–now)</option><option value="lastweek">Last week (Mon–Sun)</option><option value="48h">Last 48h</option><option value="7d">Last 7 days</option><option value="14d">Last 14 days</option><option value="30d">Last 30 days</option><option value="day">Pick a day…</option><option value="all">All dates</option></select>
-        <input type="date" id="f-day" style="display:none" onchange="fDaySet(this.value)">
-        <!-- These three used to be hand-typed lists and were badly out of date: the data holds
-             70 stores, 21 categories and 14 source methods. Two category options
-             ("Computers & Acc.", "Electronics") did not match a single lead because the real
-             values are "Computers & Accessories" and "Electronics & Photo". populateLeadFilters()
-             now builds all four from the leads themselves, with counts. -->
-        <select id="f-store" onchange="renderList()"><option value="all">All stores</option></select>
-        <select id="f-cat" onchange="renderList()"><option value="all">All categories</option></select>
-        <select id="f-source" onchange="renderList()"><option value="all">All sources</option></select>
-        <select id="f-sup" onchange="renderList()"><option value="all">All suppliers</option></select>
-        <!-- Jack: "i want more customisation". The dimensions he actually decides on —
-             ROI, profit, competition — had no filters at all. Bands, not free numbers:
-             one tap, and the counts in populateLeadFilters tell him what each returns. -->
-        <select id="f-roi" onchange="renderList()">
-          <option value="all">Any ROI</option><option value="10">ROI 10%+</option>
-          <option value="15">ROI 15%+</option><option value="20">ROI 20%+</option><option value="30">ROI 30%+</option>
-        </select>
-        <select id="f-profit" onchange="renderList()">
-          <option value="all">Any profit</option><option value="2">£2+ profit</option>
-          <option value="5">£5+ profit</option><option value="10">£10+ profit</option><option value="20">£20+ profit</option>
-        </select>
-        <select id="f-fba" onchange="renderList()">
-          <option value="all">Any sellers</option><option value="5">≤5 sellers</option>
-          <option value="10">≤10 sellers</option><option value="15">≤15 sellers</option>
-        </select>
-        <button class="pbtn" onclick="clearFilters()">Clear</button>
-      </div>
-      <div class="ld-clocks">
-        <div class="ld-clock"><span class="f">&#127468;&#127463;</span><b id="ld-uk-clock">--:--</b></div>
-        <div class="ld-clock"><span class="f">&#127477;&#127469;</span><b id="ld-ph-clock">--:--</b></div>
-      </div>
-    </div>
-    <div class="ld-viewsbar">
-      <button class="nav on" data-view="new" onclick="setView(this,'new')">New<span class="nb hot" id="b-new">0</span></button>
-      <button class="nav" data-view="all" onclick="setView(this,'all')">All<span class="nb" id="b-all">0</span></button>
-      <button class="nav" data-view="lead" onclick="setView(this,'lead')">Leads<span class="nb g" id="b-lead">0</span></button>
-      <button class="nav" data-view="bought" onclick="setView(this,'bought')">Bought<span class="nb g" id="b-bought">0</span></button>
-      <button class="nav" data-view="basket" onclick="setView(this,'basket')">ATB / Wait<span class="nb" id="b-basket">0</span></button>
-      <button class="nav" data-view="passed" onclick="setView(this,'passed')">Passed<span class="nb" id="b-passed">0</span></button>
-      <button class="nav" data-view="notlead" onclick="setView(this,'notlead')">Not a Lead<span class="nb" id="b-notlead">0</span></button>
-      <span class="ldv-sep"></span>
-      <button class="nav on" data-va="all" onclick="setVA(this,'all')">Both VAs</button>
-      <button class="nav" data-va="VA M" onclick="setVA(this,'VA M')"><span class="dot-ico" style="background:var(--mera)"></span><span class="va-nav-lbl" data-va="VA M">Mera</span><span class="nb" id="b-va-m">0</span></button>
-      <button class="nav" data-va="VA S" onclick="setVA(this,'VA S')"><span class="dot-ico" style="background:var(--suz)"></span><span class="va-nav-lbl" data-va="VA S">Suz</span><span class="nb" id="b-va-s">0</span></button>
-      <span class="ldv-sep"></span>
-      <button class="nav on" data-sc="0" onclick="setScore(this,0)">All scores</button>
-      <button class="nav" data-sc="9" onclick="setScore(this,9)">9+ ★</button>
-      <button class="nav" data-sc="7" onclick="setScore(this,7)"><span class="dot-ico" style="border-radius:50%;background:var(--green)"></span>7+</button>
-      <button class="nav" data-sc="5" onclick="setScore(this,5)"><span class="dot-ico" style="border-radius:50%;background:var(--amber)"></span>5+</button>
-      </div>
-    <div class="ribbon" id="ribbon"></div>
-    <!-- one row, not three stacked bars: the two actions first, the archive note as a
-         quiet tail. Measured at 145px of permanent chrome before this. -->
-    <div class="ld-strip"><div id="focus-entry"></div><div id="bulk-entry"></div><div id="archive-line"></div></div>
-    <div id="bulk-panel" style="display:none"></div>
-    <div class="split">
-      <div class="list-pane">
-        <div class="list-search">
-          <svg class="ls-search-ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-          <input type="search" id="search" placeholder="Search title or ASIN…" oninput="searchTyped()"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();searchNow();}"
-            onsearch="searchNow()"
-            name="lead-find" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-            data-lpignore="true" data-1p-ignore data-form-type="other"
-            aria-label="Search leads by title or ASIN">
-          <kbd class="ls-kbd">/</kbd>
+        <div class="drop" id="dropC" tabindex="0" role="button" aria-label="Upload ASIN CSV files">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg></span>
+          <span class="txt"><span class="big">Drop CSV files here</span><span class="small">Or click to browse · ASIN-only or full exports · any number of files</span></span>
         </div>
-        <div class="list-sort">
-          <span class="ls-lbl">Sort</span>
-          <button class="srt" data-sort="score" onclick="setSort(this,'score')">Score</button>
-          <button class="srt" data-sort="roi" onclick="setSort(this,'roi')">ROI</button>
-          <button class="srt" data-sort="profit" onclick="setSort(this,'profit')">Profit</button>
-          <button class="srt" data-sort="spm" onclick="setSort(this,'spm')">SPM</button>
-          <button class="srt on" data-sort="date" onclick="setSort(this,'date')">Date</button>
+        <input type="file" id="fileC" accept=".csv,text/csv" multiple>
+        <div class="files" id="filesC"></div>
+
+        <div class="yield" id="yieldC">
+          <div class="row"><span class="head">Unique vs duplicate<span class="pct" id="cPct"></span></span><span class="total" id="cTotalLbl">0 read</span></div>
+          <div class="bar">
+            <div class="seg keep" id="cKeepSeg" style="width:0"><span class="n" id="cUnique">0</span><span class="l">unique</span></div>
+            <div class="seg drop" id="cDropSeg" style="width:0"><span class="n" id="cDupes">0</span><span class="l">duplicates removed</span></div>
+          </div>
         </div>
-        <div class="list-scroll" id="list-scroll"></div>
-        <div class="list-hint"><span id="sess-count"></span></div>
+
+        <div class="settings" id="setC" style="display:none">
+          <div class="field">
+            <label>Keepa domain · for direct open</label>
+            <select id="domainC">
+              <option value="2">United Kingdom</option><option value="3">Germany</option>
+              <option value="4">France</option><option value="8">Italy</option>
+              <option value="9">Spain</option><option value="1">United States</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toolbar" id="barC" style="display:none">
+          <button class="btn primary" id="copyC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="lab">Copy unique ASINs</span></button>
+          <button class="btn solid" id="openC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Open in Keepa</button>
+          <div class="spacer"></div>
+          <button class="btn ghost" id="dlC">Download .txt</button>
+          <button class="btn ghost danger" id="clearC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>Clear</button>
+        </div>
+        <textarea class="out" id="outC" placeholder="Combined unique ASINs appear here…" spellcheck="false"></textarea>
+        <p class="hint" id="hintC" style="display:none">Comma-separated and ready for Keepa Product Viewer.</p>
       </div>
-      <div class="detail-pane" id="detail-pane"></div>
-    </div>
+    </section>
+
+    <!-- 1.2 filter -->
+    <section class="panel" id="filter">
+      <div class="card">
+        <div id="kcTeam" hidden></div>
+        <p class="intro">Drop the full Keepa Product Viewer export. <span class="q">Everything that doesn't sell gets sorted out automatically — then mark each one Lead or Not a lead, and it's saved under your name.</span></p>
+
+        <div class="settings">
+          <div class="field"><label>Keep if drops 30d ≥</label><input type="number" id="thDrops" value="10" min="0" inputmode="numeric"></div>
+          <div class="field"><label>…or if bought &gt;</label><input type="number" id="thBought" value="10" min="0" inputmode="numeric"></div>
+          <div class="field"><label>Min offer count ≥</label><input type="number" id="thOffers" value="0" min="0" inputmode="numeric"></div>
+          <div class="field"><label>Min buy box price ≥ £</label><input type="number" id="thBuyBox" value="0" min="0" step="0.01" inputmode="decimal"></div>
+          <div class="field"><label>Min Amazon 90d drop ≥ %</label><input type="text" id="thAmazon90Drop" value="" placeholder="Off · e.g. +20 or -10" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Minimum Amazon 90 day drop percent; accepts positive or negative values"></div>
+          <div class="field"><label>Keepa domain</label>
+            <select id="domainF">
+              <option value="2">United Kingdom</option><option value="3">Germany</option>
+              <option value="4">France</option><option value="8">Italy</option>
+              <option value="9">Spain</option><option value="1">United States</option>
+            </select>
+          </div>
+          <p class="rule" id="ruleText"></p>
+        </div>
+
+        <div class="drop" id="dropF" tabindex="0" role="button" aria-label="Upload Product Viewer CSV">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg></span>
+          <span class="txt"><span class="big">Drop the Product Viewer CSV here</span><span class="small">Re-sorts instantly when you change the thresholds above</span></span>
+        </div>
+        <input type="file" id="fileF" accept=".csv,text/csv">
+        <div class="files" id="filesF"></div>
+        <div class="warn" id="warnF"></div>
+
+        <div class="yield" id="yieldF">
+          <div class="row"><span class="head">Kept vs dropped<span class="pct" id="fPct"></span></span><span class="total" id="fTotalLbl">0 rows</span></div>
+          <div class="bar">
+            <div class="seg keep" id="fKeepSeg" style="width:0"><span class="n" id="fKept">0</span><span class="l">kept</span></div>
+            <div class="seg drop" id="fDropSeg" style="width:0"><span class="n" id="fDropped">0</span><span class="l">dropped</span></div>
+          </div>
+        </div>
+
+        <div class="toolbar" id="barF" style="display:none">
+          <button class="btn primary" id="copyF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="lab">Copy kept ASINs</span></button>
+          <button class="btn solid" id="openKeepa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Open in Keepa</button>
+          <button class="btn solid" id="copyKeepa"><span class="lab">Copy Keepa link</span></button>
+          <div class="spacer"></div>
+          <button class="btn ghost" id="dlCsvF">Download filtered CSV</button>
+          <button class="btn ghost" id="toggleAll">Show all rows</button>
+          <button class="btn ghost danger" id="clearF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>Clear</button>
+        </div>
+        <textarea class="out" id="outF" spellcheck="false"></textarea>
+
+        <div id="kcBar" hidden></div>
+        <div class="tablewrap" id="tableWrap"><div class="tablescroll"><table id="tableF"></table></div></div>
+      </div>
+    </section>
   </div>
-</div>
-</div>
 
-</main>
-</div><!-- /app-shell -->
-<div id="ld-toast"></div>
+  <!-- ======================================================= -->
+  <!-- PAGE 3 · BRANDS                                          -->
+  <!-- ======================================================= -->
+  <div class="page" id="page-brands">
 
-<!-- BREAK OVERLAY -->
-<div id="break-overlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;flex-direction:column;gap:20px;backdrop-filter:blur(8px);">
-  <div style="background:linear-gradient(160deg,#1c1708,#0d0f16 68%);border:1px solid color-mix(in srgb,var(--amber) 42%,var(--line-2));border-radius:22px;padding:38px 48px;text-align:center;max-width:400px;width:90%;box-shadow:0 30px 90px -28px rgba(0,0,0,0.85),0 0 60px -22px color-mix(in srgb,var(--amber) 65%,transparent);">
-    <div style="font-size:2.8rem;margin-bottom:16px;animation:breathe 3s ease-in-out infinite;display:inline-block;">&#9749;</div>
-    <div style="font-family:var(--font-head);font-size:14px;font-weight:700;letter-spacing:3.5px;color:var(--amber);text-transform:uppercase;margin-bottom:12px;">On Break</div>
-    <div id="break-timer" style="font-family:var(--font-head);font-size:50px;font-weight:700;color:#fff;letter-spacing:1px;line-height:1;margin-bottom:14px;font-variant-numeric:tabular-nums;">00:00</div>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:24px;line-height:1.65;">Your shift timer is paused &mdash; nothing is lost.<br>Come back whenever you&rsquo;re ready.</div>
-    <div id="break-nag" class="break-nag off"></div>
-    <button class="btn btn-success" onclick="toggleBreak()" style="padding:15px 36px;font-size:14px;width:100%;border-radius:12px;">&#9654;&nbsp; End Break &amp; Resume</button>
-  </div>
-</div>
+    <div id="viewList">
+      <div class="lvnav" id="lvNav"><button class="on" data-tab="brands" type="button"><span class="t">Brands / Filters</span><b id="lvnBrands">0</b></button><button data-tab="runs" type="button"><span class="t">Runs</span><b id="lvnRuns">0</b></button><button data-tab="leads" type="button"><span class="t">Lead history</span><b id="lvnLeads">0</b></button></div>
+      <div class="card" id="cardBrands">
+        <div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><h2>Brands / Filters</h2><span class="sub">every saved Keepa search we run · greyed = not switched on yet · <b>In progress</b> = someone is on it right now</span>
+          <div class="right"><button class="btn ghost sm" id="howToShow" type="button">How to use this</button><button class="btn primary sm" id="addBrand" type="button"><span class="lab">+ Add brand / filter</span></button></div></div>
+        <div class="yourday" id="yourDay" hidden></div>
+        <div class="howto" id="howTo" hidden>
+          <div class="hh"><b>How a day works</b><button class="linkbtn" id="howToHide" type="button">Got it, hide this</button></div>
+          <ol>
+            <li><b>Pick your name</b> top right. Everything you click is saved under it, for everyone.</li>
+            <li><b>Hit Due.</b> The red rows are yours to run today. Start at the top — or press <b>Start</b> in the banner.</li>
+            <li><b>On the run screen</b> follow the numbered steps: open the Keepa filter, set rows per page to the max, Export → All active columns → CSV, drop the file in the box. The rules do the maths.</li>
+            <li><b>Judge the To-review list.</b> Open them in Keepa, read the graph, then <b>Y</b> / <b>N</b> / <b>M</b> on the row. A No needs a reason. Then <b>Next due →</b>.</li>
+          </ol>
+        </div>
+        <div class="kpis" id="bKpis"></div>
+        <div class="approvals" id="approvals" hidden></div>
+        <div class="tb">
+          <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="lq" placeholder="Search brands…" autocomplete="off"></div>
+          <select id="lMarket"><option value="ALL">All markets</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
+          <select id="lOwner"><option value="ALL">All owners</option><option>Jack</option><option>Mera</option><option>Suz</option><option>VAs</option><option value="—">Unassigned</option></select>
+          <select id="lRule"><option value="ALL">All rules</option><option value="1">Rule 1 · buy UK/EU, sell UK</option><option value="2">Rule 2 · UK Amazon-to-Amazon</option></select>
+          <select id="lType"><option value="ALL">Filters + brands</option><option value="filter">Saved filters</option><option value="brand">Brands</option></select>
+          <select id="lSort" title="Order of the list"><option value="due">Sort · due first</option><option value="name">Sort · name A–Z</option><option value="owner">Sort · owner</option><option value="last">Sort · last run, newest</option><option value="leads">Sort · most leads</option><option value="review">Sort · most to review</option><option value="cadence">Sort · cadence</option></select>
+          <div class="seg" id="lSeg"><button data-seg="due" type="button">Due <b>0</b></button><button data-seg="mine" type="button">Mine <b>0</b></button><button class="on" data-seg="all" type="button">All <b>0</b></button><button data-seg="active" type="button">Active <b>0</b></button><button data-seg="paused" type="button">Paused <b>0</b></button></div>
+        </div>
+        <div class="tblwrap"><table class="btbl" id="brandTbl"></table></div>
+      </div>
 
-<!-- REPORT MODAL -->
-<div class="modal-overlay" id="manager-pin-modal">
-  <div class="modal pin-modal">
-    <div class="pin-lock">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-    </div>
-    <h3 style="text-align:center;">Jack only</h3>
-    <p style="text-align:center;">Enter your PIN to unlock the dashboard &amp; leads.</p>
-    <input id="manager-pin-input" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;" class="pin-input" inputmode="numeric" onkeydown="if(event.key==='Enter')attemptManagerUnlock()" oninput="pinAutoCheck(this)">
-    <button class="pin-unlock-btn" onclick="attemptManagerUnlock()">Unlock &#8594;</button>
-    <button class="pin-cancel" onclick="closeManagerPinModal()">Cancel</button>
-  </div>
-</div>
+      <div class="card" id="cardRuns" hidden>
+        <div class="cardhead"><h2>Runs</h2><span class="sub">every export processed · leads it produced · what got marked · click a run to open its leads</span>
+          <div class="right"><button class="btn ghost sm" id="logExport" type="button">Export log + verdicts</button></div></div>
+        <div class="tb" id="rlTb">
+          <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="rlQ" placeholder="Search runs…" autocomplete="off"></div>
+          <select id="rlPeriod"><option value="today">Today</option><option value="7d" selected>Last 7 days</option><option value="30d">Last 30 days</option><option value="all">All time</option></select>
+          <select id="rlWho"><option value="ALL">Ran by · anyone</option><option>Jack</option><option>Mera</option><option>Suz</option></select>
+          <select id="rlRule"><option value="ALL">All rules</option><option value="1">Rule 1</option><option value="2">Rule 2</option></select>
+          <select id="rlSrc"><option value="ALL">All sources</option></select>
+          <div class="seg" id="rlGroup"><button class="on" data-g="runs" type="button">Runs</button><button data-g="source" type="button">By source</button><button data-g="day" type="button">By day</button><button data-g="who" type="button">By person</button></div>
+          <label class="chk" title="Otherwise the newest 60 rows"><input type="checkbox" id="rlAll">show every row</label>
+        </div>
+        <div id="runLog"></div>
+      </div>
 
-<!-- ADD TASK MODAL -->
-<div class="modal-overlay" id="addtask-modal">
-  <div class="modal pin-modal" style="width:min(430px,92vw)!important;text-align:left;">
-    <div class="addtask-ico">&#128221;</div>
-    <h3 style="font-size:18px;text-align:left;">Add a task</h3>
-    <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;text-align:left;">Goes into today's Additional Tasks — log time &amp; leads against it like any other.</p>
-    <input id="addtask-name" class="pin-input" style="font-family:var(--font);font-size:14.5px;letter-spacing:0;text-align:left;font-weight:600;" placeholder="e.g. Check the Ninja brand promo" onkeydown="if(event.key==='Enter')confirmAddTask()">
-    <button class="pin-unlock-btn" onclick="confirmAddTask()">Add task &#10003;</button>
-    <button class="pin-cancel" onclick="closeAddTask()">Cancel</button>
-  </div>
-</div>
-
-<!-- TEST PREVIEW PICKER -->
-<div class="modal-overlay" id="test-modal">
-  <div class="modal pin-modal" style="width:min(420px,92vw)!important;">
-    <h3 style="font-size:18px;margin-bottom:6px;">Preview a shift</h3>
-    <p style="font-size:12.5px;color:var(--muted);margin-bottom:16px;">See exactly what a VA sees \u2014 their real tasks + your brief. Nothing is saved or sent to Discord.</p>
-    <button class="pin-unlock-btn" style="background:var(--mera);margin-bottom:9px;" onclick="startTestPreview('Mera')">Preview Mera's shift</button>
-    <button class="pin-unlock-btn" style="background:var(--suz);color:#241a00;margin-bottom:9px;" onclick="startTestPreview('Suz')">Preview Suz's shift</button>
-    <button class="pin-cancel" onclick="startTestPreview(null)">Blank test shift</button>
-    <button class="pin-cancel" onclick="document.getElementById('test-modal').classList.remove('open')">Cancel</button>
-  </div>
-</div>
-
-<!-- IMPORT SETTINGS MODAL -->
-<div class="modal-overlay" id="import-modal">
-  <div class="modal pin-modal" style="width:min(460px,92vw)!important;text-align:left;">
-    <h3 style="font-size:18px;text-align:left;">Import settings</h3>
-    <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;text-align:left;">Paste the blob from "Copy settings" on your other device. Brings webhooks, targets, colours, everything.</p>
-    <textarea id="import-blob" style="width:100%;min-height:110px;background:#0b0c12;border:1.5px solid var(--line-2);border-radius:11px;color:var(--text);font-family:var(--font-mono);font-size:11px;padding:11px;outline:none;margin-bottom:12px;" placeholder='{"whMain":"https://discord.com/api/webhooks/..."}'></textarea>
-    <button class="pin-unlock-btn" onclick="confirmImportSettings()">Import &#10003;</button>
-    <button class="pin-cancel" onclick="document.getElementById('import-modal').classList.remove('open')">Cancel</button>
-  </div>
-</div>
-
-<!-- CONFIRM MODAL -->
-<div class="modal-overlay" id="confirm-modal">
-  <div class="modal pin-modal" style="width:min(400px,92vw)!important;">
-    <h3 id="confirm-msg" style="font-size:16.5px;line-height:1.45;margin-bottom:18px;">Are you sure?</h3>
-    <button class="pin-unlock-btn" id="confirm-ok">Yes, do it</button>
-    <button class="pin-cancel" onclick="document.getElementById('confirm-modal').classList.remove('open')">Cancel</button>
-  </div>
-</div>
-
-<!-- REPORT MODAL -->
-<div class="modal-overlay" id="report-modal">
-  <div class="modal">
-    <h3 style="color:var(--red);">&#9888; Report an Issue</h3>
-    <p>Let Jack know about anything that isn't working &#8212; broken links, unclear tasks, technical issues, anything.</p>
-    <div style="margin-bottom:12px;">
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Type of issue</div>
-      <select id="report-type" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--font-mono);font-size:12px;padding:10px 14px;outline:none;margin-bottom:12px;">
-        <option value="broken-link">Broken / outdated link</option>
-        <option value="task-unclear">Task unclear or wrong</option>
-        <option value="technical">Technical problem</option>
-        <option value="missing-info">Missing information</option>
-        <option value="other">Other</option>
-      </select>
-    </div>
-    <textarea id="report-text" placeholder="Describe the issue..."></textarea>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeReportModal()">Cancel</button>
-      <button class="btn btn-danger" onclick="submitReport()">Submit Report</button>
-    </div>
-  </div>
-</div>
-
-<!-- SKIP MODAL -->
-<div class="modal-overlay" id="skip-modal">
-  <div class="modal">
-    <h3>Skip this task?</h3>
-    <p>This is a mandatory task. Jack will be notified. You must provide a reason.</p>
-    <textarea id="skip-reason" placeholder="Why are you skipping this task?"></textarea>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeSkipModal()">Cancel</button>
-      <button class="btn btn-danger" onclick="confirmSkip()">Skip &amp; Notify Jack</button>
-    </div>
-  </div>
-</div>
-
-<!-- WELCOME MODAL -->
-<div class="welcome-overlay" id="welcome-modal">
-  <div class="welcome-card">
-    <span class="welcome-emoji" id="welcome-emoji">&#x1F44B;</span>
-    <div class="welcome-name" id="welcome-name"></div>
-    <div class="welcome-time" id="welcome-time"></div>
-    <div class="welcome-msg" id="welcome-msg"></div>
-    <!-- The morning brief. Jack: "when they log in, I want them to know how much they
-         have spent and how many leads they have bought this week" — his own mock of
-         the start-shift screen IS this modal, so the numbers live here, filled in
-         asynchronously once the leads and hours arrive. -->
-    <div id="welcome-brief"></div>
-    <button class="btn btn-success" style="width:100%;padding:18px;font-size:15px;border-radius:12px;" onclick="closeWelcome()">Let's Go &#x1F680;</button>
-  </div>
-</div>
-
-<!-- CUSTOMISE PANEL -->
-<div class="cz-overlay" id="cz-overlay" onclick="closeCustomise()"></div>
-<div class="cz-panel" id="cz-panel">
-  <div class="cz-head"><h3>Settings</h3><button class="cz-close" onclick="closeCustomise()">&times;</button></div>
-  <div class="cz-body">
-    <div class="cz-sec-cap">VA Settings — how the app looks &amp; behaves for you</div>
-    <div class="cz-group">
-      <h4>Accent colour</h4>
-      <div class="cz-swatches" id="cz-swatches"></div>
-    </div>
-    <div class="cz-group">
-      <h4>Density</h4>
-      <div class="cz-seg" id="cz-density">
-        <button data-v="comfortable">Comfortable</button>
-        <button data-v="compact">Compact</button>
+      <div class="card" id="cardLeads" hidden>
+        <div class="cardhead"><h2>Lead history</h2><span class="sub">every lead the rules have kept, on every source · shared · judge from here or open it in Keepa</span>
+          <div class="right"><button class="btn ghost sm" id="hsRefresh" type="button" title="Pull the newest lead states from the shared storage">Refresh</button><button class="btn ghost sm" id="hsCsv" type="button">Export this view</button><button class="btn primary sm" id="hsKeepa" type="button" title="Opens the leads on this page in the Keepa Product Viewer">Open page in Keepa</button></div></div>
+        <div class="kpis hskpis" id="hsKpis"></div>
+        <div class="tb" id="hsTb">
+          <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="hsQ" placeholder="ASIN, title, brand…" autocomplete="off"></div>
+          <select id="hsSrc"><option value="ALL">All sources</option></select>
+          <select id="hsOwner"><option value="ALL">All owners</option><option>Jack</option><option>Mera</option><option>Suz</option><option>VAs</option></select>
+          <select id="hsRule"><option value="ALL">All rules</option><option value="1">Rule 1</option><option value="2">Rule 2</option></select>
+          <select id="hsVerd"><option value="ALL">Any verdict</option><option value="none">No verdict yet</option><option value="Yes">Yes</option><option value="No">No</option><option value="Maybe">Maybe</option><option value="Seen">Seen only</option></select>
+          <select id="hsStatus"><option value="ALL">Any move</option><option value="NEW">New</option><option value="BETTER">Better</option><option value="WORSE">Worse</option><option value="UNCHANGED">Unchanged</option></select>
+          <select id="hsSeen"><option value="all">Seen · any time</option><option value="today">Seen today</option><option value="7d">Seen · last 7 days</option><option value="30d">Seen · last 30 days</option><option value="older">Not seen for 7+ days</option></select>
+          <select id="hsBand"><option value="ALL">Any sell price</option><option value="a">Under £20</option><option value="b">£20 – £60</option><option value="c">£60 – £150</option><option value="d">£150+</option></select>
+          <select id="hsScore"><option value="0">Score · any</option><option value="35">Score 35+</option><option value="50">Score 50+</option><option value="75">Bangers · 75+</option></select>
+          <select id="hsRoi"><option value="-999">ROI · any</option><option value="0">ROI 0%+</option><option value="10">ROI 10%+</option><option value="20">ROI 20%+</option><option value="30">ROI 30%+</option><option value="50">ROI 50%+</option></select>
+          <select id="hsProfit"><option value="-999">Profit · any</option><option value="1">£1+</option><option value="5">£5+</option><option value="10">£10+</option><option value="25">£25+</option></select>
+          <select id="hsPer"><option value="50">50 per page</option><option value="100">100 per page</option><option value="200">200 per page</option><option value="0">All on one page</option></select>
+          <button class="btn ghost sm" id="hsReset" type="button">Reset</button>
+        </div>
+        <div class="tablewrap show"><div class="tablescroll"><table class="logtbl hstbl" id="hsTbl"></table></div><div class="pager" id="hsPager"></div></div>
       </div>
     </div>
-    <div class="cz-group">
-      <h4>Layout</h4>
-      <div class="cz-seg" id="cz-layout">
-        <button data-v="auto" onclick="setLayoutPref('auto')">Auto</button>
-        <button data-v="mobile" onclick="setLayoutPref('mobile')">Mobile</button>
+
+    <div id="viewRun" hidden>
+      <div class="card">
+        <div class="runhead">
+          <button class="back" id="backBtn" type="button" aria-label="Back to brands"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></button>
+          <span id="runAvatar"></span>
+          <div><h2><span id="runName">—</span><span id="runMk"></span></h2><div class="meta" id="runMeta"></div></div>
+          <div class="right">
+            <button class="btn primary sm" id="runNext" type="button" hidden title="Open the next filter that is due today">Next due →</button>
+            <button class="btn ghost sm" id="runCopyLink" type="button" title="Copies a link that opens this run screen — paste it into the AVM HQ task">Copy link for AVM HQ</button>
+            <button class="btn ghost sm" id="runAllTime" type="button" title="Every lead this source has ever kept, in the Lead history">All-time leads</button>
+            <button class="btn ghost sm" id="runHist" type="button">History</button>
+            <button class="btn ghost sm" id="runEdit" type="button">Edit</button>
+            <button class="btn ghost danger sm" id="clearRun" type="button">Clear files</button>
+          </div>
+        </div>
+
+        <div class="runstrip" id="runStrip" hidden></div>
+        <div class="guide" id="guide"></div>
+        <div class="twocol">
+          <div class="stepcard">
+            <div class="stephead"><span class="n">1</span><div><p class="sh" id="step1Title">Drop the exports</p><p class="ss" id="step1Sub"></p></div></div>
+            <div class="keeparow" id="keepaRow"></div>
+            <div class="dropz" id="dropAny" tabindex="0" role="button" aria-label="Upload Keepa exports">
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg></span>
+              <span class="big">Drag &amp; drop the Keepa exports here</span>
+              <span class="small">or click to browse · any order, all at once · the tool works out which is which</span>
+            </div>
+            <input type="file" id="fileIn" accept=".csv,text/csv" multiple>
+            <div class="filechips" id="fileChips"></div>
+            <div class="eubar" id="euBar" hidden>
+              <div class="eutext"><b id="euHead">EU prices</b><span id="euMsg"></span></div>
+              <button type="button" class="btn primary" id="euGo"><span class="lab">Get EU prices</span></button>
+            </div>
+            <div class="asinbar" id="asinBar" hidden>
+              <span class="am" id="asinMsg"></span>
+              <button class="btn solid xs" id="asinCopy" type="button"><span class="lab">Copy <span id="asinN">0</span> ASINs</span></button>
+              <button class="btn primary xs" id="asinOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Open UK Product Viewer with them loaded</button>
+            </div>
+            <div class="warn" id="warnRun"></div>
+            <p class="sincenote" id="sinceNote" hidden><b>Tracking since / Listed since</b> aren't in this export — tick them in Keepa's column picker and product age comes for free.</p>
+            <div class="floors" id="floorRow">
+            <div class="fhead"><span class="ft">Customise this source</span><span class="fs" id="floorSaved"></span><button class="linkbtn" id="floorClear" type="button" hidden>Clear floors</button></div>
+            <div class="fin">
+              <label title="Bought in the past month, or Keepa rank drops — whichever Keepa gives. The rule already floors this at 10.">Sales / month ≥<input id="fl_minSpm" type="number" inputmode="numeric" placeholder="10"></label>
+              <label>ROI % ≥<input id="fl_minRoi" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Profit £ ≥<input id="fl_minProfit" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Sell £ ≥<input id="fl_minSell" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Buy £ ≤<input id="fl_maxBuy" type="number" inputmode="decimal" placeholder="any"></label>
+              <label>Score ≥<input id="fl_minScore" type="number" inputmode="numeric" placeholder="any"></label>
+              <label>Offers ≥<input id="fl_minOffers" type="number" inputmode="numeric" placeholder="any"></label>
+            </div>
+          </div>
+          </div>
+          <div class="stepcard">
+            <div class="stephead"><span class="n">2</span><div><p class="sh">Run summary</p><p class="ss">Key numbers from this export</p></div>
+              <div class="right"><button class="linkbtn" id="rulesToggle" type="button">Show the rules</button></div></div>
+            <div class="emptysum" id="sumEmpty">Drop the exports and the numbers appear here.</div>
+            <div class="sumgrid" id="sumGrid"></div>
+            <div class="story" id="story" hidden></div>
+            <div class="statusrow instory" id="statusRow"></div>
+            <div class="sumdetail" id="sumDetail"></div>
+            <div class="fell" id="fell" hidden></div>
+          </div>
+        </div>
+        <div class="rulesbox" id="rulesBox">
+          <div><b>Rule 1 · brands</b> demand 10+ bought or 10+ rank drops in 30 days · sell = Buy Box 90d +8%, capped at FBA 90d · buy = cheapest Amazon UK/DE/FR/IT/ES landed (UK less S&amp;S 15%, EU less S&amp;S 5% + 1% card + shared postage) · SellerAmp fees to the penny · floor 0% ROI, −15% when Amazon owns the Buy Box and FBA sits 25%+ above · slow sellers under 50/mo need ROI 15% or £5 · EU plug, mains appliances from EU, blacklist off the sheet. FROZEN 9 Sep 2026.</div>
+          <div><b>Rule 2 · UK Amazon-to-Amazon</b> Amazon selling it · demand 10+ · buy = Amazon now less Business / coupon / S&amp;S 15% when Keepa shows them · sell: <b>£50+</b> = Buy Box today when a 3P holds it under Amazon, else the 90/180d Buy Box +25% (+5% with no 3P history) capped at the 3P 90d average and the Buy Box high; <b>under £50</b> = the lower Buy Box 90/180d average, no uplift, never above Amazon's 90d average · keep if the % off needed to reach 5% ROI is within what the brand's own store gives (10% default) · score /100 weights £/month first, then ROI, then profit per unit. Every UK filter runs this — Mera's, Suz's, the next one.</div>
+          <div><b>Rule 3 · VAT</b> tea and coffee are 0% VAT on both sides (the product, never the machine). A VA can set 0% or 20% on the row; that beats the keyword rule, which beats the 20% default. Keyword lists are in Settings.</div>
+          <div><b>Queue</b> a lead shows until someone gives it a verdict, then only comes back when it is <i>more profitable</i> than it was when judged — 2p counts. Blacklisted never shows.</div>
+          <div><b>Flags, never rules</b> the graph reading stays with the human. A No needs a reason — that's what the system learns from.</div>
+        </div>
+
+        <div id="results" hidden>
+          <div class="warn feewarn" id="feeWarn"></div>
+          <div class="toolbar">
+            <button class="btn primary" id="openSel" type="button">Open in Keepa</button>
+            <div class="spacer"></div>
+            <!-- b137: one primary action each side, everything else behind More — the toolbar was ten controls over two rows -->
+            <div class="tbmenu" id="moreMenu"><button class="btn ghost" id="moreBtn" type="button" aria-haspopup="true" aria-expanded="false">More <span class="caret">▾</span></button>
+              <div class="tbpop" id="morePop">
+                <button class="btn solid" id="copyKept" type="button"><span class="lab">Copy lead ASINs</span></button>
+                <button class="btn solid" id="copyKpv" type="button" title="Copy a Keepa Product Viewer link with every lead loaded — paste it to anyone, no export needed"><span class="lab">Copy KPV link</span></button>
+                <button class="btn ghost" id="dlSheet" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="lab">Review sheet (xlsx)</span></button>
+                <button class="btn ghost" id="dlCsv" type="button">CSV</button>
+                <button class="btn ghost" id="dlDropped" type="button">Dropped list</button>
+                <button class="btn solid seen" id="seenAll" type="button" hidden title="Baseline: mark every lead without a verdict as SEEN — from the next run only NEW and BETTER show as to-review">Mark all as seen</button>
+              </div></div>
+            <button class="btn primary" id="runNext2" type="button" hidden title="Open the next filter that is due today">Done — next due →</button>
+          </div>
+
+          <div class="leadhead" id="leadTop">
+            <h3 id="leadCount">Leads</h3><span class="sub"><b>To review</b> = new, or better than the last run (or better since it was judged) · <b>All leads</b> = everything this run kept · Y/N/M saves as you click · ⃠ = never show again</span>
+            <div class="right">
+              <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fQ" placeholder="ASIN, title, brand…" autocomplete="off"></div>
+              <div class="seg segl" id="fSeg" title="Which leads to show"><button class="on" data-st="REVIEW" type="button">To review <b>0</b></button><button data-st="ALL" type="button">All leads <b>0</b></button><button data-st="NEW" type="button">New <b>0</b></button><button data-st="BETTER" type="button">Better <b>0</b></button><button data-st="WORSE" type="button">Worse <b>0</b></button><button data-st="UNCHANGED" type="button">Same <b>0</b></button></div>
+              <select id="fPer" title="How many leads per page — Open in Keepa takes the page"><option value="50">50 per page</option><option value="100">100 per page</option><option value="200">200 per page</option><option value="0">All on one page</option></select>
+              <select id="fSort"><option value="default">Sort · score</option><option value="gain">Sort · biggest improvement</option><option value="profit">Sort · profit</option><option value="roi">Sort · ROI</option><option value="month">Sort · £ / month</option></select>
+              <select id="fMarket"><option value="ALL">Buy from · all</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
+              <label class="chk"><input type="checkbox" id="fHideNo">hide No</label>
+            </div>
+          </div>
+          
+          <div class="leadwrap"><div class="tablescroll"><table class="ltbl" id="leads"></table></div><div class="pager" id="pager"></div></div>
+        </div>
       </div>
     </div>
-    <div class="cz-group">
-      <h4>Shift KPI cards</h4>
-      <div id="cz-kpis"></div>
-    </div>
-    <div class="cz-sec-cap" style="margin-top:8px;">Jack Settings — management &amp; config</div>
-    <div class="cz-group">
-      <h4>Jack only</h4>
-      <button class="cz-jack-btn" onclick="openJackSettings()">Open Jack's settings &#8594;</button>
-      <div style="font-size:10.5px;color:var(--muted-2);margin-top:7px;line-height:1.5;">PIN required — targets, mandatory task editor, Discord webhooks, manager PIN.</div>
-    </div>
-    <div style="font-size:11px;color:var(--muted-2);line-height:1.6;">Preferences are saved on this device and apply across every page.</div>
-  </div>
-</div>
 
+    <div class="drawer" id="drawer"><div class="veil"></div><div class="pane" id="drawerBody"></div></div>
+  </div>
+
+  <div class="page" id="page-audit"></div>
+
+  <!-- ======================================================= -->
+  <!-- PAGE 4 · SETTINGS                                        -->
+  <!-- ======================================================= -->
+  <div class="page" id="page-settings">
+    <div class="card">
+      <div class="cardhead"><span class="ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span><h2>Settings</h2><span class="sub">what the system knows and who is using it · <span class="scope shared">shared</span> = everyone sees the same thing · <span class="scope local">this browser</span> = only you</span></div>
+
+      <div class="ssec"><h3>You</h3><p>Who is clicking, and whether this browser is talking to the shared database.</p></div>
+      <div class="sgrid">
+        <div class="sbox"><h3>Who am I <span class="scope local">this browser</span></h3><p class="ssub">Your name goes on every lead you mark, every run you do and every blacklist entry. Nothing can be marked until it is set.</p>
+          <div class="row"><select class="sel" id="meIn"><option value="">— pick your name —</option><option>Jack</option><option>Mera</option><option>Suz</option></select></div>
+          <!-- b128: signing in lives here, not only on the first-visit gate -->
+          <div class="authbox" id="authBox"></div></div>
+        <div class="sbox"><h3>Shared storage <span class="scope shared">shared</span></h3><p class="ssub" id="cloudInfo">…</p>
+          <div class="row"><button class="btn solid sm" id="cloudPullBtn" type="button">Refresh from shared</button><button class="btn ghost sm" id="cloudSendBtn" type="button">Send queued changes</button></div>
+          <div class="storemeter" id="storeMeter"></div>
+          <p class="hint">Every click saves in this browser first, then goes to the shared database. Lose the connection and it queues, then sends itself. Nothing is lost on a refresh.</p></div>
+        <!-- b155: guest mode — run and check everything with nothing saved to Supabase -->
+        <div class="sbox wide guestbox" id="guestBox"></div>
+      </div>
+
+      <div class="ssec"><h3>Numbers the rules use</h3><p>Change these and the next run uses them — for everyone.</p></div>
+      <div class="sgrid">
+        <div class="sbox"><h3>£ per € <span class="fxchip off" id="fxChip">fetching…</span> <span class="scope local">this browser</span></h3><p class="ssub">Used to turn an EU buy price into pounds (Rule 1). Comes from the ECB every 6 hours, rounded up so the maths errs on the safe side. Type over it if you want a different rate.</p>
+          <div class="row"><div class="fxrow"><input type="number" id="fxIn" step="0.0001" min="0.5" max="1.5" inputmode="decimal" value="0.8600"><button class="fxbtn" id="fxRefresh" type="button" title="Fetch today's ECB rate">↻</button></div></div></div>
+        <div class="sbox"><h3>Reasons for a No <span class="scope shared">shared</span></h3><p class="ssub">What a VA picks from when a lead is a No. Keep them short. The rules are refined from these after the trial.</p>
+          <div class="chips" id="reasonChips"></div>
+          <div class="row" style="margin-top:10px"><input class="txt" id="reasonIn" placeholder="add a reason…" autocomplete="off"><button class="btn solid sm" id="reasonAdd" type="button">Add</button></div></div>
+        <div class="sbox wide"><h3>Discounts · brand stores &amp; retailers <span class="scope shared">shared</span></h3><p class="ssub">The one list every rule reads. A brand's own store, or a retailer that price-matches Amazon, and what it gives on top. Rule 2 uses it for "→ 20% ROI · £191 with Samsung 10%" and to decide whether a lead needs a code; Rule 1 (brand runs, EU alerts) uses the same rates for its "if Currys price-matches" line and the OA check. Which retailers show depends on the product's category: electricals get Currys, Argos, John Lewis, AO and Marks Electrical; grocery, health and beauty get Boots, Superdrug, Tesco and Holland &amp; Barrett. Full-price-only codes count at their sale rate on a price match. Edit here and every run uses it, for everyone.</p>
+          <div class="disctb"><table class="dtbl" id="discTbl"></table></div>
+          <div class="row" style="margin-top:10px">
+            <input class="txt" id="dName" placeholder="Name (brand or retailer)" autocomplete="off" style="min-width:180px">
+            <select id="dType" class="sel"><option value="brand">brand store</option><option value="retailer">retailer</option></select>
+            <input class="txt num" id="dPct" type="number" step="0.5" placeholder="%" style="min-width:70px;width:70px">
+            <label class="chk"><input type="checkbox" id="dFull">full-price only</label>
+            <input class="txt num" id="dSale" type="number" step="0.5" placeholder="sale %" style="min-width:80px;width:80px">
+            <input class="txt num" id="dMin" type="number" placeholder="min £" style="min-width:80px;width:80px">
+            <input class="txt" id="dNote" placeholder="note" autocomplete="off" style="min-width:160px">
+            <button class="btn primary sm" id="dAdd" type="button"><span class="lab">Add</span></button>
+            <button class="btn ghost sm" id="dReset" type="button">Reset to the 6 Sep list</button>
+          </div></div>
+        <div class="sbox wide"><h3>Rule 3 · what counts as 0% VAT <span class="scope shared">shared</span></h3><p class="ssub">Tea and coffee are 0% VAT. A lead is worked at 0% when its title or category contains a word from the first list and none from the second, so <i>coffee beans</i> is 0% and <i>coffee machine</i> is 20%. Whole words, comma-separated. A VA's own 0% / 20% click on a lead always wins over these lists.</p>
+          <div class="vatgrid"><div><label class="ssub">0% VAT when it says…</label><textarea id="vatZero" spellcheck="false"></textarea></div><div><label class="ssub">…but 20% if it also says</label><textarea id="vatNot" spellcheck="false"></textarea></div></div>
+          <div class="row" style="margin-top:8px"><button class="btn solid sm" id="vatSave" type="button">Save</button><button class="btn ghost sm" id="vatReset" type="button">Reset to defaults</button></div></div>
+      </div>
+
+      <div class="ssec"><h3>Blacklists</h3><p>Central. Applied to every run of every filter and brand, after the Keepa export is read — so nothing has to change inside Keepa.</p></div>
+      <div class="sgrid">
+        <div class="sbox wide"><h3>ASIN blacklist <span class="scope shared">shared</span></h3><p class="ssub">These products never show again, on any run. Added with the ⃠ button on a lead — a reason is required. Anyone can remove one here; the removal carries your name.</p>
+          <div class="disctb"><table class="dtbl" id="blTbl"></table></div></div>
+        <div class="sbox wide"><h3>Never-sell categories <span class="scope shared">shared</span></h3><p class="ssub">Things we cannot sell whatever the brand: alcohol, fashion, shoes. A lead is dropped on every run when its category or title contains one of these words. Whole words, comma-separated.</p>
+          <div class="vatgrid one"><div><textarea id="catWords" spellcheck="false"></textarea></div></div>
+          <div class="row" style="margin-top:8px"><button class="btn solid sm" id="catSave" type="button">Save</button><button class="btn ghost sm" id="catReset" type="button">Reset to defaults</button></div></div>
+        <div class="sbox wide"><h3>Brand blacklist <span class="scope jack">Jack approves</span></h3><p class="ssub">Whole brands we cannot sell, such as HP. A VA requests it with a reason; it shows as <b>pending</b> until Jack approves. Once approved every product of that brand is dropped from every run. Pending brands keep showing with a PENDING chip so nothing is lost while Jack decides.</p>
+          <div class="disctb"><table class="dtbl" id="bbTbl"></table></div>
+          <div class="row" style="margin-top:10px"><input class="txt" id="bbName" placeholder="Brand as Keepa spells it" autocomplete="off" style="min-width:200px"><input class="txt" id="bbReason" placeholder="why we cannot sell it" autocomplete="off" style="min-width:240px"><button class="btn primary sm" id="bbAdd" type="button"><span class="lab">Request</span></button></div></div>
+      </div>
+
+      <div class="ssec"><h3>This browser</h3><p>Housekeeping for the copy kept on this machine. The shared database is not touched by any of these.</p></div>
+      <div class="sgrid">
+        <div class="sbox wide"><h3>Local copy <span class="scope local">this browser</span></h3><p class="ssub" id="dataInfo"></p>
+          <div class="row"><button class="btn solid sm" id="dataExport" type="button">Backup to file</button><label class="btn ghost sm" style="cursor:pointer">Restore from file<input type="file" id="dataImport" accept=".json" hidden></label><button class="btn ghost danger sm" id="dataReset" type="button">Reset brand list to the seed</button></div>
+          <p class="hint">Backup = everything this browser holds, as one file. Restore replaces this browser's copy only.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Shared storage · runs, verdicts, blacklists and the compare baseline go to the BDL Supabase project · saves in this browser first, never loses a click</footer>
+</div>
 <div class="toast" id="toast"></div>
 
-<script src="js/storage.js?v=v51.6"></script>
-<script src="js/config.js?v=v51.6"></script>
-<script src="js/cloud.js?v=v51.6"></script>
-<script src="js/discord.js?v=v51.6"></script>
-<script src="js/draft.js?v=v51.6"></script>
-<script src="js/core.js?v=v51.6"></script>
-<script src="js/shift.js?v=v51.6"></script>
-<script src="js/shift-tasks.js?v=v51.6"></script>
-<script src="js/clock.js?v=v51.6"></script>
-<script src="js/eod.js?v=v51.6"></script>
-<script src="js/manager.js?v=v51.6"></script>
-<script src="js/manager-tabs.js?v=v51.6"></script>
-<script src="js/insights.js?v=v51.6"></script>
-<script src="js/oa.js?v=v51.6"></script>
-<script src="js/mgr-settings.js?v=v51.6"></script>
-<script src="js/autotune.js?v=v51.6"></script>
-<script src="js/weekly.js?v=v51.6"></script>
-<script src="js/helpers.js?v=v51.6"></script>
-<script src="js/shell.js?v=v51.6"></script>
-<script src="js/cardstyle.js?v=v51.6"></script>
-<script src="js/leads-engine.js?v=v51.6"></script>
-<script src="js/pay.js?v=v51.6"></script>
-<script src="js/eod-check.js?v=v51.6"></script>
-<script src="js/sheets.js?v=v51.6"></script>
-<script src="js/leads-list.js?v=v51.6"></script>
-<script src="js/leads-focus.js?v=v51.6"></script>
-<script src="js/saved-filters.js?v=v51.6"></script>
-<script src="js/from-jack.js?v=v51.6"></script>
-<script src="js/storefronts-core.js?v=v51.6"></script>
-<script src="js/storefronts-import.js?v=v51.6"></script>
-<script src="js/storefronts-jack.js?v=v51.6"></script>
-<script src="js/storefronts-history.js?v=v51.6"></script>
-<script src="js/audit.js?v=v51.6"></script>
-<script src="js/selftest.js?v=v51.6"></script>
-<script src="js/storefronts-va.js?v=v51.6"></script>
-<script src="js/send-again.js?v=v51.6"></script>
-<script src="js/leads-page.js?v=v51.6"></script>
+<script src="js/core.js?v=b199"></script>
+<script src="js/parse.js?v=b199"></script>
+<script src="js/rule1.js?v=b199"></script>
+<script src="js/rule2.js?v=b199"></script>
+<script src="js/export.js?v=b199"></script>
+<script src="js/rule4.js?v=b199"></script>
+<script src="js/queue.js?v=b199"></script>
+<script src="js/sources.js?v=b199"></script>
+<script src="js/cloud.js?v=b199"></script>
+<script src="js/auth.js?v=b199"></script>
+<script src="js/leadtools.js?v=b199"></script>
+<script src="js/keepaconsole.js?v=b199"></script>
+<script src="js/euprice.js?v=b199"></script>
+<script src="js/apirun.js?v=b199"></script>
+<script src="js/brands.js?v=b199"></script>
+<script src="js/history.js?v=b199"></script>
+<script src="js/audit.js?v=b199"></script>
+<script src="js/kcjudge.js?v=b199"></script>
+<script src="js/guest.js?v=b199"></script>
+<script src="js/boot.js?v=b199"></script>
 </body>
 </html>

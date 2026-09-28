@@ -289,9 +289,9 @@ function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runN
   $('#step1Title').textContent=r1&&!uk1?'Drop the Product Finder exports':"Drop this morning's export";
   $('#step1Sub').textContent=r1&&!uk1?`Finder export for each of ${s.markets.join(' · ')}, then the UK Product Viewer. Any order.`:uk1?'UK Product Finder, all columns. One file — it carries the UK sell side too, so no Viewer is needed.':'UK Product Finder, all columns. One file.';
   const link=finderLink(s);
-  if(s.list==='storefront'){paintStorefrontRow(s);return;}   /* b183 */
+  if(isListed(s)){paintStorefrontRow(s);return;}   /* b183 / b184 */
   if(!link){$('#keepaRow').innerHTML=`<span class="nolinkmsg">No Keepa link saved for this yet — <button type="button" class="linkbtn" id="keepaEdit">Edit</button> and paste the Finder link. Exports can still be dropped below.</span>`;$('#keepaEdit').addEventListener('click',()=>openEdit(cur));return;}
-  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1&&!uk1?s.markets.map(m=>`<a href="${link}" data-mk="${m}" target="_blank" rel="noopener" title="Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export">${FLAG[m]} ${m}<span class="tick">✓</span>${ICONS.ext}</a>`).join('')+`<span class="mkhint">Same filter for all ${s.markets.length}. Keepa cannot take the marketplace from a link — after it opens, switch the flag top-right of Keepa to that country, run, export. One file per country.</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);paintApiRun();}   /* b138: inside the painter, not after it */
+  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1&&!uk1?s.markets.map(m=>`<a href="${(s.links&&s.links[m])||link}" data-mk="${m}" target="_blank" rel="noopener" title="${s.links&&s.links[m]?`This is the ${m} filter — its own categories. After it opens, switch Keepa's marketplace (flag, top right) to ${m}, set rows per page to the maximum, export all columns`:`Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export`}">${FLAG[m]} ${m}<span class="tick">✓</span>${ICONS.ext}</a>`).join('')+`<span class="mkhint">Same filter for all ${s.markets.length}. Keepa cannot take the marketplace from a link — after it opens, switch the flag top-right of Keepa to that country, run, export. One file per country.</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);paintApiRun();}   /* b138: inside the painter, not after it */
 function paintNext(){const nx=cur?nextDue(cur.key):null;['#runNext','#runNext2'].forEach(id=>{const b=$(id);if(!b)return;b.hidden=!nx;if(nx){b.innerHTML=(id==='#runNext2'?'Done — next due: ':'Next due: ')+escapeHtml(nx.name)+' →';b.dataset.key=nx.key;}});}
 /* b59 (Jack: "make it easier to see the history"): the last runs of this source sit under its name, one chip each; the whole history and
    every lead it ever kept are one click away */
@@ -330,6 +330,7 @@ function renderGuide(){const g=$('#guide');if(!g||!cur)return;const r1=cur.rule=
     exp:EXPORT,
     drop:['Drag the downloaded CSV onto the big box under step 1, or click the box and pick it from Downloads.','The numbers appear on the right straight away. If a yellow warning says a column is missing, switch that column on in Keepa (the columns button above the table) and export again.'],
     review:['Click Open all in Keepa — every lead on the page opens in one go.','Read each graph. Back here, click Y (buy), N (no) or M (maybe) on that lead\'s row. A No needs a reason chip.','When the To-review list is empty, press Next due →.'],
+    openEachOwn:['Click 🇩🇪 DE under "Open in Keepa" — that is Germany\'s own filter. In Keepa, click the flag at the top right and choose Amazon.de. Wait for the table.','Set rows per page to the maximum (bottom of the table), then Export → All active columns → CSV.','Then 🇫🇷 FR (switch Keepa to Amazon.fr), 🇮🇹 IT (Amazon.it), 🇪🇸 ES (Amazon.es) — each button is that country\'s own filter, so always use the matching button.'],
     openEach:['Click 🇬🇧 UK under step 1. Keepa opens the filter on the UK site. Wait for the table, then export (step 2).','Click 🇩🇪 DE. The same filter opens — now change Keepa\'s own country with the flag at the top right of Keepa to Germany and wait for the table to reload. Export again.','Repeat for each flag. One export per country.'],
     expEach:EXPORT.concat(['Do this once per country. File names do not matter — the app reads the country from inside the file.']),
     dropAll:['Drop all the country files on the box at once.','The chips under the box show which countries are in.'],
@@ -340,8 +341,8 @@ function renderGuide(){const g=$('#guide');if(!g||!cur)return;const r1=cur.rule=
     sfEu:['Click 🇩🇪 DE: the Viewer opens on Amazon.de with the same products and that country\'s prices. Export all columns.','Then 🇫🇷 FR, 🇮🇹 IT and 🇪🇸 ES the same way. File names do not matter — the app reads the country from inside the file.']};
   let steps;const eu=cur.markets.filter(m=>m!=='UK'),euIn=eu.filter(m=>files[m]).length;
   /* b183: the storefront run — the Viewer, not the Finder, in every market */
-  if(r1&&cur.list==='storefront')steps=[
-    ['Open the UK Product Viewer with your storefront',`${(cur._sf||[]).length?(cur._sf.length.toLocaleString()+' products · '):''}one click under "Open in Keepa"`,!!files.viewer,HOW.sfOpen],
+  if(r1&&isListed(cur))steps=[
+    [cur.list==='adhoc'?'Open the UK Product Viewer with these ASINs':'Open the UK Product Viewer with your storefront',`${(cur._sf||[]).length?(cur._sf.length.toLocaleString()+' products · '):''}one click under "Open in Keepa" — or the API button does it all`,!!files.viewer,HOW.sfOpen],
     ['Export ALL columns','the UK file is the selling side: sales, fees, offers',!!files.viewer,HOW.viewerExp],
     ['Now each EU market, same list',`${eu.map(m=>FLAG[m]).join(' ')} · ${euIn} of ${eu.length} in`,euIn>=eu.length&&eu.length>0,HOW.sfEu],
     ['Drop every file here',`${(files.viewer?1:0)+euIn} of ${cur.markets.length} in`,!!files.viewer&&euIn>=eu.length,HOW.dropAll],
@@ -352,7 +353,7 @@ function renderGuide(){const g=$('#guide');if(!g||!cur)return;const r1=cur.rule=
     ['Drop it here','leads appear',!!result,HOW.drop],
     ['Review what needs a look',result?`${rev} to review`:'',!!result&&rev===0,HOW.review]];
   else if(r1)steps=[
-    ['Open the Keepa filter for each market',`${cur.markets.map(m=>FLAG[m]).join(' ')} · switch Keepa's country, run it`,anyFinder,HOW.openEach],
+    ['Open the Keepa filter for each market',`${cur.markets.map(m=>FLAG[m]).join(' ')} · ${cur.links?'each button is that country\'s own filter — switch Keepa to the same country':'switch Keepa\'s country, run it'}`,anyFinder,cur.links?HOW.openEachOwn:HOW.openEach],
     ['Export CSV from each',`all columns · ${cur.markets.length} file${cur.markets.length===1?'':'s'}`,anyFinder,HOW.expEach],
     ['Drop them here',`${have} of ${cur.markets.length} in`,have>=cur.markets.length&&have>0,HOW.dropAll],
     ['Open the UK Product Viewer with the ASINs',merged?`${merged.toLocaleString()} ASINs merged — one click below`:'the app merges and de-dupes them',!!files.viewer,HOW.viewer],
@@ -512,22 +513,38 @@ function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='func
     if(lockSet(on)){toast(on?'Locked — sign-in required for everyone':'Unlocked — anyone with the link can use it again');paintAuthBox();}});}
 /* b138: Run via Keepa API — Jack only. Counts first, prices it, asks, then builds the same files a drop would and runs the same rules. */
 function paintApiRun(){const row=$('#keepaRow');if(!row||!cur)return;let b=$('#apiRunBtn');
-  const ok=isJack()&&typeof apiSelection==='function'&&(cur.list==='storefront'||!!finderLink(cur));
+  const ok=isJack()&&typeof apiSelection==='function'&&(isListed(cur)||!!finderLink(cur));
   if(!ok){if(b)b.hidden=true;return;}
-  if(!b){b=document.createElement('button');b.id='apiRunBtn';b.type='button';b.className='btn ghost sm apirun';b.addEventListener('click',()=>cur&&cur.list==='storefront'?apiRunStorefront():apiRunSource());row.appendChild(b);}
+  if(!b){b=document.createElement('button');b.id='apiRunBtn';b.type='button';b.className='btn ghost sm apirun';b.addEventListener('click',()=>cur&&isListed(cur)?apiRunStorefront():apiRunSource());row.appendChild(b);}
   b.hidden=false;b.textContent='Run via Keepa API · priced first';b.title='Jack only. Asks Keepa for this filter\'s products and runs the same rules — no export. Counts and prices it before it spends a token.';}
 /* b183: the storefront run through Keepa. The Product Viewer route is free; this is the one-button route — every product on the
    storefront priced in the UK today (6 tokens each, cached a day) and in each EU market (1 token each), then Rule 1. */
 const VIEWER_DOMAIN={UK:'2',DE:'3',FR:'4',IT:'8',ES:'9'};
-async function sfAsins(){if(cur&&cur._sf&&cur._sf.length)return cur._sf;let list=[];
+/* b184 (Jack, 28 Sep: "add a third thing for Keepa console — like the brands, it finds me profitable only for the ones I want — I've got
+   stuff I wanna send over to see if it's profitable; nobody can check it via tokens for now, just me"). A "listed" source is one whose
+   ASINs come from the app, not a Keepa search: the storefront (b183) or a pasted list. Both get Viewer buttons and the API button. */
+function isListed(s){return!!(s&&(s.list==='storefront'||s.list==='adhoc'));}
+async function adhocCheck(asins,markets){if(!isJack()){toast('Only Jack can check through Keepa for now',true);return;}
+  asins=[...new Set(asins)];if(!asins.length){toast('No ASINs found in that',true);return;}
+  let s=srcGet('adhoc-check')||{key:'adhoc-check',name:'Check these · Jack',type:'filter',rule:1,cadence:'adhoc',owner:'Jack',status:'active',migV:12,link:'',
+    note:'Pasted on the Keepa console → Check profit. Priced through Keepa (UK today, EU if ticked); Rule 1 keeps what pays. Jack only.'};
+  s.list='adhoc';s.asins=asins;s.markets=markets&&markets.length?markets:['UK'];s.owner='Jack';s.status='active';s._sf=null;srcSave(s);
+  const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b)b.click();
+  await openRun('adhoc-check');if(cur&&cur.key==='adhoc-check'){cur._sf=asins;apiRunStorefront();}}
+document.addEventListener('DOMContentLoaded',()=>{const ta=$('#kcAsins'),btn=$('#kcCheckBtn'),n=$('#kcAsinN');if(!ta||!btn)return;
+  const found=()=>[...new Set((ta.value.toUpperCase().match(/\bB0[0-9A-Z]{8}\b/g)||[]))];
+  ta.addEventListener('input',()=>{const a=found();n.textContent=a.length+' ASIN'+(a.length===1?'':'s');btn.disabled=!a.length;});
+  document.querySelectorAll('#kcCheck .kccmk input').forEach(c=>c.addEventListener('change',()=>c.closest('label').classList.toggle('on',c.checked)));
+  btn.addEventListener('click',()=>{const mk=['UK'].concat([...document.querySelectorAll('#kcCheck .kccmk input:checked')].map(c=>c.value).filter(v=>v!=='UK'));adhocCheck(found(),mk);});});
+async function sfAsins(){if(cur&&cur._sf&&cur._sf.length)return cur._sf;if(cur&&cur.list==='adhoc'){cur._sf=(cur.asins||[]).slice();return cur._sf;}let list=[];
   try{if(typeof cloudReadable==='function'&&cloudReadable()){const rows=await cloudGetAll('bdl_my_shelf','select=asin,on_now');list=rows.sort((a,b)=>(b.on_now?1:0)-(a.on_now?1:0)).map(r=>r.asin);}}catch(e){}
   if(!list.length&&typeof audState!=='undefined')list=[...audState.mineNow,...[...audState.mineEver].filter(a=>!audState.mineNow.has(a))];
   if(cur)cur._sf=list;return list;}
 async function paintStorefrontRow(s){const row=$('#keepaRow');if(!row)return;row.innerHTML='<span class="lab">Loading your storefront…</span>';
   const asins=await sfAsins();if(!cur||cur.key!==s.key)return;
-  if(!asins.length){row.innerHTML='<span class="nolinkmsg">Your storefront list is empty here — OA Overview keeps it (bdl_my_shelf); open this on the live app, signed in.</span>';renderGuide();return;}
+  if(!asins.length){row.innerHTML=s.list==='adhoc'?'<span class="nolinkmsg">No ASINs on this check yet — paste some on the Keepa console → Check profit.</span>':'<span class="nolinkmsg">Your storefront list is empty here — OA Overview keeps it (bdl_my_shelf); open this on the live app, signed in.</span>';renderGuide();return;}
   const per=250,batches=Math.ceil(asins.length/per);
-  row.innerHTML=`<span class="lab">Open the Product Viewer with your storefront · ${asins.length.toLocaleString()} products:</span>`+s.markets.map(m=>Array.from({length:batches},(_,i)=>{const part=asins.slice(i*per,(i+1)*per);
+  row.innerHTML=`<span class="lab">Open the Product Viewer with ${s.list==='adhoc'?'these':'your storefront ·'} ${asins.length.toLocaleString()} products:</span>`+s.markets.map(m=>Array.from({length:batches},(_,i)=>{const part=asins.slice(i*per,(i+1)*per);
     return`<a href="${keepaLink(part,VIEWER_DOMAIN[m])}" data-mk="${m==='UK'?'viewer':m}" target="_blank" rel="noopener" title="Keepa Product Viewer on ${m} with ${part.length} of your products loaded — export all columns, drop the file here">${FLAG[m]} ${m}${batches>1?' '+(i+1)+'/'+batches:''}<span class="tick">✓</span>${ICONS.ext}</a>`;}).join('')).join('')
     +`<span class="apihint">or</span>`;
   paintApiRun();paintSlots();renderGuide();}
@@ -537,13 +554,13 @@ async function apiRunStorefront(){if(!cur||!isJack())return;const b=$('#apiRunBt
     const left=await eupBalance();const cache=apiCache(),now=Date.now();let cached=0;asins.forEach(a=>{const k=cache['2|'+a];if(k&&now-k.at<API_CACHE_H*3600e3)cached++;});
     const est=(asins.length-cached)*API_PER_PRODUCT+cached+eupCost(asins,eu);
     if(left!=null&&left-est<API_FLOOR){toast(`Balance ${left.toLocaleString()} is too low for your storefront (needs about ${est.toLocaleString()}, floor ${API_FLOOR}) — it refills 21 a minute. The Viewer buttons are free.`,true);return;}
-    if(!confirm(`Price your whole storefront through Keepa?\n\n${asins.length.toLocaleString()} products · UK today${eu.length?' plus '+eu.join(', '):''} · about ${est.toLocaleString()} tokens\nBalance ${left!=null?left.toLocaleString():'?'} → about ${left!=null?(left-est).toLocaleString():'?'}`))return;
+    if(!confirm(`${cur.list==='adhoc'?'Price these through Keepa?':'Price your whole storefront through Keepa?'}\n\n${asins.length.toLocaleString()} products · UK today${eu.length?' plus '+eu.join(', '):''} · about ${est.toLocaleString()} tokens\nBalance ${left!=null?left.toLocaleString():'?'} → about ${left!=null?(left-est).toLocaleString():'?'}`))return;
     const R=await apiRows(asins,2,(n,tot)=>{b.textContent=`Fetching ${n}/${tot} products…`;});
-    const stamp=new Date();const nm=`Keepa API · storefront · ${stamp.getDate()}/${String(stamp.getMonth()+1).padStart(2,'0')} ${String(stamp.getHours()).padStart(2,'0')}:${String(stamp.getMinutes()).padStart(2,'0')}`;
+    const stamp=new Date();const nm=`Keepa API · ${cur.list==='adhoc'?'check':'storefront'} · ${stamp.getDate()}/${String(stamp.getMonth()+1).padStart(2,'0')} ${String(stamp.getHours()).padStart(2,'0')}:${String(stamp.getMinutes()).padStart(2,'0')}`;
     const f={name:nm,rows:R.rows,hasFees:true,asins:R.rows.map(r=>r.ASIN),domain:'UK',hasSince:true,missing:[],fromKeepa:true};
     clearRun();files.viewer=f;files.UK=null;
     if(eu.length){const got=await eupFetch(f.asins,eu,(done,tot,mk)=>{b.textContent=`${mk} prices · ${done}/${tot}`;},rate());eu.forEach(m=>{files[m]=got[m];});}
-    touched.clear();paintSlots();warn([`${nm}: ${R.rows.length.toLocaleString()} of your ${asins.length.toLocaleString()} storefront products from Keepa · about ${est.toLocaleString()} tokens`]);run();}
+    touched.clear();paintSlots();warn([`${nm}: ${R.rows.length.toLocaleString()} of ${asins.length.toLocaleString()} ${cur.list==='adhoc'?'pasted':'storefront'} products from Keepa · about ${est.toLocaleString()} tokens`]);run();}
   catch(e){toast('Keepa run failed — '+(e&&e.message||e),true);}
   finally{b.disabled=false;b.textContent='Run via Keepa API · priced first';}}
 async function apiRunSource(){if(!cur||!isJack())return;const b=$('#apiRunBtn');const link=finderLink(cur);const t=apiSelection({link});
@@ -711,7 +728,7 @@ function paintSlots(){if(!cur)return;const r1=cur.rule===1;
       +(miss?`<div class="cutwarn err"><b>Export error — missing ${miss.length} column${miss.length===1?'':'s'} the demand rules need. The run will not start.</b> In Keepa's column picker tick: ${miss.map(escapeHtml).join(' · ')}. Then export again.</div>`:'');};
   let h='';
   if(r1&&ukOnly()){h+=chip('viewer','🇬🇧 UK',files.viewer,'UK Product Finder export · required (no Viewer needed)');}
-  else if(r1){cur.markets.filter(m=>!(cur.list==='storefront'&&m==='UK')).forEach(m=>{h+=chip(m,FLAG[m]+' '+m,files[m],cur.list==='storefront'?'Viewer export · expected':'Finder export · expected');});
+  else if(r1){cur.markets.filter(m=>!(isListed(cur)&&m==='UK')).forEach(m=>{h+=chip(m,FLAG[m]+' '+m,files[m],isListed(cur)?'Viewer export · expected':'Finder export · expected');});
     MARKETS.filter(m=>!cur.markets.includes(m)&&files[m]).forEach(m=>{h+=chip(m,FLAG[m]+' '+m,files[m],'');});
     h+=chip('viewer','Viewer',files.viewer,'UK Product Viewer · required');}
   else h+=chip('one','Export',files.one,'UK Product Finder · required');
@@ -720,7 +737,7 @@ function paintSlots(){if(!cur)return;const r1=cur.rule===1;
   /* the ASIN hand-off: every ASIN the Finders found, minus the ones the Viewer already covers */
   const merged=new Set();MARKETS.forEach(k=>{if(files[k])files[k].asins.forEach(a=>merged.add(a));});
   const covered=new Set(files.viewer?files.viewer.asins:[]);const missing=[...merged].filter(a=>!covered.has(a));
-  const bar=$('#asinBar');bar.hidden=!r1||ukOnly()||cur.list==='storefront';bar.classList.toggle('idle',!merged.size);$('#asinCopy').disabled=!merged.size;$('#asinOpen').disabled=!merged.size;
+  const bar=$('#asinBar');bar.hidden=!r1||ukOnly()||isListed(cur);bar.classList.toggle('idle',!merged.size);$('#asinCopy').disabled=!merged.size;$('#asinOpen').disabled=!merged.size;
   if(r1&&!merged.size){bar.classList.remove('done');$('#asinMsg').innerHTML=`<b>Step 4 happens here.</b> Drop the Finder exports above and this becomes one button that opens the UK Product Viewer with every ASIN merged and de-duplicated — no copying, no Keepa console.`;$('#asinN').textContent='0';bar._all=[];}
   if(r1&&merged.size){bar.classList.toggle('done',!missing.length);
     $('#asinMsg').innerHTML=!missing.length?`all ${merged.size.toLocaleString()} ASINs covered by the Viewer`
@@ -1554,7 +1571,11 @@ function brandsInit(){if(typeof bbSeed==='function')bbSeed();paintJackOnly();ren
   $('#fileChips').addEventListener('click',e=>{const b=e.target.closest('button[data-rm]');if(b)removeFile(b.dataset.rm);});
   $('#euGo').addEventListener('click',euRun);
   $('#asinCopy').addEventListener('click',e=>{const a=$('#asinBar')._all||[];copy(a.join(', '),a.length+' ASINs copied — paste into the UK Product Viewer',e.currentTarget,'Copied');});
-  $('#asinOpen').addEventListener('click',()=>{const a=$('#asinBar')._all||[];if(!a.length){toast('Drop the Finder exports first',true);return;}window.open(keepaLink(a,'2'),'_blank');});
+  /* b185: thousands of ASINs make a link too long for the browser — copy them and open an empty UK Viewer to paste into */
+  $('#asinOpen').addEventListener('click',e=>{const a=$('#asinBar')._all||[];if(!a.length){toast('Drop the Finder exports first',true);return;}
+    if(a.length<=800){window.open(keepaLink(a,'2'),'_blank');return;}
+    copy(a.join('\n'),`${a.length.toLocaleString()} ASINs copied — in the Viewer that just opened, click in the ASIN box and paste (Cmd+V), then Load`,e.currentTarget,'Copied');
+    window.open('https://keepa.com/#!viewer','_blank');});
   $('#dlSheet').addEventListener('click',dlSheet);$('#dlCsv').addEventListener('click',dlCsv);$('#dlDropped').addEventListener('click',dlDropped);
   $('#seenAll').addEventListener('click',markAllSeen);
   /* b77 (Jack, 17 Sep): "add a copy kpv link here". The ASIN list is only half a hand-off — the
