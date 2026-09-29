@@ -46,6 +46,9 @@ const SRC_SEED=[
   /* b183 (Jack, 27 Sep: "want a Brita adding for Suz — weekly — all EU and UK"; "Durex — 5% VAT as it's condoms — UK only — will have
      Sub & Save and business discount — every 3 days for Suz"). Durex runs Rule 2, because Rule 2 is the one that takes S&S, business
      discount and coupons off the buy price and asks Rule 4 for the VAT (5% for contraceptives). migV:12 so the b126 owner reset skips them. */
+  /* b205 (Jack, 29 Sep: "add a UK and EU shavers — shaver, hair clipper etc, they're all USB chargers mostly now, and we sell a lot of
+     shavers from the EU to the UK — will sort it out later"). A category filter, every market, Rule 1. No Keepa link yet: Jack pastes it. */
+  {key:'shavers',name:'Shavers & clippers · UK + EU',type:'filter',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'weekly',status:'testing',owner:'Jack',migV:12,link:'',note:'Shavers, hair clippers, beard / body trimmers — mostly USB-charged now, so the EU plug is not a problem · Jack sorting the filter, 29 Sep'},
   {key:'brita',name:'Brita',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'weekly',status:'active',owner:'Suz',migV:12,note:'Amazon down 9% · every market · Suz, weekly · Jack, 27 Sep',brands:['Brita']},
   {key:'durex',name:'Durex',type:'brand',rule:2,markets:['UK'],cadence:'3 days',status:'active',owner:'Suz',migV:12,note:'UK only · S&S and business discount come off the buy price · 5% VAT (contraceptives, Rule 4) · Suz, every 3 days · Jack, 27 Sep',brands:['Durex']},
   /* b150 (Jack, 23 Sep: "instax add - all eu's and uk"). His own filter, kept verbatim: brand instax, Amazon down 8%+ on its 90-day
@@ -350,11 +353,29 @@ function verdDelMany(asins){const a=verdAll();const gone=[];
 /* ---- ASIN facts: what a VA has confirmed about a product. Test-mode edition of the knowledge layer. ---- */
 const FACT_KEY='bdl-sourcing-facts';
 const PM_OPTIONS=['Currys','Argos','John Lewis','Brand direct'];
+/* b206 (Jack, 29 Sep: "the cache should start to learn which ASINs they have S&S on and don't, if we are saving data"; and "if Amazon are on
+   it, it tends to have Subscribe & Save — most FBA sellers won't"). Every UK export teaches the shared facts: sns.y = the last day the Buy
+   Box showed Subscribe & Save, sns.n = the last day AMAZON held the Buy Box with none (a real "no"; a 3P seller without S&S proves nothing).
+   Rule 2 then counts S&S on a row whose export says no when the ASIN was seen with it inside SNS_MEMORY_DAYS, Amazon is selling it now,
+   and Amazon has not been seen without it since. One batched write per run, only for what changed. */
+const SNS_MEMORY_DAYS=120;
+function snsLearn(rows){if(!rows||!rows.length)return 0;const a=factsAll(),day=today(),up=[];
+  rows.forEach(r=>{const asin=(r.ASIN||'').trim();if(!/^B[0-9A-Z]{9}$/.test(asin))return;
+    const yes=typeof r2hasSS==='function'&&r2hasSS(r);const amzBB=/^amazon/i.test((r['Buy Box: Buy Box Seller']||'').trim());
+    if(!yes&&!amzBB)return;const f=a[asin]||{};const sn=Object.assign({},f.sns||{});
+    if(yes){if(sn.y===day)return;sn.y=day;}else{if(sn.n===day)return;sn.n=day;}
+    a[asin]=Object.assign({},f,{sns:sn,at:nowIso(),who:f.who||me()||''});up.push(asin);});
+  if(!up.length)return 0;lsSet(FACT_KEY,a);
+  if(typeof cloudQueue==='function')cloudQueue('src_facts','upsert',up.map(asin=>{const {who,at,...data}=a[asin];return{asin,data,who:who||'',at};}));
+  return up.length;}
+/* seen with S&S recently, and Amazon not seen holding the Buy Box without it since */
+function snsRemembered(fact){const sn=fact&&fact.sns;if(!sn||!sn.y)return null;if(sn.n&&sn.n>sn.y)return null;
+  const age=(Date.parse(today())-Date.parse(sn.y))/864e5;return age<=SNS_MEMORY_DAYS?sn.y:null;}
 function factsAll(){return lsGet(FACT_KEY,{});}
 function factGet(asin){return factsAll()[asin]||{};}
 function factSet(asin,f){const a=factsAll();const clean=Object.assign({},a[asin]||{},f,{at:nowIso(),who:me()});
   Object.keys(clean).forEach(k=>{if(clean[k]==null||clean[k]==='')delete clean[k];});
-  const empty=!(clean.pm&&clean.pm.length)&&!clean.sell&&!clean.note&&clean.vat==null&&!clean.track;
+  const empty=!(clean.pm&&clean.pm.length)&&!clean.sell&&!clean.note&&clean.vat==null&&!clean.track&&!clean.sns;
   if(empty){delete a[asin];lsSet(FACT_KEY,a);cloudQueue('src_facts','delete',{col:'asin',vals:[asin]});return;}
   a[asin]=clean;lsSet(FACT_KEY,a);const {who,at,...data}=clean;cloudQueue('src_facts','upsert',[{asin,data,who:who||'',at}]);}
 

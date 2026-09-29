@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b203">
-<link rel="stylesheet" href="css/brands.css?v=b203">
+<link rel="stylesheet" href="css/base.css?v=b208">
+<link rel="stylesheet" href="css/brands.css?v=b208">
 </head>
 <body>
 <div class="wrap">
@@ -276,7 +276,7 @@
   <div class="page" id="page-brands">
 
     <div id="viewList">
-      <div class="lvnav" id="lvNav"><button class="on" data-tab="brands" type="button"><span class="t">Brands / Filters</span><b id="lvnBrands">0</b></button><button data-tab="runs" type="button"><span class="t">Runs</span><b id="lvnRuns">0</b></button><button data-tab="leads" type="button"><span class="t">Lead history</span><b id="lvnLeads">0</b></button></div>
+      <div class="lvnav" id="lvNav"><button class="on" data-tab="brands" type="button"><span class="t">Brands / Filters</span><b id="lvnBrands">0</b></button><button data-tab="runs" type="button"><span class="t">Runs</span><b id="lvnRuns">0</b></button><button data-tab="leads" type="button"><span class="t">Lead history</span><b id="lvnLeads">0</b></button><button data-tab="act" type="button" class="jackonly" hidden><span class="t">VA activity</span><i class="ponly">Only you</i></button></div>
       <div class="card" id="cardBrands">
         <div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><h2>Brands / Filters</h2><span class="sub">every saved Keepa search we run · greyed = not switched on yet · <b>In progress</b> = someone is on it right now</span>
           <div class="right"><button class="btn ghost sm" id="howToShow" type="button">How to use this</button><button class="btn primary sm" id="addBrand" type="button"><span class="lab">+ Add brand / filter</span></button></div></div>
@@ -317,6 +317,12 @@
           <label class="chk" title="Otherwise the newest 60 rows"><input type="checkbox" id="rlAll">show every row</label>
         </div>
         <div id="runLog"></div>
+      </div>
+
+      <div class="card" id="cardAct" hidden>
+        <div class="cardhead"><h2>VA activity</h2><span class="sub">what each VA pressed in Sourcing, and what was due and not touched · recorded from b204 · only you see this</span>
+          <div class="right"><input type="date" id="actDay" class="inl"><button class="btn ghost sm" id="actToday" type="button">Today</button><button class="btn ghost sm" id="actRefresh" type="button">Refresh</button></div></div>
+        <div id="actBody"></div>
       </div>
 
       <div class="card" id="cardLeads" hidden>
@@ -525,25 +531,26 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b203"></script>
-<script src="js/parse.js?v=b203"></script>
-<script src="js/rule1.js?v=b203"></script>
-<script src="js/rule2.js?v=b203"></script>
-<script src="js/export.js?v=b203"></script>
-<script src="js/rule4.js?v=b203"></script>
-<script src="js/queue.js?v=b203"></script>
-<script src="js/sources.js?v=b203"></script>
-<script src="js/cloud.js?v=b203"></script>
-<script src="js/auth.js?v=b203"></script>
-<script src="js/leadtools.js?v=b203"></script>
-<script src="js/keepaconsole.js?v=b203"></script>
-<script src="js/euprice.js?v=b203"></script>
-<script src="js/apirun.js?v=b203"></script>
-<script src="js/brands.js?v=b203"></script>
-<script src="js/history.js?v=b203"></script>
-<script src="js/audit.js?v=b203"></script>
-<script src="js/kcjudge.js?v=b203"></script>
-<script src="js/guest.js?v=b203"></script>
-<script src="js/boot.js?v=b203"></script>
+<script src="js/core.js?v=b208"></script>
+<script src="js/parse.js?v=b208"></script>
+<script src="js/rule1.js?v=b208"></script>
+<script src="js/rule2.js?v=b208"></script>
+<script src="js/export.js?v=b208"></script>
+<script src="js/rule4.js?v=b208"></script>
+<script src="js/queue.js?v=b208"></script>
+<script src="js/sources.js?v=b208"></script>
+<script src="js/cloud.js?v=b208"></script>
+<script src="js/auth.js?v=b208"></script>
+<script src="js/leadtools.js?v=b208"></script>
+<script src="js/keepaconsole.js?v=b208"></script>
+<script src="js/euprice.js?v=b208"></script>
+<script src="js/apirun.js?v=b208"></script>
+<script src="js/brands.js?v=b208"></script>
+<script src="js/history.js?v=b208"></script>
+<script src="js/audit.js?v=b208"></script>
+<script src="js/kcjudge.js?v=b208"></script>
+<script src="js/activity.js?v=b208"></script>
+<script src="js/guest.js?v=b208"></script>
+<script src="js/boot.js?v=b208"></script>
 </body>
 </html>

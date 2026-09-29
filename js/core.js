@@ -61,7 +61,7 @@ const BIG_KEYS=['bdl-sourcing-audit-prod','bdl-sourcing-api-rows','bdl-sourcing-
   /* b181 (Jack, 27 Sep: "we shouldn't be storing much here locally — it should be 99% online"): every other copy of Supabase goes to the big store too.
      The shared pot keeps only the sign-in, this browser's view settings, a few small shared settings and the unsent queue — a few KB. */
   'bdl-sourcing-verdicts','bdl-sourcing-audit-v','bdl-sourcing-sources','bdl-sourcing-facts','bdl-sourcing-blacklist','bdl-sourcing-brandbl','bdl-sourcing-discounts','bdl-sourcing-audit-shelves',
-  'bdl-sourcing-option-sales','bdl-sourcing-api-looks','bdl-sourcing-rlog'];
+  'bdl-sourcing-option-sales','bdl-sourcing-api-looks','bdl-sourcing-rlog','bdl-sourcing-activity'];   /* b206: the VA click log (b204) is big-store too — never the shared 5 MB pot */
 const BIG={};const BIG_T={};const BIG_HOOKS=[];let BIG_READY=false,BIG_LOAD=null;
 function isBig(k){return BIG_KEYS.includes(k);}
 function bigIdb(mode,fn){return new Promise((res,rej)=>{let r;try{r=indexedDB.open('bdl-sourcing-big',1);}catch(e){rej(e);return;}

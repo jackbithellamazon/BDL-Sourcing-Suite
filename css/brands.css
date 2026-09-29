@@ -2664,3 +2664,40 @@ html:not([data-theme="light"]) .authpill{color:#fff;background:var(--ink)}
 .kcl i.have{opacity:.42}
 .colsfoot i.need{color:#FCA5B0}.colsfoot i.have{color:var(--muted)}
 :root[data-theme="light"] .colsneed b,:root[data-theme="light"] .colsneed i,:root[data-theme="light"] .kcl i.need,:root[data-theme="light"] .colshead .bad,:root[data-theme="light"] .colshead p b.bad,:root[data-theme="light"] .colsfoot i.need{color:#B42318}
+
+
+/* b204 — "In Keepa" rows (blue) and the VA activity page */
+.btbl tr.inkeepa td:first-child,.btbl tr.isdue.inkeepa td:first-child{background:linear-gradient(90deg,color-mix(in srgb,#3B82F6 14%,var(--surface2)) 0,var(--surface2) 72%);box-shadow:inset 3px 0 0 #3B82F6}
+.btbl td.lastc .opened.kp{color:#93C5FD}
+.btbl td.lastc .opened.kp i{background:#3B82F6}
+.btbl td.lastc .opened.kp b{color:#BFDBFE}
+#cardAct .actgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}
+#cardAct .actva{border:1px solid var(--line2);border-radius:14px;padding:12px 14px;background:var(--surface2)}
+#cardAct .acthead{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text);margin-bottom:10px}
+#cardAct .acthead .dim{color:var(--muted)}
+#cardAct .actsum{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
+#cardAct .actsum div{background:var(--ink);border:1px solid var(--line2);border-radius:10px;padding:8px}
+#cardAct .actsum b{display:block;font-size:20px;color:#fff}
+#cardAct .actsum span{font-size:11px;color:#D6DCE8}
+#cardAct .actline{font-size:12.5px;color:var(--text);margin:4px 0}
+#cardAct .actline.bad{color:#FCA5B0}
+#cardAct .actlog summary{cursor:pointer;font-size:12.5px;color:#A5B4FC;margin-top:6px}
+#cardAct .actlog ol{list-style:none;margin:8px 0 0;padding:0;max-height:420px;overflow:auto;display:grid;gap:2px}
+#cardAct .actlog li{display:grid;grid-template-columns:44px 20px 1fr;gap:6px;font-size:12.5px;color:var(--text);padding:3px 4px;border-radius:6px}
+#cardAct .actlog li time{color:#D6DCE8;font-variant-numeric:tabular-nums}
+#cardAct .actlog li i{font-style:normal;color:#A5B4FC}
+#cardAct .actlog li.k-keepa{background:rgba(59,130,246,.12)}
+#cardAct .actlog li.k-drop{background:rgba(54,214,164,.10)}
+#cardAct .actlog li.k-away{opacity:.7}
+#cardAct .actnote{font-size:12px;color:#D6DCE8;margin:12px 0 0}
+:root[data-theme="light"] #cardAct .actsum b{color:var(--text)}
+
+/* b207 — "back from Keepa? drag it in" */
+.dropnudge{margin:0 0 8px;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.45;color:#fff;background:rgba(110,123,255,.18);border:1px solid var(--iris)}
+.dropnudge b{color:#fff}
+.dropnudge[hidden]{display:none}
+#dropAny.dropwait{border-color:var(--iris);background:rgba(110,123,255,.10)}
+:root[data-theme="light"] .dropnudge,:root[data-theme="light"] .dropnudge b{color:var(--text)}
+
+/* b208 — "★ 3 leads this week" on a filter row */
+.btbl td.lastc .wkleads{display:inline-flex;margin-top:5px;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:700;color:#04150e;background:#2CE38B}

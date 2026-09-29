@@ -152,13 +152,13 @@ function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay()
     if(q&&!((s.name+' '+(s.note||'')).toLowerCase().includes(q)))return false;return true;});
   const tb=$('#brandTbl');
   if(!rows.length){tb.innerHTML=`<tbody><tr><td colspan="8" style="text-align:center;color:var(--faint);padding:22px">${lview.seg==='due'?'Nothing due — everything has been run inside its cadence.':lview.seg==='mine'?(me()?'Nothing is yours yet — Jack sets the owner in Edit.':'Pick who you are (top right) to see your list.'):'Nothing here.'}</td></tr></tbody>`;return;}
-  const rowHtml=s=>{const d=dueState(s),last=runLast(s.key),nx=nextRun(s),tok=tokenEstimate(s),lk=lockFresh(s)?s.inProgress:null,mine=lk&&ownLock(s),tr=toReviewCount(last),op=openSinceRun(s),opToday=op&&new Date(op.at).toDateString()===new Date().toDateString();
-    return`<tr class="${s.status==='paused'?'paused':(d.due?'isdue is'+d.kind:d.cls==='done'?'isdone':'')}${opToday&&d.cls!=='done'?' isopened':''}" data-key="${s.key}">
+  const rowHtml=s=>{const d=dueState(s),last=runLast(s.key),nx=nextRun(s),tok=tokenEstimate(s),lk=lockFresh(s)?s.inProgress:null,mine=lk&&ownLock(s),tr=toReviewCount(last),op=openSinceRun(s),opToday=op&&new Date(op.at).toDateString()===new Date().toDateString(),kp=typeof keepaSinceRun==='function'?keepaSinceRun(s):null,kpToday=kp&&new Date(kp.at).toDateString()===new Date().toDateString();
+    return`<tr class="${s.status==='paused'?'paused':(d.due?'isdue is'+d.kind:d.cls==='done'?'isdone':'')}${kpToday&&d.cls!=='done'?' inkeepa':opToday&&d.cls!=='done'?' isopened':''}" data-key="${s.key}">
       <td class="namec"><div class="brandcell">${avatar(s)}<div class="ntext"><div class="nline"><span class="bname">${escapeHtml(s.name)}</span><span class="rl r${s.rule}" title="${RULE_LABEL[s.rule]||''}">Rule ${s.rule}</span></div><span class="note" title="${escapeHtml(s.note||'')}">${escapeHtml(s.note||(s.type==='filter'?'Saved Keepa filter':'Brand run · UK sell side'))}</span></div></div></td>
       <td class="ownc">${isJack()?`<select class="inl ownsel ${ownCls(s.owner||NO_OWNER)}" data-key="${s.key}" title="Who runs this — saves straight away">${OWNER_OPTS.map(u=>`<option${(s.owner||'VAs')===u?' selected':''}>${u}</option>`).join('')}</select>`:whoChip(s.owner||'VAs')}</td>
       <td><div class="flags" title="${s.markets.join(' · ')}">${s.markets.map(m=>`<span class="f">${FLAG[m]}</span>`).join('')}</div></td>
       <td class="stc">${isJack()?`<select class="inl stsel s-${s.status}" data-key="${s.key}" title="Active runs on its cadence · Testing = trial · Paused = off the list — saves straight away">${Object.entries(STATUS_LABEL).map(([k,l])=>`<option value="${k}"${s.status===k?' selected':''}>${l}</option>`).join('')}</select><select class="inl cadsel" data-key="${s.key}" title="How often it should run — saves straight away">${Object.entries(CADENCE_LABEL).map(([k,l])=>`<option value="${k}"${s.cadence===k?' selected':''}>${l}</option>`).join('')}</select>`:`<span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span><span class="l2">${CADENCE_LABEL[s.cadence]||s.cadence}</span>`}${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
-      <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` ${whoChip(last.who)}`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}${op?`<span class="opened" title="${escapeHtml(op.who)} opened this ${fmtWhen(op.at)} but no Keepa export has been dropped in since — so nothing is saved and the row stays late. Drop the export into the run to finish it."><i></i>Opened ${fmtWhen(op.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase())} · ${whoChip(op.who)} · <b>no export yet</b></span>`:''}</td>
+      <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` ${whoChip(last.who)}`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}${(()=>{const n=typeof yesThisWeek==='function'?yesThisWeek(s.key):0;return n?`<span class="wkleads" title="Leads from this filter in the last 7 days — a Yes on the row, or the ASIN put on the lead sheet after it came up here">★ ${n} lead${n===1?'':'s'} this week</span>`:'';})()}${kp?`<span class="opened kp" title="${escapeHtml(kp.who)} pressed Open in Keepa (${escapeHtml(kp.mk||'')}) ${fmtWhen(kp.at)} — working it in Keepa. It goes green once the export is dropped back in."><i></i>In Keepa ${fmtWhen(kp.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase())} · ${whoChip(kp.who)} · <b>${escapeHtml(kp.mk||'')}</b></span>`:''}${op&&!kp?`<span class="opened" title="${escapeHtml(op.who)} opened this ${fmtWhen(op.at)} but no Keepa export has been dropped in since — so nothing is saved and the row stays late. Drop the export into the run to finish it."><i></i>Opened ${fmtWhen(op.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase())} · ${whoChip(op.who)} · <b>not run yet — no Keepa file dropped back in</b></span>`:''}</td>
       <td class="nextc"><span class="nx ${d.cls}">${d.due||d.cls==='done'?'<i></i>':''}${d.label}</span>${d.sub?`<span class="l2" title="Run by export today = 0 Keepa tokens. If this ran through the API by itself it would cost about ${tok.toLocaleString()} tokens.">${d.sub}</span>`:''}</td>
       <td class="actc"><div class="acts">${finderLink(s)?`<a class="ib" href="${finderLink(s)}" target="_blank" rel="noopener" title="${s.link?'Open the saved Keepa filter':'Open the generated Keepa filter (edit to paste your own)'}">${ICONS.ext}</a>`:`<span class="ib nolink" title="No Keepa link saved yet — Edit and paste it">?</span>`}<button class="btn run xs" data-act="run" ${s.status==='paused'?'disabled':''} title="${lk&&!mine?'Someone else has it open — you can still join':''}">${ICONS.run}${lk&&!mine?'Join':'Run'}</button>${isJack()?`<button class="ib" data-act="edit" title="Edit">${ICONS.edit}</button>`:''}
         <div class="menu"><button class="ib" data-act="menu" aria-label="More">⋮</button>
@@ -407,7 +407,8 @@ async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return
     else if(!v)files.viewer=f;
     else if(f.hasFees&&(!v.hasFees||f.rows.length>=v.rows.length)){files.UK=v;files.viewer=f;}
     else files.UK=f;}
-  touched.clear();paintSlots();warn(notes);
+  touched.clear();paintSlots();warn(notes);if(typeof dropNudgeOff==='function')dropNudgeOff();
+  if(typeof actLog==='function')actLog('drop',`${arr.length} file${arr.length===1?'':'s'} dropped · ${accepted.length} accepted${arr.length-accepted.length?' · '+(arr.length-accepted.length)+' refused':''}${colsPop&&colsPop.missing.length?' · '+colsPop.missing.length+' Keepa columns missing':''}`);
   if(!colsPop){const g=accepted.find(f=>f.missingAll&&f.missingAll.length);if(g)colsPop={name:g.name,missing:g.missingAll};}
   if(colsPop&&colsPop.missing.length)openColsPanel(colsPop.missing,colsPop.name);   /* b203 (Jack, 29 Sep: "the popup should say each one that needs ticking") */
   /* b123 (Jack: "we use exports so it should cost 0 tokens"): nothing is asked of Keepa on a drop — the option check is a button Jack presses */
@@ -887,7 +888,8 @@ function run(){if(!cur)return;stampLearned();
     const vf=cur.vat0?((row,fact)=>{if(fact&&fact.vat!=null&&fact.vat!=='')return vatFor(row,fact);
       const text=((row.Title||'')+' | '+(row['Categories: Sub']||'')).toLowerCase();if(r4isAppliance(text))return{rate:R4.STANDARD,why:'20% — reads like an appliance, not the drink',src:'rule'};
       return{rate:0,why:'0% VAT — everything on this filter is tea / coffee',src:'source'};}):vatFor;
-    stampShares(files.one.rows);R=rule2Compute(files.one.rows,factsAll(),{vatFor:vf,rule:cur.rule});R.rule=cur.rule;
+    stampShares(files.one.rows);if(typeof snsLearn==='function')snsLearn(files.one.rows);   /* b206: learn S&S before the maths reads it */
+    R=rule2Compute(files.one.rows,factsAll(),{vatFor:vf,rule:cur.rule});R.rule=cur.rule;
     const lowS=R.all.filter(o=>o.lowScore),noM=R.all.filter(o=>!o.kept&&!o.lowScore);
     R.dropped=noM.map(o=>[o.ASIN,o.Product,`needs ${o['Needs % off']}% off Amazon to reach ${R2.TARGET_ROI}% ROI (brand allows ${o['Brand discount %']||R2.DEFAULT_ALLOW}%)`])
       .concat(lowS.map(o=>[o.ASIN,o.Product,o.lowRoi?`ROI ${o['ROI %']}% — under ${R2.MIN_ROI_LOW}% even with a code`:`scored ${o.Score}${o['Potential score']>o.Score?' ('+o['Potential score']+' with a code)':''} — under ${R2.MIN_SCORE}, not worth a look`]));
@@ -1304,7 +1306,7 @@ function seenToday(){if(!result||!cur)return[];const V=verdAll();
 function seenTodayDay(){if(!result||!cur)return'';const V=verdAll();const a=seenToday();return a.length?String((V[a[0]]||{}).at||'').slice(0,10):'';}
 function paintPutBack(sb){if(!sb||!sb.parentNode)return;let ub=$('#putBack');
   if(!ub){ub=document.createElement('button');ub.type='button';ub.id='putBack';ub.className='btn ghost sm putback';sb.parentNode.insertBefore(ub,sb.nextSibling);ub.addEventListener('click',putBackSeen);}
-  const n=isJack()?seenToday().length:0;ub.hidden=!n;const day=seenTodayDay();
+  const n=seenToday().length;ub.hidden=!n;   /* b208: VAs can undo their own Seen marks too */const day=seenTodayDay();
   ub.textContent=day===today()?`Put ${n} back in the queue`:`Put ${n} back in the queue · seen ${ukDate(day).replace(/^\w+ /,'')}`;
   ub.title=`${n} lead${n===1?'':'s'} on this source were marked SEEN on ${day===today()?'today':ukDate(day)} — by "Mark all as seen", or by the old Open in Keepa button which marked what it opened. This clears those marks so they are back in To review. Yes / No / Maybe are not touched.`;}
 function putBackSeen(){const list=seenToday();if(!list.length)return;
@@ -1355,6 +1357,14 @@ function openInKeepa(){if(!result){toast('Nothing to open',true);return;}
      see what I need to run"). b56 made this button ALSO mark every lead it opened as seen, because back then opening them WAS the review.
      It is not any more: he opens them in the Product Viewer to look at them, and the queue emptied under him — 83 to review became 1.
      Opening is looking, not judging. Nothing is marked now. Y / N / M still judge, and "Mark all as seen" still sets the baseline. */
+  /* b208 (Jack, 29 Sep: "they won't do Y/N/M on the app but will open it in the Keepa Product Viewer" → "yes, but remember they can view the
+     history of it too, as they might have clicked by mistake"). For a VA, opening IS the review: the leads she opened with no verdict are
+     marked Seen under her name — they stay on screen this session, "Put N back in the queue" undoes it, and the Lead history shows who and
+     when. Jack's own opens still mark nothing (b142). */
+  if(!isJack()&&me()){const fresh=list.filter(a=>!verdGet(a));const by={};result.out.forEach(o=>{by[o.ASIN]=o;});
+    if(fresh.length){verdSetMany(fresh.map(a=>({asin:a,v:{v:'Seen',reason:'',note:'opened in Keepa',source:cur.key,state:(by[a]||{}).state}})),'Open all in Keepa');
+      fresh.forEach(a=>{touched.add(a);const o=by[a];if(o){o.verdict=verdGet(a);o.QUEUE='';}});renderResults();
+      toast(`Opened ${list.length} in Keepa · ${fresh.length} marked Seen by ${me()} — clicked by mistake? "Put ${fresh.length} back in the queue" undoes it`);return;}}
   toast(`Opened ${list.length} in Keepa — nothing marked. Y / N / M judge a row; "Mark all as seen" sets the baseline.`);}
 
 /* ============ runs log (the 7-day count) ============ */
@@ -1567,9 +1577,9 @@ async function paintTokens(){let el=$('#tokPill');const cp=$('#cloudPill');if(!c
     else{el.textContent='Keepa · no key';el.title=t.error||'Worker answered without a balance';el.classList.add('bad');}}
   catch(e){el.textContent='Keepa · offline';el.title='Could not reach the Worker';el.classList.add('bad');}}
 /* b53: deep links for AVM HQ tasks — #run=<source key> opens that run screen, #due opens the Brands list on what's due */
-function showTab(tab,quiet){if(!['brands','runs','leads'].includes(tab))tab='brands';lview.tab=tab;if(!quiet)lviewSave();
+function showTab(tab,quiet){if(!['brands','runs','leads','act'].includes(tab)||(tab==='act'&&!isJack()))tab='brands';lview.tab=tab;if(!quiet)lviewSave();
   document.querySelectorAll('#lvNav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
-  $('#cardBrands').hidden=tab!=='brands';$('#cardRuns').hidden=tab!=='runs';$('#cardLeads').hidden=tab!=='leads';
+  $('#cardBrands').hidden=tab!=='brands';$('#cardRuns').hidden=tab!=='runs';$('#cardLeads').hidden=tab!=='leads';const ca=$('#cardAct');if(ca)ca.hidden=tab!=='act';if(tab==='act'&&typeof renderActivity==='function')renderActivity();
   if(tab==='runs')renderLog();if(tab==='leads'&&typeof renderHistory==='function')renderHistory();}
 function openHash(){let h=location.hash||'';
   if(/^#audit/i.test(h)&&typeof auHash==='function'&&isJack()){auHash();return;}

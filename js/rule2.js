@@ -218,6 +218,8 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     const cp=kNum(r['One Time Coupon: Percentage']);if(cp){eff*=(1-cp/100);ap.push(`coupon ${Math.round(cp)}%`);}
     const ca=kNum(r['One Time Coupon: Absolute']);if(ca){eff-=ca;ap.push(`coupon £${ca.toFixed(2)}`);}
     if(r2hasSS(r)){eff*=(1-R2.SS_UK);ap.push(`S&S ${R2.SS_UK*100}%`);}
+    /* b206: the export says no S&S, but this ASIN had it when last seen and Amazon is selling it now — S&S follows Amazon */
+    else{const seen=typeof snsRemembered==='function'&&amz>0?snsRemembered(fact):null;if(seen){eff*=(1-R2.SS_UK);ap.push(`S&S ${R2.SS_UK*100}% (seen ${seen.slice(8,10)}/${seen.slice(5,7)})`);}}
     eff=Math.round(eff*100)/100;
     const [p,roi]=r2prof(sell,eff,ref,fba,vat),br=r2brate(brand,amz),nd=r2needed(sell,eff,ref,fba,null,vat);const bEntry=(typeof discForBrand==='function')?discForBrand(brand):null;
     const kept=nd<=Math.max(R2.DEFAULT_ALLOW,br||R2.DEFAULT_ALLOW);
@@ -257,7 +259,7 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     if(p<=0)chips.push(['LOSS AT AMAZON PRICE','bad']);
     if(underBar)chips.push([`UNDER THE £${BAR100.SELL}+ BAR · BEST ${Math.round(bestRoi)}% / £${bestP.toFixed(2)}`,'bad']);
     /* b121 (Jack, 20 Sep: "no, keep - should say"): the maths stays honest, the row says when Keepa showed no S&S on a product that usually has it */
-    if(grocery&&!r2hasSS(r))chips.push(['NO S&S SEEN · CHECK THE PAGE','info']);
+    if(grocery&&!r2hasSS(r)&&!(typeof snsRemembered==='function'&&snsRemembered(fact)))chips.push(['NO S&S SEEN · CHECK THE PAGE','info']);
     if(thin&&kept)chips.push([`THIN FOR ${Math.round(spm)}/MO · NEEDS ${vb.roi}% OR £${vb.profit}`,'bad']);
     /* b43 (Jack, 15 Sep: Polly Pocket and BioEars "tanking as a lot of sellers have jumped on it") — FBA sliding month on month with a crowd of
        sellers. A flag for the VA's eyes, not a price change: Pepsi shows the same shape and he still called it £33. */

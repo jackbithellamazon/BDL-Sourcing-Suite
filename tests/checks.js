@@ -726,7 +726,8 @@ window.SourcingChecks=(function(){
         ok('Audit · the frozen order re-freezes when the numbers THIS sort reads arrive',/AU_SORTF\[auView\.sort\]/.test(String(auVisible))&&/auView\._osig!==osig/.test(String(auVisible)),true);}
       ok('Audit · a verdict given on another shelf says which shelf it came from (b166: inside the lit button)',/v\.seller_id!==sh\.seller/.test(String(auRow))&&/on \$\{escapeHtml\(auSrcShort\(fromShelf\)\)\}/.test(String(auRow)),true);
       /* b142 (Jack, 22 Sep: "why only 83 and then I opened KPV and it only shows 1 now — super super buggy") */
-      ok('Open in Keepa · looking is not judging: nothing is marked seen by opening',[/verdSetMany/.test(String(openInKeepa)),/nothing marked/.test(String(openInKeepa))],[false,true]);
+      /* b208 (Jack, 29 Sep): for a VA, opening IS the review (she won't Y/N/M) — marked Seen under her name, undoable. Jack's opens still mark nothing. */
+      ok('Open in Keepa · Jack: looking is not judging (nothing marked); a VA: only unjudged leads, only behind !isJack()',[/nothing marked/.test(String(openInKeepa)),/if\(!isJack\(\)&&me\(\)\)\{const fresh=list\.filter\(a=>!verdGet\(a\)\)/.test(String(openInKeepa))],[true,true]);
       ok('Put back · restores the newest batch of SEEN marks on this source, never a Yes / No / Maybe',[typeof seenToday==='function',typeof putBackSeen==='function',/v\.v==='Seen'/.test(String(seenToday)),/sort\(\)\.pop\(\)/.test(String(seenToday)),/verdDelMany\(list\)/.test(String(putBackSeen))],[true,true,true,true,true]);
       ok('Put back · a removed verdict leaves the cloud too',[typeof verdDelMany==='function',/cloudQueue\('src_verdicts','delete'/.test(String(verdDelMany))],[true,true]);
       /* b143 (Jack, 22 Sep: "what is the fix and improvement to make sure it never happens again") — the guard that
@@ -734,10 +735,9 @@ window.SourcingChecks=(function(){
          button that says so. If anyone ever adds another, this check fails with the line number. */
       {const src=await(await fetch('js/brands.js')).text();
         const hits=[...src.matchAll(/v:'Seen'/g)].map(m=>m.index);
-        const start=src.indexOf('function markAllSeen(');const end=src.indexOf('\nfunction ',start+20);
-        const inside=hits.length?hits.every(i=>i>start&&i<end):false;
-        const lines=hits.map(i=>src.slice(0,i).split('\n').length);
-        ok('Guard · only "Mark all as seen" may write a Seen verdict (b142: the Open button was doing it silently)',[hits.length,inside,lines.length===1],[1,true,true]);}
+        const inFn=(name,i)=>{const a=src.indexOf('function '+name+'(');const b=src.indexOf('\nfunction ',a+20);return i>a&&i<b;};
+        const ok2=hits.every(i=>inFn('markAllSeen',i)||inFn('openInKeepa',i));
+        ok('Guard · only "Mark all as seen" and a VA\'s Open in Keepa (b208, Jack\'s call) may write a Seen verdict',[hits.length,ok2],[2,true]);}
       ok('Verdicts · every write records how it was made, and that label never reaches the cloud',[/via:via\|\|'the row'/.test(String(verdSet)),/via:via\|\|'a bulk button'/.test(String(verdSetMany)),/rows\.push\(\{asin,v:row\.v,reason:row\.reason\|\|'',note:row\.note\|\|'',who,at,source_key/.test(String(verdSetMany)),/via/.test(String(verdSetMany).split('rows.push')[1]||'')],[true,true,true,false]);
       ok('History · a run records which leads needed a look and which fell off, not just the counts',[/queue:dayQueueFor\(R\)/.test(String(logRun))&&/o\.QUEUE\)\.map\(o=>o\.ASIN\)/.test(String(dayQueueFor)),/goneAsins:/.test(String(logRun)),/wasQueued\.has\(a\)\?'new':''/.test(String(openPastRun))],[true,true,true]);
       /* b144 (Jack, 22 Sep: "the 83 that was in the queue needs to be there for the day and marked done by x person") */
@@ -1041,6 +1041,25 @@ window.SourcingChecks=(function(){
       {const miss=KEEPA_COLS.filter(c=>c.h==='Buy Box: 90 days avg.'||c.h==='Title');openColsPanel(miss,'x.csv');const ov=$('#colsOv');
         const need=ov.querySelectorAll('.kcl i.need').length,have=ov.querySelectorAll('.kcl i.have').length,top=ov.querySelectorAll('.colsneed i').length,h3=ov.querySelector('h3').textContent;ov.hidden=true;
         ok('Keepa columns · after a drop the popup names every column the file has not got (red), the rest grey ✓, and Copy copies only those',[need,have,top,/x\.csv — 2 columns missing/.test(h3),keepaColsText(miss).split('\n').filter(x=>x.startsWith('  ☐')).length,/colsPop/.test(String(handleFiles))],[2,47,2,true,2,true]);}
+      /* b204: VA activity — clicks recorded for VAs (never Jack), Open-in-Keepa stamps the source, the list shows "In Keepa" */
+      {const meWas=me(),keep=lsRaw(ACT_KEY);const s0=srcGet('mera-highticket');const k0=s0&&s0.keepa;
+        try{lsSet(ME_KEY,'Jack');actLog('click','x');const jackLogged=Object.keys(actAll()).some(k=>k.startsWith('Jack|'));
+          lsSet(ME_KEY,'Mera');actLog('click','test press','mera-highticket');actStampKeepa('mera-highticket','UK');const r=actAll()['Mera|'+today()];
+          const s=srcGet('mera-highticket');const kp=keepaSinceRun({key:'zz-no-runs',keepa:s.keepa});
+          ok('Activity · Jack is never recorded; a VA press is kept per day; Open in Keepa stamps the source and the row says In Keepa',[jackLogged,!!r&&r.ev.some(e=>e.d==='test press'),!!kp&&kp.who,kp&&kp.mk,/inkeepa/.test(String(renderList)),/actLog\('drop'/.test(String(handleFiles))],[false,true,'Mera','UK',true,true]);
+        }finally{clearTimeout(actT);actDirty.clear();lsSet(ME_KEY,meWas||'Jack');if(keep==null)lsRemove(ACT_KEY);else lsRawSet(ACT_KEY,keep);const s=srcGet('mera-highticket');if(s){if(k0)s.keepa=k0;else delete s.keepa;srcSave(s);}}}
+      ok('Storage · the VA click log lives in the big store (IndexedDB), not the shared 5 MB localStorage pot',[isBig(ACT_KEY),isBig(FACT_KEY)],[true,true]);
+      {await openRun('mera-highticket');awaitDrop={slot:'viewer',at:Date.now()};dropNudge();const n=$('#dropNudge');const shown=!!n&&!n.hidden&&/drag the file/i.test(n.textContent)&&$('#dropAny').classList.contains('dropwait');dropNudgeOff();backToList();
+        ok('Drop nudge · coming back from Keepa shows "drag the file into this box" on the drop box; a drop clears it',[shown,!n||n.hidden,/dropNudgeOff/.test(String(handleFiles))],[true,true,true]);}
+      /* b208: VA opens = Seen (undoable); the lead sheet → Yes; ★ leads this week */
+      ok('Leads · a VA opening leads in Keepa marks the unjudged ones Seen under her name (Jack\'s opens mark nothing); VAs get "Put back"; lead sheet → Yes; rows count leads this week',[/!isJack\(\)&&me\(\)/.test(String(openInKeepa)),/note:'opened in Keepa'/.test(String(openInKeepa)),/const n=seenToday\(\)\.length/.test(String(paintPutBack)),typeof leadSheetMatch,/wkleads/.test(String(renderList)),yesThisWeek('zz-none')],[true,true,true,'function',true,0]);
+      /* b206: S&S memory — learns yes/no per ASIN, applies a remembered S&S only while Amazon sells it */
+      {const keep=lsRaw(FACT_KEY);try{
+        const A='B0TESTSNS1';snsLearn([{ASIN:A,'Buy Box: Subscribe & Save':'yes','Buy Box: Buy Box Seller':'Amazon'}]);const f1=factGet(A);
+        const rem1=snsRemembered(f1);
+        const fOld={sns:{y:'2020-01-01'}},fNo={sns:{y:'2026-09-01',n:'2026-09-20'}};
+        ok('S&S memory · a yes is learnt and remembered; too old or Amazon seen without it since = forgotten; the fact survives factSet\'s empty-clean',[!!(f1.sns&&f1.sns.y===today()),rem1===today(),snsRemembered(fOld),snsRemembered(fNo),/snsLearn\(files\.one\.rows\)/.test(String(window.run)),/snsRemembered\(fact\)/.test(String(rule2Compute))],[true,true,null,null,true,true]);
+      }finally{if(keep==null)lsRemove(FACT_KEY);else lsRawSet(FACT_KEY,keep);}}
       /* b202: "add an ability to see all leads" */
       ok('Leads · To review / All leads is remembered, and the run summary has a Show all button on the leads tile and the parked line',[typeof LEADVIEW_KEY,/data-showall/.test(String(paintStory)),/data-showall/.test(String(renderResults))],['string',true,true]);
       {const e=srcGet('suz-eu-drops');const cats=m=>{try{return JSON.parse(decodeURIComponent(EU_DROP_LINKS[m].split('#!finder/')[1])).f.rootCategory.filter.split('###').length;}catch(x){return 0;}};
