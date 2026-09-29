@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b199">
-<link rel="stylesheet" href="css/brands.css?v=b199">
+<link rel="stylesheet" href="css/base.css?v=b203">
+<link rel="stylesheet" href="css/brands.css?v=b203">
 </head>
 <body>
 <div class="wrap">
@@ -152,11 +152,11 @@
     <div class="tabs">
       <button class="tab active" data-tab="combine"><span class="step">1</span>Combine ASINs</button>
       <button class="tab" data-tab="filter"><span class="step">2</span>Filter &amp; sort</button>
-      <button class="tab jackonly" data-tab="kcCheck" hidden><span class="step">3</span>Check profit <i class="ponly" title="Spends Keepa tokens — only you">Only you</i></button>
+      <button class="tab" data-tab="kcCheck"><span class="step">3</span>Check a list</button>
     </div>
     <section class="panel" id="kcCheck">
       <div class="card">
-        <p class="intro">Paste ASINs, pick where to buy, and Keepa prices them today. <span class="q">Rule 1 then keeps only the ones that pay — UK Buy Box today against the UK or EU buy price, fees and VAT in. The same maths as a brand run.</span></p>
+        <p class="intro">Got some ASINs you want checked? Paste them, pick where you could buy. <span class="q">It opens as your own run, just like a brand or filter — open Keepa, export, drop the file in, and Rule 1 keeps only the ones that pay (UK Buy Box against the UK or EU buy price, fees and VAT in).</span></p>
         <div class="kcc">
           <textarea class="txt" id="kcAsins" rows="5" placeholder="Paste anything with ASINs in it — a list, a message, a Keepa URL, a sheet column…"></textarea>
           <div class="kccrow">
@@ -167,9 +167,9 @@
             <label class="kccmk"><input type="checkbox" value="IT"> 🇮🇹 IT</label>
             <label class="kccmk"><input type="checkbox" value="ES"> 🇪🇸 ES</label>
             <span class="kccn" id="kcAsinN">0 ASINs</span>
-            <button class="btn primary sm" id="kcCheckBtn" type="button" disabled>Check these · via Keepa</button>
+            <button class="btn primary sm" id="kcCheckBtn" type="button" disabled>Check these →</button>
           </div>
-          <p class="ssub">About 6 tokens a product for the UK today (1 if Keepa already had it recently) and 1 per product per EU market. It counts and asks before it spends. The result opens as a run under Brands / Filters — "Check these · Jack" — with Y / N and the graphs like any other. Suz and Mera do not see this tab.</p>
+          <ol class="kcsteps"><li><b>Check these →</b> opens <b>"Check these · your name"</b> under Brands / Filters. Only you (and Jack) see it.</li><li>Press each flag button: the <b>Keepa Product Viewer</b> opens with your ASINs loaded. Free — no tokens.</li><li>In Keepa: <b>Export → All active columns → CSV</b>, then drop each file into the run. <button type="button" class="linkbtn" data-cols="1">First time? Keepa columns to tick</button></li><li>The leads come out scored — mark them <b>Y / N / M</b> like any run.</li></ol>
         </div>
       </div>
     </section>
@@ -525,25 +525,25 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b199"></script>
-<script src="js/parse.js?v=b199"></script>
-<script src="js/rule1.js?v=b199"></script>
-<script src="js/rule2.js?v=b199"></script>
-<script src="js/export.js?v=b199"></script>
-<script src="js/rule4.js?v=b199"></script>
-<script src="js/queue.js?v=b199"></script>
-<script src="js/sources.js?v=b199"></script>
-<script src="js/cloud.js?v=b199"></script>
-<script src="js/auth.js?v=b199"></script>
-<script src="js/leadtools.js?v=b199"></script>
-<script src="js/keepaconsole.js?v=b199"></script>
-<script src="js/euprice.js?v=b199"></script>
-<script src="js/apirun.js?v=b199"></script>
-<script src="js/brands.js?v=b199"></script>
-<script src="js/history.js?v=b199"></script>
-<script src="js/audit.js?v=b199"></script>
-<script src="js/kcjudge.js?v=b199"></script>
-<script src="js/guest.js?v=b199"></script>
-<script src="js/boot.js?v=b199"></script>
+<script src="js/core.js?v=b203"></script>
+<script src="js/parse.js?v=b203"></script>
+<script src="js/rule1.js?v=b203"></script>
+<script src="js/rule2.js?v=b203"></script>
+<script src="js/export.js?v=b203"></script>
+<script src="js/rule4.js?v=b203"></script>
+<script src="js/queue.js?v=b203"></script>
+<script src="js/sources.js?v=b203"></script>
+<script src="js/cloud.js?v=b203"></script>
+<script src="js/auth.js?v=b203"></script>
+<script src="js/leadtools.js?v=b203"></script>
+<script src="js/keepaconsole.js?v=b203"></script>
+<script src="js/euprice.js?v=b203"></script>
+<script src="js/apirun.js?v=b203"></script>
+<script src="js/brands.js?v=b203"></script>
+<script src="js/history.js?v=b203"></script>
+<script src="js/audit.js?v=b203"></script>
+<script src="js/kcjudge.js?v=b203"></script>
+<script src="js/guest.js?v=b203"></script>
+<script src="js/boot.js?v=b203"></script>
 </body>
 </html>

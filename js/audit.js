@@ -154,25 +154,30 @@ async function audPullVerdicts(force){if(!cloudReadable()||!(await audCheckTable
 /* OA Overview's saved rivals and shelves — read only */
 async function audPullShelves(force){if(!cloudReadable())return false;if(!force&&Date.now()-audState.shelfAt<600e3&&audState.sellers.length)return true;
   try{const [sellers,shelf]=await Promise.all([cloudGetAll('bdl_sellers','select=seller_id,name,seller_order&order=seller_order'),
-      cloudGetAll('bdl_competitor_shelf','select=seller_id,asin,first_seen,baseline&gone_on=is.null')]);
-    const by={};shelf.forEach(r=>{(by[r.seller_id]=by[r.seller_id]||[]).push({a:r.asin,first:String(r.first_seen||'').slice(0,10),base:!!r.baseline});});
+      cloudGetAll('bdl_competitor_shelf','select=seller_id,asin,first_seen,baseline,created_at&gone_on=is.null')]);
+    const by={},addAt={};let oaAt='';shelf.forEach(r=>{(by[r.seller_id]=by[r.seller_id]||[]).push({a:r.asin,first:String(r.first_seen||'').slice(0,10),base:!!r.baseline});
+      const c=String(r.created_at||'');if(c>(addAt[r.seller_id]||''))addAt[r.seller_id]=c;if(c>oaAt)oaAt=c;});
+    audState.addAt=addAt;
     audState.sellers=sellers;audState.shelf=by;audState._first={};
     /* b158: EVERY overlap row, not the last 400 — "yours" is anything Keepa has ever shown in your catalogue (see audMineWhy) */
     const ca=await cloudGetAll('bdl_competitor_asins','select=seller_id,date,shared_asins&order=date.desc');
-    const sh={},now=new Set(),ever=new Set(),last={};let latest='';
-    ca.forEach(r=>{const list=r.shared_asins||[];const d=String(r.date||'').slice(0,10);if(d>latest)latest=d;
+    const sh={},now=new Set(),ever=new Set(),last={},sday={};let latest='';
+    ca.forEach(r=>{const list=r.shared_asins||[];const d=String(r.date||'').slice(0,10);if(d>latest)latest=d;if(d>(sday[r.seller_id]||''))sday[r.seller_id]=d;
       list.forEach(a=>{ever.add(a);if(!last[a]||d>last[a])last[a]=d;});if(!sh[r.seller_id]){sh[r.seller_id]=new Set(list);list.forEach(a=>now.add(a));}});
-    audState.shared=sh;audState.mineNow=now;audState.mineEver=ever;audState.mineLast=last;audState.mineLatest=latest;audState.mineSrc='overlap';
+    audState.sellerDay=sday;audState.shared=sh;audState.mineNow=now;audState.mineEver=ever;audState.mineLast=last;audState.mineLatest=latest;audState.mineSrc='overlap';
     /* b165: OA Overview now keeps Lavarion's own storefront (bdl_my_shelf — built 26 Sep from the handover): on_now = seen on it in the
        last 2 days, last_seen = the last day it was on it (Keepa's own per-listing date). That is the truth for "yours" — the pieced-together
        overlap rows above stay only as the fallback if the table is missing or empty, and still fill any gap it has. */
-    try{const my=await cloudGetAll('bdl_my_shelf','select=asin,last_seen,on_now');
+    try{const my=await cloudGetAll('bdl_my_shelf','select=asin,last_seen,on_now,updated_at');
       if(my.length){const n2=new Set(),l2={};let lt='';
-        my.forEach(r=>{const d=String(r.last_seen||'').slice(0,10);if(r.on_now)n2.add(r.asin);if(d){l2[r.asin]=d;if(d>lt)lt=d;}});
+        my.forEach(r=>{const u=String(r.updated_at||'');if(u>oaAt)oaAt=u;const d=String(r.last_seen||'').slice(0,10);if(r.on_now)n2.add(r.asin);if(d){l2[r.asin]=d;if(d>lt)lt=d;}});
         Object.keys(last).forEach(a=>{if(!l2[a]||last[a]>l2[a])l2[a]=last[a];});   /* keep the later of the two dates */
         audState.mineNow=n2;audState.mineLast=l2;audState.mineEver=new Set([...Object.keys(l2),...ever]);audState.mineLatest=lt>latest?lt:latest;audState.mineSrc='storefront';}}
     catch(e){/* table not there — the overlap rows carry on */}
-    audState.shelfAt=Date.now();return true;}
+    /* b201 (Jack, 28 Sep: "get a last updated thing — just pushed it in the other app for competitors, unsure if it's updated or not").
+       oaAt = the newest write OA Overview made (a shelf line added, or its daily pass over your own storefront); sellerDay = the last day
+       it checked each rival. Shown on the page so a push in OA Overview can be seen landing here. */
+    audState.oaAt=oaAt;audState.shelfAt=Date.now();return true;}
   catch(e){audState.shelfErr=e.message;return false;}}
 async function audPullProducts(asins){if(!cloudReadable()||!(await audCheckTables()))return;
   const want=asins.filter(a=>!audState.prod[a]);if(!want.length)return;
@@ -304,6 +309,14 @@ function auFollow(){if(!auView.follow||auView.mode!=='audit')return;const sh=aud
 function auUk(d){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(d||''));if(!m)return'';const x=new Date(+m[1],+m[2]-1,+m[3]);
   return x.toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
 function auDays(d){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(d||''));if(!m)return 999;return Math.round((new Date(today())-new Date(+m[1],+m[2]-1,+m[3]))/864e5);}
+function auClock(iso){const d=new Date(iso);return isNaN(d)?'':d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
+function auWhenFull(iso){if(!iso)return'';const d=new Date(iso),n=auDays(String(iso).slice(0,10));const mins=Math.round((Date.now()-d)/60e3);
+  const ago=mins<1?'just now':mins<60?mins+' min ago':mins<24*60?Math.round(mins/60)+' h ago':'';return(n<=0?'today ':n===1?'yesterday ':auUk(iso)+' ')+auClock(iso)+(ago?' ('+ago+')':'');}
+/* one line on each rival card: when OA Overview last checked that shelf, and what it added today */
+function auShelfFresh(sh){if(sh.kind!=='rival')return'';const d=(audState.sellerDay||{})[sh.seller]||'',add=(audState.addAt||{})[sh.seller]||'';
+  const t=today(),nt=sh.items.filter(i=>i.first===t).length,fresh=d===t||String(add).slice(0,10)===t;
+  const when=d===t?'today'+(add&&String(add).slice(0,10)===t?' '+auClock(add):''):d?auUk(d)+' ('+auAgo(d)+')':add?auUk(add):'';
+  return when?`<div class="aufresh ${fresh?'ok':'old'}" title="When OA Overview last checked this rival's shelf${add?' · newest line it added: '+auWhenFull(add):''}"><i></i>Shelf checked ${when}${nt?` · <b>+${nt} new today</b>`:''}</div>`:'';}
 function auAgo(d){const n=auDays(d);return n<=0?'today':n===1?'yesterday':n+' days ago';}
 function auOurs(){if(!auView._ours||auView._oursAt!==runsAll().length+'|'+Object.keys(verdAll()).length){auView._ours=audOurIndex(runsAll(),leadAll(),verdAll());auView._oursAt=runsAll().length+'|'+Object.keys(verdAll()).length;}return auView._ours;}
 function auCounts(sh){const V=audAll();const c={todo:0,all:sh.items.length,had:0,sell:0,judged:0,byHand:0,auto:0};audTypes().forEach(t=>c[t.code]=0);const O=auOurs();
@@ -493,6 +506,8 @@ function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);
     <div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg></span><h2>Storefront audits</h2>
       <span class="sub">One pass per rival. After that only their new lines come back. An answer belongs to the product, so it counts on every shelf.</span>
       <div class="right">${auSyncNote().replace('<span class="','<span id="auSync" class="')}<label class="ausortby"><span>Order</span><select id="auRsort">${AU_RSORTS.map(([v,l])=>`<option value="${v}"${auRsort()===v?' selected':''}>${l}</option>`).join('')}</select></label><button class="btn ghost sm" id="auCards" type="button">${auView.cards?'Show as a list':'Show as cards'}</button><button class="btn ghost sm" id="auRefresh" type="button">Refresh shelves</button>${(()=>{const n=auNextShelf(null);const c=n?auCounts(n):null;return n?`<button class="btn primary sm" type="button" data-open="${escapeHtml(n.id)}">${ICONS.run}${c.byHand?'Carry on':'Start'} · ${escapeHtml(n.name)} · ${c.todo.toLocaleString()} left</button>`:'';})()}</div></div>
+    ${cloudReadable()?(()=>{const t=today(),nNew=shelves.filter(x=>x.kind==='rival').reduce((n,x)=>n+x.items.filter(i=>i.first===t).length,0),oa=audState.oaAt,fresh=oa&&String(oa).slice(0,10)===t;
+      return`<div class="auoa ${fresh?'ok':'old'}"><i></i><span><b>OA Overview last updated the shelves</b> ${oa?auWhenFull(oa):'— nothing from it yet'}</span>${nNew?`<span class="auoan"><b>+${nNew.toLocaleString()}</b> new lines on rival shelves today</span>`:''}<span class="auoap">pulled into this page ${auClock(new Date(audState.shelfAt||Date.now()).toISOString())}</span><button class="btn ghost xs" id="auRefresh2" type="button" title="Pull the latest from OA Overview now">Refresh</button></div>`;})():''}
     ${shelves.length?`<div class="kpis aukpis">
       ${k(shelves.length,'Rivals with a saved shelf','from OA Overview, plus any you add','violet')}
       ${k(seen.size.toLocaleString(),'Products','each judged once, everywhere','sky')}
@@ -513,7 +528,7 @@ function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);
     ${shelves.length?(auView.cards?`<div class="aucards">${rows.map(x=>`<button class="aucard" type="button" data-open="${escapeHtml(x.sh.id)}">
       <span class="auarch" role="button" tabindex="0" data-arch="${escapeHtml(x.sh.id)}" title="Archive ${escapeHtml(x.sh.name)} — hide it from the audit (one click brings it back)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg></span>
       <div><div class="top"><span class="auav" style="background:${auAv(x.sh.name)}">${auIni(x.sh.name)}</span>
-        <div><div class="nm">${escapeHtml(x.sh.name)}</div><div class="meta">${x.sh.items.length.toLocaleString()} products · ${x.la?'last audited '+auUk(x.la)+' ('+auAgo(x.la)+')':'not audited yet'}</div></div></div>
+        <div><div class="nm">${escapeHtml(x.sh.name)}</div><div class="meta">${x.sh.items.length.toLocaleString()} products · ${x.la?'last audited '+auUk(x.la)+' ('+auAgo(x.la)+')':'not audited yet'}</div>${auShelfFresh(x.sh)}</div></div>
         <div class="facts">${stat(x)}${x.c.sell?`<span class="aupill p-joint">${Math.round(auOverlap(x.c)*100)}% you sell too · ${x.c.sell}</span>`:''}${x.c.had?`<span class="aupill p-had">${x.c.had} were our leads</span>`:''}</div>
         <div class="prog"><b>${x.c.todo.toLocaleString()}</b> left to judge${x.c.byHand?` · ${x.c.byHand.toLocaleString()} you judged`:''}${x.c.auto?` · ${x.c.auto.toLocaleString()} marked for you`:''}</div></div>${auDonut(x.c)}</button>`).join('')}</div>`
       :`<div class="tablewrap show"><div class="tablescroll"><table class="logtbl autbl"><thead><tr><th>Rival</th><th class="r">You sell too</th><th class="r">Were our leads</th><th class="r">Left to judge</th><th class="r">Products</th><th>Last audited</th><th></th></tr></thead><tbody>
@@ -961,7 +976,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     if(t.closest('#auBack')||t.closest('#auBack2')){auBack();return;}
     if(t.closest('#auCards')){auView.cards=!auView.cards;auSave();renderAudit();return;}
     if(t.closest('#auRsort'))return;   /* the select handles itself, below */
-    if(t.closest('#auRefresh')){toast('Refreshing…');await audPullShelves(true);await audPullVerdicts(true);renderAudit();toast('Up to date');return;}
+    if(t.closest('#auRefresh')||t.closest('#auRefresh2')){toast('Refreshing…');await audPullShelves(true);await audPullVerdicts(true);renderAudit();toast('Up to date');return;}
     if(t.closest('#auPull')){auPullSeller($('#auSeller').value);return;}
     if(t.closest('#auAdd')){auAddList();return;}
     if(t.closest('#auFollow')){auView.follow=!auView.follow;auSave();renderAudit();if(auView.follow){toast('Keepa will follow you — it opens the product you are on');auFollow();}return;}

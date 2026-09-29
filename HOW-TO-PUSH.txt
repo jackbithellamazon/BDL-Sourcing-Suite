@@ -1,7 +1,7 @@
-BDL SOURCING — b199 · 28 Sep 2026   (includes b184 → b198)
+BDL SOURCING — b203 · 29 Sep 2026   (includes b200 → b202)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b199.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b203.
 
 THEN — EU DROPS, STEP BY STEP
    Brands / Filters → "EU drops · all markets (testing)" (yours) → Run.

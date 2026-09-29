@@ -2552,3 +2552,115 @@ html:not([data-theme="light"]) .authpill{color:#fff;background:var(--ink)}
 .kccmk input{accent-color:var(--iris)}
 .kccn{margin-left:auto;font-size:13px;color:#D2D8E4;font-weight:600}
 .tab .ponly{font-style:normal;margin-left:6px;padding:1px 7px;border-radius:6px;font:700 10.5px var(--sans);color:#C4B5FF;background:rgba(140,149,255,.14);border:1px solid rgba(140,149,255,.35)}
+
+/* b200 — opened today but no export dropped in: amber edge (between late-coral and done-jade), plus a line under Last run */
+.btbl tr.isopened td:first-child,.btbl tr.isdue.isopened td:first-child{background:linear-gradient(90deg,color-mix(in srgb,#FBBF24 12%,var(--surface2)) 0,var(--surface2) 72%);box-shadow:inset 3px 0 0 #FBBF24}
+.btbl td.lastc .opened{display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px;margin-top:5px;font-size:11.5px;line-height:1.35;color:#FCD34D;white-space:normal;max-width:100%}
+.btbl td.lastc .opened i{width:6px;height:6px;border-radius:50%;background:#FBBF24;flex:none}
+.btbl td.lastc .opened b{font-weight:650;color:#FDE68A}
+:root[data-theme="light"] .btbl td.lastc .opened{color:#92400E}
+:root[data-theme="light"] .btbl td.lastc .opened b{color:#78350F}
+
+/* b201 — "last updated" from OA Overview: a strip over the numbers, and one line on each rival card */
+#page-audit .auoa{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 12px;padding:10px 14px;border-radius:12px;font-size:13px;color:var(--text);
+  background:color-mix(in srgb,#2CE38B 8%,var(--surface2));border:1px solid color-mix(in srgb,#2CE38B 35%,transparent)}
+#page-audit .auoa.old{background:color-mix(in srgb,#FBBF24 9%,var(--surface2));border-color:color-mix(in srgb,#FBBF24 40%,transparent)}
+#page-audit .auoa>i,#page-audit .aufresh>i{width:8px;height:8px;border-radius:50%;background:#2CE38B;flex:none;box-shadow:0 0 0 3px color-mix(in srgb,#2CE38B 22%,transparent)}
+#page-audit .auoa.old>i,#page-audit .aufresh.old>i{background:#FBBF24;box-shadow:0 0 0 3px color-mix(in srgb,#FBBF24 22%,transparent)}
+#page-audit .auoa b{font-weight:650}
+#page-audit .auoa .auoan b{color:#2CE38B}
+#page-audit .auoa .auoap{color:#D6DCE8}
+#page-audit .auoa b{color:#fff}
+:root[data-theme="light"] #page-audit .auoa b{color:var(--text)}
+:root[data-theme="light"] #page-audit .auoa .auoap{color:var(--text)}
+#page-audit .auoa #auRefresh2{margin-left:auto}
+#page-audit .aufresh{display:flex;align-items:center;gap:7px;margin-top:5px;font-size:12px;color:#6EE7B7}
+#page-audit .aufresh.old{color:#FCD34D}
+#page-audit .aufresh b{color:#2CE38B;font-weight:650}
+:root[data-theme="light"] #page-audit .aufresh{color:#047857}
+:root[data-theme="light"] #page-audit .aufresh.old{color:#92400E}
+:root[data-theme="light"] #page-audit .aufresh b,:root[data-theme="light"] #page-audit .auoa .auoan b{color:#047857}
+
+/* b202 — Check a list (everyone) steps, and the "show all leads" controls */
+#kcCheck .kcsteps{margin:14px 0 0;padding-left:20px;display:grid;gap:6px;font-size:13.5px;line-height:1.5;color:var(--text)}
+#kcCheck .kcsteps b{color:#fff;font-weight:650}
+:root[data-theme="light"] #kcCheck .kcsteps b{color:var(--text)}
+.sum.go{cursor:pointer;transition:transform .12s ease,border-color .12s ease}
+.sum.go:hover{transform:translateY(-1px);border-color:color-mix(in srgb,#2CE38B 60%,transparent)}
+.sum.go:focus-visible{outline:2px solid #2CE38B;outline-offset:2px}
+#story .showall{margin-left:8px;vertical-align:baseline}
+
+/* b202 — the idiot-proof guide, slim: row one = segmented progress bar + the step you are on; row two = its 1-2-3; the thing to press glows */
+#viewRun .guide{display:block;padding:8px 12px 9px;margin:0 0 12px;border-color:rgba(110,123,255,.4);background:rgba(110,123,255,.07)}
+#viewRun .guide.alldone{border-color:rgba(54,214,164,.45);background:rgba(54,214,164,.06)}
+.guide .grow1{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
+.guide .gbar{display:flex;gap:5px;flex:0 0 auto;width:min(300px,100%)}
+.guide .gseg{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:4px}
+.guide .gseg b{display:block;height:5px;border-radius:999px;background:var(--line2)}
+.guide .gseg span{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.guide .gseg span i{width:15px;height:15px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:9.5px;font-weight:700;background:var(--surface2);color:var(--muted);border:1px solid var(--line2);flex:none}
+.guide .gseg.done b{background:var(--jade)}
+.guide .gseg.done span{color:var(--text)}
+.guide .gseg.done span i{background:var(--jade-dim);color:var(--jade);border-color:rgba(54,214,164,.45)}
+.guide .gseg.now b{background:var(--iris);box-shadow:0 0 10px rgba(110,123,255,.6);animation:gbarpulse 1.5s ease-in-out infinite}
+.guide .gseg.now span{color:#fff}
+.guide .gseg.now span i{background:var(--iris);color:#fff;border-color:var(--iris)}
+@keyframes gbarpulse{0%,100%{opacity:1}50%{opacity:.55}}
+.guide .ghead2{display:flex;flex:1 1 380px;min-width:0;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.guide .gbig{flex:none;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:13px;font-weight:800;background:var(--iris);color:#fff}
+#viewRun .guide.alldone .gbig{background:var(--jade);color:#04150e}
+.guide .gkick{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#A5B4FC}
+.guide .gtitle{font-size:14.5px;font-weight:700;color:#fff;line-height:1.2}
+.guide .gsub{font-size:12px;color:#D6DCE8}
+.guide .gtog{margin-left:auto;font-size:12px}
+.guide .gdo{margin:7px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 14px;counter-reset:gd}
+@media(max-width:980px){.guide .gdo{grid-template-columns:1fr}}
+.guide .gdo li{position:relative;padding-left:24px;font-size:12.5px;line-height:1.35;color:var(--text);counter-increment:gd}
+.guide .gdo li::before{content:counter(gd);position:absolute;left:0;top:0;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:700;background:var(--surface2);color:var(--text);border:1px solid var(--line2)}
+.guide .gdo b{color:#fff;font-weight:700}
+.guide .gh{margin:7px 0 0;padding-left:18px;font-size:12.5px;line-height:1.5;color:#D6DCE8;display:grid;gap:4px}
+#viewRun .gohot{animation:gohot 1.5s ease-in-out infinite;border-radius:10px}
+@keyframes gohot{0%,100%{box-shadow:0 0 0 3px rgba(110,123,255,.55),0 0 14px rgba(110,123,255,.35)}50%{box-shadow:0 0 0 5px rgba(110,123,255,.35),0 0 26px rgba(110,123,255,.65)}}
+:root[data-theme="light"] .guide .gtitle,:root[data-theme="light"] .guide .gdo b,:root[data-theme="light"] .guide .gseg.now span{color:var(--text)}
+:root[data-theme="light"] .guide .gsub,:root[data-theme="light"] .guide .gh{color:var(--muted)}
+:root[data-theme="light"] .guide .gkick{color:#4F46E5}
+
+
+/* b203 — the Keepa columns checklist (once per computer), grouped like Keepa's Configure Columns box */
+.colsov{position:fixed;inset:0;z-index:1000;background:rgba(3,6,12,.74);display:flex;align-items:flex-start;justify-content:center;padding:28px 16px;overflow:auto}
+.colsov[hidden]{display:none}
+.colsbox{width:min(1120px,100%);background:var(--surface2);border:1px solid var(--line2);border-radius:16px;padding:16px 18px 14px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.colshead{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.colshead h3{margin:0 0 4px;font-size:17px;color:#fff}
+.colshead p{margin:0;font-size:13px;color:#D6DCE8;line-height:1.45;max-width:780px}
+.colshead p b{color:#fff}
+.colshead .right{display:flex;gap:8px;flex:none}
+.colsgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px 18px}
+.kcg h4{margin:0 0 6px;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#A5B4FC}
+.kcs{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.kss{font-size:12px;font-weight:700;color:var(--text)}
+.kss.dim{color:var(--muted);font-weight:500}
+.kcl{display:flex;flex-wrap:wrap;gap:4px 6px}
+.kcl i{font-style:normal;font-size:12.5px;padding:2px 8px;border-radius:7px;background:var(--ink);border:1px solid var(--line2);color:var(--text)}
+.kcl i.must{border-color:rgba(247,106,131,.65);color:#FCA5B0}
+.kcl i.sell{border-color:rgba(251,191,36,.65);color:#FDE68A}
+.colsfoot{margin:10px 0 0;font-size:12px;color:#D6DCE8}
+.colsfoot i{font-style:normal;font-weight:700}
+.colsfoot i.must{color:#FCA5B0}.colsfoot i.sell{color:#FDE68A}
+.guide .gcols{font-size:11.5px;margin-left:4px}
+.stephead .linkbtn{font-size:11.5px}
+.cutwarn .linkbtn{font-size:inherit}
+:root[data-theme="light"] .colshead h3,:root[data-theme="light"] .colshead p b{color:var(--text)}
+:root[data-theme="light"] .colshead p,:root[data-theme="light"] .colsfoot{color:var(--muted)}
+:root[data-theme="light"] .kcl i.must{color:#B42318}:root[data-theme="light"] .kcl i.sell{color:#92400E}
+:root[data-theme="light"] .colsfoot i.must{color:#B42318}:root[data-theme="light"] .colsfoot i.sell{color:#92400E}
+
+/* b203 — the popup after a drop: every column the file has not got, red; the rest grey ✓ */
+.colsbox.missing{border-color:rgba(247,106,131,.55)}
+.colshead .bad,.colshead p b.bad{color:#FCA5B0}
+.colsneed{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:rgba(247,106,131,.10);border:1px solid rgba(247,106,131,.45)}
+.colsneed b{width:100%;font-size:12.5px;color:#FFD1D8}
+.colsneed i,.kcl i.need{font-style:normal;font-size:12.5px;padding:2px 8px;border-radius:7px;background:rgba(247,106,131,.16);border:1px solid #F76A83;color:#FFD1D8;font-weight:700}
+.kcl i.have{opacity:.42}
+.colsfoot i.need{color:#FCA5B0}.colsfoot i.have{color:var(--muted)}
+:root[data-theme="light"] .colsneed b,:root[data-theme="light"] .colsneed i,:root[data-theme="light"] .kcl i.need,:root[data-theme="light"] .colshead .bad,:root[data-theme="light"] .colshead p b.bad,:root[data-theme="light"] .colsfoot i.need{color:#B42318}

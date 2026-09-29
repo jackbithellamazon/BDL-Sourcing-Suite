@@ -217,7 +217,12 @@ function lockFresh(s){return!!(s&&s.inProgress&&s.inProgress.at&&Date.now()-new 
 function lockId(){let v=lsGet('bdl-sourcing-lockid','');if(!v){v=Math.random().toString(36).slice(2,10);lsSet('bdl-sourcing-lockid',v);}return v;}
 function ownLock(s){return!!(s&&s.inProgress&&(s.inProgress.id===lockId()||(me()&&s.inProgress.who===me())));}
 function otherLock(s){return lockFresh(s)&&!ownLock(s)?s.inProgress:null;}
-function srcLock(s){s.inProgress={who:me()||'someone (no name picked)',at:nowIso(),id:lockId()};srcSave(s);}
+function srcLock(s){const who=me()||'someone (no name picked)',at=nowIso();s.inProgress={who,at,id:lockId()};
+  /* b200 (Jack, 28 Sep: "why haven't they updated — add in who ran it and when"). Opening a source is not a run (a run needs the Keepa export
+     dropped in), so the VAs' work never showed. Every open is now kept — who and when, last 30 — and the row says it until a run lands. */
+  s.opens=[{who,at}].concat((s.opens||[]).filter(o=>o&&o.at)).slice(0,30);srcSave(s);}
+/* the latest open that no run has caught up with yet (null once an export is dropped after it) */
+function openSinceRun(s){const o=[(s.opens||[])[0],s.inProgress].filter(x=>x&&x.at).sort((a,b)=>new Date(b.at)-new Date(a.at))[0];if(!o)return null;const last=runLast(s.key);return(!last||new Date(o.at)>new Date(last.at))?o:null;}
 function srcUnlock(s,direct){if(!s||!s.inProgress)return;delete s.inProgress;srcSave(s,direct);}
 function srcKeyFor(name){return name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
 /* sorted: filters first, then brands A-Z */

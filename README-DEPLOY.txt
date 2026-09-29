@@ -12,7 +12,11 @@ Rules: js/rule1.js is FROZEN (9 Sep 2026). js/rule2.js is Rule 2 AND Rule 3 (sam
 Checks: open the page, add ?checks to the URL, and the known-answer tests run against the fixtures
         (fixtures are kept locally in bdl-sourcing-harness/fixtures, not in the repo).
 
-Build: v1.2 · 2026-09-28 · b199 — EU DROPS: garden chemicals, sports clothing/shoes, motorbike clothing, HP, Eglo, LuminexDesigns out in every country.
+Build: v1.2 · 2026-09-29 · b203 — KEEPA COLUMNS: one list of the 49 columns the rules read, in Keepa's own Configure Columns groups. A refused file now names the exact missing columns ("Categories & Rank → Sales Rank → Drops last 30 days"); an accepted file with gaps gets a warning naming them; After any drop with gaps a popup opens listing every column that file has not got (red, in Keepa's order; grey ✓ = already there) with Copy; "Keepa columns to tick (once)" panel on the drop card, in the guide and on Check a list.
+Previous: v1.2 · 2026-09-28 · b202 — RUN GUIDE redone, idiot-proof: 3 steps (never 7), a segmented progress bar, only the step you are on spelled out as a 1-2-3, the thing to press glows, ticks cascade (a saved run can no longer show step 6 ticked behind empty steps), detail behind "Show me exactly how". KEEPA CONSOLE 3 = "Check a list" for everyone: paste ASINs → your own "Check these · name" run with free Viewer buttons per market (API button stays Jack-only). LEADS: "leads · show all" tile + "Show all N leads" button; To review / All leads remembered.
+Previous: v1.2 · 2026-09-28 · b201 — STOREFRONT AUDITS: "OA Overview last updated the shelves today 14:55" strip with a Refresh, and each rival card says when its shelf was last checked and how many lines are new today.
+Previous: v1.2 · 2026-09-28 · b200 — SOURCE ROWS: every open is kept (who + when); until an export is dropped in, Last run says "Opened 13:51 · Mera · no export yet" and the row gets an amber edge.
+Previous: v1.2 · 2026-09-28 · b199 — EU DROPS: garden chemicals, sports clothing/shoes, motorbike clothing, HP, Eglo, LuminexDesigns out in every country.
 Previous: v1.2 · 2026-09-28 · b198 — EU DROPS: console games (controllers stay) and knives out in every country.
 Previous: v1.2 · 2026-09-28 · b197 — EU DROPS: hair straighteners, supplements + sports nutrition, PC games, Liqui Moly out in every country.
 Previous: v1.2 · 2026-09-28 · b196 — EU DROPS: all EU-plug appliances out (large-appliance root, small kitchen appliances, heating & cooling, irons, vacuums), contact lenses out, Le Creuset + WMF out.
