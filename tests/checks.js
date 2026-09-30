@@ -595,11 +595,11 @@ window.SourcingChecks=(function(){
                 keep(0.50,49,{})];        /* reviews already say 25/mo: kept on its own */
       })(),[true,false,false,true]);
       ok('Demand · the rescue only applies where the review share caused the drop',
-        [/share!=null&&spm<10/.test(rule1Compute.toString()),/share!=null&&spm<R2\.MIN_SPM/.test(rule2Compute.toString())],[true,true]);
+        [/share!=null&&spm<9/.test(rule1Compute.toString()),/share!=null&&spm<R2\.MIN_SPM/.test(rule2Compute.toString())],[true,true]);
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */
-      ok('Blacklist · Jack-approved brand bans seeded',BB_SEED.map(([k])=>k),['microsoft','staub','xiaomi']);
+      ok('Blacklist · Jack-approved brand bans seeded',BB_SEED.map(([k])=>k),['microsoft','staub','xiaomi','ring']);
       /* b58: the Lead history view builds from whatever lead states this browser holds, without throwing */
       /* b110: the export says what it is missing; the rank month rolls on open; the API route is parked but its translator is real */
       ok('Export · lists the ladder columns a file is missing',missingLadderCols([{ASIN:'B0',Title:'x','Variation Count':'2','Reviews: Rating Count':'10'}]).length,4);
@@ -638,7 +638,7 @@ window.SourcingChecks=(function(){
         ok('One sell · the four shapes pick the right level',[g305.shape,g305.sell,g923.shape,g923.sell,siem.shape,siem.sell,tom.shape,tom.sell],['big-pack',39.71,'amazon-owns',269.86,'amazon-dips',560.71,'small-pack',26.72]);
         ok('One sell + £100 bar · both switched ON (b117), the b114 swap stays off',[UNIFIED_SELL.on,BAR100.on,BR.UNIFIED_SELL_60],[true,true,false]);
         UNIFIED_SELL.on=false;BAR100.on=false;const MEa=rule2Compute(ME.rows,{},{});UNIFIED_SELL.on=true;BAR100.on=true;const MEb=rule2Compute(ME.rows,{},{});
-        ok('One sell + £100 bar · Mera electricals 19 Sep: 272 -> 238 with both on (b134: Amazfit is no longer blocked)',[MEa.out.length,MEb.out.length],[272,238]);}
+        ok('One sell + £100 bar · Mera electricals 19 Sep: 272 -> 238 with both on (b134: Amazfit is no longer blocked)',[MEa.out.length,MEb.out.length],[274,240]);}
       /* b116: the levels on the row, the stale-FBA note, and what the app learns from Jack's picks */
       {const LP=await csv('laptops-2026-09-19.csv'),SZ=await csv('suz-a2a-2026-09-19.csv');const dell=LP.rows.find(x=>x.ASIN.trim()==='B0GK33PJTK'),g305=SZ.rows.find(x=>x.ASIN.trim()==='B07CGPZ3ZQ');
         ok('Levels · six levels with seller counts on the G305',sellLevels(g305).map(x=>[x.key,x.value,x.n]),[['bb90',33.2,null],['bb180',32.03,null],['fba30',39.71,10],['fba90',43.11,10],['fbm90',42.05,15],['hi',96.24,null]]);
@@ -656,7 +656,7 @@ window.SourcingChecks=(function(){
         const spin=LP.rows.find(x=>x.ASIN.trim()==='B0BTCNN3TS'),cb=LP.rows.find(x=>x.ASIN.trim()==='B0GNST9HPY');
         ok('Share unknown · the 3-option Acer Spin with no reviews of its own is unknown, the confirmed Chromebook 14 is not',[shareUnknown(spin),shareUnknown(cb)],[true,false]);
         const b=rule2Compute(LP.rows,{},{});
-        ok('Share unknown · laptops 19 Sep: 50 leads, 21 of them on the family drops with the share unknown and flagged (b123: under 50 confirmed we use Keepa drops)',[b.out.length,b.st.unknown,b.unknown.length,b.all.filter(o=>o.chips.some(c=>/OWN SHARE UNKNOWN/.test(c[0]))).length>0],[50,21,21,true]);
+        ok('Share unknown · laptops 19 Sep: 50 leads, 21 of them on the family drops with the share unknown and flagged (b123: under 50 confirmed we use Keepa drops)',[b.out.length,b.st.unknown,b.unknown.length,b.all.filter(o=>o.chips.some(c=>/OWN SHARE UNKNOWN/.test(c[0]))).length>0],[52,21,21,true]);
         const ck={n:60,last:null,at:Date.now()};optionStamp(spin,ck);
         ok('Share unknown · a confirmed figure from Keepa clears it',[shareUnknown(spin),spin['Monthly Sales Trends: Bought in past month']],[false,'60']);
         ok('Share unknown · Keepa history turns into the Last Known columns',optionFromKeepa({monthlySold:0,monthlySoldHistory:[7263000,50,7300000,0]}).last,{n:50,date:'2024/10/22'});}
@@ -753,7 +753,7 @@ window.SourcingChecks=(function(){
        const out=RB.out.map(o=>Object.assign({},o));applyQueue(out,2,prev,{});
        const better=out.filter(o=>prev[o.ASIN]&&o.STATUS==='BETTER');
        const big=better.filter(o=>Math.abs(o.gain||0)>=1).length,tiny=better.filter(o=>Math.abs(o.gain||0)<0.25).length;
-       ok('Better · measured on two real Mera runs: 25 flagged, 9 worth £1+ a unit, 13 under 25p',[better.length,big,tiny],[25,9,13]);}
+       ok('Better · measured on two real Mera runs: 25 flagged, 9 worth £1+ a unit, 13 under 25p',[better.length,big,tiny],[26,10,13]);}
       /* b146 (Jack, 22 Sep: "order of cheapness on EU if price matched - italy france germany - unsure where spain sits just yet") */
       {const P=(a,l)=>euPick(a,['IT','FR','DE'],l==null?0.25:l);
         const mk=(m,c)=>[m,c/1.17,c,1];
@@ -841,7 +841,7 @@ window.SourcingChecks=(function(){
       ok('Bulk · the whole picture ticks, and X ticks the row you are on',[/\.aulist \.aurow > \.auimg/.test(document.querySelector('script[src*="audit.js"]')?'.aulist .aurow > .auimg':''),typeof auToggleSel==='function'],[true,true]);
       {const root=getComputedStyle(document.documentElement);
         ok('Type · numbers and labels use the Mac system font; only ASINs stay monospace',[/JetBrains/.test(root.getPropertyValue('--mono')),/JetBrains/.test(root.getPropertyValue('--code')),/-apple-system/.test(root.getPropertyValue('--sans').trim().slice(0,14))],[false,true,true]);}
-      ok('Leads · a lead you answer in this sitting keeps its place (b144 sent it to page 2, out from under the mouse)',/verdGet\(o\.ASIN\)&&!touched\.has\(o\.ASIN\)/.test(String(visible)),true);
+      ok('Leads · a lead you answer in this sitting keeps its place (b144 sent it to page 2, out from under the mouse)',/verdGet\(o\.ASIN\)&&!o\.QUEUE&&!touched\.has\(o\.ASIN\)/.test(String(visible)),true);
       ok('Leads · a No waiting for its reason shows the reasons in place of the note and name, so the row does not grow',[/const waiting=v\.v==='No'&&!v\.reason/.test(String(verdCell)),/&&!waiting\?`<input class="vnote"/.test(String(verdCell))],[true,true]);
       /* b154 (Jack, 25 Sep: "improve font and UI UX design of due now and overdue"; "a way to do it on keepa console — for them to have the lead and not leads") */
       {const runsWas=lsRaw(RUN_KEY);
@@ -1049,10 +1049,26 @@ window.SourcingChecks=(function(){
           ok('Activity · Jack is never recorded; a VA press is kept per day; Open in Keepa stamps the source and the row says In Keepa',[jackLogged,!!r&&r.ev.some(e=>e.d==='test press'),!!kp&&kp.who,kp&&kp.mk,/inkeepa/.test(String(renderList)),/actLog\('drop'/.test(String(handleFiles))],[false,true,'Mera','UK',true,true]);
         }finally{clearTimeout(actT);actDirty.clear();lsSet(ME_KEY,meWas||'Jack');if(keep==null)lsRemove(ACT_KEY);else lsRawSet(ACT_KEY,keep);const s=srcGet('mera-highticket');if(s){if(k0)s.keepa=k0;else delete s.keepa;srcSave(s);}}}
       ok('Storage · the VA click log lives in the big store (IndexedDB), not the shared 5 MB localStorage pot',[isBig(ACT_KEY),isBig(FACT_KEY)],[true,true]);
-      {await openRun('mera-highticket');awaitDrop={slot:'viewer',at:Date.now()};dropNudge();const n=$('#dropNudge');const shown=!!n&&!n.hidden&&/drag the file/i.test(n.textContent)&&$('#dropAny').classList.contains('dropwait');dropNudgeOff();backToList();
-        ok('Drop nudge · coming back from Keepa shows "drag the file into this box" on the drop box; a drop clears it',[shown,!n||n.hidden,/dropNudgeOff/.test(String(handleFiles))],[true,true,true]);}
+      {await openRun('mera-highticket');awaitDrop={slot:'viewer',at:Date.now()};dropNudge();const shown=/drag the file/i.test($('#dropAny').textContent)&&$('#dropAny').classList.contains('dropwait')&&!/scrollIntoView/.test(String(dropNudge));dropNudgeOff();const n=null;backToList();
+        ok('Drop nudge · coming back from Keepa shows "drag the file into this box" on the drop box; a drop clears it',[shown,!/Back from Keepa/.test($('#dropAny').textContent),/dropNudgeOff/.test(String(handleFiles))],[true,true,true]);}
       /* b208: VA opens = Seen (undoable); the lead sheet → Yes; ★ leads this week */
       ok('Leads · a VA opening leads in Keepa marks the unjudged ones Seen under her name (Jack\'s opens mark nothing); VAs get "Put back"; lead sheet → Yes; rows count leads this week',[/!isJack\(\)&&me\(\)/.test(String(openInKeepa)),/note:'opened in Keepa'/.test(String(openInKeepa)),/const n=seenToday\(\)\.length/.test(String(paintPutBack)),typeof leadSheetMatch,/wkleads/.test(String(renderList)),yesThisWeek('zz-none')],[true,true,true,'function',true,0]);
+      /* b209: every column or no entry; the Viewer ticks in the Open-in-Keepa row */
+      ok('Strict columns · a file missing any of the 49 is refused and the popup lists them; the UK Viewer button sits in the flag row and ticks',[/not taken — \$\{n\} Keepa column/.test(String(handleFiles)),/data-mk=\\"viewer\\" class=\\"vwbtn\\"/.test(String(paintRunHead))||/vwbtn/.test(String(paintRunHead))],[true,true]);
+      /* b210 */
+      ok('Buy link · opens Amazon\'s own offer in that country (?m=Amazon ID); anything else untouched',[amzBuyLink('https://www.amazon.de/dp/B0TEST0001'),amzBuyLink('https://www.amazon.co.uk/dp/B0TEST0001'),amzBuyLink('https://example.com/x')],['https://www.amazon.de/dp/B0TEST0001?m=A3JWKAKR8XB7XF','https://www.amazon.co.uk/dp/B0TEST0001?m=A3P5ROKL5A1OLE','https://example.com/x']);
+      ok('Smoother · no jump after a drop (a "leads ready" pill); floors fold to one line; drop anywhere; better-since rows sort by score; NEW since last run always queued; the lead sheet writes no verdicts',[/leadsReadyPill\(/.test(String(window.run)),/scrollIntoView/.test(String(window.run)),/classList\.toggle\('folded'/.test(String(paintFloors)),!!$('#dropAll'),/!p&&Object\.keys\(prevMap\)\.length\)\{o\.QUEUE='new'/.test(String(applyQueue)),/verdSetMany|cloudQueue\('src_verdicts'/.test(String(leadSheetMatch))],[true,false,true,true,true,false]);
+      {const q=[{ASIN:'B0TESTQ001',Score:10,state:{buy:10,sell:20,roi:5,profit:1}}];const r=applyQueue(q,2,{B0TESTQ002:{state:{buy:1,sell:2,roi:1}}},{B0TESTQ001:{v:'No',who:'Jack',state:{buy:10,sell:20,roi:5,profit:1}}});
+        ok('Queue · a lead judged No before that is NEW since the last run comes back to review',[q[0].QUEUE],['new']);}
+      /* b211 */
+      ok('Limits · default 9 a month, per run only (never saved, reset on open); both rules floor at 9; the banger note reads potential score + OA price-match',[R2.MIN_SPM,/spm<9&&!yearOk/.test(String(rule1Compute)),/srcSave/.test(String(onFloorInput)),/tmpFloors=null/.test(String(openRun)),/Could be a banger with a code/.test(String(paintStory))],[9,true,false,true,true]);
+      /* b212 */
+      {const a=srcGet('suz-deep-drops');const j=a&&JSON.parse(decodeURIComponent(a.link.split('#!finder/')[1]));const c=srcGet('amz-coupons');const cj=c&&JSON.parse(decodeURIComponent(c.link.split('#!finder/')[1]));
+        ok('Suz A2A widened to £10–60 (both averages); the coupon source is Suz\'s, daily, Rule 2, coupon 15%+ with Amazon selling',[a&&a.name,j&&j.f.AMAZON_avg90.filterTo,j&&j.f.BUY_BOX_SHIPPING_avg90.filterTo,c&&c.owner,c&&c.cadence,c&&c.rule,cj&&cj.f.couponOneTimePercent.filter,cj&&cj.f.AMAZON_current.filter],['Suz · A2A £10–60',60,60,'Suz','daily',2,15,5]);}
+      /* b213 */
+      {const rk=lsRaw(RUN_KEY);const c0=window.confirm;window.confirm=()=>true;const meWas=me();try{lsSet(ME_KEY,'Suz');await openRun('brita');clearRun();const shown=!$('#doneEmpty').hidden;doneEmpty();const r=runsFor('brita').find(x=>x.day===today());
+        ok('Done with 0 results · one press saves an empty run under the VA (row goes done), then the button hides; Ring is blacklisted',[shown,!!r&&r.leads,r&&r.who,r&&r.empty,$('#doneEmpty').hidden,dueState(srcGet('brita')).cls,BB_SEED.some(x=>x[0]==='ring')],[true,0,'Suz',true,true,'done',true]);
+        }finally{window.confirm=c0;backToList();lsSet(ME_KEY,meWas||'Jack');if(rk==null)lsRemove(RUN_KEY);else lsRawSet(RUN_KEY,rk);}}
       /* b206: S&S memory — learns yes/no per ASIN, applies a remembered S&S only while Amazon sells it */
       {const keep=lsRaw(FACT_KEY);try{
         const A='B0TESTSNS1';snsLearn([{ASIN:A,'Buy Box: Subscribe & Save':'yes','Buy Box: Buy Box Seller':'Amazon'}]);const f1=factGet(A);
@@ -1121,16 +1137,17 @@ window.SourcingChecks=(function(){
     /* b120: the bar slides between the points (200/mo = 7.5% or £1): +1 Logitech, +2 Mera UK-only, +1 / +2 Mera lists, +1 S&S */
     /* b134 (Jack: "for Logitech if it's UK A2A be more lenient — they nearly always have a promo on"): a 10% promo allowance on UK buys, so 13 thin ones are kept for a human to check. 78 -> 91 */
     /* b135 (Jack: "Logitech is multi-buys on the brand website, not Amazon — be extra more lenient on UK A2A even if it's a small loss"): a UK Logitech lead is an OA lead, so it is kept when the promo brings it near break-even and the thin-lead bar does not judge it on Amazon's price. 91 -> 112 */
-    logitech:{demand:241,leads:112,first:'B07MTXLFXV'},
-    asus:{demand:114,leads:38,mb:[46.46,51.8]},   /* B550M: Amazon out of stock 53%, a 3P holds the box at £164 - the market today, not the £192 average */
+    /* b211 (Jack, 29 Sep: minimum 9 a month, was 10) — only adds: Logitech demand +1, ASUS +5 demand / +1 lead, Mera UK-only +1, Mera 11/12 Sep +1, electricals +2, laptops +2 */
+    logitech:{demand:242,leads:112,first:'B07MTXLFXV'},
+    asus:{demand:119,leads:39,mb:[46.46,51.8]},   /* B550M: Amazon out of stock 53%, a 3P holds the box at £164 - the market today, not the £192 average */
     /* 14 Sep evening b25: 366 → 364 (STATUS toaster + BELLA air fryer: a month flat 30%+ under the 90-day average = the price moved). */
     /* b26: 364 → 356 (FBA 30/90d midpoint floor). */
     /* b44: the score-35 floor is under-£60 only — Mera 11 Sep 355 (one sub-£60 row), 12 Sep back to 346. */
     /* b113: 355 -> 354 and 346 -> 345 — the Gtech Duo bundle (needs 13.9% off) only ever stayed because Gtech's 19% Business tier was read as a code */
-    mera:{rows:525,leads:231,lenovo:[72,41.73,34.8],siemens:[77,107.12,30.7,100]},
+    mera:{rows:525,leads:232,lenovo:[72,41.73,34.8],siemens:[77,107.12,30.7,100]},
     /* 14 Sep: FBM-only history no longer proves a plateau (Galaxy Book4 Pro: Jack £1,700–1,800 max, was £2,207) → 12 Sep 390 → 376. */
     /* b25: 376 → 355 (every change a cut: lowest 3P channel caps, FBM at +10%); Vivobook no longer first; Vax £172.50 vs Jack's £180 (was £176.64). */
-    mera12:{leads:260,first:'B0G53YPLW6',vaxSell:172.5,vaxScore:[58,75],no3p:136,withVat:[260,0],book4:[1839.33,'Amazon owns the Buy Box (out of stock 0%) · Buy Box 90d +8%'],phone:1393.96},
+    mera12:{leads:261,first:'B0G53YPLW6',vaxSell:172.5,vaxScore:[58,75],no3p:136,withVat:[261,0],book4:[1839.33,'Amazon owns the Buy Box (out of stock 0%) · Buy Box 90d +8%'],phone:1393.96},
     /* Suz 13 Sep (b19): S&S 2,520 rows → 136 qualify (66 zero-rated, 7 kept); Business 179 → 10. Ecover £9.05 after 12% + 15%, sells £19.86, scores 53 on the low-ticket scale. */
     /* 14 Sep b19: under £60 sell = higher Buy Box 90/180d average unless the 180d is an old price regime (>1.35×: L'OR pods £34 launch vs
        £10.82 now), no uplift, capped at FBA 90d avg; low-ticket score scale £1,500/mo · £6/unit (WoodWick 28 → 51). S&S 2,520 → 136. */
@@ -1146,7 +1163,7 @@ window.SourcingChecks=(function(){
     /* b112/b113: one discount list — +6 Hoover (Hoover Direct 15%, a brand store), -2 Acer laptops (15% is full-price only; 5% on a match), -1 AOC monitor (Argos 6% now assumed at 5%) */
     /* b123: an option with an unknown share stays on the family's drops (Jack: under 50 confirmed we use Keepa drops) - flagged, and the page's Keepa check can upgrade it */
     /* b123: the rules stamp the review shares themselves now (b122), so these fixtures finally get the b105 share ladder the page always applied: Mera 11 Sep 272 -> 231, 12 Sep 269 -> 260, UK-only 271 -> 262 */
-    r1cap:{mera:[262,42]},
+    r1cap:{mera:[263,43]},
     /* 14 Sep evening b25: £60+ base = BB 90d; 30d base when the price moved 30%+ (and FBA fell or is absent); plateau proven by FBA
        and capped at the LOWEST 3P channel. Vivobook £599.99 → £443.40, Chromebook £354.94 → £337.28, Siemens £597.16 → £591.65, toaster gone. */
     r2fit:{vivobook:[456.07,'Amazon owns the Buy Box (out of stock 0%) · Buy Box 90d +8%'],chromebook:[336.62,'Amazon dips (out of stock 12%) · capped at the 3P floor (lowest 3P average)'],siemens:[591.65,'Amazon dips (out of stock 8%) · Buy Box 90d +25%'],toaster:[25.15,'Amazon dips (out of stock 6%) · Buy Box 30d (price moved down) +5%',false],keepa:[422.29,314.06,599.99,399,'string']},

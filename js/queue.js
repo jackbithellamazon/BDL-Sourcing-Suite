@@ -46,6 +46,8 @@ function applyQueue(out,rule,prevMap,verdicts){prevMap=prevMap||{};verdicts=verd
     if(!v){const fresh=!p||c.status==='NEW'||c.status==='BETTER';o.QUEUE=fresh?'new':'';o['Review?']=fresh?'no verdict yet':'';o.sinceVerdict='';}
     else{const cv=v.state?compareState(s,v.state):{status:'UNCHANGED',why:[]};
       if(cv.status==='BETTER'){o.QUEUE='better';o.sinceVerdict=cv.why.join('; ');o['Review?']='better since '+v.v+(v.who?' by '+v.who:'')+': '+o.sinceVerdict;}
+      /* b210 (Jack, 29 Sep: "if it's new since the last export I wanna see it"): NEW since the last run is always in the queue, whatever it was once judged */
+      else if(!p&&Object.keys(prevMap).length){o.QUEUE='new';o.sinceVerdict='';o['Review?']='new since the last run (was '+v.v+(v.who?' by '+v.who:'')+')';}
       else{o.QUEUE='';o.sinceVerdict='';o['Review?']='';}}});
   return Object.entries(prevMap).filter(([a])=>!seen.has(a)).map(([a,p])=>[a,(p.state.title||'')+(p.state.title?' · ':'')+`was £${(+p.state.buy).toFixed(2)} ROI ${p.state.roi}%`+(p.state.score?' score '+p.state.score:'')]);}
 /* the next lead-state map for a source: today's states, each remembering the last previous-day state as its `prev`

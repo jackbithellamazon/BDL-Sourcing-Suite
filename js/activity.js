@@ -41,14 +41,21 @@ document.addEventListener('click',e=>{if(!actOn())return;const el=e.target.close
 /* b207 (Jack, 29 Sep: "tell her she needs to drag it back in"). After any Open in Keepa / Viewer press, the moment she comes back to the
    Sourcing tab the drop box shouts: "Back from Keepa? Drag the file you exported in here", glowing, scrolled into view. For everyone. */
 let awaitDrop=null;
+/* b213 (Jack, 30 Sep recording: "still so jumpy"): the nudge no longer scrolls the page or pushes anything down — every return from Keepa
+   was yanking the page to the drop box, and the banner appearing/vanishing shifted everything by a row. Now the drop box itself changes
+   its words and glows, in place. */
 function dropNudge(){const box=$('#dropAny');if(!box||!awaitDrop||($('#viewRun')||{}).hidden)return;
   if(typeof files!=='undefined'&&awaitDrop.slot&&files[awaitDrop.slot]){awaitDrop=null;return;}
-  let n=$('#dropNudge');if(!n){n=document.createElement('div');n.id='dropNudge';n.className='dropnudge';box.parentNode.insertBefore(n,box);}
-  n.innerHTML=`<b>Back from Keepa?</b> Export it (<b>Export → All active columns → CSV</b>), then <b>drag the file from Downloads into this box ↓</b> — nothing is saved until you do.`;
-  n.hidden=false;box.classList.add('gohot','dropwait');box.scrollIntoView({behavior:'smooth',block:'center'});}
+  const big=box.querySelector('.big'),small=box.querySelector('.small');
+  if(big&&!big.dataset.orig){big.dataset.orig=big.innerHTML;if(small)small.dataset.orig=small.innerHTML;}
+  if(big)big.innerHTML='Back from Keepa? <b>Drag the file you exported in here</b>';
+  if(small)small.innerHTML='Export → All active columns → CSV · nothing is saved until you drop it';
+  box.classList.add('gohot','dropwait');}
+function dropNudgeOff(){awaitDrop=null;const box=$('#dropAny');if(!box)return;box.classList.remove('dropwait');
+  const big=box.querySelector('.big'),small=box.querySelector('.small');
+  if(big&&big.dataset.orig){big.innerHTML=big.dataset.orig;delete big.dataset.orig;}if(small&&small.dataset.orig){small.innerHTML=small.dataset.orig;delete small.dataset.orig;}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&awaitDrop)setTimeout(dropNudge,250);});
 window.addEventListener('focus',()=>{if(awaitDrop&&Date.now()-awaitDrop.at>1500)setTimeout(dropNudge,250);});   /* back from another window, not just another tab */
-function dropNudgeOff(){awaitDrop=null;const n=$('#dropNudge');if(n)n.hidden=true;const b=$('#dropAny');if(b)b.classList.remove('dropwait');}
 function actStampKeepa(key,m){awaitDrop={slot:m==='UK Viewer'||m==='UK'?'viewer':m,at:Date.now()};if(!key||typeof srcGet!=='function')return;const s=(typeof cur!=='undefined'&&cur&&cur.key===key)?cur:srcGet(key);if(!s)return;   /* the open run's own object, or leaving the run re-saves a copy without the stamp */
   s.keepa=[{who:me(),at:nowIso(),mk:m}].concat((s.keepa||[]).filter(o=>o&&o.at)).slice(0,30);srcSave(s);}
 /* the newest Keepa press that no run has caught up with */
@@ -93,21 +100,27 @@ document.addEventListener('click',e=>{if(typeof actOn==='function'&&actOn())retu
    writer; VAs never see each other's work), at most every 30 minutes, last 14 days of the sheet. A real Yes / No / Maybe is never touched —
    only an empty verdict or a Seen is upgraded. */
 const LSM_KEY='bdl-sourcing-leadsheet-at';
+/* b210 (Jack, 29 Sep: "I don't wanna see leads by whether they're on a sheet or not"): the sheet no longer writes verdicts (they hid and sank
+   leads). It only keeps a marker — ASIN → which run, who, when — for the "★ leads this week" count. Any verdict b208 wrote ("lead sheet") is removed. */
+const SHEET_KEY='bdl-sourcing-sheetmatch';
 async function leadSheetMatch(force){if(!isJack()||typeof cloudReadable!=='function'||!cloudReadable())return 0;
+  {const V=verdAll();const bad=Object.keys(V).filter(a=>V[a]&&V[a].note==='lead sheet');if(bad.length&&typeof verdDelMany==='function')verdDelMany(bad);}
   const last=+lsGet(LSM_KEY,0)||0;if(!force&&Date.now()-last<30*60e3)return 0;lsSet(LSM_KEY,Date.now());
   let rows;const since=new Date(Date.now()-14*864e5).toISOString().slice(0,10);
   try{rows=await cloudGetAll('leads','select=asin,va,date,created_at,superseded&date=gte.'+since);}catch(e){return 0;}
-  const LA=leadAll(),V=verdAll(),up=[];
+  const LA=leadAll(),M={};let n=0;
   rows.forEach(l=>{const asin=(l.asin||'').trim();if(!/^B[0-9A-Z]{9}$/.test(asin)||l.superseded||!l.va)return;
-    const cur0=V[asin];if(cur0&&cur0.v&&cur0.v!=='Seen')return;
     const d=Date.parse(l.date||String(l.created_at).slice(0,10));if(!d)return;
     let best=null;Object.entries(LA).forEach(([src,m])=>{const e=m&&m[asin];if(!e||!e.stamp)return;const t=Date.parse(String(e.stamp).slice(0,10));
-      if(t&&t<=d+864e5&&d-t<=7*864e5&&(!best||t>best.t))best={src,t,state:e.state};});
-    if(!best)return;
-    const at=l.created_at||nowIso();const row={v:'Yes',reason:'',note:'lead sheet',who:l.va,at,via:'the lead sheet',source:best.src,state:best.state||null};
-    V[asin]=row;up.push({asin,v:'Yes',reason:'',note:'lead sheet',who:l.va,at,source_key:best.src,state:best.state||null});});
-  if(!up.length)return 0;lsSet(VERD_KEY,V);cloudQueue('src_verdicts','upsert',up);
-  if(typeof renderList==='function'&&!($('#viewList')||{}).hidden)renderList();return up.length;}
+      if(t&&t<=d+864e5&&d-t<=7*864e5&&(!best||t>best.t))best={src,t};});
+    if(best){M[asin]={src:best.src,who:l.va,at:l.created_at||nowIso()};n++;}});
+  lsSet(SHEET_KEY,M);if(typeof renderList==='function'&&!($('#viewList')||{}).hidden)renderList();return n;}
+function sheetMark(asin){return(lsGet(SHEET_KEY,{})||{})[asin]||null;}
 /* Yes verdicts on a source in the last 7 days — the row's "★ 3 leads this week" */
-function yesThisWeek(key){const V=verdAll(),cut=Date.now()-7*864e5;let n=0;for(const a in V){const v=V[a];if(v&&v.v==='Yes'&&v.source===key&&Date.parse(v.at)>=cut)n++;}return n;}
+/* b211 (Jack: "fuck is this" at "★ 2 leads this week"): the badge says what it is — how many of this filter's products went on the lead sheet
+   (or got a Yes) in the last 7 days, and by whom */
+function weekLeads(key){const V=verdAll(),M=lsGet(SHEET_KEY,{})||{},cut=Date.now()-7*864e5;const set=new Set(),who=new Set();
+  for(const a in V){const v=V[a];if(v&&v.v==='Yes'&&v.note!=='lead sheet'&&v.source===key&&Date.parse(v.at)>=cut){set.add(a);if(v.who)who.add(v.who);}}
+  for(const a in M){const m=M[a];if(m&&m.src===key&&Date.parse(m.at)>=cut){set.add(a);if(m.who)who.add(m.who);}}return{n:set.size,who:[...who],asins:[...set]};}
+function yesThisWeek(key){return weekLeads(key).n;}
 document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{leadSheetMatch().catch(()=>{});},9000);});

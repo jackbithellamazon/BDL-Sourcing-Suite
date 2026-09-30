@@ -132,14 +132,15 @@ function rule1Compute(files,brand,rate,prevRun){
     const share=(!bought&&r.__share!=null&&!r.__new)?r.__share:null;
     const spm=bought||(share!=null?drops*share:drops);
     /* b109: under 10 because of the review share, but Amazon confirmed sales on it within a year - keep it */
-    const yearOk=(share!=null&&spm<10&&typeof confirmedWithin==='function')?confirmedWithin(r,CONFIRMED_RESCUE_DAYS):null;
+    const yearOk=(share!=null&&spm<9&&typeof confirmedWithin==='function')?confirmedWithin(r,CONFIRMED_RESCUE_DAYS):null;
     /* b122: a variation with no share of its own and no confirmed figure is not handed the family's drops */
     /* b123 (Jack: "if it's under 50 confirmed sales we use Keepa drops, you know this"): an option with no share of its own stays on the
        family's drops, says so, and the page's one-token Keepa check can only upgrade it to a confirmed figure */
     const unknown=typeof shareUnknown==='function'&&shareUnknown(r);if(unknown)st.unknown=(st.unknown||0)+1;
-    if(spm<10&&!yearOk){drop(a,title,share!=null
-        ?`demand: no confirmed figure, family drops ${Math.round(drops)} x ${Math.round(share*100)}% of the family's reviews = ${Math.round(spm)} for this option (need 10)`
-        :`demand: bought ${bought||0} / drops ${Math.round(drops)} (need 10)`,'Not enough demand');continue;}
+    /* b211 (Jack, 29 Sep: "all should have a minimum sales default of 9 spm") — was 10 */
+    if(spm<9&&!yearOk){drop(a,title,share!=null
+        ?`demand: no confirmed figure, family drops ${Math.round(drops)} x ${Math.round(share*100)}% of the family's reviews = ${Math.round(spm)} for this option (need 9)`
+        :`demand: bought ${bought||0} / drops ${Math.round(drops)} (need 9)`,'Not enough demand');continue;}
     st.demand++;
     if(BR.BLACKLIST[a]){drop(a,title,'blacklisted: '+BR.BLACKLIST[a],'Blacklisted');continue;}
     const fbaNow=brNum(r['New, 3rd Party FBA: Current']),fba30=brNum(r['New, 3rd Party FBA: 30 days avg.']),fba90=brNum(r['New, 3rd Party FBA: 90 days avg.']),bb90=brNum(r['Buy Box: 90 days avg.']);

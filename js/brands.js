@@ -158,7 +158,7 @@ function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay()
       <td class="ownc">${isJack()?`<select class="inl ownsel ${ownCls(s.owner||NO_OWNER)}" data-key="${s.key}" title="Who runs this — saves straight away">${OWNER_OPTS.map(u=>`<option${(s.owner||'VAs')===u?' selected':''}>${u}</option>`).join('')}</select>`:whoChip(s.owner||'VAs')}</td>
       <td><div class="flags" title="${s.markets.join(' · ')}">${s.markets.map(m=>`<span class="f">${FLAG[m]}</span>`).join('')}</div></td>
       <td class="stc">${isJack()?`<select class="inl stsel s-${s.status}" data-key="${s.key}" title="Active runs on its cadence · Testing = trial · Paused = off the list — saves straight away">${Object.entries(STATUS_LABEL).map(([k,l])=>`<option value="${k}"${s.status===k?' selected':''}>${l}</option>`).join('')}</select><select class="inl cadsel" data-key="${s.key}" title="How often it should run — saves straight away">${Object.entries(CADENCE_LABEL).map(([k,l])=>`<option value="${k}"${s.cadence===k?' selected':''}>${l}</option>`).join('')}</select>`:`<span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span><span class="l2">${CADENCE_LABEL[s.cadence]||s.cadence}</span>`}${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
-      <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` ${whoChip(last.who)}`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}${(()=>{const n=typeof yesThisWeek==='function'?yesThisWeek(s.key):0;return n?`<span class="wkleads" title="Leads from this filter in the last 7 days — a Yes on the row, or the ASIN put on the lead sheet after it came up here">★ ${n} lead${n===1?'':'s'} this week</span>`:'';})()}${kp?`<span class="opened kp" title="${escapeHtml(kp.who)} pressed Open in Keepa (${escapeHtml(kp.mk||'')}) ${fmtWhen(kp.at)} — working it in Keepa. It goes green once the export is dropped back in."><i></i>In Keepa ${fmtWhen(kp.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase())} · ${whoChip(kp.who)} · <b>${escapeHtml(kp.mk||'')}</b></span>`:''}${op&&!kp?`<span class="opened" title="${escapeHtml(op.who)} opened this ${fmtWhen(op.at)} but no Keepa export has been dropped in since — so nothing is saved and the row stays late. Drop the export into the run to finish it."><i></i>Opened ${fmtWhen(op.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase())} · ${whoChip(op.who)} · <b>not run yet — no Keepa file dropped back in</b></span>`:''}</td>
+      <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` ${whoChip(last.who)}`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}${(()=>{const w=isJack()&&typeof weekLeads==='function'?weekLeads(s.key):{n:0};   /* Jack only */return w.n?`<span class="wkleads" title="${w.n} product${w.n===1?'':'s'} this filter found went on the lead sheet (or got a Yes) in the last 7 days: ${escapeHtml(w.asins.join(', '))}">${w.n} on the lead sheet this week${w.who.length?' · '+escapeHtml(w.who.join(' + ')):''}</span>`:'';})()}${kp?`<span class="opened kp" title="${escapeHtml(kp.who)} pressed Open in Keepa (${escapeHtml(kp.mk||'')}) ${fmtWhen(kp.at)} — working it in Keepa. It goes green once the export is dropped back in."><i></i>In Keepa ${fmtWhen(kp.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase())} · ${whoChip(kp.who)} · <b>${escapeHtml(kp.mk||'')}</b></span>`:''}${op&&!kp?`<span class="opened" title="${escapeHtml(op.who)} opened this ${fmtWhen(op.at)} but no Keepa export has been dropped in since — so nothing is saved and the row stays late. Drop the export into the run to finish it."><i></i>Opened ${fmtWhen(op.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase())} · ${whoChip(op.who)} · <b>not run yet — no Keepa file dropped back in</b></span>`:''}</td>
       <td class="nextc"><span class="nx ${d.cls}">${d.due||d.cls==='done'?'<i></i>':''}${d.label}</span>${d.sub?`<span class="l2" title="Run by export today = 0 Keepa tokens. If this ran through the API by itself it would cost about ${tok.toLocaleString()} tokens.">${d.sub}</span>`:''}</td>
       <td class="actc"><div class="acts">${finderLink(s)?`<a class="ib" href="${finderLink(s)}" target="_blank" rel="noopener" title="${s.link?'Open the saved Keepa filter':'Open the generated Keepa filter (edit to paste your own)'}">${ICONS.ext}</a>`:`<span class="ib nolink" title="No Keepa link saved yet — Edit and paste it">?</span>`}<button class="btn run xs" data-act="run" ${s.status==='paused'?'disabled':''} title="${lk&&!mine?'Someone else has it open — you can still join':''}">${ICONS.run}${lk&&!mine?'Join':'Run'}</button>${isJack()?`<button class="ib" data-act="edit" title="Edit">${ICONS.edit}</button>`:''}
         <div class="menu"><button class="ib" data-act="menu" aria-label="More">⋮</button>
@@ -272,7 +272,7 @@ function openBrandBlacklist(brand,fromAsin){if(!needMe())return;
   setTimeout(()=>$('#bbWhy').focus(),50);}
 
 /* ============ run view ============ */
-async function openRun(key){const s=srcGet(key);if(!s)return;
+async function openRun(key){const s=srcGet(key);if(!s)return;tmpFloors=null;const frr=$('#floorRow');if(frr)frr._open=false;   /* b211: limits reset to the default every time a source is opened */
   if(cur&&cur.key!==key){srcUnlock(cur);clearRun();view.q='';view.page=1;const fq=$('#fQ');if(fq)fq.value='';}cur=s;touched.clear();blPick=null;
   if(!(lockFresh(s)&&ownLock(s)))srcLock(cur);
   if(!me()){toast('Pick who you are (top right) so this run carries your name',true);const w=$('#whoSel');if(w){w.classList.add('shake');setTimeout(()=>w.classList.remove('shake'),600);}}
@@ -291,10 +291,24 @@ function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runN
   const listed=isListed(s);   /* b202: a storefront or pasted list is Viewer files only — say so */
   $('#step1Title').textContent=listed?'Drop the Product Viewer files':r1&&!uk1?'Drop the Product Finder exports':"Drop this morning's export";
   $('#step1Sub').innerHTML=escapeHtml(listed?`One Viewer file per flag (${s.markets.join(' · ')}). Any order — the app knows which is which.`:r1&&!uk1?`One file per flag, plus the UK Product Viewer file. Any order — the app knows which is which.`:uk1?'UK Product Finder, all columns. One file — it carries the UK sell side too, so no Viewer is needed.':'UK Product Finder, all columns. One file.')+' <button type="button" class="linkbtn" data-cols="1">Keepa columns to tick (once)</button>';
+  paintDoneEmpty();
   const link=finderLink(s);
   if(isListed(s)){paintStorefrontRow(s);return;}   /* b183 / b184 */
   if(!link){$('#keepaRow').innerHTML=`<span class="nolinkmsg">No Keepa link saved for this yet — <button type="button" class="linkbtn" id="keepaEdit">Edit</button> and paste the Finder link. Exports can still be dropped below.</span>`;$('#keepaEdit').addEventListener('click',()=>openEdit(cur));return;}
-  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1&&!uk1?s.markets.map(m=>`<a href="${(s.links&&s.links[m])||link}" data-mk="${m}" target="_blank" rel="noopener" title="${s.links&&s.links[m]?`This is the ${m} filter — its own categories. After it opens, switch Keepa's marketplace (flag, top right) to ${m}, set rows per page to the maximum, export all columns`:`Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export`}">${FLAG[m]} ${m}<span class="tick">✓</span>${ICONS.ext}</a>`).join('')+`<span class="mkhint">${s.links?'One file per flag. Each button is that country\'s own filter — in Keepa, pick the same flag at the top right before you export.':'One file per flag. Keepa opens the same filter every time — pick that country\'s flag at the top right of Keepa, wait for the table, then export.'}</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);paintApiRun();}   /* b138: inside the painter, not after it */
+  $('#keepaRow').innerHTML=`<span class="lab">Open in Keepa:</span>`+(r1&&!uk1?s.markets.map(m=>`<a href="${(s.links&&s.links[m])||link}" data-mk="${m}" target="_blank" rel="noopener" title="${s.links&&s.links[m]?`This is the ${m} filter — its own categories. After it opens, switch Keepa's marketplace (flag, top right) to ${m}, set rows per page to the maximum, export all columns`:`Same filter for every market — after it opens, switch Keepa's marketplace (flag, top right) to ${m}, run, export`}">${FLAG[m]} ${m}<span class="tick">✓</span>${ICONS.ext}</a>`).join('')+`<a href="#" data-mk="viewer" class="vwbtn" title="Step 2 — the UK Product Viewer with every ASIN from your country files loaded. Export all columns and drop it in; it ticks when it is in.">${FLAG.UK} UK Viewer<span class="tick">✓</span>${ICONS.ext}</a>`+`<span class="mkhint">${s.links?'One file per flag. Each button is that country\'s own filter — in Keepa, pick the same flag at the top right before you export.':'One file per flag. Keepa opens the same filter every time — pick that country\'s flag at the top right of Keepa, wait for the table, then export.'}</span>`:`<a href="${link}" target="_blank" rel="noopener">${FLAG.UK} the filter${ICONS.ext}</a>`)+(s.link?'':`<span class="lab" style="margin-left:6px">generated from the brand name — edit to paste your own</span>`);paintApiRun();}   /* b138: inside the painter, not after it */
+/* b213 (Jack, 30 Sep: "for anything that has 0 leads — a done button to show it's been run and done"). When Keepa shows nothing (so there
+   is no file to export), one press saves an empty run under your name: the row goes green, Last run says who and when, next due moves on.
+   A run that came back with 0 leads is already saved the same way — the guide says "done, 0 leads". */
+function paintDoneEmpty(){if(!cur)return;let b=$('#doneEmpty');const host=$('#keepaRow');if(!host)return;
+  if(!b){b=document.createElement('button');b.type='button';b.id='doneEmpty';b.className='btn ghost sm doneempty';host.parentNode.insertBefore(b,host.nextSibling);b.addEventListener('click',doneEmpty);}
+  const ran=runsFor(cur.key).some(r=>(r.day||String(r.at).slice(0,10))===today());
+  b.hidden=!!result||ran;b.innerHTML='✓ Keepa showed <b>0 results</b>? Mark this done for today';}
+function doneEmpty(){if(!cur||!needMe())return;
+  if(!confirm(`Mark ${cur.name} as done for today with 0 leads?\n\nUse this when the Keepa filter showed no results, so there was nothing to export. It is saved under ${me()}.`))return;
+  runSave({at:nowIso(),day:today(),source:cur.key,name:cur.name,rule:cur.rule,files:[],rowsIn:0,st:{},leads:0,new:0,better:0,worse:0,gone:0,blacklisted:0,asins:[],queue:[],goneAsins:[],who:me(),empty:true});
+  if(typeof actLog==='function')actLog('drop','Done — Keepa showed 0 results');
+  paintRunStrip();paintNext();paintDoneEmpty();renderGuide();toast(`${cur.name} marked done for today — 0 leads`);
+  const nx=$('#runNext');if(nx&&!nx.hidden)nx.classList.add('ready');}
 function paintNext(){const nx=cur?nextDue(cur.key):null;['#runNext','#runNext2'].forEach(id=>{const b=$(id);if(!b)return;b.hidden=!nx;if(nx){b.innerHTML=(id==='#runNext2'?'Done — next due: ':'Next due: ')+escapeHtml(nx.name)+' →';b.dataset.key=nx.key;}});}
 /* b59 (Jack: "make it easier to see the history"): the last runs of this source sit under its name, one chip each; the whole history and
    every lead it ever kept are one click away */
@@ -307,14 +321,21 @@ function paintRunStrip(){const el=$('#runStrip');if(!el||!cur)return;const runs=
   const tot=runs.reduce((n,r)=>n+(r.leads||0),0);
   el.innerHTML=`<span class="rl-lab">Last runs</span>${lookChip}${chips}${runs.length>7?`<button type="button" class="rchip more" data-act="hist">+${runs.length-7} more</button>`:''}<span class="rl-tot">${runs.length?`${runs.length} run${runs.length===1?'':'s'} · ${tot.toLocaleString()} leads all time`:'no export run yet'}</span>`;el.hidden=false;}
 /* floors: the inputs ARE this source's floors — saved as you type, shared, applied to every run of it */
-function paintFloors(){if(!cur)return;const f=cur.filters||{};const r1=cur.rule===1;
+/* b211 (Jack, 29 Sep: "default of 9 spm — they can change it, but it always comes back to 9. Discount codes (OA codes, Amazon discounts) aren't
+   factored in fully, and a code can turn something from a bad lead to a banger quickly"). Limits are for THIS run only — never saved. */
+let tmpFloors=null;
+function paintFloors(){if(!cur)return;const f=tmpFloors||{};const r1=cur.rule===1;
   FLOORS.forEach(([k,l,scope])=>{const el=$('#fl_'+k);if(!el)return;el.parentElement.hidden=(scope==='r2'&&r1);if(document.activeElement!==el)el.value=f[k]==null?'':f[k];});
-  const lab=floorsLabel(f);$('#floorSaved').innerHTML=lab?`<b>${escapeHtml(cur.name)}:</b> ${escapeHtml(lab)} · saved for everyone`:`Your own limits for ${escapeHtml(cur.name)}, like Filter &amp; sort on the Keepa console. The rule already keeps only products with 10+ bought or 10+ rank drops a month; type a number to go stricter — saved for everyone who runs this.`;
-  $('#floorClear').hidden=!lab;}
+  const lab=floorsLabel(f);$('#floorSaved').innerHTML=lab?`<b>${escapeHtml(cur.name)}:</b> ${escapeHtml(lab)} · saved for everyone`:`Default 9 a month. Type a number to go stricter for this run only.`;
+  $('#floorClear').hidden=!lab;
+  /* b210 (Jack: "wtf is this and why is it default here"): folded to one line; open it with Change */
+  const fr=$('#floorRow');if(fr){fr.classList.toggle('folded',!fr._open);let t=$('#floorTog');if(!t){t=document.createElement('button');t.type='button';t.id='floorTog';t.className='linkbtn';$('#floorSaved').after(t);t.addEventListener('click',()=>{fr._open=!fr._open;paintFloors();});}
+    t.textContent=fr._open?'Done':'Change for this run';$('#floorSaved').innerHTML=lab?`<b>This run only:</b> ${escapeHtml(lab)} · <b>goes back to the default (9 sales a month) next time you open it</b> — Jack's advice is to leave it on the default unless you're doing a specific sourcing method`:`<b>Default: 9 sales a month</b> and nothing else. <b>Jack's advice: leave it on the default</b> unless you're doing a specific sourcing method — codes (OA codes, Amazon vouchers) aren't fully counted, and a code can turn a bad lead into a banger. Anything you change here is for this run only and goes back to 9 next time.`;}}
 let floorT=null,relogT=null;
 function onFloorInput(){if(!cur)return;clearTimeout(floorT);floorT=setTimeout(()=>{const f={};FLOORS.forEach(([k])=>{const el=$('#fl_'+k);if(!el)return;const v=el.value.trim();if(v!==''&&!isNaN(+v)&&+v>0)f[k]=+v;});
-  const same=JSON.stringify(f)===JSON.stringify(cur.filters||{});if(same)return;
-  if(Object.keys(f).length)cur.filters=f;else delete cur.filters;srcSave(cur);paintFloors();
+  const same=JSON.stringify(f)===JSON.stringify(tmpFloors||{});if(same)return;
+  const had=!!tmpFloors;tmpFloors=Object.keys(f).length?f:null;paintFloors();
+  if(tmpFloors&&!had)toast('Limit set for THIS run only — it goes back to the default (9 sales a month) next time. Jack\'s advice: leave it on the default unless you\'re doing a specific sourcing method.');
   const fs=$('#floorSaved');fs.classList.add('flash');setTimeout(()=>fs.classList.remove('flash'),900);
   run();   /* re-run keeps the same sig, so nothing is re-logged on every keystroke… */
   clearTimeout(relogT);relogT=setTimeout(()=>{lastSig='';run();},2500);   /* …the run row + baseline catch up once typing stops */
@@ -365,7 +386,8 @@ function renderGuide(){const g=$('#guide');if(!g||!cur)return;const G=guideSteps
   /* a segmented progress bar (green = done, glowing = now, grey = still to come) and one compact panel: the 1-2-3 sits in a row */
   const bar=`<div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${Math.min(now,n)}" aria-label="Step ${Math.min(now+1,n)} of ${n}">${steps.map((x,i)=>`<div class="gseg ${x.done?'done':i===now?'now':''}"><b></b><span><i>${x.done?'✓':i+1}</i>${escapeHtml(x.t)}</span></div>`).join('')}</div>`;
   /* two slim rows: the bar and the step title share row one; the 1-2-3 is row two (three columns on a laptop) */
-  const head=all?`<div class="ghead2"><span class="gbig">✓</span><span class="gtitle">All done — every lead has an answer</span><span class="gsub">Press <b>Next due →</b> at the top${result&&result.out.length?` · <b>All leads</b> shows the ${result.out.length} this run kept`:''}</span></div>`
+  const zero=!!result&&result.out.length===0;
+  const head=all?`<div class="ghead2"><span class="gbig">✓</span><span class="gtitle">${zero?'Done — this run found 0 leads, nothing to judge':'All done — every lead has an answer'}</span><span class="gsub">Press <b>Next due →</b> at the top${result&&result.out.length?` · <b>All leads</b> shows the ${result.out.length} this run kept`:''}</span></div>`
     :`<div class="ghead2"><span class="gbig">${now+1}</span><span class="gkick">Step ${now+1} of ${n}</span><span class="gtitle">${escapeHtml(s.h)}</span>${s.d?`<span class="gsub">· ${escapeHtml(s.d)}</span>`:''}<button type="button" class="linkbtn gtog" id="guideTog">${full?'Hide the detail':'Show me exactly how'}</button></div>`;
   const dos=all?'':`<ol class="gdo">${s.dos.map(x=>`<li>${x}</li>`).join('')}</ol>${full&&s.how?`<ul class="gh">${s.how.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>`:''}`;
   g.classList.toggle('alldone',all);g.innerHTML=`<div class="grow1">${bar}${head}</div>${dos}`;
@@ -389,6 +411,8 @@ async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return
     const f={name:file.name,rows:d.rows,hasFees:d.hasFees,asins:d.asins,domain:d.domain,hasSince:d.hasSince,missing:d.missing||[],missingAll:d.missingAll||[]};
     /* b203: name the exact columns, in Keepa's own words, instead of "not a full-column export" */
     if(!d.full&&!d.hasFees){const must=(d.missingAll||[]).filter(c=>c.m==='must');notes.push(file.name+': Keepa did not export the columns the rules need. In Keepa press Configure Columns (top left of the table) and tick '+(must.length?must.map(colPath).join(', '):'Product → Title and Categories & Rank → Sales Rank → Drops last 30 days')+((d.missingAll||[]).length>must.length?' — plus the rest of the list under "Keepa columns to tick" below ('+(d.missingAll.length-must.length)+' more)':'')+'. Then export again and drop the new file.');if(!colsPop)colsPop={name:file.name,missing:d.missingAll||[]};continue;}
+    /* b209 (Jack, 29 Sep: "everything has to be ticked before a KPF or KPV export goes into the app"): every one of the 49 columns, or the file is refused */
+    if(!f.fromKeepa&&(d.missingAll||[]).length){const n=d.missingAll.length;notes.push(`${file.name}: not taken — ${n} Keepa column${n===1?' is':'s are'} not ticked (${d.missingAll.slice(0,3).map(colPath).join(' · ')}${n>3?' …':''}). Tick ${n===1?'it':'them'} in Keepa (Configure Columns), export again, drop the new file.`);if(!colsPop)colsPop={name:file.name,missing:d.missingAll};continue;}
     accepted.push(f);
     if(cur.rule!==1){if(d.domain&&d.domain!=='UK')notes.push(file.name+': this is a '+d.domain+' export — Rule '+cur.rule+' is UK only');
       /* b37 (Jack, 15 Sep: two variants of Suz's filter, 17 leads shared, 23 not) — a second UK export merges into the first, de-duped by ASIN.
@@ -706,7 +730,7 @@ function stepActive(dir,unjudgedOnly){const rows=[...document.querySelectorAll('
   if(dir>0&&view.page<pages){view.page++;touched.clear();renderTable();setActive(null);const rs=[...document.querySelectorAll('.ltbl tbody tr[data-asin]')];const first=rs.find(tr=>!unjudgedOnly||!/\b(Yes|No|Maybe)\b/.test(tr.className))||rs[0];if(first)setActive(first,true);}
   else if(dir<0&&view.page>1){view.page--;touched.clear();renderTable();const rs=document.querySelectorAll('.ltbl tbody tr[data-asin]');if(rs.length)setActive(rs[rs.length-1],true);}}
 function paintJudged(){const tb=document.querySelector('#results .toolbar');if(!tb||!result)return;let el=$('#judgedPill');if(!el){el=document.createElement('span');el.id='judgedPill';el.className='jpill';   /* b152: was 'judged' — the same class every judged AUDIT row carries, so each judged row picked up this pill's mono font, grey colour and 11px size */tb.insertBefore(el,$('#moreMenu')||null);}   /* b137: pill sits before More */
-  const all=visible();const done=all.filter(o=>(verdGet(o.ASIN)||{}).v).length;const finished=all.length>0&&done===all.length;
+  const all=visible();const done=all.filter(o=>(verdGet(o.ASIN)||{}).v&&(!o.QUEUE||touched.has(o.ASIN))).length;   /* b211: a lead back in the queue (new, or better since its old mark) is not judged until someone answers it again */const finished=all.length>0&&done===all.length;
   /* b140: when the last one is judged the pill says so and the Done button lights up — the VA should not have to count */
   el.classList.toggle('all',finished);const nx=$('#runNext2');if(nx)nx.classList.toggle('ready',finished&&!result.stored);
   el.innerHTML=finished?`<b>${done}</b> of ${all.length} judged ✓<i title="Everything on this list has a verdict — Done moves you to the next filter that is due">all done</i>`
@@ -996,7 +1020,7 @@ function run(){if(!cur)return;stampLearned();
     const cw=catBlockReason((o.Category||'')+' | '+(o.Title||o.Product||''));if(cw){bl.push([o.ASIN,o.Title||o.Product||'','NEVER-SELL CATEGORY · '+cw]);return false;}return true;});
   R.blacklisted=bl;R.dropped=bl.concat(R.dropped||[]);if(bl.length)R.reasons['Blacklisted']=bl.length;
   /* this source's own floors — the customisable Filter & Sort, saved on the source so it is the same for everyone */
-  const fl=[];R.out=R.out.filter(o=>{const why=failsFloor(o,cur.filters,R.rule);if(why){fl.push([o.ASIN,o.Title||o.Product||'','Below the floors set for '+cur.name+': '+why]);return false;}return true;});
+  const fl=[];R.out=R.out.filter(o=>{const why=failsFloor(o,tmpFloors,R.rule);if(why){fl.push([o.ASIN,o.Title||o.Product||'','Below the limits you set for this run: '+why]);return false;}return true;});
   if(fl.length){R.dropped=fl.concat(R.dropped);R.reasons['Below the floors set for '+cur.name]=fl.length;}R.floored=fl.length;
   /* b54 (Jack, 15 Sep: the WD SSD at −3% "not even a 1, wouldn't show as it's not profit at all") — a Rule 1 row that loses money at the
      buy price and can't reach 10% with any code is not a lead. rule1.js stays frozen; this is the same "not worth a look" cut Rule 2 has. */
@@ -1009,7 +1033,12 @@ function run(){if(!cur)return;stampLearned();
   result=R;
   const s=sig();const fresh=s!==lastSig;if(fresh){lastSig=s;view.page=1;view.sel.clear();logRun();}
   renderResults();renderGuide();paintNext();
-  if(fresh&&R.out.length&&!R.stored){setTimeout(()=>{const t=$('#leadTop');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});},250);}}
+  /* b210 (Jack, 29 Sep: "once I do this why does it shoot me down"): the page no longer jumps to the leads — a pill says they're ready */
+  if(fresh&&R.out.length&&!R.stored)leadsReadyPill(R.out.filter(o=>o.QUEUE).length,R.out.length);}
+function leadsReadyPill(rev,all){let p=$('#leadsReady');if(!p){p=document.createElement('button');p.type='button';p.id='leadsReady';p.className='leadsready';document.body.appendChild(p);
+    p.addEventListener('click',()=>{const t=$('#leadTop');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});p.hidden=true;});
+    window.addEventListener('scroll',()=>{const t=$('#leadTop');if(!p.hidden&&t&&t.getBoundingClientRect().top<window.innerHeight*0.6)p.hidden=true;},{passive:true});}
+  p.innerHTML=`✓ <b>${rev}</b> to review · ${all} leads — show me ↓`;p.hidden=false;}
 /* b145 (Jack, 22 Sep: should a second run the same day replace the list? "yeah — shouldn't really be ran 2 times a day really if I'm honest").
    So the day's list is set by the FIRST run of the day and only ever grows: anything new a later run finds is added, nothing already on the
    list is taken off, however it has moved since this morning. */
@@ -1059,10 +1088,10 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
   paintOptionBar();paintPastBar();paintEuLeads();paintOaTargets();
   const rev=out.filter(o=>o.QUEUE).length;let tiles;
   if(cur.rule===1){const cnt=k=>out.filter(o=>o['Buy market']===k).length,euN=out.length-cnt('UK');
-    tiles=sumTile(st.viewer,'in the Viewer')+sumTile(st.demand,'sell 10+/mo in the UK')+sumTile(st.buy,'Amazon selling it')+sumTile(out.length,'leads · show all','lead go',' data-showall="1" role="button" tabindex="0" title="Show every lead this run kept"')
+    tiles=sumTile(st.viewer,'in the Viewer')+sumTile(st.demand,'sell 9+/mo in the UK')+sumTile(st.buy,'Amazon selling it')+sumTile(out.length,'leads · show all','lead go',' data-showall="1" role="button" tabindex="0" title="Show every lead this run kept"')
       +sumTile(rev,'to review today',rev?'cool':'')+sumTile(out.filter(o=>o['ROI %']>=10).length,'ROI 10%+')+sumTile(cnt('UK'),'buy from UK')+sumTile(euN,euN?'from EU · '+['DE','FR','IT','ES'].map(k=>cnt(k)?k+' '+cnt(k):'').filter(Boolean).join(' · '):'buy from EU','warm');}
   else{const m=out.reduce((s,o)=>s+o['£ per month'],0);
-    tiles=sumTile(st.rows,'in the export')+sumTile(st.priced,'Amazon selling it')+sumTile(st.demand,'sell 10+/month')+sumTile(out.length,'leads · show all','lead go',' data-showall="1" role="button" tabindex="0" title="Show every lead this run kept"')
+    tiles=sumTile(st.rows,'in the export')+sumTile(st.priced,'Amazon selling it')+sumTile(st.demand,'sell 9+/month')+sumTile(out.length,'leads · show all','lead go',' data-showall="1" role="button" tabindex="0" title="Show every lead this run kept"')
       +sumTile(rev,'to review today',rev?'cool':'')+sumTile(out.filter(o=>o.Score>=60).length,'score 60+')+sumTile(out.filter(o=>o.Score>=40&&o.Score<60).length,'score 40–59','warm')+sumTile(out.filter(o=>o['ROI %']>=20).length,'ROI 20%+','jade');}
   $('#sumGrid').innerHTML=tiles;
   paintStory();
@@ -1079,7 +1108,8 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
     const rv=out.filter(o=>o.QUEUE).length;
     sn.innerHTML=`<b>Showing the saved run from ${when}</b> · ${out.length} leads as they were scored then · ${rv?rv+' still to review':'all judged'} · verdicts and links work as normal.${view.status==='REVIEW'&&rv<out.length?` <button type="button" class="linkbtn" id="snAll">Show all ${out.length} leads</button>`:''} Drop today's export above to refresh.`;sn.hidden=false;
     const sa=$('#snAll');if(sa)sa.addEventListener('click',()=>{view.status='ALL';view.page=1;renderTable();$('#leadTop').scrollIntoView({behavior:'smooth',block:'start'});});}else sn.hidden=true;
-  if(est)msgs.push('<b>'+est+' of '+out.length+' leads have estimated fees.</b> Tick <em>Referral Fee %</em> and <em>FBA Pick&amp;Pack Fee</em> on the export and the maths becomes exact.');
+  if(est){const fv=files.viewer||files.one;const hasCols=!!(fv&&fv.hasFees);   /* b209: with every column ticked, a missing fee is Keepa not knowing it yet — say that */
+    msgs.push(hasCols?'<b>'+est+' of '+out.length+' lead'+(est===1?' has':'s have')+' estimated fees.</b> The columns are there — Keepa just has no fee figure for '+(est===1?'that product':'those products')+' on Amazon UK yet, so 15% referral and a standard FBA fee are used. Check '+(est===1?'it':'them')+' in SAS before buying.':'<b>'+est+' of '+out.length+' leads have estimated fees.</b> Tick <em>Referral Fee %</em> and <em>FBA Pick&amp;Pack Fee</em> on the export and the maths becomes exact.');}
   if(R.rule===1&&R.st&&R.st.bbHiCol===false)msgs.push('<b>This export has no <em>Buy Box: Highest</em> column</b>, so sell prices could not be capped at the most the listing has ever sold for. Tick it on the Keepa export next time.');
   if(msgs.length){fw.innerHTML=msgs.join('<br>');fw.classList.add('show');}else{fw.classList.remove('show');}
   $('#fMarket').hidden=cur.rule!==1;
@@ -1121,15 +1151,21 @@ function paintStory(){const R=result;if(!R||!cur)return;const st=R.st,out=R.out;
   const judged=out.filter(o=>o.verdict&&!o.QUEUE).length;const V=verdAll();const yes=out.filter(o=>(V[o.ASIN]||{}).v==='Yes').length,no=out.filter(o=>(V[o.ASIN]||{}).v==='No').length;
   const n=numOrDash;
   const story=cur.rule===1
-    ?`${n(st.viewer)} products in the Viewer → ${n(st.demand)} sell 10+ a month in the UK → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`
-    :`${n(st.rows)} products in the export → ${n(st.priced)} sold by Amazon → ${n(st.demand)} sell 10+ a month → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`;
+    ?`${n(st.viewer)} products in the Viewer → ${n(st.demand)} sell 9+ a month in the UK → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`
+    :`${n(st.rows)} products in the export → ${n(st.priced)} sold by Amazon → ${n(st.demand)} sell 9+ a month → ${n(out.length)} come out as leads → ${n(rev)} need a look today.`;
   const story2=R.prevStamp
     ?`Against ${ukDate(R.prevStamp)}: ${n(c.NEW)} new, ${n(c.BETTER)} more profitable, ${n(c.WORSE)} worse, ${n(c.UNCHANGED)} the same, ${n(R.gone.length)} gone. ${judged?`${n(judged)} already have a verdict and have not improved since${yes||no?` (${n(yes)} Yes · ${n(no)} No)`:''}. `:''}${n(R.dropped.length)} dropped by the rule${R.blacklisted.length?`, ${n(R.blacklisted.length)} blacklisted`:''}.`
     :`First run for ${escapeHtml(cur.name)}, so everything counts as new. ${n(R.dropped.length)} dropped by the rule${R.blacklisted.length?`, ${n(R.blacklisted.length)} blacklisted`:''}.`;
   const carried=out.filter(o=>o.QUEUE==='new'&&o.STATUS!=='NEW').length;
   const parked=out.filter(o=>!o.QUEUE&&!o.verdict).length;
   const story3=parked?`<p class="s3">${n(parked)} lead${parked===1?' is':'s are'} the same or worse than the last run and ${parked===1?'has':'have'} no verdict, so ${parked===1?'it is':'they are'} not in today's queue; ${parked===1?'it comes':'they come'} back the moment ${parked===1?'it improves':'they improve'}. <button class="btn ghost xs showall" type="button" data-showall="1">Show all ${n(out.length)} leads</button></p>`:'';
-  $('#story').innerHTML=`<p>${story}</p><p class="s2">${story2}</p>${story3}`;$('#story').hidden=false;
+  /* b211 (Jack: "in the notes section look at stuff that might be able to turn something into a banger with Argos, Currys, the brand"): the leads
+     a code or a price-match would lift — Rule 2's potential score (Currys / Argos / John Lewis / brand direct), Rule 1's OA price-match note */
+  const pot=(R.all||out).filter(o=>(o['Potential score']||0)>=Math.max(60,(o.Score||0)+8)).sort((a,b)=>b['Potential score']-a['Potential score']);
+  const pm=R.rule===1?out.filter(o=>o['OA price-match']):[];
+  const nameOf=o=>escapeHtml(String(o.Product||o.Title||o.ASIN).slice(0,48));
+  const story4=pot.length||pm.length?`<div class="s4"><b>Could be a banger with a code (${pot.length+pm.length}):</b> ${pot.slice(0,5).map(o=>`<span class="bg" title="${escapeHtml(o.ASIN)}${o.kept===false?' · dropped by the rules at its Amazon price':''}">${nameOf(o)} <i>${o.Score} → <b>${o['Potential score']}</b> with ${escapeHtml(o['Potential via']||'a code')}</i>${o.kept===false?' <em>(dropped — check it)</em>':''}</span>`).concat(pm.slice(0,5-Math.min(5,pot.length)).map(o=>`<span class="bg" title="${escapeHtml(o.ASIN)}">${nameOf(o)} <i>${escapeHtml(o['OA price-match'])}</i></span>`)).join('')}${pot.length+pm.length>5?`<span class="more">+${pot.length+pm.length-5} more — the → numbers on the Score column</span>`:''}</div>`:'';
+  $('#story').innerHTML=`<p>${story}</p><p class="s2">${story2}</p>${story3}${story4}`;$('#story').hidden=false;
   /* detail: why things dropped, and what is left */
   const rs=Object.entries(R.reasons).sort((a,b)=>b[1]-a[1]);const totIn=(st.viewer||st.rows)||1;
   const KEYS={'Not enough demand':'demand:','No sell price':'no sell price','Amazon not selling':'amazon not selling','EU plug in title':'eu plug','Appliance from EU':'mains appliance','ROI under breakeven':'roi ','Slow seller, thin margin':'slow seller','Wide-gap, still under -15%':'wide-gap','Needs more discount than the brand gives':'needs ','Blacklisted':'blacklisted'};
@@ -1168,14 +1204,14 @@ function visible(){const q=view.q.toLowerCase();const day=dayList();const list=r
   /* b153 (Jack, 25 Sep: "no rigid or buggy or jumpy"): b144 sent every answered lead to the bottom on EVERY redraw, so the one you
      had just clicked Y on jumped from row 1 to row 63 — page 2 — and vanished from under the mouse. Anything answered in this
      sitting now holds its place; only leads answered earlier (or by someone else) sit at the bottom. */
-  if(view.status==='REVIEW'&&day){const done=o=>(verdGet(o.ASIN)&&!touched.has(o.ASIN)?1:0);list.sort((a,b)=>done(a)-done(b));}
+  if(view.status==='REVIEW'&&day){const done=o=>(verdGet(o.ASIN)&&!o.QUEUE&&!touched.has(o.ASIN)?1:0);   /* b210: a lead back because it got better sorts by score, not with the done ones */list.sort((a,b)=>done(a)-done(b));}
   if(view.sort==='gain')list.sort((a,b)=>(b.gain||0)-(a.gain||0)||sc(b)-sc(a));
   else if(view.sort==='profit')list.sort((a,b)=>b['Profit £']-a['Profit £']);
   else if(view.sort==='roi')list.sort((a,b)=>b['ROI %']-a['ROI %']);
   else if(view.sort==='month')list.sort((a,b)=>(b['£ per month']||b['Profit £']*b.SPM)-(a['£ per month']||a['Profit £']*a.SPM));
   return list;}
 function acts(o){const mk=cur.rule===1?(o['Buy market']||'UK'):'UK';
-  return`<span class="rowacts"><a href="${o.Keepa}" target="_blank" rel="noopener" title="Keepa graph — the Track tab is on this page">Keepa</a><a href="${o.SAS}" target="_blank" rel="noopener" title="SellerAmp">SAS</a><a href="${o['Buy link']}" target="_blank" rel="noopener" title="Where we would buy it">Buy ${mk}</a><a href="${o['UK sell link']||o['Buy link']}" target="_blank" rel="noopener" title="The UK listing we would sell on">Sell UK</a></span>`;}
+  return`<span class="rowacts"><a href="${o.Keepa}" target="_blank" rel="noopener" title="Keepa graph — the Track tab is on this page">Keepa</a><a href="${o.SAS}" target="_blank" rel="noopener" title="SellerAmp">SAS</a><a href="${amzBuyLink(o['Buy link'])}" target="_blank" rel="noopener" title="Where we would buy it">Buy ${mk}</a><a href="${o['UK sell link']||o['Buy link']}" target="_blank" rel="noopener" title="The UK listing we would sell on">Sell UK</a></span>`;}
 function verdCell(o){const v=verdGet(o.ASIN)||{};const b=x=>`<button type="button" class="vb ${x[0]}${v.v===x?' on':''}" data-v="${x}" data-asin="${o.ASIN}" title="${x}">${x[0]}</button>`;
   /* b140: once a reason is picked only that chip stays (click it to change) — five chips one under the other were 105px of every No row */
   const chips=v.v==='No'?`<div class="vreasons${v.reason?' picked':''}">${noReasons().filter(r=>!v.reason||r===v.reason).map(r=>`<button type="button" class="vr${v.reason===r?' on':''}" data-r="${r}" data-asin="${o.ASIN}">${escapeHtml(r)}</button>`).join('')}</div>`:'';
@@ -1613,12 +1649,20 @@ function brandsInit(){if(typeof bbSeed==='function')bbSeed();paintJackOnly();ren
   $('#runEdit').addEventListener('click',()=>openEdit(cur));$('#runHist').addEventListener('click',()=>openHistory(cur));
   $('#clearRun').addEventListener('click',()=>{clearRun();toast('Files cleared');});
   const zone=$('#dropAny'),inp=$('#fileIn');dz(zone,inp);
+  /* b210 (Jack: "easy to drag and drop"): drop a Keepa file ANYWHERE on the run screen, not just the box */
+  {const vr=$('#viewRun');let depth=0;const ov=document.createElement('div');ov.id='dropAll';ov.className='dropall';ov.hidden=true;ov.innerHTML='<div><b>Drop your Keepa files</b><span>anywhere — the app works out which country is which</span></div>';document.body.appendChild(ov);
+    const isFiles=e=>e.dataTransfer&&[...(e.dataTransfer.types||[])].includes('Files');
+    document.addEventListener('dragenter',e=>{if(!isFiles(e)||vr.hidden)return;depth++;ov.hidden=false;});
+    document.addEventListener('dragleave',e=>{if(!isFiles(e)||vr.hidden)return;depth=Math.max(0,depth-1);if(!depth)ov.hidden=true;});
+    document.addEventListener('dragover',e=>{if(isFiles(e)&&!vr.hidden)e.preventDefault();});
+    document.addEventListener('drop',e=>{if(!isFiles(e)||vr.hidden)return;e.preventDefault();depth=0;ov.hidden=true;if(!e.target.closest('#dropAny'))handleFiles(e.dataTransfer.files);});}
   inp.addEventListener('change',e=>{handleFiles(e.target.files);e.target.value='';});
   zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('over');handleFiles(e.dataTransfer.files);});
   $('#fileChips').addEventListener('click',e=>{const b=e.target.closest('button[data-rm]');if(b)removeFile(b.dataset.rm);});
   $('#euGo').addEventListener('click',euRun);
   $('#asinCopy').addEventListener('click',e=>{const a=$('#asinBar')._all||[];copy(a.join(', '),a.length+' ASINs copied — paste into the UK Product Viewer',e.currentTarget,'Copied');});
   /* b185: thousands of ASINs make a link too long for the browser — copy them and open an empty UK Viewer to paste into */
+  document.addEventListener('click',e=>{const v=e.target.closest('#keepaRow a.vwbtn');if(!v)return;e.preventDefault();$('#asinOpen').click();});   /* b209 */
   $('#asinOpen').addEventListener('click',e=>{const a=$('#asinBar')._all||[];if(!a.length){toast('Drop the Finder exports first',true);return;}
     if(a.length<=800){window.open(keepaLink(a,'2'),'_blank');return;}
     copy(a.join('\n'),`${a.length.toLocaleString()} ASINs copied — in the Viewer that just opened, click in the ASIN box and paste (Cmd+V), then Load`,e.currentTarget,'Copied');
@@ -1652,7 +1696,7 @@ function brandsInit(){if(typeof bbSeed==='function')bbSeed();paintJackOnly();ren
   $('#fPer').addEventListener('change',e=>{view.per=parseInt(e.target.value);view.page=1;renderTable();});
   $('#fMarket').addEventListener('change',e=>{view.market=e.target.value;view.page=1;renderTable();});
   $('#floorRow').addEventListener('input',onFloorInput);
-  $('#floorClear').addEventListener('click',()=>{if(!cur)return;delete cur.filters;srcSave(cur);paintFloors();lastSig='';run();});
+  $('#floorClear').addEventListener('click',()=>{if(!cur)return;tmpFloors=null;paintFloors();lastSig='';run();});
   $('#fQ').addEventListener('input',e=>{view.q=e.target.value;view.page=1;if(result)renderTable();});
   $('#fHideNo').addEventListener('change',e=>{view.hideNo=e.target.checked;view.page=1;renderTable();});
   $('#logExport').addEventListener('click',exportLog);

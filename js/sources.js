@@ -49,6 +49,9 @@ const SRC_SEED=[
   /* b205 (Jack, 29 Sep: "add a UK and EU shavers — shaver, hair clipper etc, they're all USB chargers mostly now, and we sell a lot of
      shavers from the EU to the UK — will sort it out later"). A category filter, every market, Rule 1. No Keepa link yet: Jack pastes it. */
   {key:'shavers',name:'Shavers & clippers · UK + EU',type:'filter',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'weekly',status:'testing',owner:'Jack',migV:12,link:'',note:'Shavers, hair clippers, beard / body trimmers — mostly USB-charged now, so the EU plug is not a problem · Jack sorting the filter, 29 Sep'},
+  /* b212 (Jack, 30 Sep: "make a coupon one — super mini"): Amazon's own clip coupons (the Canon PIXMA 20% ones were caught by nothing).
+     83 products on 30 Sep. Rule 2 already takes the coupon off the buy price. */
+  {key:'amz-coupons',name:'Suz · Amazon coupons 15%+',type:'filter',rule:2,markets:['UK'],cadence:'daily',owner:'Suz',status:'active',migV:12,note:'Amazon selling it · a one-time coupon of 15%+ on the listing · 10+ rank drops a month · coupons come and go, so daily (Jack, 30 Sep)',link:'https://keepa.com/#!finder/%7B%22f%22%3A%7B%22couponOneTimePercent%22%3A%7B%22filterType%22%3A%22number%22%2C%22type%22%3A%22greaterThanOrEqual%22%2C%22filter%22%3A15%2C%22filterTo%22%3Anull%7D%2C%22AMAZON_current%22%3A%7B%22filterType%22%3A%22number%22%2C%22type%22%3A%22greaterThanOrEqual%22%2C%22filter%22%3A5%2C%22filterTo%22%3Anull%7D%2C%22salesRankDrops30%22%3A%7B%22filterType%22%3A%22number%22%2C%22type%22%3A%22greaterThanOrEqual%22%2C%22filter%22%3A10%2C%22filterTo%22%3Anull%7D%2C%22productType%22%3A%7B%22values%22%3A%5B%220%22%5D%2C%22filterType%22%3A%22set%22%7D%7D%2C%22s%22%3A%5B%7B%22colId%22%3A%22SALES_current%22%2C%22sort%22%3A%22asc%22%7D%5D%2C%22t%22%3A%22g%22%7D'},
   {key:'brita',name:'Brita',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'weekly',status:'active',owner:'Suz',migV:12,note:'Amazon down 9% · every market · Suz, weekly · Jack, 27 Sep',brands:['Brita']},
   {key:'durex',name:'Durex',type:'brand',rule:2,markets:['UK'],cadence:'3 days',status:'active',owner:'Suz',migV:12,note:'UK only · S&S and business discount come off the buy price · 5% VAT (contraceptives, Rule 4) · Suz, every 3 days · Jack, 27 Sep',brands:['Durex']},
   /* b150 (Jack, 23 Sep: "instax add - all eu's and uk"). His own filter, kept verbatim: brand instax, Amazon down 8%+ on its 90-day
@@ -190,6 +193,14 @@ function srcAll(){let v=lsGet(SRC_KEY,null);if(!v||!v.length){v=SRC_SEED.map(s=>
   /* b199 (Jack, 28 Sep): garden chemicals (fertiliser, pest control, IT indoor insecticides), sports clothing + sports shoes, motorbike protective
      clothing out; HP, Eglo, LuminexDesigns out. Bosch, makeup and hazmat stay (Jack). */
   v.forEach(x=>{if(x.key==='suz-eu-drops'&&(x.migV||0)<27){x.links=EU_DROP_LINKS;x.link=EU_DROP_LINKS.DE;x.migV=27;changed=true;}});
+  /* b211 (Jack, 29 Sep: "I never ever did that — all should have a minimum sales default of 9 spm and that is it"): every source's own limits go (Brita's ROI 15 / profit 1 / sell 10 by Suz, Logitech's 10 a month by Mera) */
+  v.forEach(x=>{if(x.filters&&(x.migF||0)<1){delete x.filters;x.migF=1;changed=true;}else if((x.migF||0)<1){x.migF=1;}});
+  /* b212 (Jack, 30 Sep: "yeah change it"): Suz's A2A £10–40 → £10–60 — nothing covered £40–60 outside Mera's chosen categories
+     (the Canon TS4150i at a £59.55 average fell through). +16 products on 30 Sep. Only the two price ceilings move. */
+  v.forEach(x=>{if(x.key==='suz-deep-drops'&&(x.migW||0)<1){try{const [pre,enc]=x.link.split('#!finder/');const j=JSON.parse(decodeURIComponent(enc));
+      ['AMAZON_avg90','BUY_BOX_SHIPPING_avg90'].forEach(k=>{if(j.f&&j.f[k]&&Number(j.f[k].filterTo)===40)j.f[k].filterTo=60;});
+      x.link=pre+'#!finder/'+encodeURIComponent(JSON.stringify(j));x.name='Suz · A2A £10–60';x.note=(x.note||'').replace('£10–40','£10–60');}catch(e){}
+    x.migW=1;changed=true;}});
   v.forEach(x=>{if(x.key==='repken'&&(x.migV||0)<12){x.list='storefront';x.name='Replen · my storefront, all markets';x.type='filter';x.rule=1;x.markets=['UK','DE','FR','IT','ES'];x.link='';x.owner='Jack';x.cadence='weekly';
     x.note='Every product on your storefront, priced in the UK and DE/FR/IT/ES through the Keepa Product Viewer (free) or the API button. Rule 1 keeps the ones that pay — UK drops and EU buys alike.';x.migV=12;changed=true;}});
   /* b126: the two Mera lists read the same at a glance — renamed */
@@ -241,6 +252,12 @@ function lastFullMonth(d){d=d||new Date();const y=d.getFullYear(),m=d.getMonth()
 function rollRankMonth(link,d){if(!link)return link;const ym=lastFullMonth(d);
   return link.replace(/(srAvgMonth%22%3A%7B%22filterType%22%3A%22text%22%2C%22type%22%3A%22equals%22%2C%22filter%22%3A%22)\d{6}/g,'$1'+ym)
              .replace(/("srAvgMonth":\{"filterType":"text","type":"equals","filter":")\d{6}/g,'$1'+ym);}
+/* b210 (Jack, 29 Sep: "just have the buy link as Amazon's ID for that country"): Buy DE / FR / IT / ES / UK opens the listing on Amazon's own
+   offer there (?m=<Amazon's seller ID>), not whoever holds the Buy Box. Done where the link is drawn, so rule1.js stays frozen. */
+const AMZ_SELLER={UK:'A3P5ROKL5A1OLE',DE:'A3JWKAKR8XB7XF',FR:'A1X6FK5RDHNB96',IT:'A11IL2PNWYJU7H',ES:'A1AT7YVPFBWXBL'};
+const AMZ_TLD_MK={'co.uk':'UK',de:'DE',fr:'FR',it:'IT',es:'ES'};
+function amzBuyLink(url){const m=/^https:\/\/www\.amazon\.(co\.uk|de|fr|it|es)\/dp\/([A-Z0-9]{10})\/?$/.exec(String(url||''));if(!m)return url||'';
+  return`https://www.amazon.${m[1]}/dp/${m[2]}?m=${AMZ_SELLER[AMZ_TLD_MK[m[1]]]}`;}
 function finderLink(src){if(src.link)return rollRankMonth(src.link);if(src.type==='filter')return'';
   const brands=(src.brands&&src.brands.length?src.brands:[src.name]).map(b=>b.toLowerCase()).join('###');
   const f={brand:{filterType:'autocomplete',filter:brands,type:'isOneOf'},
@@ -391,7 +408,7 @@ function blRemove(asin){const a=blAll();delete a[asin];lsSet(BL_KEY,a);cloudQueu
 const BB_KEY='bdl-sourcing-brandbl';
 function bbAll(){return lsGet(BB_KEY,{});}
 /* ---- brands Jack has banned outright (16 Sep 2026: "3 - yes"). Seeded as APPROVED so every browser drops them without asking. ---- */
-const BB_SEED=[['microsoft','Microsoft','Jack, 16 Sep 2026 — cannot sell'],['staub','Staub','Jack, 16 Sep 2026 — cannot sell'],['xiaomi','Xiaomi','Jack, 16 Sep 2026 — cannot sell']];
+const BB_SEED=[['microsoft','Microsoft','Jack, 16 Sep 2026 — cannot sell'],['staub','Staub','Jack, 16 Sep 2026 — cannot sell'],['xiaomi','Xiaomi','Jack, 16 Sep 2026 — cannot sell'],['ring','Ring','Jack, 30 Sep 2026 — blacklist']];
 function bbSeed(){const a=bbAll();let add=[];BB_SEED.forEach(([k,d,why])=>{if(!a[k]){a[k]={display:d,reason:why,by:'Jack',at:nowIso(),status:'approved',decidedBy:'Jack',decidedAt:nowIso()};add.push(k);}});
   if(add.length){lsSet(BB_KEY,a);if(typeof cloudQueue==='function')cloudQueue('src_brand_blacklist','upsert',add.map(k=>bbRow(k,a[k])));}return a;}
 

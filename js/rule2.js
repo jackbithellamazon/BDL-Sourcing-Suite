@@ -11,7 +11,7 @@
    v1 was FBA 90d else Buy Box 90d: +26% on the Vax, +11% on the Siemens, always high.
    ============================================================================ */
 const R2={
-  VAT:0.20, TARGET_ROI:5.0, MIN_SPM:10, PREP_MISC:1.00, DST:0.02, DEF_REF:15, DEF_FBA:3.50, SS_UK:0.15,
+  VAT:0.20, TARGET_ROI:5.0, MIN_SPM:9,   /* b211: 9 a month, Jack 29 Sep */ PREP_MISC:1.00, DST:0.02, DEF_REF:15, DEF_FBA:3.50, SS_UK:0.15,
   SELL_UPLIFT:1.25, MOVED:0.70, FBM_LIFT:1.10, SELL_UPLIFT_NO3P:1.05, LOW_TICKET:60, REGIME_GAP:1.35, LONE_FBA_GAP:1.30, LONE_FBA_OFFERS:2, YOUNG_DAYS:90, THIN_REVIEWS:25,
   /* score = 100 * ( sat(profit*spm,6000)^0.50 * sat(roi,9)^0.24 * sat(profit,18)^0.26 )^0.8
      under £60 (14 Sep, Jack: WoodWick candle £3.08 × 300/mo at 21% ROI "is a good lead", scored 28) the money and profit scales
