@@ -599,7 +599,7 @@ window.SourcingChecks=(function(){
       /* b63 (Jack sent them 16 Sep): the six brands that had no Keepa link now carry his, and are Active */
       ok('Sources · the six new brand links are seeded Active',['hoover','tassimo','gopro','corsair-elgato','skullcandy','steelseries'].map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/'))]:null;}),[['active',true],['active',true],['active',true],['active',true],['active',true],['active',true]]);
       /* b63: Microsoft, Staub and Xiaomi are banned outright (they were only banned inside Mera's Keepa filter before) */
-      ok('Blacklist · Jack-approved brand bans seeded',BB_SEED.map(([k])=>k),['microsoft','staub','xiaomi','ring']);
+      ok('Blacklist · Jack-approved brand bans seeded',BB_SEED.map(([k])=>k),['microsoft','staub','xiaomi','ring','amazon','blink','eero']);   /* b214: Amazon devices + Blink + eero (Jack, 30 Sep) */
       /* b58: the Lead history view builds from whatever lead states this browser holds, without throwing */
       /* b110: the export says what it is missing; the rank month rolls on open; the API route is parked but its translator is real */
       ok('Export · lists the ladder columns a file is missing',missingLadderCols([{ASIN:'B0',Title:'x','Variation Count':'2','Reviews: Rating Count':'10'}]).length,4);
@@ -1069,6 +1069,46 @@ window.SourcingChecks=(function(){
       {const rk=lsRaw(RUN_KEY);const c0=window.confirm;window.confirm=()=>true;const meWas=me();try{lsSet(ME_KEY,'Suz');await openRun('brita');clearRun();const shown=!$('#doneEmpty').hidden;doneEmpty();const r=runsFor('brita').find(x=>x.day===today());
         ok('Done with 0 results · one press saves an empty run under the VA (row goes done), then the button hides; Ring is blacklisted',[shown,!!r&&r.leads,r&&r.who,r&&r.empty,$('#doneEmpty').hidden,dueState(srcGet('brita')).cls,BB_SEED.some(x=>x[0]==='ring')],[true,0,'Suz',true,true,'done',true]);
         }finally{window.confirm=c0;backToList();lsSet(ME_KEY,meWas||'Jack');if(rk==null)lsRemove(RUN_KEY);else lsRawSet(RUN_KEY,rk);}}
+      /* b214 — Prime event mode (Jack, 30 Sep 2026). The Prime link is checked against the one Jack made by hand for Samsung. */
+      {const J={brand:1,productType:1,srAvgMonth:1,BUY_BOX_SHIPPING_avg30:1,PRIME_EXCL_deltaPercent90:1};
+        const pl=primeLink(finderLink(srcGet('samsung')));const pj=JSON.parse(decodeURIComponent(pl.split('#!finder/')[1]));
+        ok('Prime · the Prime link = the source\'s own filter with the Amazon drop swapped for the Prime-exclusive drop at the same bar (Jack\'s Samsung link)',
+          [Object.keys(pj.f).sort(),pj.f.PRIME_EXCL_deltaPercent90.filter,pj.f.PRIME_EXCL_deltaPercent90.type,pj.s[0].colId,pj.f.brand.filter],
+          [Object.keys(J).sort(),9,'greaterThanOrEqual','PRIME_EXCL_deltaPercent90','samsung']);}
+      {const P=await csv('prime-uk-2026-09-30.csv'),N=await csv('synth-full-2026-09-28.csv');const row=P.rows.find(r=>r.ASIN==='B0F75D71RN');
+        ok('Prime · a Prime export is told from a normal one (Buy Box: Prime exclusive = yes on most rows); the price is Keepa\'s New, Prime exclusive: Current',
+          [primeIsFile(P.rows),primeIsFile(N.rows),primePrice(row),primeHasCol(P.rows),primeHasCol(N.rows),P.domain,(P.missingAll||[]).length],[true,false,129.99,true,false,'UK',0]);
+        const on=rule2Compute(P.rows,{},{vatFor:vatFor,rule:2,prime:true}),off=rule2Compute(P.rows,{},{vatFor:vatFor,rule:2});
+        const a=on.all.find(o=>o.ASIN==='B0H725WQFC'),b=off.all.find(o=>o.ASIN==='B0H725WQFC'),bl=on.all.find(o=>o.ASIN==='B08KPHMTJY');
+        ok('Prime · Rule 2 buys at the Prime price only with the switch on, tagged ★ PRIME DEAL; S&S / coupons still apply when the export shows them',
+          [a['After discount £'],a['Buy at £'],a['Prime deal'],a.chips[0][0],a['Discount applied'],b['After discount £'],b['Prime deal'],on.all.filter(o=>o['Prime deal']==='yes').length,on.out.length,off.out.length,bl['After discount £'],bl['Discount applied']],
+          [229.99,319.49,'yes','★ PRIME DEAL','★ Prime price',319.49,'',EXPECT.prime.r2prime,EXPECT.prime.r2on,EXPECT.prime.r2off,EXPECT.prime.blueair[0],EXPECT.prime.blueair[1]]);
+        ok('Prime · no "Amazon raised it" chip — Jack, 30 Sep: "if it\'s profitable it\'s profitable"',on.all.some(o=>o.chips.some(c=>/RAISED/.test(c[0]))),false);
+        const one=rows=>({name:'x',rows}),base=P.rows.find(r=>r.ASIN==='B0H725WQFC');
+        const dRow=Object.assign({},base,{'Amazon: Current':'300','New, Prime exclusive: Current':'150'}),iRow=Object.assign({},dRow,{'New, Prime exclusive: Current':'100'});
+        const f1={viewer:P,UK:P,DE:null,FR:null,IT:null,ES:null};
+        const x=rule1Compute(Object.assign({},f1,{prime:true}),'Prime',0.86,null).out.find(o=>o.ASIN==='B0H725WQFC');
+        const r1off=rule1Compute(f1,'Prime',0.86,null);
+        const y=rule1Compute({viewer:P,UK:P,DE:one([dRow]),FR:null,IT:one([iRow]),ES:null,prime:true},'Prime',0.86,null).out.find(o=>o.ASIN==='B0H725WQFC');
+        ok('Prime · Rule 1 (Jack: "yes") takes the Prime price as one more option — UK / DE / FR only, an Italian Prime price is never used',
+          [x&&x['Buy market'],x&&x['Landed £'],x&&x['Prime deal'],x&&/^★ PRIME DEAL/.test(x.Flags),y&&y['Buy market'],y&&y['Prime deal'],/★ Prime price \(Amazon DE £300\.00\)/.test(y&&y['Discount applied']||''),/IT ★Prime/.test(y&&y['All Amazon prices']||''),r1off.out.some(o=>o['Prime deal']==='yes')],
+          ['UK',229.99,'yes',true,'DE','yes',true,false,false]);}
+      {const meWas=me(),keep={p:lsRaw(PRIME_KEY),r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY)},c0=window.confirm;window.confirm=()=>true;
+        try{lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,true);await openRun('amz-coupons');clearRun();
+          const txt=await(await fetch('../fixtures/prime-uk-2026-09-30.csv')).text(),itTxt=txt.replace(/amazon\.co\.uk\//g,'amazon.it/').replace(/product\/2-/g,'product/8-');
+          await handleFiles([new File([txt],'KeepaExport-2026-09-30-ProductFinder (14).csv'),new File([itTxt],'KeepaExport-2026-09-30-ProductFinder (15).csv')]);
+          const g=$('#primeGrid');
+          const st=[!!pfiles.UK,!!(files.one&&files.one.__prime),files.one&&files.one.__base,!g.hidden,$('#viewRun').classList.contains('primemode'),g.querySelectorAll('.pcell.in').length,g.querySelectorAll('.pcell.prime.in').length,
+            !!result&&result.out.some(o=>o['Prime deal']==='yes'),/IT ★ Prime deals file — ignored/.test($('#warnRun').textContent),!$('#primeTog').hidden,
+            result.out.some(o=>o.ASIN==='B0F75D71RN'),result.blacklisted.some(x=>x[0]==='B0F75D71RN'&&/BRAND BLACKLISTED · Amazon/.test(x[2]))];
+          lsSet(ME_KEY,'Suz');paintPrime();st.push(g.hidden,$('#primeTog').hidden,primeOn());
+          lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,false);primeApply();paintSlots();st.push(files.one,g.hidden);
+          ok('Prime · Jack\'s switch: a Prime file lands in its own ★ box and joins the run; an Italian one is ignored; VAs never see it; off = back to exactly the normal files',st,
+            [true,true,null,true,true,1,1,true,true,true,false,true,true,true,false,null,true]);
+        }finally{window.confirm=c0;clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');
+          [[PRIME_KEY,keep.p],[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});}}
+      ok('Sources · Acer runs every 3 days (Jack, 30 Sep)',[srcGet('acer').cadence,CADENCE_LABEL[srcGet('acer').cadence]],['3 days','Every 3 days']);
+      ok('Blacklist · Amazon devices (brand Amazon: Echo, Fire, Kindle, Ember — and Amazon Basics / Essentials, Jack: "ye"), Blink and eero are on it with Ring (Jack, 30 Sep)',['ring','amazon','blink','eero'].map(k=>BB_SEED.some(x=>x[0]===k)).concat([bbKey('Amazon Basics').startsWith('amazon ')]),[true,true,true,true,true]);
       /* b206: S&S memory — learns yes/no per ASIN, applies a remembered S&S only while Amazon sells it */
       {const keep=lsRaw(FACT_KEY);try{
         const A='B0TESTSNS1';snsLearn([{ASIN:A,'Buy Box: Subscribe & Save':'yes','Buy Box: Buy Box Seller':'Amazon'}]);const f1=factGet(A);
@@ -1169,6 +1209,8 @@ window.SourcingChecks=(function(){
     r2fit:{vivobook:[456.07,'Amazon owns the Buy Box (out of stock 0%) · Buy Box 90d +8%'],chromebook:[336.62,'Amazon dips (out of stock 12%) · capped at the 3P floor (lowest 3P average)'],siemens:[591.65,'Amazon dips (out of stock 8%) · Buy Box 90d +25%'],toaster:[25.15,'Amazon dips (out of stock 6%) · Buy Box 30d (price moved down) +5%',false],keepa:[422.29,314.06,599.99,399,'string']},
     /* 14 Sep late b26: the FBA floor is the midpoint of the 30- and 90-day FBA averages when the 30-day is lower. Chromebook £337.28 → £336.62. */
     r2fit2:{shark:[209.11,'Amazon dips (out of stock 11%) · capped at the 3P floor (lowest 3P average)'],ninja:[136.05,'Amazon dips (out of stock 21%) · Buy Box 90d +25%'],brother:[157.72,'Amazon owns the Buy Box (out of stock 0%) · Buy Box 90d +8%, capped at FBA 90d'],hoover:[163.88,'Amazon owns the Buy Box (out of stock 0%) · Buy Box 90d +8%'],jet:[271.95,'Amazon dips (out of stock 22%) · capped at the 3P floor (lowest 3P average)'],blast:[83.53,'Amazon owns the Buy Box (out of stock 1%) · Buy Box 90d +8%'],canon:[59.4,'Buy Box 90d +6% · 0 FBA sellers','electrical']},
+    /* b214: Jack's Prime export, 30 Sep 2026 (38 rows, 37 with a Prime price). Blueair 511: the Prime £69 with the export's S&S on top. */
+    prime:{r2prime:37,r2on:17,r2off:5,blueair:[58.65,'★ Prime price; S&S 15%']},
     score1:75,score2:66,
     /* b89: four stay retired; the fifth is the one Jack switched back on, 17 Sep */
     hist:[['paused','Suz',true],['paused','Suz',true],['paused','Suz',true],['paused','Mera',true],['active','Mera',true]]};

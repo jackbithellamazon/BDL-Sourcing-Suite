@@ -109,9 +109,13 @@ function brBrandDisc(brand){const b=(brand||'').trim().toLowerCase().split(/\s+/
    brand = string (only used for the result), rate = GBP per EUR,
    prevRun = {stamp, snap:{ASIN:{...}}} from the last downloaded sheet, or null */
 function rule1Compute(files,brand,rate,prevRun){
-  const eu={},euSS={},found={},oa=[];
+  const eu={},euSS={},found={},oa=[],prm={};
+  /* b214 (Jack, 30 Sep: "yes" — Rule 1 buys at the Prime price too). Only when the page passes files.prime (Jack's Prime event switch):
+     Keepa's "New, Prime exclusive: Current" per country, UK / DE / FR only — Prime deals cannot be bought on .it or .es. */
+  const primeOK=!!files.prime&&typeof primePrice==='function',PMK=['UK','DE','FR'];
   ['UK','DE','FR','IT','ES'].forEach(d=>{const f=files[d];if(!f)return;f.rows.forEach(r=>{const a=(r.ASIN||'').trim();if(!a)return;
     (found[a]=found[a]||new Set()).add(d);
+    if(primeOK&&PMK.includes(d)){const p=primePrice(r);if(p)(prm[a]=prm[a]||{})[d]=p;}
     if(d!=='UK'){const v=brNum(r['Amazon: Current']);if(v){(eu[a]=eu[a]||{})[d]=v;}
       if(brHasSS(r))(euSS[a]=euSS[a]||{})[d]=true;}});});
   if(typeof stampShares==='function')stampShares(files.viewer.rows);   /* b122 */
@@ -153,6 +157,7 @@ function rule1Compute(files,brand,rate,prevRun){
     const zeroVat=vt?vt.rate===0:(BR.ZERO_VAT.some(w=>catText.includes(w))&&!BR.ZERO_VAT_NOT.some(w=>catText.includes(w)));
     const catRoot=r['Categories: Root']||'';
     const ukp=brNum(r['Amazon: Current']),ukDropped=!!(found[a]&&found[a].has('UK')),ltd=!!(r['Deals: Badge']||'').trim();
+    if(primeOK){const p=primePrice(r);if(p)(prm[a]=prm[a]||{}).UK=p;}   /* b214: the UK listing's own Prime price */
     /* Sell price, refitted 8 Sep 2026 against 62 prices Jack read off the graph himself.
        Buy Box 90d + 8%, never above the FBA 90d average. Mean error 6.1% vs 14.8% for the old
        median-of-three, and the old rule's +61% worst case disappears. Live/spot prices are never
@@ -201,6 +206,15 @@ function rule1Compute(files,brand,rate,prevRun){
       const eur=gbp/rate,q=Math.max(1,Math.min(BR.BASKET_MAX,Math.floor(BR.BASKET_CAP/eur)));
       const post=(BR.SHIP_BASE+BR.SHIP_KG*kg*q)*rate;
       opts.push([d,r2(eur),r2(gbp*(1+BR.CARD_FEE)+post/q+0.005),q]);}
+    /* b214: the Prime exclusive price is one more option per country. Jack, 30 Sep: "most things won't have S&S or coupons but some
+       might — you can see if they do by the export" — so the S&S and coupon the export shows go on top, exactly as on Amazon's price. */
+    for(const d of Object.keys(prm[a]||{})){const p=prm[a][d];let pn='';
+      if(d==='UK'){let e=p;const cp=brNum(r['One Time Coupon: Percentage'])||0,ca=brNum(r['One Time Coupon: Absolute'])||0;
+        if(brHasSS(r)){e*=(1-BR.SS_UK);pn+=` + S&S ${BR.SS_UK*100}%`;}if(cp){e*=(1-cp/100);pn+=` + coupon ${cp}%`;}if(ca){e-=ca;pn+=` + coupon £${ca.toFixed(2)}`;}
+        opts.push(['UK',p,r2(e),1,'prime',pn]);continue;}
+      let g=p;if(euSS[a]&&euSS[a][d]){g*=(1-BR.SS_EU);pn+=` + S&S ${BR.SS_EU*100}%`;}
+      const eur=g/rate,q=Math.max(1,Math.min(BR.BASKET_MAX,Math.floor(BR.BASKET_CAP/eur))),post=(BR.SHIP_BASE+BR.SHIP_KG*kg*q)*rate;
+      opts.push([d,r2(eur),r2(g*(1+BR.CARD_FEE)+post/q+0.005),q,'prime',pn]);}
     if(!opts.length){
       /* b147 (Jack, 22 Sep: "but if we had an OA sell price that is fine — remember it's A2A, but if we find something
          profitable then we still want it"). Amazon not selling it anywhere kills the A2A buy side, not the product. It has
@@ -228,8 +242,10 @@ function rule1Compute(files,brand,rate,prevRun){
     const outright=tied.reduce((m,o)=>o[2]<m[2]?o:m);
     const pick=euPick(opts,BR.EU_ORDER,BR.EU_LEVEL);
     const [d,local,landed,q]=pick;
+    const primePick=pick[4]==='prime';
+    if(primePick){const was=d==='UK'?ukp:(eu[a]&&eu[a][d]);note=`★ Prime price${was?` (Amazon ${d} £${(+was).toFixed(2)})`:''}${pick[5]||''} `;}
     if(outright[0]!==d)note+=`${d} and ${outright[0]} level at £${outright[2].toFixed(2)}-£${landed.toFixed(2)} - took ${d} `;
-    if(notADrop&&d==='UK')sells=[['Buy Box 90d - not a real drop',bb90]];
+    if(notADrop&&d==='UK'&&!primePick)sells=[['Buy Box 90d - not a real drop',bb90]];   /* b214: a Prime buy is the drop, whatever Amazon's own price says */
     /* b22 (Jack, 14 Sep 2026: Lenovo Idea Tab "never ever been higher than 509.99"): nothing sells
        above the highest Buy Box price Keepa has ever seen for the listing. Only bites when the
        export carries "Buy Box: Highest"; the Logitech/ASUS locks below never had the column. */
@@ -273,10 +289,11 @@ function rule1Compute(files,brand,rate,prevRun){
     st.kept++;if(src.endsWith('capped at the Buy Box high'))st.capped++;
     const sd=brNum(r['Buy Box: Standard Deviation 90 days'])||0;
     const flags=[
+      primePick?`★ PRIME DEAL — buy at the Prime exclusive price, Prime members only, while the event lasts`:'',
       yearOk?`reviews put it at ${Math.round(spm)}/mo, but Amazon confirmed ${yearOk.n}/mo on ${yearOk.since} - kept`:'',
       (cs&&cs.lapsed)?`Amazon's figure lapsed - last confirmed ${cs.n}/mo on ${cs.since}, counted as confirmed`:'',
       plugRisk?`PLUG CHECK - screen bought in ${d}, confirm UK lead`:'',
-      (notADrop&&d!=='UK')?`UK not in a drop (BB90 £${bb90.toFixed(2)} = Amazon £${ukp.toFixed(2)}) - fine, buying ${d}`:(notADrop?`NOT A DROP: Buy Box 90d £${bb90.toFixed(2)} = Amazon £${ukp.toFixed(2)}`:''),
+      (notADrop&&d!=='UK')?`UK not in a drop (BB90 £${bb90.toFixed(2)} = Amazon £${ukp.toFixed(2)}) - fine, buying ${d}`:(notADrop&&!primePick?`NOT A DROP: Buy Box 90d £${bb90.toFixed(2)} = Amazon £${ukp.toFixed(2)}`:''),
       bb90?`worst case (Buy Box 90d £${bb90.toFixed(2)}): ${Math.round(bb90Roi)}%`:'',
       wideGap?`AMAZON OWNS THE BUY BOX, FBA SITS ${Math.round((fba90/bb90-1)*100)}% ABOVE (£${bb90.toFixed(2)} vs £${fba90.toFixed(2)}) - sell price is a graph call`:'',
       (loSell&&sell/loSell>1.3)?`WIDE SELL RANGE ${Math.round(loSell)}-${Math.round(sell)} - needs eyes`:'',
@@ -301,7 +318,7 @@ function rule1Compute(files,brand,rate,prevRun){
       SPM:Math.round(spm),'SPM from':bought?'bought':(share!=null?'drops x '+Math.round(share*100)+'% of reviews':'drops'),'Buy price (local)':local,'Basket qty':q,'ROI at BuyBox90 %':bb90Roi,
       'Sell low £':loSell,'Sell high £':hiSell,'Sell FBA now £':fbaNow,'Sell FBA 30d £':fba30,'Sell FBA 90d £':fba90,'Sell BB 90d £':bb90,'UK Amazon now £':ukp,
       'Phase 2 (ROI>=10%)':roi>=10?'YES':'no','OA price-match':pmNote,promoOA:promoOA||false,
-      'All Amazon prices':opts.map(o=>`${o[0]} ${o[1]}`).join(' | '),'Dropped in':[...(found[a]||new Set(['UK']))].sort().join('/'),
+      'All Amazon prices':opts.map(o=>`${o[0]}${o[4]==='prime'?' ★Prime':''} ${o[1]}`).join(' | '),'Prime deal':primePick?'yes':'','Prime £':primePick?local:'','Dropped in':[...(found[a]||new Set(['UK']))].sort().join('/'),
       'Referral %':r1(ref*100),'FBA fee £':fba,kg:r2(kg),'Fees from':feeSrc,'LTD badge':r['Deals: Badge']||'',Category:catRoot,Flags:flags,'Last seen':'',
       'Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||''});
   }

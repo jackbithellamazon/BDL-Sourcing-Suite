@@ -2730,3 +2730,56 @@ html:not([data-theme="light"]) .authpill{color:#fff;background:var(--ink)}
 #viewRun .doneempty{margin:8px 0 0;border-style:dashed;color:#D6DCE8}
 #viewRun .doneempty b{color:#fff}
 #viewRun .doneempty[hidden]{display:none}
+
+/* b214 — Prime event mode (Jack only): the switch, the box grid, the ★ Prime chip */
+:root{--prime:#1ab0ea;--prime-txt:#9fe0f7;--prime-fill:rgba(26,176,234,.12)}
+html[data-theme="light"]{--prime:#0a86b8;--prime-txt:#075f84;--prime-fill:rgba(10,134,184,.10)}
+.primetog{display:inline-flex;align-items:center;gap:7px}
+.primetog .ptog{position:relative;width:26px;height:15px;border-radius:99px;background:var(--line2);flex:none;transition:background .2s}
+.primetog .ptog::after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff;transition:transform .2s}
+.primetog.on{border-color:var(--prime);color:var(--prime-txt);background:var(--prime-fill)}
+.primetog.on .ptog{background:var(--prime)}
+.primetog.on .ptog::after{transform:translateX(11px)}
+/* while it is on, the grid is the file panel: the flag buttons, file chips, Viewer bar and 1-2-3 step into it */
+#viewRun.primemode #keepaRow>a,#viewRun.primemode #keepaRow>.lab,#viewRun.primemode #keepaRow>.mkhint,#viewRun.primemode #keepaRow>.nolinkmsg,
+#viewRun.primemode #fileChips .fchip,#viewRun.primemode #asinBar,#viewRun.primemode #guide{display:none!important}
+#viewRun.primemode #keepaRow:empty{display:none}
+.primegrid{display:grid;gap:8px;margin:0 0 10px}
+.primegrid[hidden]{display:none}
+.primegrid .pghead{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.primegrid .pghead>b{font-size:14px}
+.primegrid .pghead>span{font-size:12px;color:var(--muted);min-width:0}
+.primegrid .pgcount{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--muted)}
+.primegrid .pgcount b{font-size:16px;color:var(--text)}
+.primegrid .pgrid{display:grid;grid-template-columns:minmax(96px,130px) repeat(2,minmax(0,1fr));gap:6px}
+.primegrid .pcolh{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:0 4px}
+.primegrid .pcolh.prime{color:var(--prime)}
+.primegrid .pmk{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;padding:0 4px}
+.primegrid .pmk .fl{font-size:17px}
+.primegrid .pmk small{display:block;font-weight:500;font-size:10.5px;color:var(--muted)}
+.primegrid .pcell{display:flex;align-items:center;gap:9px;min-height:48px;padding:7px 9px;border-radius:10px;border:1px solid var(--line2);background:var(--surface2);min-width:0;transition:border-color .2s,background .2s}
+.primegrid .pcell .box{flex:none;width:20px;height:20px;border-radius:6px;border:2px solid var(--line2);display:grid;place-items:center;font-size:12px;font-weight:900;color:transparent}
+.primegrid .pcell .txt{min-width:0;flex:1}
+.primegrid .pcell .t1{display:block;font-size:12.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.primegrid .pcell .t2{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.primegrid .go{flex:none;font:inherit;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:8px;border:1px solid var(--iris);color:var(--iris2);background:transparent;text-decoration:none;cursor:pointer;white-space:nowrap}
+.primegrid .go:hover{background:var(--bg-a)}
+.primegrid .pcell.prime .go{border-color:var(--prime);color:var(--prime-txt)}
+.primegrid .go.big{background:var(--iris);color:#fff}
+.primegrid .x{flex:none;border:0;background:transparent;color:var(--muted);font-size:14px;padding:2px 5px;border-radius:6px;cursor:pointer}
+.primegrid .x:hover{color:var(--text);background:var(--raise)}
+.primegrid .pcell.next{border-color:var(--iris);box-shadow:0 0 0 3px var(--bg-a)}
+.primegrid .pcell.prime.next{border-color:var(--prime);box-shadow:0 0 0 3px var(--prime-fill)}
+.primegrid .pcell.keepa{border-color:#4f9bff;background:rgba(79,155,255,.10)}
+.primegrid .pcell.keepa .box{border-color:#4f9bff}
+.primegrid .pcell.in{border-color:rgba(54,214,164,.55);background:var(--jade-dim)}
+.primegrid .pcell.in .box{background:var(--jade);border-color:var(--jade);color:var(--ink)}
+.primegrid .pcell.bad{border-color:var(--coral);background:var(--coral-dim)}
+.primegrid .pcell.bad .box{border-color:var(--coral);color:var(--coral)}
+.primegrid .pcell.off{opacity:.55}
+.primegrid .pcell.noprime{border-style:dashed;background:transparent}
+.primegrid .pcell.noprime .t1{color:var(--muted)}
+.primegrid .pviewer{display:grid;grid-template-columns:minmax(96px,130px) minmax(0,1fr);gap:6px}
+.primegrid .pnote{margin:0;font-size:11.5px;color:var(--muted)}
+.ch.prime{color:var(--prime-txt);border-color:var(--prime);background:var(--prime-fill)}
+@media (max-width:720px){.primegrid .pgrid{grid-template-columns:1fr}.primegrid .pcolh{display:none}.primegrid .pviewer{grid-template-columns:1fr}}

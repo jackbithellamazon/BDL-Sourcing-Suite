@@ -1,0 +1,112 @@
+/* BDL Sourcing — Prime event mode (b214).
+   Jack, 30 Sep 2026: "need to get ready for prime event … a toggle … normal filter then a prime one"; "uk prime and eu prime";
+   "we can only do prime in amazon germany and france not italy and spain"; "i want to turn it on and off"; "no i want to run it
+   on only — no VAs, just me". Rule 1 buying at the Prime price: "yes".
+
+   What it is:
+   · A switch only Jack sees (per browser, no end date). Off = the app is exactly as before, for everyone.
+   · On, every run screen gets a box grid: each country has its normal filter box and — UK, DE, FR only — a ★ Prime deals box.
+   · The Prime link is the source's own Finder link with the one drop line swapped: "Amazon price 9%+ under its 90-day average"
+     becomes "Prime exclusive price 9%+ under its 90-day average" (PRIME_EXCL_deltaPercent90, the key in Jack's Samsung link).
+     During the event Amazon's normal price and the Buy Box do not move, so the normal filter never sees the deal.
+   · A file knows its own box: the country from the Amazon links inside it; Prime when most rows say "Buy Box: Prime exclusive = yes"
+     (37 of 37 on Jack's 30 Sep Prime export, 2.6% across 127k rows of normal exports). Italy / Spain Prime files are ignored.
+   · The Prime file's rows merge into that country's normal file (one run, de-duplicated by ASIN) — an overlay that comes off
+     again the moment the Prime file is removed or the switch goes off.
+   · The buy price is Keepa's "New, Prime exclusive: Current" when it is lower, with the S&S or coupon the export shows on top
+     (Jack, 30 Sep: "most things won't have S&S or coupons but some might — you can see if they do by the export"). */
+const PRIME_KEY='bdl-sourcing-prime',PRIME_MK=['UK','DE','FR'],PRIME_COL='New, Prime exclusive: Current';
+const pfiles={UK:null,DE:null,FR:null};   /* the ★ Prime deals file per country, exactly as dropped */
+const pcell={};                          /* 'UK|n' / 'UK|p' / 'viewer' → {state:'keepa'} or {state:'bad',name,why} */
+function primeOn(){return typeof isJack==='function'&&isJack()&&!!lsGet(PRIME_KEY,false);}
+/* the Prime price of one row: Keepa's column when ticked, nothing otherwise */
+function primePrice(r){if(!r)return null;let v=r[PRIME_COL];
+  if(v==null){const k=Object.keys(r).find(h=>/prime exclusive/i.test(h)&&/current/i.test(h)&&!/^buy box/i.test(h));v=k?r[k]:null;}
+  const n=kNum(v);return n>0?n:null;}
+function primeHasCol(rows){const r=rows&&rows[0];return!!r&&(PRIME_COL in r||Object.keys(r).some(h=>/prime exclusive/i.test(h)&&/current/i.test(h)&&!/^buy box/i.test(h)));}
+function primeShare(rows){if(!rows||!rows.length)return 0;
+  return rows.filter(r=>String(r['Buy Box: Prime exclusive']||'').trim().toLowerCase()==='yes'||primePrice(r)).length/rows.length;}
+function primeIsFile(rows){return primeShare(rows)>=0.5;}
+/* the Prime version of a Finder link: every Amazon / Buy Box drop line comes out (they do not move during the event), one
+   Prime-exclusive drop goes in at the same bar (the Amazon 90-day one's, else 9%), and the sort follows it */
+const PRIME_DROP_RE=/^(AMAZON|BUY_BOX_SHIPPING)_deltaPercent(7|30|90)$/;
+function primeLink(link){if(!link)return'';const m=/^(.*#!finder\/)(.+)$/.exec(link);if(!m)return'';let j;
+  try{j=JSON.parse(decodeURIComponent(m[2]));}catch(e){return'';}
+  const f=j.f||(j.f={});const bar=f.AMAZON_deltaPercent90||f.BUY_BOX_SHIPPING_deltaPercent90||null;
+  Object.keys(f).forEach(k=>{if(PRIME_DROP_RE.test(k))delete f[k];});
+  f.PRIME_EXCL_deltaPercent90=bar?Object.assign({},bar):{filterType:'number',type:'greaterThanOrEqual',filter:9,filterTo:null};
+  if(Array.isArray(j.s))j.s=j.s.map(x=>x&&PRIME_DROP_RE.test(x.colId||'')?Object.assign({},x,{colId:'PRIME_EXCL_deltaPercent90'}):x);
+  return m[1]+encodeURIComponent(JSON.stringify(j));}
+/* which slot a country's Prime rows overlay: Rule 2 = the one UK file; a UK-only brand = its one UK file; otherwise that country's Finder */
+function primeSlot(k){if(!cur)return null;if(cur.rule!==1)return k==='UK'?'one':null;return(k==='UK'&&typeof ukOnly==='function'&&ukOnly())?'viewer':k;}
+function primeMerge(base,p){const at=new Map(),rows=[];
+  (base?base.rows:[]).forEach(r=>{const a=(r.ASIN||'').trim();at.set(a,rows.length);rows.push(r);});
+  p.rows.forEach(r=>{const a=(r.ASIN||'').trim();if(at.has(a)){const i=at.get(a);if(primePrice(r)&&!primePrice(rows[i]))rows[i]=r;}else{at.set(a,rows.length);rows.push(r);}});
+  return Object.assign({},base||p,{name:(base?base.name+' + ':'')+'★ '+p.name,rows,asins:[...at.keys()].filter(Boolean),
+    hasFees:(base?base.hasFees:true)&&p.hasFees,hasSince:(base?base.hasSince:true)&&p.hasSince,__prime:true,__base:base||null});}
+/* the overlay comes off (back to exactly what was dropped) and goes back on — around every drop, remove and switch */
+function primeStrip(){['one','viewer','UK','DE','FR'].forEach(s=>{const f=files[s];if(f&&f.__prime)files[s]=f.__base||null;});}
+function primeApply(){primeStrip();if(!primeOn()||!cur)return;
+  PRIME_MK.forEach(k=>{const p=pfiles[k];if(!p)return;const s=primeSlot(k);if(s)files[s]=primeMerge(files[s],p);});}
+function primeClear(){PRIME_MK.forEach(k=>pfiles[k]=null);Object.keys(pcell).forEach(k=>delete pcell[k]);}
+/* the normal file in a country's box, underneath any overlay */
+function primeNormal(k){const s=cur&&cur.rule!==1?(k==='UK'?'one':null):(k==='UK'&&ukOnly()?'viewer':k);const f=s?files[s]:null;return f&&f.__prime?f.__base:f;}
+/* ---- the box grid (the approved preview, 30 Sep) ---- */
+function primeMarkets(){if(!cur)return[];if(cur.rule!==1||ukOnly())return['UK'];
+  const ms=cur.markets.slice();MARKETS.forEach(m=>{if(!ms.includes(m)&&(files[m]||pfiles[m]))ms.push(m);});return MARKETS.filter(m=>ms.includes(m));}
+function primeLinkFor(m,kind){if(!cur)return'';const base=(cur.links&&cur.links[m])||finderLink(cur);return kind==='p'?primeLink(base):base;}
+function primeSlots(){const out=[];primeMarkets().forEach(m=>{out.push(m+'|n');if(PRIME_MK.includes(m))out.push(m+'|p');});return out;}
+function primeIn(key){const [m,k]=key.split('|');return k==='p'?!!pfiles[m]:!!primeNormal(m);}
+function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)return;
+  const on=!!cur&&primeOn()&&!(typeof isListed==='function'&&isListed(cur));vr.classList.toggle('primemode',on);paintPrimeSwitch();
+  if(!on){host.hidden=true;host.innerHTML='';return;}
+  host.hidden=false;const slots=primeSlots(),nx=slots.find(k=>!primeIn(k))||null,r1multi=cur.rule===1&&!ukOnly();
+  const viewerIn=!!files.viewer&&r1multi,finIn=slots.filter(primeIn).length,allF=!nx;
+  const esc=escapeHtml,site={UK:'Amazon.co.uk',DE:'Amazon.de',FR:'Amazon.fr',IT:'Amazon.it',ES:'Amazon.es'};
+  let h=`<div class="pghead"><b>Get a file from every box</b><span>Open in Keepa → rows per page biggest → Export → All active columns → CSV → drop it anywhere. Each file finds its own box.</span><span class="pgcount"><b>${finIn+(viewerIn?1:0)}</b> / ${slots.length+(r1multi?1:0)} files</span></div>`;
+  h+=`<div class="pgrid"><div></div><div class="pcolh">Normal filter</div><div class="pcolh prime">★ Prime deals</div>`;
+  primeMarkets().forEach(m=>{h+=`<div class="pmk"><span class="fl">${FLAG[m]}</span><div>${m}<small>${site[m]}</small></div></div>`;
+    ['n','p'].forEach(kind=>{const key=m+'|'+kind,pr=kind==='p';
+      if(pr&&!PRIME_MK.includes(m)){h+=`<div class="pcell noprime"><span class="txt"><span class="t1">No Prime box</span><span class="t2">Prime deals can't be bought on ${site[m]}</span></span></div>`;return;}
+      const f=pr?pfiles[m]:primeNormal(m),c=pcell[key]||{},link=primeLinkFor(m,kind);
+      const st=f?'in':c.state==='bad'?'bad':c.state==='keepa'?'keepa':'';
+      const go=link?`<a class="go" href="${esc(link)}" target="_blank" rel="noopener" data-pkey="${key}">${st==='keepa'||st==='bad'?'Open again':'Open in Keepa'} ↗</a>`:'';
+      let t1,t2,right='';
+      if(f){t1=esc(f.name);t2=`${f.rows.length.toLocaleString()} products${pr?` · ${f.rows.filter(primePrice).length.toLocaleString()} with a Prime price`:''}`;right=`<button type="button" class="x" data-prm="${key}" aria-label="Remove ${m} ${pr?'Prime':'normal'} file">✕</button>`;}
+      else if(st==='bad'){t1='Not taken — '+esc(c.why||'columns missing');t2=esc(c.name||'');right=go;}
+      else if(st==='keepa'){t1='In Keepa — waiting for the file';t2='Export → All active columns → CSV, then drop it here';right=go;}
+      else{t1=pr?`${m} ★ Prime deals`:`${m} filter`;t2=m==='UK'?'Opens on Amazon.co.uk':`In Keepa, pick ${m} at the top right`;right=go;}
+      h+=`<div class="pcell ${pr?'prime':''} ${st} ${key===nx&&!st?'next':''}"><span class="box">${f?'✓':st==='bad'?'!':''}</span><span class="txt"><span class="t1">${t1}</span><span class="t2">${t2}</span></span>${right}</div>`;});});
+  h+='</div>';
+  if(r1multi){const bar=$('#asinBar'),merged=(bar&&bar._all)?bar._all.length:0;
+    h+=`<div class="pviewer"><div class="pmk"><span class="fl">${FLAG.UK}</span><div>UK Viewer<small>the selling side</small></div></div>`+(files.viewer
+      ?`<div class="pcell in"><span class="box">✓</span><span class="txt"><span class="t1">${esc(files.viewer.name)}</span><span class="t2">${files.viewer.rows.length.toLocaleString()} products priced in the UK</span></span><button type="button" class="x" data-prm="viewer" aria-label="Remove the Viewer file">✕</button></div>`
+      :`<div class="pcell ${allF?'next':finIn?'':'off'} ${(pcell.viewer||{}).state==='keepa'?'keepa':''}"><span class="box"></span><span class="txt"><span class="t1">${merged?`${merged.toLocaleString()} ASINs merged from ${finIn} file${finIn===1?'':'s'}${allF?'':' so far'}`:'Opens once the country files are in'}</span><span class="t2">${merged?'One press opens the Viewer with them loaded · export all columns · drop it here':'Every ASIN from the boxes above, de-duplicated'}</span></span>${merged?`<button type="button" class="go big" data-pview="1">Open UK Viewer ↗</button>`:''}</div>`)+'</div>';}
+  h+=`<p class="pnote">★ Prime boxes are yours only · UK, DE and FR (Italy and Spain Prime files are ignored) · the normal file alone is enough to finish a run · buy price = the Prime price when it is lower, plus any S&amp;S or coupon the export shows.</p>`;
+  host.innerHTML=h;}
+function paintPrimeSwitch(){const b=$('#primeTog');if(!b)return;const j=typeof isJack==='function'&&isJack();b.hidden=!j;if(!j)return;
+  const on=!!lsGet(PRIME_KEY,false);b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');
+  b.innerHTML=`<i class="ptog"></i>★ Prime event${on?' on':''}`;
+  b.title=on?'Prime event mode is on — only you see the ★ Prime boxes. Press to switch it off.':'Switch on for the Prime event: every run gets a ★ Prime deals box for UK, DE and FR. Only you see it.';}
+function primeToggle(){if(!isJack())return;const on=!lsGet(PRIME_KEY,false);lsSet(PRIME_KEY,on);primeApply();
+  if(typeof paintSlots==='function'&&cur)paintSlots();paintPrime();if(cur&&typeof run==='function')run();
+  toast(on?'★ Prime event on — the Prime boxes are on every run (only you see them)':'Prime event off — normal filters only');}
+/* a file dropped while the switch is on: returns true when this module took it (placed in a Prime box, or refused / ignored with a note) */
+function primeTake(file,d,f,notes){if(!primeOn()||!cur||/productviewer/i.test(file.name)||!primeIsFile(d.rows))return false;
+  const mk=d.domain||'UK';
+  if(!PRIME_MK.includes(mk)){notes.push(`${file.name}: a ${mk} ★ Prime deals file — ignored. Prime deals can only be bought on Amazon.co.uk, .de and .fr.`);return true;}
+  if(cur.rule!==1&&mk!=='UK'){notes.push(`${file.name}: a ${mk} Prime file — Rule ${cur.rule} is UK only.`);return true;}
+  const key=mk+'|p';
+  if(!primeHasCol(d.rows)){pcell[key]={state:'bad',name:file.name,why:'no Prime price column'};
+    notes.push(`${file.name}: a ★ Prime deals file without the Prime price. In Keepa press Configure Columns and tick New, Prime exclusive → Current, export again, drop the new file.`);return 'cols';}
+  pfiles[mk]=f;delete pcell[key];return true;}
+function primeRefused(file,d){if(!primeOn()||!cur||!d)return;const vw=/productviewer/i.test(file.name);
+  const key=vw?'viewer':(d.domain||'UK')+'|'+(primeIsFile(d.rows)?'p':'n');pcell[key]={state:'bad',name:file.name,why:'Keepa columns not ticked'};}
+function primeAccepted(file,d){if(!cur||!d)return;const vw=/productviewer/i.test(file.name);delete pcell[vw?'viewer':(d.domain||'UK')+'|n'];}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('#primeTog');if(t){e.preventDefault();primeToggle();return;}
+  const a=e.target.closest('#primeGrid a[data-pkey]');if(a){const k=a.dataset.pkey;const [m,kind]=k.split('|');if(!(kind==='p'?pfiles[m]:primeNormal(m)))pcell[k]={state:'keepa'};setTimeout(paintPrime,0);return;}
+  const v=e.target.closest('#primeGrid [data-pview]');if(v){e.preventDefault();pcell.viewer={state:'keepa'};const b=$('#asinOpen');if(b)b.click();paintPrime();return;}
+  const x=e.target.closest('#primeGrid [data-prm]');if(x){e.preventDefault();const k=x.dataset.prm;primeStrip();
+    if(k==='viewer')files.viewer=null;else{const [m,kind]=k.split('|');if(kind==='p')pfiles[m]=null;else{const s=primeSlot(m);if(s)files[s]=null;}}
+    delete pcell[k];primeApply();paintSlots();run();toast('Removed');}});

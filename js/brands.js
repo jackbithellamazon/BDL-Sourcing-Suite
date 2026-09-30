@@ -406,14 +406,18 @@ async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return
      held, the question is asked, and the drop replays itself the moment a name is set. */
   if(!me()){pendingFiles=arr;needMe();toast('Pick your name first — the export is waiting',true);return;}
   const notes=[],accepted=[];let colsPop=null;   /* b203: after the drop, the popup lists every column this file has not got */
+  if(typeof primeStrip==='function')primeStrip();   /* b214: the ★ Prime rows come off while files land, and go back on below */
   for(const file of arr){let d;try{d=describeExport(parseCSV(await readFileText(file)));}catch(e){d=null;}
     if(!d){notes.push(file.name+': no data rows');continue;}
     const f={name:file.name,rows:d.rows,hasFees:d.hasFees,asins:d.asins,domain:d.domain,hasSince:d.hasSince,missing:d.missing||[],missingAll:d.missingAll||[]};
     /* b203: name the exact columns, in Keepa's own words, instead of "not a full-column export" */
-    if(!d.full&&!d.hasFees){const must=(d.missingAll||[]).filter(c=>c.m==='must');notes.push(file.name+': Keepa did not export the columns the rules need. In Keepa press Configure Columns (top left of the table) and tick '+(must.length?must.map(colPath).join(', '):'Product → Title and Categories & Rank → Sales Rank → Drops last 30 days')+((d.missingAll||[]).length>must.length?' — plus the rest of the list under "Keepa columns to tick" below ('+(d.missingAll.length-must.length)+' more)':'')+'. Then export again and drop the new file.');if(!colsPop)colsPop={name:file.name,missing:d.missingAll||[]};continue;}
+    if(!d.full&&!d.hasFees){const must=(d.missingAll||[]).filter(c=>c.m==='must');notes.push(file.name+': Keepa did not export the columns the rules need. In Keepa press Configure Columns (top left of the table) and tick '+(must.length?must.map(colPath).join(', '):'Product → Title and Categories & Rank → Sales Rank → Drops last 30 days')+((d.missingAll||[]).length>must.length?' — plus the rest of the list under "Keepa columns to tick" below ('+(d.missingAll.length-must.length)+' more)':'')+'. Then export again and drop the new file.');if(!colsPop)colsPop={name:file.name,missing:d.missingAll||[]};if(typeof primeRefused==='function')primeRefused(file,d);continue;}
     /* b209 (Jack, 29 Sep: "everything has to be ticked before a KPF or KPV export goes into the app"): every one of the 49 columns, or the file is refused */
-    if(!f.fromKeepa&&(d.missingAll||[]).length){const n=d.missingAll.length;notes.push(`${file.name}: not taken — ${n} Keepa column${n===1?' is':'s are'} not ticked (${d.missingAll.slice(0,3).map(colPath).join(' · ')}${n>3?' …':''}). Tick ${n===1?'it':'them'} in Keepa (Configure Columns), export again, drop the new file.`);if(!colsPop)colsPop={name:file.name,missing:d.missingAll};continue;}
-    accepted.push(f);
+    if(!f.fromKeepa&&(d.missingAll||[]).length){const n=d.missingAll.length;notes.push(`${file.name}: not taken — ${n} Keepa column${n===1?' is':'s are'} not ticked (${d.missingAll.slice(0,3).map(colPath).join(' · ')}${n>3?' …':''}). Tick ${n===1?'it':'them'} in Keepa (Configure Columns), export again, drop the new file.`);if(!colsPop)colsPop={name:file.name,missing:d.missingAll};if(typeof primeRefused==='function')primeRefused(file,d);continue;}
+    /* b214: Jack's Prime switch — a ★ Prime deals file goes in its own box (or is refused / ignored with a note), never over the normal file */
+    {const pt=typeof primeTake==='function'?primeTake(file,d,f,notes):false;
+      if(pt){if(pt==='cols'&&!colsPop)colsPop={name:file.name,missing:[{g:'New, Prime exclusive',s:'',n:'Current',h:'New, Prime exclusive: Current',m:'prime'}]};else if(pt===true&&pfiles[d.domain||'UK']===f)accepted.push(f);continue;}}
+    accepted.push(f);if(typeof primeAccepted==='function')primeAccepted(file,d);
     if(cur.rule!==1){if(d.domain&&d.domain!=='UK')notes.push(file.name+': this is a '+d.domain+' export — Rule '+cur.rule+' is UK only');
       /* b37 (Jack, 15 Sep: two variants of Suz's filter, 17 leads shared, 23 not) — a second UK export merges into the first, de-duped by ASIN.
          Clear files starts again. */
@@ -431,6 +435,7 @@ async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return
     else if(!v)files.viewer=f;
     else if(f.hasFees&&(!v.hasFees||f.rows.length>=v.rows.length)){files.UK=v;files.viewer=f;}
     else files.UK=f;}
+  if(typeof primeApply==='function')primeApply();
   touched.clear();paintSlots();warn(notes);if(typeof dropNudgeOff==='function')dropNudgeOff();
   if(typeof actLog==='function')actLog('drop',`${arr.length} file${arr.length===1?'':'s'} dropped · ${accepted.length} accepted${arr.length-accepted.length?' · '+(arr.length-accepted.length)+' refused':''}${colsPop&&colsPop.missing.length?' · '+colsPop.missing.length+' Keepa columns missing':''}`);
   if(!colsPop){const g=accepted.find(f=>f.missingAll&&f.missingAll.length);if(g)colsPop={name:g.name,missing:g.missingAll};}
@@ -756,7 +761,8 @@ function optionFromKeepa(p){const h=p.monthlySoldHistory||[];let last=null;for(l
 async function fillUnknownShares(f){if(!f||!f.rows||typeof shareUnknown!=='function'||!cur)return{asked:0,confirmed:0};
   stampShares(f.rows);const by={};f.rows.forEach(r=>by[(r.ASIN||'').trim()]=r);const cache=lsGet(UNK_KEY,{}),now=Date.now();
   /* which leads are standing on the family's drops with their own share unknown */
-  const R=cur.rule===1?rule1Compute(files,cur.name,rate(),null):rule2Compute(f.rows,factsAll(),{vatFor:vatFor,rule:cur.rule});   /* b123: the normal run — unknown-share options are leads on the family's drops */
+  const pOn=typeof primeOn==='function'&&primeOn();
+  const R=cur.rule===1?rule1Compute(Object.assign({},files,{prime:pOn}),cur.name,rate(),null):rule2Compute(f.rows,factsAll(),{vatFor:vatFor,rule:cur.rule,prime:pOn});   /* b123: the normal run — unknown-share options are leads on the family's drops */
   const need=[];R.out.forEach(o=>{const r=by[o.ASIN];if(r&&shareUnknown(r)&&!need.includes(o.ASIN))need.push(o.ASIN);});
   let asked=0,confirmed=0;const ask=[];
   need.forEach(a=>{const c=cache[a];if(c&&now-c.at<UNK_TTL_H*3600e3){optionStamp(by[a],c);if(c.n>=50||(c.last&&c.last.n>0))confirmed++;}else ask.push(a);});
@@ -766,7 +772,7 @@ async function fillUnknownShares(f){if(!f||!f.rows||typeof shareUnknown!=='funct
   lsSet(UNK_KEY,cache);if(asked&&typeof paintTokens==='function')paintTokens();return{asked,confirmed,cached:need.length-ask.length};}
 function warn(lines){const w=$('#warnRun');if(!lines||!lines.length){w.classList.remove('show');w.innerHTML='';return;}
   w.innerHTML=lines.map(l=>'<div>⚠ '+escapeHtml(l)+'</div>').join('');w.classList.add('show');}
-function removeFile(k){files[k]=null;paintSlots();run();}
+function removeFile(k){if(typeof primeStrip==='function')primeStrip();files[k]=null;if(typeof primeApply==='function')primeApply();paintSlots();run();}
 /* b101 (Jack, 18 Sep, the Keepa export box: "is this worth checking?"). Keepa exports ONLY the page on
    screen. Across his ~150 exports that had cut two short without anyone knowing — one a SanDisk/Seagate
    brand run that stopped at exactly 50 rows when SanDisk alone has hundreds of UK listings. The step-by-step
@@ -808,7 +814,8 @@ function paintSlots(){if(!cur)return;const r1=cur.rule===1;
     $('#asinN').textContent=merged.size.toLocaleString();bar._all=[...merged];}
   else if(bar)bar._all=[];
   paintEu();
-  const since=files.viewer?files.viewer.hasSince:(files.one?files.one.hasSince:true);$('#sinceNote').hidden=since;}
+  const since=files.viewer?files.viewer.hasSince:(files.one?files.one.hasSince:true);$('#sinceNote').hidden=since;
+  if(typeof paintPrime==='function')paintPrime();}
 /* b76 (Jack, 17 Sep): a list of EU alert ASINs has no Finder exports behind it. Drop the UK Viewer
    and buy the EU buy-side from Keepa instead — 1 token per ASIN per market, measured on his account.
    The cost is shown BEFORE anything is spent, and a cached market costs nothing to run again. */
@@ -860,7 +867,7 @@ function runStored(){if(!cur)return false;const {rows,last}=storedRows(cur.key,c
       :{rows:rst.rows||n,priced:rst.priced==null?'—':rst.priced,demand:rst.demand==null?'—':rst.demand,kept:rows.length}};
   R.gone=applyQueue(R.out,R.rule,prevMap,verdAll()).filter(([a])=>!blAll()[a]);R.prevMap=prevMap;const pst=Object.values(prevMap).map(p=>p.stamp).filter(Boolean).sort();R.prevStamp=pst.length?pst[pst.length-1]:null;result=R;
   renderResults();renderGuide();return true;}
-function clearRun(){SLOTS.forEach(k=>files[k]=null);files.one=null;result=null;lastSig='';$('#fileIn').value='';view.sel.clear();view.page=1;touched.clear();blPick=null;
+function clearRun(){SLOTS.forEach(k=>files[k]=null);files.one=null;if(typeof primeClear==='function')primeClear();result=null;lastSig='';$('#fileIn').value='';view.sel.clear();view.page=1;touched.clear();blPick=null;
   warn([]);$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;if(cur){paintSlots();renderGuide();}}
 
 /* ============ FX (Rule 1 EU buys) — lives in Settings, used here ============ */
@@ -907,13 +914,13 @@ function run(){if(!cur)return;stampLearned();
     $('#sumEmpty').classList.remove('err');}
   const prevMap=baselineOf(leadMap(cur.key));
   let R;
-  if(cur.rule===1){if(files.viewer)stampShares(files.viewer.rows);R=rule1Compute(files,cur.name,rate(),null);R.rule=1;R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;o.Score=r2score(o['Profit £'],o['ROI %'],o.SPM,(o['Sell £ used']||0)<R2.LOW_TICKET);});}
+  if(cur.rule===1){if(files.viewer)stampShares(files.viewer.rows);R=rule1Compute(Object.assign({},files,{prime:typeof primeOn==='function'&&primeOn()}),cur.name,rate(),null);R.rule=1;R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;o.Score=r2score(o['Profit £'],o['ROI %'],o.SPM,(o['Sell £ used']||0)<R2.LOW_TICKET);});}
   else{/* a tea & coffee filter: every row is 0% unless it reads like an appliance (machine, grinder…) or a VA has set it */
     const vf=cur.vat0?((row,fact)=>{if(fact&&fact.vat!=null&&fact.vat!=='')return vatFor(row,fact);
       const text=((row.Title||'')+' | '+(row['Categories: Sub']||'')).toLowerCase();if(r4isAppliance(text))return{rate:R4.STANDARD,why:'20% — reads like an appliance, not the drink',src:'rule'};
       return{rate:0,why:'0% VAT — everything on this filter is tea / coffee',src:'source'};}):vatFor;
     stampShares(files.one.rows);if(typeof snsLearn==='function')snsLearn(files.one.rows);   /* b206: learn S&S before the maths reads it */
-    R=rule2Compute(files.one.rows,factsAll(),{vatFor:vf,rule:cur.rule});R.rule=cur.rule;
+    R=rule2Compute(files.one.rows,factsAll(),{vatFor:vf,rule:cur.rule,prime:typeof primeOn==='function'&&primeOn()});R.rule=cur.rule;
     const lowS=R.all.filter(o=>o.lowScore),noM=R.all.filter(o=>!o.kept&&!o.lowScore);
     R.dropped=noM.map(o=>[o.ASIN,o.Product,`needs ${o['Needs % off']}% off Amazon to reach ${R2.TARGET_ROI}% ROI (brand allows ${o['Brand discount %']||R2.DEFAULT_ALLOW}%)`])
       .concat(lowS.map(o=>[o.ASIN,o.Product,o.lowRoi?`ROI ${o['ROI %']}% — under ${R2.MIN_ROI_LOW}% even with a code`:`scored ${o.Score}${o['Potential score']>o.Score?' ('+o['Potential score']+' with a code)':''} — under ${R2.MIN_SCORE}, not worth a look`]));
@@ -1014,9 +1021,12 @@ function run(){if(!cur)return;stampLearned();
     o['Sell £ used']=ys;o['Sell used']='your price'+(f.who?' ('+f.who+')':'');o['Profit £']=pf;o['ROI %']=roi;
     o.Score=r2score(pf,roi,o.SPM,ys<R2.LOW_TICKET);o.yourSell=true;});}
   /* the central blacklists: an ASIN, or an approved brand, never shows — on any rule, any run, whatever Keepa filter found it */
-  const B=blAll(),bl=[];R.out=R.out.filter(o=>{const b=B[o.ASIN];const bb=bbStatusFor(o.Brand||(cur.type==='brand'?cur.name:''));
+  /* b214: Rule 1 leads carry the SOURCE's name as their brand, so on a mixed-brand Rule 1 filter (EU drops) a blacklisted brand's product
+     sailed through. The product's own Keepa brand is checked as well (Jack, 30 Sep: blacklist Amazon devices and Blink "in the app"). */
+  const rawBrand={};[files.viewer,files.one,files.UK].forEach(f=>{if(f&&f.rows)f.rows.forEach(r=>{const a=(r.ASIN||'').trim();if(a&&r.Brand&&!rawBrand[a])rawBrand[a]=r.Brand;});});
+  const B=blAll(),bl=[];R.out=R.out.filter(o=>{const b=B[o.ASIN];const own=rawBrand[o.ASIN];const bb=(own&&bbStatusFor(own)==='approved')?'approved':bbStatusFor(o.Brand||(cur.type==='brand'?cur.name:''));
     if(b){bl.push([o.ASIN,o.Title||o.Product||'','BLACKLISTED · '+b.reason+(b.note?' — '+b.note:'')+(b.who?' · '+b.who:'')]);return false;}
-    if(bb==='approved'){bl.push([o.ASIN,o.Title||o.Product||'','BRAND BLACKLISTED · '+(o.Brand||cur.name)]);return false;}
+    if(bb==='approved'){bl.push([o.ASIN,o.Title||o.Product||'','BRAND BLACKLISTED · '+(own&&bbStatusFor(own)==='approved'?own:(o.Brand||cur.name))]);return false;}
     const cw=catBlockReason((o.Category||'')+' | '+(o.Title||o.Product||''));if(cw){bl.push([o.ASIN,o.Title||o.Product||'','NEVER-SELL CATEGORY · '+cw]);return false;}return true;});
   R.blacklisted=bl;R.dropped=bl.concat(R.dropped||[]);if(bl.length)R.reasons['Blacklisted']=bl.length;
   /* this source's own floors — the customisable Filter & Sort, saved on the source so it is the same for everyone */
@@ -1255,7 +1265,7 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
   const roiCls=v=>v>=20?'pos':v>=10?'pos soft':v>=0?'warm':'neg';
   const mk=m=>`<i class="mk">${FLAG[m]||''} ${m}</i>`;
   /* Rule 1's flag strings are long; show a short label, keep the full text on hover */
-  const SHORT=[[/^worst case \(Buy Box 90d (£[\d.,]+)/i,(m)=>['Worst case '+m[1],'info']],[/sell price volatile/i,()=>['Volatile sell','warn']],[/AMAZON OWNS THE BUY BOX/i,()=>['Amazon owns BB','warn']],[/UK buy: check OA/i,()=>['Check OA','good']],[/A2A->OA/i,()=>['OA only','info']],[/NOT A DROP/i,()=>['Not a drop','warn']],[/not in a drop/i,()=>['UK not in a drop','warn']],[/EU PLUG|PLUG/i,()=>['EU plug?','bad']],[/WIDE/i,()=>['Wide gap','warn']],[/no FBA/i,()=>['No FBA history','warn']],[/LIMITED|LTD/i,()=>['Ltd time deal','warn']],[/drops only/i,()=>['Demand from drops','warn']],[/tanked/i,()=>['FBA price falling','warn']],[/ZERO-RATED/i,()=>['0% VAT?','good']],[/price-match/i,()=>['Price-match','good']]];
+  const SHORT=[[/PRIME DEAL/,()=>['★ Prime deal','prime']],[/^worst case \(Buy Box 90d (£[\d.,]+)/i,(m)=>['Worst case '+m[1],'info']],[/sell price volatile/i,()=>['Volatile sell','warn']],[/AMAZON OWNS THE BUY BOX/i,()=>['Amazon owns BB','warn']],[/UK buy: check OA/i,()=>['Check OA','good']],[/A2A->OA/i,()=>['OA only','info']],[/NOT A DROP/i,()=>['Not a drop','warn']],[/not in a drop/i,()=>['UK not in a drop','warn']],[/EU PLUG|PLUG/i,()=>['EU plug?','bad']],[/WIDE/i,()=>['Wide gap','warn']],[/no FBA/i,()=>['No FBA history','warn']],[/LIMITED|LTD/i,()=>['Ltd time deal','warn']],[/drops only/i,()=>['Demand from drops','warn']],[/tanked/i,()=>['FBA price falling','warn']],[/ZERO-RATED/i,()=>['0% VAT?','good']],[/price-match/i,()=>['Price-match','good']]];
   const shortFlag=f=>{for(const [re,fn] of SHORT){const m=re.exec(f);if(m)return fn(m);}return[f.length>26?f.slice(0,24)+'…':f,''];};
   const flagChip=f=>{const [l,c]=shortFlag(f);return`<i class="ch ${c}" title="${escapeHtml(f)}">${escapeHtml(l)}</i>`;};
   /* the OA check: which retailers to look at for THIS product, and the tick boxes for what the VA has confirmed */
@@ -1310,7 +1320,7 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
   setupKeys();paintJudged();paintEuLeads();if(view.active){const tr=document.querySelector(`.ltbl tbody tr[data-asin="${view.active}"]`);if(tr)tr.classList.add('active');}}
 /* b23 density pass (Jack, 14 Sep: "too busy") — the Sell cell already shows the worst case and the retailer buttons say
    "check OA", so those two flags are noise; the rest are ranked and only two show, the others sit behind "+n" on hover */
-const FLAG_RANK=[/EU PLUG|PLUG CHECK/i,/tanked/i,/NOT A DROP/i,/no FBA seller/i,/LIMITED TIME/i,/AMAZON OWNS/i,/WIDE SELL/i,/volatile/i,/drops only/i,/not in a drop/i,/A2A->OA/i,/ZERO-RATED/i];
+const FLAG_RANK=[/PRIME DEAL/,/EU PLUG|PLUG CHECK/i,/tanked/i,/NOT A DROP/i,/no FBA seller/i,/LIMITED TIME/i,/AMAZON OWNS/i,/WIDE SELL/i,/volatile/i,/drops only/i,/not in a drop/i,/A2A->OA/i,/ZERO-RATED/i];
 function flagPick(fl,max){max=max==null?2:max;const keep=(fl||[]).filter(f=>!/^worst case|^UK buy: check OA/i.test(f));
   const rank=f=>{const i=FLAG_RANK.findIndex(re=>re.test(f));return i<0?FLAG_RANK.length:i;};
   const sorted=keep.slice().sort((a,b)=>rank(a)-rank(b));return{show:sorted.slice(0,max),rest:sorted.slice(max)};}

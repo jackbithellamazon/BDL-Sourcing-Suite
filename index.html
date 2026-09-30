@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b213">
-<link rel="stylesheet" href="css/brands.css?v=b213">
+<link rel="stylesheet" href="css/base.css?v=b214">
+<link rel="stylesheet" href="css/brands.css?v=b214">
 </head>
 <body>
 <div class="wrap">
@@ -356,6 +356,7 @@
           <div><h2><span id="runName">—</span><span id="runMk"></span></h2><div class="meta" id="runMeta"></div></div>
           <div class="right">
             <button class="btn primary sm" id="runNext" type="button" hidden title="Open the next filter that is due today">Next due →</button>
+            <button class="btn ghost sm primetog" id="primeTog" type="button" role="switch" aria-checked="false" hidden>★ Prime event</button>
             <button class="btn ghost sm" id="runCopyLink" type="button" title="Copies a link that opens this run screen — paste it into the AVM HQ task">Copy link for AVM HQ</button>
             <button class="btn ghost sm" id="runAllTime" type="button" title="Every lead this source has ever kept, in the Lead history">All-time leads</button>
             <button class="btn ghost sm" id="runHist" type="button">History</button>
@@ -370,6 +371,7 @@
           <div class="stepcard">
             <div class="stephead"><span class="n">1</span><div><p class="sh" id="step1Title">Drop the exports</p><p class="ss" id="step1Sub"></p></div></div>
             <div class="keeparow" id="keepaRow"></div>
+            <div class="primegrid" id="primeGrid" hidden></div>
             <div class="dropz" id="dropAny" tabindex="0" role="button" aria-label="Upload Keepa exports">
               <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg></span>
               <span class="big">Drag &amp; drop the Keepa exports here</span>
@@ -531,26 +533,27 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b213"></script>
-<script src="js/parse.js?v=b213"></script>
-<script src="js/rule1.js?v=b213"></script>
-<script src="js/rule2.js?v=b213"></script>
-<script src="js/export.js?v=b213"></script>
-<script src="js/rule4.js?v=b213"></script>
-<script src="js/queue.js?v=b213"></script>
-<script src="js/sources.js?v=b213"></script>
-<script src="js/cloud.js?v=b213"></script>
-<script src="js/auth.js?v=b213"></script>
-<script src="js/leadtools.js?v=b213"></script>
-<script src="js/keepaconsole.js?v=b213"></script>
-<script src="js/euprice.js?v=b213"></script>
-<script src="js/apirun.js?v=b213"></script>
-<script src="js/brands.js?v=b213"></script>
-<script src="js/history.js?v=b213"></script>
-<script src="js/audit.js?v=b213"></script>
-<script src="js/kcjudge.js?v=b213"></script>
-<script src="js/activity.js?v=b213"></script>
-<script src="js/guest.js?v=b213"></script>
-<script src="js/boot.js?v=b213"></script>
+<script src="js/core.js?v=b214"></script>
+<script src="js/parse.js?v=b214"></script>
+<script src="js/rule1.js?v=b214"></script>
+<script src="js/rule2.js?v=b214"></script>
+<script src="js/export.js?v=b214"></script>
+<script src="js/rule4.js?v=b214"></script>
+<script src="js/queue.js?v=b214"></script>
+<script src="js/sources.js?v=b214"></script>
+<script src="js/prime.js?v=b214"></script>
+<script src="js/cloud.js?v=b214"></script>
+<script src="js/auth.js?v=b214"></script>
+<script src="js/leadtools.js?v=b214"></script>
+<script src="js/keepaconsole.js?v=b214"></script>
+<script src="js/euprice.js?v=b214"></script>
+<script src="js/apirun.js?v=b214"></script>
+<script src="js/brands.js?v=b214"></script>
+<script src="js/history.js?v=b214"></script>
+<script src="js/audit.js?v=b214"></script>
+<script src="js/kcjudge.js?v=b214"></script>
+<script src="js/activity.js?v=b214"></script>
+<script src="js/guest.js?v=b214"></script>
+<script src="js/boot.js?v=b214"></script>
 </body>
 </html>

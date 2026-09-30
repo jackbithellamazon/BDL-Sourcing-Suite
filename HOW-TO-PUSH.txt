@@ -1,31 +1,43 @@
-BDL SOURCING — b213 · 30 Sep 2026   (includes b204 → b212)
+BDL SOURCING — b214 · 30 Sep 2026   (Prime event mode)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b213.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b214.
+   NEW FILE this time: js/prime.js — it goes up with the js folder, nothing extra to do.
 
-THEN — EU DROPS, STEP BY STEP
-   Brands / Filters → "EU drops · all markets (testing)" (yours) → Run.
-   1. Under "Open in Keepa" click 🇩🇪 DE. In Keepa click the flag (top right) → Amazon.de. Wait for the table.
-      Rows per page → maximum (bottom of the table). Export → All active columns → CSV.     (about 3,601 rows)
-   2. 🇫🇷 FR → switch Keepa to Amazon.fr → same.   (about 2,968)
-   3. 🇮🇹 IT → Amazon.it → same.                    (about 3,548)
-   4. 🇪🇸 ES → Amazon.es → same.                    (about 2,292)
-      Each button is THAT country's own filter (its own categories) — always use the matching button.
-   5. Drop all four files on the box.
-   6. Press "Open UK Product Viewer". With thousands of ASINs it copies them and opens an empty Viewer:
-      click in the Viewer's ASIN box, Cmd+V, load. Rows per page → maximum. Export → All active columns.
-      (If Keepa won't take them all at once, do it in two halves — send me the files and I'll split them.)
-   7. Drop the Viewer file. Rule 1 keeps what pays — and you see how much of it was noise.
+ONCE, IN KEEPA (before the event)
+   Configure Columns (top left of the Keepa table) → tick  New, Prime exclusive → Current.
+   Keepa remembers it. Without it a Prime file is refused and the ★ box goes red and says so.
 
-ALSO IN THIS BUILD
-   · b184 Keepa console → "3 · Check profit" (only you): paste ASINs, Keepa prices them, Rule 1 keeps what pays.
+SWITCH IT ON  (only you see this — Suz and Mera's screens don't change)
+   Open any run → "★ Prime event" button next to Copy link for AVM HQ → it goes blue: "★ Prime event on".
+   No end date. Press it again to switch it off; the run goes straight back to the normal files.
 
-   · b186: glassware, window film, pets and Clairefontaine are out in every country.
-   · b187: Exacompta and generic brands (Generic / Générique / Sans marque / Unbranded …) out in every country.
-   · b188: tablecloths and VEVOR out.
-   · b189: Funko, walther design, HELLA, KS Tools out; Amazon must hold the Buy Box (you only buy EU A2A from Amazon).
-   · b190: Xiaomi out; "Buy Box seller: Amazon" comes pre-ticked in every link.
-   · b191: book covers, food & drink, OtterBox, febi bilstein, BGS, ARTDECO, APS out.
-   · b192: 3M, Adam Hall, AZ FLAG, DUPLI-COLOR out.
-   · b193: Elizabeth Arden, Fairy, Joma, Petti Artigiani Italiani, Digitus out.
-   · b194: bed linen (duvet sets, sheets, pillows) out in every country.
+RUNNING A BRAND / FILTER WITH IT ON
+   The flag buttons become a box grid:
+      UK   [ UK filter ]   [ UK ★ Prime deals ]
+      DE   [ DE filter ]   [ DE ★ Prime deals ]
+      FR   [ FR filter ]   [ FR ★ Prime deals ]
+      IT   [ IT filter ]   No Prime box
+      ES   [ ES filter ]   No Prime box
+      UK Viewer  [ Open UK Viewer ] — every ASIN from the boxes above, Prime ones included
+   Each ★ box opens the same filter with one line swapped:
+      "Amazon 9%+ under its 90-day average"  →  "Prime exclusive price 9%+ under its 90-day average"
+      (checked against the Samsung one you made — same filter, same 9%).
+   Drop the files anywhere, any order. Each one finds its own box (country from the file, Prime from
+   "Buy Box: Prime exclusive"). Italy / Spain Prime files are ignored with a note.
+   The normal file alone still finishes a run — run normal early, add Prime later.
+
+THE MATHS
+   Buy = the Prime price when it's lower (Rule 1 and Rule 2), with any S&S or coupon the export shows on top.
+   Sell = unchanged (the VAs judge the graph).
+   Leads show "★ Prime deal" and the buy says e.g. "£229.99 ★ Prime price (Amazon UK £319.49)".
+
+BLACKLIST
+   + Amazon (Echo, Fire, Kindle, Ember — also Amazon Basics / Essentials), Blink and eero, with Ring.
+   Fixed: on mixed-brand Rule 1 filters (EU drops) a blacklisted brand could slip through, because the
+   app only checked the filter's name. It now checks each product's own brand too.
+
+ACER
+   Now every 3 days (was every 2).
+
+362 checks, all green.

@@ -221,6 +221,14 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     /* b206: the export says no S&S, but this ASIN had it when last seen and Amazon is selling it now — S&S follows Amazon */
     else{const seen=typeof snsRemembered==='function'&&amz>0?snsRemembered(fact):null;if(seen){eff*=(1-R2.SS_UK);ap.push(`S&S ${R2.SS_UK*100}% (seen ${seen.slice(8,10)}/${seen.slice(5,7)})`);}}
     eff=Math.round(eff*100)/100;
+    /* b214: Prime event (only when the page passes opts.prime — Jack's switch). Keepa's "New, Prime exclusive: Current" is the buy when it
+       beats Amazon's price after every discount. The coupon and S&S the export shows go on top (Jack, 30 Sep: "some might — you can see
+       if they do by the export"); a Business tier does not — that is another account. */
+    let prime=null;if(opts.prime&&typeof primePrice==='function'){const pp=primePrice(r);if(pp){let pe=pp;const pa=['★ Prime price'];
+      if(cp){pe*=(1-cp/100);pa.push(`coupon ${Math.round(cp)}%`);}if(ca){pe-=ca;pa.push(`coupon £${ca.toFixed(2)}`);}
+      const ssSeen=!r2hasSS(r)&&typeof snsRemembered==='function'&&amz>0?snsRemembered(fact):null;
+      if(r2hasSS(r)||ssSeen){pe*=(1-R2.SS_UK);pa.push(ssSeen?`S&S ${R2.SS_UK*100}% (seen ${ssSeen.slice(8,10)}/${ssSeen.slice(5,7)})`:`S&S ${R2.SS_UK*100}%`);}
+      pe=Math.round(pe*100)/100;if(pe<eff){prime=pp;eff=pe;ap.length=0;ap.push(...pa);}}}
     const [p,roi]=r2prof(sell,eff,ref,fba,vat),br=r2brate(brand,amz),nd=r2needed(sell,eff,ref,fba,null,vat);const bEntry=(typeof discForBrand==='function')?discForBrand(brand):null;
     const kept=nd<=Math.max(R2.DEFAULT_ALLOW,br||R2.DEFAULT_ALLOW);
     const low=sell<R2.LOW_TICKET;const score=r2score(p,roi,Math.round(spm),low);
@@ -253,6 +261,7 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     const loneFba=!!(f90&&bb90&&f90>bb90*R2.LONE_FBA_GAP&&fbaN<=R2.LONE_FBA_OFFERS);
     const ltd=!!(r['Deals: Badge']||'').trim();
     const chips=[];
+    if(prime)chips.push(['★ PRIME DEAL','prime']);
     if(spm>=300)chips.push(['STRONG SALES','good']);else if(spm>=100)chips.push(['GOOD SALES','good']);
     if(p>=40)chips.push(['HIGH PROFIT','good']);
     if(roi>=20)chips.push(['HIGH ROI','good']);else if(roi>0&&roi<8)chips.push(['THIN MARGIN','warn']);
@@ -288,7 +297,7 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     if(yearOk)chips.push([`REVIEWS SAY ${Math.round(spm)}/MO · CONFIRMED ${yearOk.n} ON ${yearOk.since}`,'info']);
     if(vat===0)chips.push([vt.src==='va'?'0% VAT · SET BY VA':vt.src==='source'?'0% VAT · FILTER':'0% VAT · CHECK',vt.src==='warn'?'warn':vt.src==='va'||vt.src==='source'?'good':'warn']);else if(vt.src==='va')chips.push(['20% VAT · SET BY VA','info']);else if(vt.src==='rule')chips.push(['20% VAT · APPLIANCE','info']);
     const o={ASIN:a,Product:r.Title||'',Brand:brand,Score:score,'Potential score':best.score,'Potential via':best.who?`${best.who} ${best.pct}%`:'',
-      'Buy at £':amz,'After discount £':eff,'Discount applied':ap.join('; '),'Sell for £':sell,'Sell from':fact.sell?'VA':S.why,'Sell confidence':fact.sell?'set':S.conf,
+      'Buy at £':amz,'After discount £':eff,'Prime £':prime||'','Prime deal':prime?'yes':'','Discount applied':ap.join('; '),'Sell for £':sell,'Sell from':fact.sell?'VA':S.why,'Sell confidence':fact.sell?'set':S.conf,
       'Buy Box 90d £':bb90,'Buy Box 180d £':kNum(r['Buy Box: 180 days avg.']),'FBA 90d £':f90,'FBM 90d £':fbm90,'Buy Box high £':kNum(r['Buy Box: Highest']),'Buy Box 30d £':kNum(r['Buy Box: 30 days avg.']),'FBA 30d £':kNum(r['New, 3rd Party FBA: 30 days avg.']),'Offers':kNum(r['New Offer Count: Current']),
       'Profit £':p,'ROI %':roi,'Sells /mo':Math.round(spm),'Demand from':bought?'confirmed':(share!=null?'drops x '+Math.round(share*100)+'% of reviews':'drops'),
       '£ per month':Math.round(p*spm),'Needs % off':Math.round(nd*10)/10,'Brand discount %':br==null?'':br,
