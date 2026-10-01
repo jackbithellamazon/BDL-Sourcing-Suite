@@ -4,13 +4,13 @@
    (act:<Name>:<day>), the same way the Keepa console keeps its day rows. Jack's own clicks are not recorded.
    A press of an "Open in Keepa" / Viewer button is also stamped on the source itself (s.keepa, last 30), so the Brands list can show
    the row blue — "In Keepa 10:58 · Mera · 🇬🇧" — until an export comes back. Jack reads it all on Brands / Filters → VA activity. */
-const ACT_KEY='bdl-sourcing-activity',ACT_DAYS=3,ACT_CAP=1200;   /* the cloud keeps every day; this browser only the last 3 */
+const ACT_KEY='bdl-sourcing-activity',ACT_DAYS=3,ACT_CAP=3000;   /* b219: 1,200 → 3,000 a day — it lives in the big store (IndexedDB), not the shared 5 MB pot */   /* the cloud keeps every day; this browser only the last 3 */
 let actDirty=new Set(),actT=null;
 function actAll(){return lsGet(ACT_KEY,{})||{};}
 function actOn(){const m=typeof me==='function'?me():'';return!!m&&m!=='Jack'&&!(typeof guestOn==='function'&&guestOn());}
-function actLog(k,d,src){if(!actOn())return;const who=me(),day=today(),key=who+'|'+day,all=actAll();
+function actLog(k,d,src,x){if(!actOn())return;const who=me(),day=today(),key=who+'|'+day,all=actAll();
   const r=all[key]||(all[key]={who,day,ev:[]});
-  r.ev.push({t:nowIso(),k,s:src!==undefined?src:(typeof cur!=='undefined'&&cur?cur.key:''),d:String(d||'').slice(0,90)});
+  const e={t:nowIso(),k,s:src!==undefined?src:(typeof cur!=='undefined'&&cur?cur.key:''),d:String(d||'').slice(0,90)};if(x)e.x=x;r.ev.push(e);   /* b219: x = the facts behind the click */
   if(r.ev.length>ACT_CAP)r.ev=r.ev.slice(-ACT_CAP);r.updatedAt=nowIso();
   const cut=new Date(Date.now()-ACT_DAYS*864e5).toISOString().slice(0,10);Object.keys(all).forEach(x=>{if(all[x].day<cut)delete all[x];});
   lsSet(ACT_KEY,all);actDirty.add(key);clearTimeout(actT);actT=setTimeout(actFlush,4000);}
@@ -28,15 +28,23 @@ function actLabel(el){const txt=(el.querySelector&&el.querySelector('h3,b.t,.gt,
 document.addEventListener('click',e=>{if(!actOn())return;const el=e.target.closest('a,button,[role="button"],.pagebtn,label.chk,summary');if(!el)return;
   const src=typeof cur!=='undefined'&&cur&&!($('#viewRun')||{}).hidden?cur.key:'';
   const row=el.closest('tr[data-asin],tr[data-key],[data-asin]');const asin=row&&row.dataset.asin?row.dataset.asin:'';
+  /* b218: the Prime box grid's buttons are Open in Keepa too (the Viewer one clicks #asinOpen, which logs itself below) */
+  const pg=el.closest('#primeGrid a[data-pkey]');if(pg){const [m,kind]=pg.dataset.pkey.split('|');const lab=m+(kind==='p'?' ★ Prime':'');actLog('keepa','Open in Keepa · '+lab,src,{box:pg.dataset.pkey});actStampKeepa(src,lab);return;}
+  if(el.closest('#primeGrid [data-pview]'))return;
   const mk=el.closest('#keepaRow a');
   if(mk){const m=!mk.dataset.mk||mk.dataset.mk==='viewer'?'UK':mk.dataset.mk;actLog('keepa','Open in Keepa · '+m+(mk.dataset.mk==='viewer'?' (Viewer)':''),src);actStampKeepa(src,m);return;}
   if(el.closest('#asinOpen')){actLog('keepa','Open UK Product Viewer (merged ASINs)',src);actStampKeepa(src,'UK Viewer');return;}
   if(el.closest('.pagebtn')){const pb=el.closest('.pagebtn');actLog('page','Page · '+(ACT_PAGES[pb.dataset.page]||'Lead tools'),'');return;}
   const lab=actLabel(el);
-  if(/^(Y|N|M)$/.test(lab)&&asin){actLog('verdict',lab+' · '+asin,src);return;}
-  if(asin&&/keepa|sas|buy uk|sell uk|amazon/i.test(lab)){actLog('lead',lab+' · '+asin,src);return;}
+  if(el.closest('#openSel'))return;   /* b219: Open all in Keepa logs itself, with every ASIN it opened */
+  if(/^(Y|N|M)$/.test(lab)&&asin){actLog('verdict',lab+' · '+asin,src,actLead(asin));return;}
+  if(asin&&/keepa|sas|buy [a-z]{2}\b|sell uk|amazon/i.test(lab)){actLog('lead',lab+' · '+asin,src,actLead(asin));return;}
   if(el.closest('tr[data-key]')&&!src){const k=el.closest('tr[data-key]').dataset.key;actLog('list',lab+' · '+((typeof srcGet==='function'&&srcGet(k)||{}).name||k),k);return;}
   actLog('click',(actPage()?actPage()+' · ':'')+lab,src);},true);
+/* b219: the facts behind a lead click — how it is bought, score, ROI, profit, rule, market */
+function actLead(asin){const o=typeof result!=='undefined'&&result&&result.out?result.out.find(z=>z.ASIN===asin):null;if(!o)return{a:asin};
+  const n=v=>v==null||v===''?null:Math.round(+v*100)/100;
+  return{a:asin,bt:o.BuyType||(o.state&&o.state.bt)||'',sc:o.Score||0,roi:n(o['ROI %']),p:n(o['Profit £']),buy:n(o['Landed £']??o['After discount £']),sell:n(o['Sell £ used']??o['Sell for £']),rl:typeof cur!=='undefined'&&cur?cur.rule:null,mk:o['Buy market']||'UK'};}
 /* the source remembers the Keepa press, so the list can say "in Keepa" */
 /* b207 (Jack, 29 Sep: "tell her she needs to drag it back in"). After any Open in Keepa / Viewer press, the moment she comes back to the
    Sourcing tab the drop box shouts: "Back from Keepa? Drag the file you exported in here", glowing, scrolled into view. For everyone. */
@@ -67,6 +75,7 @@ async function actPull(day){if(typeof cloudReadable==='function'&&cloudReadable(
   return Object.values(actAll()).filter(r=>r.day===day);}
 function actTime(iso){return new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
 async function renderActivity(){const el=$('#actBody');if(!el)return;if(!isJack()){el.innerHTML='<div class="empty">Only Jack sees this.</div>';return;}
+  renderWork();   /* b219 */
   const day=actView.day||today();actView.day=day;const dp=$('#actDay');if(dp&&dp.value!==day)dp.value=day;
   el.innerHTML='<div class="empty">Loading…</div>';const rows=await actPull(day);if(actView.day!==day)return;
   const vas=['Suz','Mera'].concat(rows.map(r=>r.who).filter(w=>w!=='Suz'&&w!=='Mera'));
@@ -91,8 +100,8 @@ document.addEventListener('DOMContentLoaded',()=>{const dp=$('#actDay');if(dp)dp
   const t=$('#actToday');if(t)t.addEventListener('click',()=>{actView.day=today();renderActivity();});});
 
 /* the nudge is for everyone (Jack too); the recording above stays VA-only */
-document.addEventListener('click',e=>{if(typeof actOn==='function'&&actOn())return;const mk=e.target.closest('#keepaRow a,#asinOpen');if(!mk)return;
-  const m=mk.id==='asinOpen'?'viewer':(!mk.dataset.mk||mk.dataset.mk==='viewer'?'viewer':mk.dataset.mk);awaitDrop={slot:m,at:Date.now()};},true);
+document.addEventListener('click',e=>{if(typeof actOn==='function'&&actOn())return;const mk=e.target.closest('#keepaRow a,#asinOpen,#primeGrid a[data-pkey]');if(!mk)return;
+  const m=mk.id==='asinOpen'?'viewer':mk.dataset.pkey?mk.dataset.pkey.split('|')[0]:(!mk.dataset.mk||mk.dataset.mk==='viewer'?'viewer':mk.dataset.mk);awaitDrop={slot:m,at:Date.now()};},true);
 
 /* ---------- b208: the lead sheet teaches Sourcing ----------
    Jack, 29 Sep: "yes" to — any ASIN a VA puts on the lead sheet (AVM HQ's `leads` table, read only) that came up on a Sourcing run in the
@@ -124,3 +133,41 @@ function weekLeads(key){const V=verdAll(),M=lsGet(SHEET_KEY,{})||{},cut=Date.now
   for(const a in M){const m=M[a];if(m&&m.src===key&&Date.parse(m.at)>=cut){set.add(a);if(m.who)who.add(m.who);}}return{n:set.size,who:[...who],asins:[...set]};}
 function yesThisWeek(key){return weekLeads(key).n;}
 document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{leadSheetMatch().catch(()=>{});},9000);});
+
+/* ---------- b219: what's working ----------
+   Jack, 1 Oct 2026: "make sure we can get 100s of data from their clicks — knowing what is working and what is not — remember we either buy
+   on Prime price or Amazon price, some might be on offer but not a Prime offer". One table over the last 7 or 30 days, built only from what
+   is already saved: the runs (which leads were shown), the VAs' clicks (which leads they opened), Y / N / M, and the lead sheet (which went
+   on it). Split by how the lead is bought, and by filter. Hit = a Yes or the lead sheet. Clicks before b219 count by the ASIN in their text;
+   leads shown before b219 have no buy type and sit on their own row. */
+const WORK={span:7};
+async function actPullRange(since){if(typeof cloudReadable==='function'&&cloudReadable()){try{
+    const rows=await cloudGetAll('src_settings','select=key,value&key=like.'+encodeURIComponent('act:')+'*&updated_at=gte.'+encodeURIComponent(since+'T00:00:00Z'));
+    return rows.map(r=>r.value).filter(v=>v&&v.who&&v.day>=since);}catch(e){}}
+  return Object.values(actAll()).filter(r=>r&&r.day>=since);}
+function workSummary(D){const T={},S={},srcOf={};
+  const btOf=(src,a)=>{const v=D.verds[a];if(v&&v.state&&v.state.bt)return v.state.bt;const e=D.leads[src]&&D.leads[src][a];return(e&&e.state&&e.state.bt)||'untagged';};
+  const add=(o,k,f,a)=>{const r=o[k]||(o[k]={shown:new Set(),opened:new Set(),Yes:new Set(),Maybe:new Set(),No:new Set(),sheet:new Set(),hit:new Set()});r[f].add(a);if(f==='Yes'||f==='sheet')r.hit.add(a);};
+  (D.runs||[]).filter(r=>(r.day||String(r.at).slice(0,10))>=D.since).forEach(r=>(r.asins||[]).forEach(a=>{const s=r.source;if(!srcOf[a])srcOf[a]=s;add(T,btOf(s,a),'shown',a);add(S,s,'shown',a);}));
+  const opened=new Set();(D.acts||[]).forEach(r=>(r.ev||[]).forEach(e=>{if(e.x&&e.x.a)opened.add(e.x.a);if(e.x&&e.x.as)e.x.as.forEach(a=>opened.add(a));
+    if(!e.x&&(e.k==='lead'||e.k==='verdict')){const m=/B[0-9A-Z]{9}/.exec(e.d||'');if(m)opened.add(m[0]);}}));
+  opened.forEach(a=>{const s=srcOf[a];if(!s)return;add(T,btOf(s,a),'opened',a);add(S,s,'opened',a);});
+  Object.entries(D.verds||{}).forEach(([a,v])=>{if(!v||!v.at||String(v.at).slice(0,10)<D.since||!['Yes','Maybe','No'].includes(v.v))return;const s=v.source||srcOf[a]||'';
+    add(T,(v.state&&v.state.bt)||btOf(s,a),v.v,a);if(s)add(S,s,v.v,a);});
+  Object.entries(D.sheet||{}).forEach(([a,m])=>{if(!m||!m.at||String(m.at).slice(0,10)<D.since)return;const s=m.src||srcOf[a]||'';add(T,btOf(s,a),'sheet',a);if(s)add(S,s,'sheet',a);});
+  const flat=o=>Object.fromEntries(Object.entries(o).map(([k,r])=>[k,Object.fromEntries(Object.entries(r).map(([f,set])=>[f,set.size]))]));
+  return{byType:flat(T),bySrc:flat(S)};}
+async function renderWork(){const el=$('#workBox');if(!el)return;if(!isJack()){el.innerHTML='';return;}
+  const span=WORK.span,since=new Date(Date.now()-(span-1)*864e5).toISOString().slice(0,10);
+  el.innerHTML='<div class="empty">Working out what is working…</div>';const acts=await actPullRange(since);if(WORK.span!==span)return;
+  const W=workSummary({since,runs:runsAll(),verds:verdAll(),acts,sheet:lsGet(SHEET_KEY,{})||{},leads:leadAll()});
+  const pct=(a,b)=>b?Math.round(100*a/b)+'%':'—';
+  const row=(lab,r,cls)=>{r=r||{};return`<tr class="${cls||''}"><td>${lab}</td><td class="r">${r.shown||0}</td><td class="r">${r.opened||0} <small>${pct(r.opened||0,r.shown||0)}</small></td><td class="r">${r.Yes||0}</td><td class="r">${r.Maybe||0}</td><td class="r">${r.No||0}</td><td class="r">${r.sheet||0}</td><td class="r"><b>${pct(r.hit||0,r.shown||0)}</b></td></tr>`;};
+  const head=`<thead><tr><th></th><th class="r">Leads shown</th><th class="r">Opened by a VA</th><th class="r">Yes</th><th class="r">Maybe</th><th class="r">No</th><th class="r">Lead sheet</th><th class="r" title="A Yes or the lead sheet, out of the leads shown">Hit rate</th></tr></thead>`;
+  const types=['prime','offer','amazon','untagged'].filter(k=>W.byType[k]);
+  const srcs=Object.entries(W.bySrc).filter(([k])=>k).sort((a,b)=>(b[1].hit||0)-(a[1].hit||0)||(b[1].shown||0)-(a[1].shown||0)).slice(0,15);
+  const nm=k=>{const s=srcGet(k);return escapeHtml(s?s.name:k);};
+  el.innerHTML=`<div class="workhead"><b>What's working</b><span>last <button type="button" class="wspan${span===7?' on':''}" data-span="7">7 days</button><button type="button" class="wspan${span===30?' on':''}" data-span="30">30 days</button> · from the runs, the VAs' clicks, Y / N / M and the lead sheet</span></div>
+    <div class="worktbls"><div><h4>By how it's bought</h4><table class="worktbl">${head}<tbody>${types.length?types.map(k=>row(escapeHtml(BUY_TYPE_LABEL[k]||k),W.byType[k],'bt-'+k)).join(''):'<tr><td colspan="8" class="dim">Nothing yet in this window.</td></tr>'}</tbody></table></div>
+    <div><h4>By filter</h4><table class="worktbl">${head}<tbody>${srcs.length?srcs.map(([k,r])=>row(nm(k),r)).join(''):'<tr><td colspan="8" class="dim">Nothing yet in this window.</td></tr>'}</tbody></table></div></div>`;}
+document.addEventListener('click',e=>{const b=e.target.closest('#workBox [data-span]');if(!b)return;WORK.span=+b.dataset.span||7;renderWork();});

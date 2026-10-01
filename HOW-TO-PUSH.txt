@@ -1,43 +1,88 @@
-BDL SOURCING — b214 · 30 Sep 2026   (Prime event mode)
+BDL SOURCING — b219 · 1 Oct 2026   (includes b214–b218)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b214.
-   NEW FILE this time: js/prime.js — it goes up with the js folder, nothing extra to do.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b219.
+   js/prime.js is a new file (from b214) — it goes up with the js folder.
 
-ONCE, IN KEEPA (before the event)
-   Configure Columns (top left of the Keepa table) → tick  New, Prime exclusive → Current.
-   Keepa remembers it. Without it a Prime file is refused and the ★ box goes red and says so.
+═══ b219 — WHAT'S WORKING ═══
+   · Every lead is tagged with how it's bought:  ★ Prime price  ·  Amazon offer (Amazon cut its own price — not Prime)  ·  Amazon price.
+     The app always takes the cheaper of the Prime price and Amazon's price; a non-Prime offer comes through at Amazon's price.
+   · Every VA click on a lead now saves the facts with it: ASIN, how it's bought, score, ROI, profit, which filter.
+     "Open all in Keepa" saves every ASIN it opened. Up to 3,000 clicks a VA a day, kept in the cloud every day.
+   · Brands / Filters → VA activity → "What's working" (last 7 or 30 days):
+        leads shown → opened by a VA → Yes / Maybe / No → lead sheet → hit rate
+     split by how it's bought (★ Prime / Amazon offer / Amazon price) and by filter.
+     Leads from before b219 sit on a "not tagged" row; the tags build up from today.
 
-SWITCH IT ON  (only you see this — Suz and Mera's screens don't change)
-   Open any run → "★ Prime event" button next to Copy link for AVM HQ → it goes blue: "★ Prime event on".
-   No end date. Press it again to switch it off; the run goes straight back to the normal files.
+═══ b218 — SUZ AND MERA RUN PRIME TOO ═══
+   · While your "★ Prime event on" button is on, Suz and Mera get the same box grid you have:
+       UK  [ UK filter ]  [ UK ★ Prime deals ]      (and DE / FR on brand runs — IT and ES have no Prime box)
+     They do both boxes for each flag. Brand runs: every file (normal + Prime) goes into the ONE UK Viewer.
+     Suz's UK filters: both files join into one run.
+   · Their leads are priced at the Prime price too. Only you have the switch — turn it off when the event ends.
+   · TELL THEM (once each): Keepa → Configure Columns → tick  New, Prime exclusive → Current.
+     Until they do, every export is refused and the popup tells them exactly that.
+   · Their box clicks are recorded in VA activity, same as the old flag buttons.
 
-RUNNING A BRAND / FILTER WITH IT ON
-   The flag buttons become a box grid:
-      UK   [ UK filter ]   [ UK ★ Prime deals ]
-      DE   [ DE filter ]   [ DE ★ Prime deals ]
-      FR   [ FR filter ]   [ FR ★ Prime deals ]
-      IT   [ IT filter ]   No Prime box
-      ES   [ ES filter ]   No Prime box
-      UK Viewer  [ Open UK Viewer ] — every ASIN from the boxes above, Prime ones included
-   Each ★ box opens the same filter with one line swapped:
-      "Amazon 9%+ under its 90-day average"  →  "Prime exclusive price 9%+ under its 90-day average"
-      (checked against the Samsung one you made — same filter, same 9%).
-   Drop the files anywhere, any order. Each one finds its own box (country from the file, Prime from
-   "Buy Box: Prime exclusive"). Italy / Spain Prime files are ignored with a note.
-   The normal file alone still finishes a run — run normal early, add Prime later.
+═══ b217 — PRIME IN THE NOTES ═══
+   · Every active filter's note now has a blue line:  ★ Prime: Keepa & SAS show normal price
+   · Every run screen shows the full sentence under the note:
+       "★ Prime deals are on (UK, DE, FR). Some Amazon prices right now are Prime exclusive — Keepa's price box
+        and SAS only show the normal price, so a deal looks worse there than it is. A lead marked ★ Prime deal
+        is priced at the Prime price: trust the numbers on its row, not Keepa or SAS."
+   · Your "★ Prime event on" button turns it off for everyone when the event ends.
 
-THE MATHS
-   Buy = the Prime price when it's lower (Rule 1 and Rule 2), with any S&S or coupon the export shows on top.
-   Sell = unchanged (the VAs judge the graph).
-   Leads show "★ Prime deal" and the buy says e.g. "£229.99 ★ Prime price (Amazon UK £319.49)".
+═══ b216 ═══
+   · Prime event mode is ON by default for you now — every run has the normal boxes AND the ★ Prime boxes.
+     (Your "★ Prime event on" button still switches it off. Suz and Mera never see it.)
+   · Every Prime lead now has a blue note on its row, right above the Keepa / SAS buttons — for Suz and Mera too:
+       "★ Prime exclusive price on Amazon.co.uk — Keepa and SAS show the normal £58.77, not £39.00.
+        They are wrong here: the numbers on this row (and our SAS button) use the Prime price."
+   · Fixed: a browser opened fresh got Suz's A2A filter back at £10–40. It's £10–60 everywhere now.
 
-BLACKLIST
-   + Amazon (Echo, Fire, Kindle, Ember — also Amazon Basics / Essentials), Blink and eero, with Ring.
-   Fixed: on mixed-brand Rule 1 filters (EU drops) a blacklisted brand could slip through, because the
-   app only checked the filter's name. It now checks each product's own brand too.
+═══ EU DROPS — THE FULL RUN ═══
 
-ACER
-   Now every 3 days (was every 2).
+BEFORE YOU START
+   · Keepa quota (bar top right): the UK Viewer part uses about 28% of the day. Under ~35%? Wait an hour or two (+5% an hour).
+   · Prime boxes will show on EU drops too (DE/FR Prime) — fill them or leave them, the normal files alone finish the run.
 
-362 checks, all green.
+1. Brands / Filters → "EU drops · all markets (testing)" → Run.
+
+2. The four country files (one each):
+   🇩🇪 DE → in Keepa click the flag top right → Amazon.de → wait for the table
+         → rows per page: biggest → Export → All active columns → CSV.          (about 3,900 rows)
+   🇫🇷 FR → Amazon.fr → same.                                                     (about 3,600)
+   🇮🇹 IT → Amazon.it → same.                                                     (about 3,700)
+   🇪🇸 ES → Amazon.es → same.                                                     (about 2,400)
+   If any file comes out at EXACTLY 4,999 rows, Keepa cut it short — tell me and I'll split that country.
+
+3. Drop all four files on the page (anywhere).
+   The bar underneath says:  "10,xxx ASINs — the Viewer goes in 3 parts   Part 1 · Part 2 · Part 3"
+
+4. Press  "Open part 1 of 3 in the UK Viewer".
+   It copies about 3,400 ASINs and opens the Keepa Product Viewer.
+   In the Viewer: check the flag is Amazon.co.uk → click the ASIN box → Cmd+V → Load
+   → rows per page: biggest → Export → All active columns → CSV → drop it on the page.
+   Part 1 turns green ✓ and the button changes to "Open part 2 of 3".
+
+5. Same again for part 2, then part 3. Each file ADDS to the last — nothing gets replaced.
+   (Leads start showing after part 1 and fill in as the other parts land.)
+
+6. Done — the leads are on the page. Send me the Viewer files too if you want me to go through them.
+
+═══ ALSO IN THIS BUILD ═══
+   · Your storefront run's 1/2, 2/2 Viewer buttons: those files used to replace each other (only the
+     last part was priced). They now add up too.
+
+═══ b214 — PRIME EVENT MODE (in this push) ═══
+   ONCE, IN KEEPA: Configure Columns → tick  New, Prime exclusive → Current.
+   Switch: "★ Prime event" button next to Copy link for AVM HQ (only you see it). No end date.
+   On = every run gets a box grid: normal filter + ★ Prime deals for UK, DE, FR (IT/ES none).
+   Each ★ box = the same filter with "Amazon 9% under 90-day" swapped for "Prime exclusive 9% under 90-day".
+   Files find their own box; the normal file alone still finishes a run.
+   Buy = the Prime price when lower (plus any S&S / coupon the export shows). Sell unchanged. Leads say ★ Prime deal.
+   Blacklist: + Amazon (Echo, Fire, Kindle, Ember, Amazon Basics / Essentials), Blink, eero.
+   Mixed-brand Rule 1 filters (EU drops) now check each product's own brand against the blacklist.
+   Acer: every 3 days.
+
+373 checks, all green.

@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b214">
-<link rel="stylesheet" href="css/brands.css?v=b214">
+<link rel="stylesheet" href="css/base.css?v=b219">
+<link rel="stylesheet" href="css/brands.css?v=b219">
 </head>
 <body>
 <div class="wrap">
@@ -322,6 +322,7 @@
       <div class="card" id="cardAct" hidden>
         <div class="cardhead"><h2>VA activity</h2><span class="sub">what each VA pressed in Sourcing, and what was due and not touched · recorded from b204 · only you see this</span>
           <div class="right"><input type="date" id="actDay" class="inl"><button class="btn ghost sm" id="actToday" type="button">Today</button><button class="btn ghost sm" id="actRefresh" type="button">Refresh</button></div></div>
+        <div class="workbox" id="workBox"></div>
         <div id="actBody"></div>
       </div>
 
@@ -386,7 +387,7 @@
             <div class="asinbar" id="asinBar" hidden>
               <span class="am" id="asinMsg"></span>
               <button class="btn solid xs" id="asinCopy" type="button"><span class="lab">Copy <span id="asinN">0</span> ASINs</span></button>
-              <button class="btn primary xs" id="asinOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Open UK Product Viewer with them loaded</button>
+              <button class="btn primary xs" id="asinOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg><span id="asinOpenLab">Open UK Product Viewer with them loaded</span></button>
             </div>
             <div class="warn" id="warnRun"></div>
             <p class="sincenote" id="sinceNote" hidden><b>Tracking since / Listed since</b> aren't in this export — tick them in Keepa's column picker and product age comes for free.</p>
@@ -533,27 +534,27 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b214"></script>
-<script src="js/parse.js?v=b214"></script>
-<script src="js/rule1.js?v=b214"></script>
-<script src="js/rule2.js?v=b214"></script>
-<script src="js/export.js?v=b214"></script>
-<script src="js/rule4.js?v=b214"></script>
-<script src="js/queue.js?v=b214"></script>
-<script src="js/sources.js?v=b214"></script>
-<script src="js/prime.js?v=b214"></script>
-<script src="js/cloud.js?v=b214"></script>
-<script src="js/auth.js?v=b214"></script>
-<script src="js/leadtools.js?v=b214"></script>
-<script src="js/keepaconsole.js?v=b214"></script>
-<script src="js/euprice.js?v=b214"></script>
-<script src="js/apirun.js?v=b214"></script>
-<script src="js/brands.js?v=b214"></script>
-<script src="js/history.js?v=b214"></script>
-<script src="js/audit.js?v=b214"></script>
-<script src="js/kcjudge.js?v=b214"></script>
-<script src="js/activity.js?v=b214"></script>
-<script src="js/guest.js?v=b214"></script>
-<script src="js/boot.js?v=b214"></script>
+<script src="js/core.js?v=b219"></script>
+<script src="js/parse.js?v=b219"></script>
+<script src="js/rule1.js?v=b219"></script>
+<script src="js/rule2.js?v=b219"></script>
+<script src="js/export.js?v=b219"></script>
+<script src="js/rule4.js?v=b219"></script>
+<script src="js/queue.js?v=b219"></script>
+<script src="js/sources.js?v=b219"></script>
+<script src="js/prime.js?v=b219"></script>
+<script src="js/cloud.js?v=b219"></script>
+<script src="js/auth.js?v=b219"></script>
+<script src="js/leadtools.js?v=b219"></script>
+<script src="js/keepaconsole.js?v=b219"></script>
+<script src="js/euprice.js?v=b219"></script>
+<script src="js/apirun.js?v=b219"></script>
+<script src="js/brands.js?v=b219"></script>
+<script src="js/history.js?v=b219"></script>
+<script src="js/audit.js?v=b219"></script>
+<script src="js/kcjudge.js?v=b219"></script>
+<script src="js/activity.js?v=b219"></script>
+<script src="js/guest.js?v=b219"></script>
+<script src="js/boot.js?v=b219"></script>
 </body>
 </html>

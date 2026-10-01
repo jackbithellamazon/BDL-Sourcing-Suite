@@ -609,7 +609,7 @@ window.SourcingChecks=(function(){
         ok('Sources · Suz A2A opens on Aug 2026, not Sep 2025',[suz.link.includes('%22202509%22'),opened.includes('%22202608%22'),opened.includes('202509')],[true,true,false]);
         ok('Sources · finderLink hands out the rolled link',finderLink(suz)===rollRankMonth(suz.link),true);
         const t=apiSelection(suz);
-        ok('API · Suz A2A translates to the Product Finder API',[t.selection.avg90_AMAZON_gte,t.selection.avg90_AMAZON_lte,t.selection.deltaPercent90_AMAZON_gte,t.selection.current_AMAZON_gte,t.selection.totalOfferCount_gte,t.selection.monthlySold_gte,t.selection.productType,t.selection.categories_exclude.length,t.selection.perPage],[1000,4000,27,400,3,100,[0],2,50]);
+        ok('API · Suz A2A translates to the Product Finder API',[t.selection.avg90_AMAZON_gte,t.selection.avg90_AMAZON_lte,t.selection.deltaPercent90_AMAZON_gte,t.selection.current_AMAZON_gte,t.selection.totalOfferCount_gte,t.selection.monthlySold_gte,t.selection.productType,t.selection.categories_exclude.length,t.selection.perPage],[1000,6000,27,400,3,100,[0],2,50]);   /* b216: £10–60 (b212) — the seed carries it now */
         ok('API · what the API cannot do comes back as after-filters',[t.after.brandNot.includes('amazon'),t.after.rootNot.length,t.skipped],[true,6,['rank month (website only)']]);
         ok('API · after-filters drop a blocked brand and keep the rest',[apiKeep({brand:'Amazon',rootCategory:1},t.after),apiKeep({brand:'Tefal',rootCategory:1},t.after),apiKeep({brand:'Tefal',rootCategory:t.after.rootNot[0]},t.after)],[false,true,false]);
         ok('API · parked',APIRUN.on,false);}
@@ -1101,14 +1101,97 @@ window.SourcingChecks=(function(){
           const st=[!!pfiles.UK,!!(files.one&&files.one.__prime),files.one&&files.one.__base,!g.hidden,$('#viewRun').classList.contains('primemode'),g.querySelectorAll('.pcell.in').length,g.querySelectorAll('.pcell.prime.in').length,
             !!result&&result.out.some(o=>o['Prime deal']==='yes'),/IT ★ Prime deals file — ignored/.test($('#warnRun').textContent),!$('#primeTog').hidden,
             result.out.some(o=>o.ASIN==='B0F75D71RN'),result.blacklisted.some(x=>x[0]==='B0F75D71RN'&&/BRAND BLACKLISTED · Amazon/.test(x[2]))];
-          lsSet(ME_KEY,'Suz');paintPrime();st.push(g.hidden,$('#primeTog').hidden,primeOn());
+          const pe0=lsRaw(PRIME_EVENT_KEY);lsRemove(PRIME_EVENT_KEY);lsSet(ME_KEY,'Suz');paintPrime();st.push(g.hidden,$('#primeTog').hidden,primeOn());if(pe0==null)lsRemove(PRIME_EVENT_KEY);else lsRawSet(PRIME_EVENT_KEY,pe0);
           lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,false);primeApply();paintSlots();st.push(files.one,g.hidden);
-          ok('Prime · Jack\'s switch: a Prime file lands in its own ★ box and joins the run; an Italian one is ignored; VAs never see it; off = back to exactly the normal files',st,
-            [true,true,null,true,true,1,1,true,true,true,false,true,true,true,false,null,true]);
+          ok('Prime · Jack\'s switch: a Prime file lands in its own ★ box and joins the run; an Italian one is ignored; a VA sees the grid but not the switch (b218); off = back to exactly the normal files',st,
+            [true,true,null,true,true,1,1,true,true,true,false,true,false,true,true,null,true]);
         }finally{window.confirm=c0;clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');
           [[PRIME_KEY,keep.p],[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});}}
       ok('Sources · Acer runs every 3 days (Jack, 30 Sep)',[srcGet('acer').cadence,CADENCE_LABEL[srcGet('acer').cadence]],['3 days','Every 3 days']);
+      /* b216 (Jack, 1 Oct: "default turn it on now") — on for Jack until he switches it off; never for a VA. His early-Prime Viewer row: Galaxy Buds FE £39 Prime vs £58.77 */
+      {const meWas=me(),pk=lsRaw(PRIME_KEY),pe=lsRaw(PRIME_EVENT_KEY);try{lsRemove(PRIME_KEY);lsRemove(PRIME_EVENT_KEY);lsSet(ME_KEY,'Jack');const j=primeOn();lsSet(ME_KEY,'Mera');const m=primeOn();lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,false);const off=primeOn();
+          const V=await csv('prime-viewer-buds-2026-10-01.csv');const r2=rule2Compute(V.rows,{},{vatFor:vatFor,rule:2,prime:true}).all.find(o=>o.ASIN==='B0CHW48WSC');
+          const r1=rule1Compute({viewer:V,UK:V,DE:null,FR:null,IT:null,ES:null,prime:true},'Samsung',0.86,null).out.find(o=>o.ASIN==='B0CHW48WSC');
+          ok('Prime · on by default for Jack and (b218) for the VAs through his shared switch, which still turns it off; his Galaxy Buds row buys at the £39 Prime price in both rules',
+            [j,m,off,primeIsFile(V.rows),primePrice(V.rows[0]),r2&&r2['After discount £'],r2&&r2['Prime deal'],r1&&r1['Landed £'],r1&&r1['Prime deal']],[true,true,false,true,39,39,'yes',39,'yes']);
+          const t=h=>h.replace(/<[^>]+>/g,'');
+          ok('Prime · every Prime lead row tells the VA Keepa and SAS show the normal price (live Rule 1 / Rule 2, and a saved lead); none on a normal lead',
+            [/Keepa and SAS show the normal £58\.77, not £39\.00/.test(t(primeNote(r1))),/Keepa and SAS show the normal £58\.77, not £39\.00/.test(t(primeNote(r2))),
+             /normal £58\.77, not £39\.00/.test(t(primeNote({'Discount applied':'★ Prime price (Amazon UK £58.77)','Buy market':'UK','Landed £':39}))),
+             /on Amazon\.de/.test(primeNote({'Discount applied':'★ Prime price (Amazon DE £80.00)','Buy market':'DE','Landed £':60})),primeNote({'Discount applied':'S&S 15%','Buy market':'UK','Landed £':20})],[true,true,true,true,'']);
+        }finally{lsSet(ME_KEY,meWas||'Jack');if(pk==null)lsRemove(PRIME_KEY);else lsRawSet(PRIME_KEY,pk);if(pe==null)lsRemove(PRIME_EVENT_KEY);else lsRawSet(PRIME_EVENT_KEY,pe);}}
+      /* b216: a brand-new browser lands on Suz's £10–60 too (b42's reset used to undo b212 there), and one stuck on £10–40 is healed */
+      {const keep=lsRaw(SRC_KEY);try{const ceil=x=>{const f=JSON.parse(decodeURIComponent(x.link.split('#!finder/')[1])).f;return[x.name,f.AMAZON_avg90.filterTo,f.BUY_BOX_SHIPPING_avg90.filterTo];};
+          lsRemove(SRC_KEY);const fresh=ceil(srcGet('suz-deep-drops'));
+          const v=lsGet(SRC_KEY,[]);const x=v.find(z=>z.key==='suz-deep-drops');const old=SRC_SEED.find(z=>z.key==='suz-deep-drops');
+          x.link=old.link.split('%22filterTo%22%3A60').join('%22filterTo%22%3A40');x.name='Suz · A2A £10–40';x.migW=1;x.migV=3;delete x.migW2;lsSet(SRC_KEY,v);const healed=ceil(srcGet('suz-deep-drops'));
+          ok('Sources · Suz A2A is £10–60 on a brand-new browser, and a browser stuck on £10–40 is healed',[fresh,healed],[['Suz · A2A £10–60',60,60],['Suz · A2A £10–60',60,60]]);
+        }finally{if(keep==null)lsRemove(SRC_KEY);else lsRawSet(SRC_KEY,keep);}}
+      /* b217 (Jack, 1 Oct: "notes need say about prime deals — in the notes") — every note says so while the event is on, VAs included */
+      {const meWas=me(),keep={p:lsRaw(PRIME_KEY),e:lsRaw(PRIME_EVENT_KEY),o:lsRaw(OUTBOX_KEY)};
+        try{lsRemove(PRIME_EVENT_KEY);lsSet(ME_KEY,'Suz');const vaDefault=primeEventOn();renderList();
+          const listChip=!!document.querySelector('#srcTbl .pnchip, .pnchip');await openRun('brita');const runLine=($('#runMeta .pnrun')||{}).textContent||'';
+          lsSet(PRIME_EVENT_KEY,{on:false});const vaOff=primeEventOn();paintRunHead();const runOff=!$('#runMeta .pnrun');backToList();
+          lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,true);const cq=window.cloudQueue;let sent=false;window.cloudQueue=(t,op,rows)=>{if(t==='src_settings'&&JSON.stringify(rows).includes('prime-event'))sent=true;};
+          try{primeToggle();}finally{window.cloudQueue=cq;}
+          const jackOff=primeEventOn(),shared=lsGet(PRIME_EVENT_KEY,{}).on;
+          ok('Prime notes · on by default for a VA (the event is live): a ★ Prime line in every note and the full sentence on the run screen; Jack\'s switch turns it off for everyone (synced)',
+            [vaDefault,listChip,/Keepa's price box and SAS only show the normal price/.test(runLine),vaOff,runOff,sent,jackOff,shared,/prime-event/.test(String(cloudPull))],[true,true,true,false,true,true,false,false,true]);
+        }finally{lsSet(ME_KEY,meWas||'Jack');[[PRIME_KEY,keep.p],[PRIME_EVENT_KEY,keep.e],[OUTBOX_KEY,keep.o]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});backToList();}}
+      /* b218 (Jack, 1 Oct: "they need to run normal and prime now until I turn it off — they will combine in the viewer anyway") */
+      {const meWas=me(),keep={r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),e:lsRaw(PRIME_EVENT_KEY)},c0=window.confirm,al=window.actLog,ak=window.actStampKeepa;window.confirm=()=>true;
+        try{lsRemove(PRIME_EVENT_KEY);lsSet(ME_KEY,'Suz');await openRun('amz-coupons');clearRun();const st=[primeOn(),!$('#primeGrid').hidden,$('#primeTog').hidden];
+          const syn=await(await fetch('../fixtures/synth-full-2026-09-28.csv')).text(),pr=await(await fetch('../fixtures/prime-uk-2026-09-30.csv')).text();
+          await handleFiles([new File([syn],'KeepaExport-2026-10-01-ProductFinder.csv')]);st.push(files.one,/Prime deals are on, so every export needs the Prime price/.test($('#warnRun').textContent));
+          await handleFiles([new File([pr],'KeepaExport-2026-10-01-ProductFinder (1).csv')]);st.push(!!pfiles.UK,!!result&&result.out.some(o=>o['Prime deal']==='yes'));
+          const log=[];window.actLog=(k,t)=>log.push(k+' · '+t);window.actStampKeepa=()=>{};const a=$('#primeGrid a[data-pkey="UK|n"]');const stop=e=>e.preventDefault();a.addEventListener('click',stop);a.click();a.removeEventListener('click',stop);
+          st.push(log.some(x=>/Open in Keepa · UK$/.test(x)));
+          lsSet(PRIME_EVENT_KEY,{on:false});clearRun();paintSlots();st.push(primeOn(),$('#primeGrid').hidden);await handleFiles([new File([syn],'KeepaExport-2026-10-01-ProductFinder.csv')]);st.push(!!files.one);
+          ok('Prime for the VAs · grid on while Jack\'s switch is on (no switch for them); an export without the Prime price is refused and says what to tick; the Prime file joins the run at the Prime price; box clicks are logged; switch off = normal again',st,
+            [true,true,true,null,true,true,true,true,false,true,true]);
+        }finally{window.confirm=c0;window.actLog=al;window.actStampKeepa=ak;clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');
+          [[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o],[PRIME_EVENT_KEY,keep.e]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});}}
+      /* b219 (Jack, 1 Oct: "100s of data from their clicks — what is working and what is not — we buy on Prime price or Amazon price, some on offer but not Prime") */
+      {ok('Buy type · ★ Prime price / Amazon offer (deal badge or 9%+ under 90 days, not Prime) / Amazon price — and the lead state keeps it',
+          [buyTypeOf({'Prime deal':'yes'},{'Deals: Badge':'Deal'}),buyTypeOf({},{'Deals: Badge':'Limited time deal'}),buyTypeOf({},{'Amazon: 90 days drop %':'12 %'}),buyTypeOf({},{'Amazon: 90 days drop %':'3 %'}),buyTypeOf({'Amazon 90d drop %':27}),
+           leadState({BuyType:'offer','After discount £':10,'Sell for £':20},2).bt,leadState({BuyType:'prime','Landed £':39,'Sell £ used':69},1).bt],['prime','offer','offer','amazon','offer','offer','prime']);
+        const A=n=>'B0WORK'+String(n).padStart(4,'0');
+        const D={since:'2026-09-25',runs:[{day:'2026-09-30',source:'s1',asins:[A(1),A(2),A(3)]},{day:'2026-09-20',source:'s1',asins:[A(9)]}],
+          leads:{s1:{[A(1)]:{state:{bt:'prime'}},[A(2)]:{state:{bt:'offer'}},[A(3)]:{state:{bt:'amazon'}}}},
+          acts:[{who:'Suz',day:'2026-09-30',ev:[{k:'lead',d:'Keepa · '+A(1),x:{a:A(1),bt:'prime'}},{k:'open',d:'Open 2 in Keepa',x:{as:[A(2),A(3)]}},{k:'lead',d:'SAS · '+A(9)}]}],
+          verds:{[A(1)]:{v:'Yes',at:'2026-09-30T10:00:00Z',source:'s1',state:{bt:'prime'}},[A(3)]:{v:'No',at:'2026-09-30T10:00:00Z',source:'s1'},[A(9)]:{v:'Yes',at:'2026-09-20T10:00:00Z',source:'s1'}},
+          sheet:{[A(2)]:{src:'s1',who:'Suz',at:'2026-09-30T12:00:00Z'}}};
+        const W=workSummary(D),g=(o,f)=>(o||{})[f]||0;
+        ok('What\'s working · counts shown → opened → Y/M/N → lead sheet per buy type and per filter, inside the window only',
+          [g(W.byType.prime,'shown'),g(W.byType.prime,'opened'),g(W.byType.prime,'Yes'),g(W.byType.prime,'hit'),g(W.byType.offer,'opened'),g(W.byType.offer,'sheet'),g(W.byType.offer,'hit'),g(W.byType.amazon,'No'),g(W.byType.amazon,'hit'),
+           g(W.bySrc.s1,'shown'),g(W.bySrc.s1,'opened'),g(W.bySrc.s1,'hit')],[1,1,1,1,1,1,1,1,0,3,3,2]);
+        const meWas=me(),keep=lsRaw(ACT_KEY);try{lsSet(ME_KEY,'Suz');actLog('lead','Keepa · '+A(5),'s1',{a:A(5),bt:'prime',sc:56});const r=actAll()[me()+'|'+today()];const e=r&&r.ev[r.ev.length-1];
+          ok('Clicks · a lead click keeps its facts (ASIN, how it is bought, score…); Open all in Keepa logs every ASIN it opened; 3,000 a day',[e&&e.x&&e.x.bt,e&&e.x&&e.x.sc,/actLog\('open'/.test(String(openInKeepa)),ACT_CAP],['prime',56,true,3000]);
+        }finally{clearTimeout(actT);actDirty.clear();lsSet(ME_KEY,meWas||'Jack');if(keep==null)lsRemove(ACT_KEY);else lsRawSet(ACT_KEY,keep);}}
       ok('Blacklist · Amazon devices (brand Amazon: Echo, Fire, Kindle, Ember — and Amazon Basics / Essentials, Jack: "ye"), Blink and eero are on it with Ring (Jack, 30 Sep)',['ring','amazon','blink','eero'].map(k=>BB_SEED.some(x=>x[0]===k)).concat([bbKey('Amazon Basics').startsWith('amazon ')]),[true,true,true,true,true]);
+      /* b215 — the UK Viewer in parts (EU drops: 10,193 ASINs; Keepa exports stop at 4,999 rows) */
+      {const ids=(n,p)=>Array.from({length:n},(_,i)=>'B0'+(p||'PART')+String(i).padStart(4,'0'));
+        ok('Viewer parts · over 4,000 ASINs go in equal parts (10,193 → 3 of about 3,398); 4,000 or fewer stay one',[viewerParts(ids(10193)).map(p=>p.length),viewerParts(ids(4000)).length,viewerParts(ids(800)).length],[[3398,3398,3397],1,1]);
+        const mk=(asins,name)=>({name,rows:asins.map(a=>({ASIN:a})),hasFees:true,hasSince:true}),notes=[];
+        const p1=mk(ids(10).slice(0,5),'v1.csv'),m=partMerge(p1,mk(ids(10).slice(5),'v2.csv'),notes);
+        const again=partMerge(m,mk(ids(10).slice(5),'v2b.csv'),notes),plain=partMerge(p1,mk(ids(10).slice(0,4),'v1b.csv'),notes);
+        ok('Viewer parts · a mostly-new file joins as the next part; a part exported again refreshes only itself; a plain re-export still replaces',[m.rows.length,m.parts,m.name,again.rows.length,again.parts,plain.rows.length,plain.name],[10,2,'v1.csv + 1 more part',10,2,4,'v1b.csv']);}
+      {const meWas=me(),keep={r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),p:lsRaw(PRIME_KEY)},c0=window.confirm;window.confirm=()=>true;
+        try{lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,false);await openRun('suz-eu-drops');clearRun();
+          const t=await(await fetch('../fixtures/synth-full-2026-09-28.csv')).text();const L=t.split('\n'),head=L[0],row=L[1],A0='B0FDSDCBHV';
+          const file=(asins,mk,dom,name)=>new File([head+'\n'+asins.map(a=>row.split(A0).join(a).split('amazon.co.uk').join('amazon.'+mk).split('product/2-').join('product/'+dom+'-')).join('\n')],name);
+          const de=Array.from({length:4500},(_,i)=>'B0DE'+String(i).padStart(6,'0')),fr=Array.from({length:4500},(_,i)=>'B0FR'+String(i).padStart(6,'0'));
+          await handleFiles([file(de,'de',3,'KeepaExport-2026-09-30-ProductFinder (1).csv'),file(fr,'fr',4,'KeepaExport-2026-09-30-ProductFinder (2).csv')]);
+          const P=viewerParts($('#asinBar')._all),st=[P.map(p=>p.length),$('#asinOpenLab').textContent];
+          const vfile=(part,n)=>file(part.filter((a,i)=>i%5<2).slice(0,n),'co.uk',2,'KeepaExport-2026-09-30-ProductViewer ('+Math.random().toString(36).slice(2,6)+').csv');
+          await handleFiles([vfile(P[0],1200)]);const vt=()=>{const a=document.querySelector('#keepaRow a[data-mk="viewer"]');return!!a&&a.classList.contains('done');};
+          st.push(files.viewer.rows.length,viewerPartsLeft(),$('#asinOpenLab').textContent,!!document.querySelector('#asinBar .vpart.in'),vt());
+          await handleFiles([vfile(P[1],1200)]);st.push(files.viewer.rows.length,viewerPartsLeft());
+          await handleFiles([vfile(P[2],1200)]);st.push(files.viewer.rows.length,viewerPartsLeft(),$('#asinOpenLab').textContent,guideSteps().steps[1].done,vt());
+          ok('Viewer parts · EU drops end to end: 9,000 ASINs → 3 parts; each part\'s Viewer file adds to the last (none replaced), the button moves to the next part, the step ticks when all 3 are in',st,
+            [[3000,3000,3000],'Open part 1 of 3 in the UK Viewer',1200,2,'Open part 2 of 3 in the UK Viewer',true,false,2400,1,3600,0,'Open UK Product Viewer with them loaded',true,true]);
+        }finally{window.confirm=c0;clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');
+          [[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o],[PRIME_KEY,keep.p]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});}}
       /* b206: S&S memory — learns yes/no per ASIN, applies a remembered S&S only while Amazon sells it */
       {const keep=lsRaw(FACT_KEY);try{
         const A='B0TESTSNS1';snsLearn([{ASIN:A,'Buy Box: Subscribe & Save':'yes','Buy Box: Buy Box Seller':'Amazon'}]);const f1=factGet(A);

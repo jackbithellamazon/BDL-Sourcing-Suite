@@ -2742,7 +2742,7 @@ html[data-theme="light"]{--prime:#0a86b8;--prime-txt:#075f84;--prime-fill:rgba(1
 .primetog.on .ptog::after{transform:translateX(11px)}
 /* while it is on, the grid is the file panel: the flag buttons, file chips, Viewer bar and 1-2-3 step into it */
 #viewRun.primemode #keepaRow>a,#viewRun.primemode #keepaRow>.lab,#viewRun.primemode #keepaRow>.mkhint,#viewRun.primemode #keepaRow>.nolinkmsg,
-#viewRun.primemode #fileChips .fchip,#viewRun.primemode #asinBar,#viewRun.primemode #guide{display:none!important}
+#viewRun.primemode #fileChips .fchip,#viewRun.primemode #asinBar,#viewRun.primemode #guide.pmhide{display:none!important}
 #viewRun.primemode #keepaRow:empty{display:none}
 .primegrid{display:grid;gap:8px;margin:0 0 10px}
 .primegrid[hidden]{display:none}
@@ -2783,3 +2783,30 @@ html[data-theme="light"]{--prime:#0a86b8;--prime-txt:#075f84;--prime-fill:rgba(1
 .primegrid .pnote{margin:0;font-size:11.5px;color:var(--muted)}
 .ch.prime{color:var(--prime-txt);border-color:var(--prime);background:var(--prime-fill)}
 @media (max-width:720px){.primegrid .pgrid{grid-template-columns:1fr}.primegrid .pcolh{display:none}.primegrid .pviewer{grid-template-columns:1fr}}
+
+/* b215 — the UK Viewer in parts (EU drops: 10,193 ASINs, Keepa exports stop at 4,999 rows) */
+#asinBar .vpart{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:99px;border:1px solid var(--line2);color:var(--muted);margin-right:2px}
+#asinBar .vpart.now{border-color:var(--iris);color:var(--iris2);box-shadow:0 0 0 2px var(--bg-a)}
+#asinBar .vpart.in{border-color:rgba(54,214,164,.55);color:var(--jade);background:var(--jade-dim)}
+/* b216 — the Prime note on a lead row: Keepa and SAS show the normal price, not the Prime one */
+.ltbl .primenote{display:block;margin:5px 0 3px;font-size:11.5px;line-height:1.35;color:var(--prime-txt);background:var(--prime-fill);border:1px solid var(--prime);border-radius:7px;padding:4px 8px;white-space:normal;max-width:46ch}
+.ltbl .primenote b{color:var(--prime-txt)}
+/* b217 — the Prime line in every note (list) and the full sentence on the run screen, for everyone while the event is on */
+.pnchip{display:table;margin-top:3px;font-weight:700;font-size:11px;color:var(--prime-txt);background:var(--prime-fill);border:1px solid var(--prime);border-radius:6px;padding:0 6px}
+#runMeta .pnrun{flex-basis:100%;display:block;margin-top:6px;font-size:12.5px;line-height:1.4;color:var(--prime-txt);background:var(--prime-fill);border:1px solid var(--prime);border-radius:8px;padding:6px 10px;max-width:110ch}
+/* b219 — What's working (VA activity, Jack only) */
+.workbox{margin:0 0 14px}
+.workbox .workhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:8px}
+.workbox .workhead b{font-size:15px}
+.workbox .workhead span{font-size:12px;color:var(--muted)}
+.workbox .wspan{font:inherit;font-size:12px;font-weight:700;padding:1px 8px;margin:0 2px;border-radius:99px;border:1px solid var(--line2);background:transparent;color:var(--muted);cursor:pointer}
+.workbox .wspan.on{border-color:var(--iris);color:var(--iris2);background:var(--bg-a)}
+.workbox .worktbls{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:12px}
+.workbox h4{margin:0 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.workbox .worktbl{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.workbox .worktbl th{font-size:11px;font-weight:600;color:var(--muted);text-align:left;padding:4px 6px;border-bottom:1px solid var(--line2)}
+.workbox .worktbl td{padding:5px 6px;border-bottom:1px solid var(--line)}
+.workbox .worktbl .r{text-align:right}
+.workbox .worktbl small{color:var(--muted)}
+.workbox .worktbl tr.bt-prime td:first-child{color:var(--prime-txt);font-weight:700}
+.workbox .worktbl tr.bt-untagged td{color:var(--muted)}

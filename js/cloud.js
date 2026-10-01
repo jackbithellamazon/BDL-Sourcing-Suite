@@ -83,6 +83,7 @@ async function cloudPull(){if(!cloudEnabled()||cloud.pulling)return false;cloud.
     if(st['audit-mine'])lsSet('bdl-sourcing-audit-mine',st['audit-mine']);
     if(st['audit-archived'])lsSet('bdl-sourcing-audit-archived',st['audit-archived']);
     if(st['audit-jointdays']!=null)lsSet('bdl-sourcing-audit-jointdays',st['audit-jointdays']);
+    if(st['prime-event'])lsSet('bdl-sourcing-prime-event',st['prime-event']);   /* b217: Jack's Prime event switch → the Prime line in every note */
     /* b153: who is who, who has signed in, and whether the door is locked */
     if(st.team&&typeof TEAM_KEY!=='undefined')lsSet(TEAM_KEY,st.team);
     if(typeof SIGNIN_KEY!=='undefined'){const si={};Object.keys(st).filter(k=>k.startsWith('signin:')).forEach(k=>si[k.slice(7)]=st[k]);if(Object.keys(si).length)lsSet(SIGNIN_KEY,Object.assign(lsGet(SIGNIN_KEY,{})||{},si));}

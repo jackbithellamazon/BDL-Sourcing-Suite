@@ -289,7 +289,7 @@ function rule1Compute(files,brand,rate,prevRun){
     st.kept++;if(src.endsWith('capped at the Buy Box high'))st.capped++;
     const sd=brNum(r['Buy Box: Standard Deviation 90 days'])||0;
     const flags=[
-      primePick?`★ PRIME DEAL — buy at the Prime exclusive price, Prime members only, while the event lasts`:'',
+      primePick?`★ PRIME DEAL — buy at the Prime exclusive price, Prime members only, while the event lasts. Keepa and SAS show the normal price, not this one`:'',
       yearOk?`reviews put it at ${Math.round(spm)}/mo, but Amazon confirmed ${yearOk.n}/mo on ${yearOk.since} - kept`:'',
       (cs&&cs.lapsed)?`Amazon's figure lapsed - last confirmed ${cs.n}/mo on ${cs.since}, counted as confirmed`:'',
       plugRisk?`PLUG CHECK - screen bought in ${d}, confirm UK lead`:'',
