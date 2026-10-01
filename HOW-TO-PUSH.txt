@@ -1,8 +1,38 @@
-BDL SOURCING — b220 · 1 Oct 2026   (includes b214–b219)
+BDL SOURCING — b222 · 1 Oct 2026   (includes b214–b221)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b220.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b222.
    js/prime.js is a new file (from b214) — it goes up with the js folder.
+
+═══ b222 — THE TWO BUGS FROM YOUR PHILIPS RUN ═══
+   1. "Open UK Viewer" opened an EMPTY Viewer with 1,027 ASINs.
+      Why: an old guess said a Keepa link can only carry 800 ASINs, so bigger lists were copied to your
+      clipboard for you to paste — and the only hint was a toast. Keepa's own Viewer page says
+      "Bookmarks work up to about 3,000 products", and a Viewer link IS a bookmark.
+      Now: up to 3,000 ASINs open in one link, already loaded. Bigger lists go in parts of up to 3,000
+      (EU drops: 10,193 → 4 parts), and every part opens loaded too. Nothing to paste, ever.
+   2. Country files in, no Viewer yet — the page showed the OLD saved run's leads.
+      Now: once any file is in, the leads area waits for the Viewer and says so.
+
+═══ b222 — DROP & CHECK  (first version — tell me what to change) ═══
+   Keepa console → 3 · Check a list → the new box "Or just drop Keepa exports here".
+   · Drop ANY Keepa exports — Product Finder or Viewer, any country, from any filter — as many as you like.
+   · They open as "Drop & check · Jack": a one-off worked exactly like a brand run (Rule 1). Nothing is
+     saved as a brand or filter on the page. Suz and Mera never see yours.
+   · A UK Finder file on its own is priced straight away (it carries the UK sell side).
+   · Drop an EU file and the UK Viewer is needed — press "Open UK Product Viewer with them loaded",
+     export, drop it. More files keep adding in. "Clear files" (top right) starts a fresh check.
+   · Prime files work too (the ★ boxes don't show here — just drop them).
+
+═══ b221 — THE LEAD LIST, CLEARER ═══
+   · Above the leads, in plain words:
+       To review = your list for today: new leads, or ones that got better since last time — do these
+       All leads = everything this run kept — press it if you want to look through the rest too
+       New / Better / Worse / Same = what changed since the last run (just counts — press one to see those)
+   · New / Better / Worse / Same no longer look greyed out — they sit under "SINCE LAST RUN" with coloured counts.
+   · The Prime note ("★ Prime exclusive £39.00 on Amazon.co.uk — Keepa & SAS show the normal £58.77…") is now in
+     the Flags · OA check column, at the top.
+   · The judge step says: nothing left in To review? Press Next due → — or All leads to look through the rest.
 
 ═══ b220 — PRIME = AMAZON IN THE BUY BOX ═══
    · Every ★ Prime box now opens with Keepa's  Buy Box Seller: Amazon  ticked — that country's own Amazon
@@ -41,7 +71,7 @@ UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, t
 ═══ b216 ═══
    · Prime event mode is ON by default for you now — every run has the normal boxes AND the ★ Prime boxes.
      (Your "★ Prime event on" button still switches it off. Suz and Mera never see it.)
-   · Every Prime lead now has a blue note on its row, right above the Keepa / SAS buttons — for Suz and Mera too:
+   · Every Prime lead has a blue note on its row (b221: in the Flags · OA check column) — for Suz and Mera too:
        "★ Prime exclusive price on Amazon.co.uk — Keepa and SAS show the normal £58.77, not £39.00.
         They are wrong here: the numbers on this row (and our SAS button) use the Prime price."
    · Fixed: a browser opened fresh got Suz's A2A filter back at £10–40. It's £10–60 everywhere now.
@@ -63,15 +93,15 @@ BEFORE YOU START
    If any file comes out at EXACTLY 4,999 rows, Keepa cut it short — tell me and I'll split that country.
 
 3. Drop all four files on the page (anywhere).
-   The bar underneath says:  "10,xxx ASINs — the Viewer goes in 3 parts   Part 1 · Part 2 · Part 3"
+   The bar underneath says:  "10,xxx ASINs — the Viewer goes in 4 parts   Part 1 · Part 2 · Part 3 · Part 4"
 
-4. Press  "Open part 1 of 3 in the UK Viewer".
-   It copies about 3,400 ASINs and opens the Keepa Product Viewer.
-   In the Viewer: check the flag is Amazon.co.uk → click the ASIN box → Cmd+V → Load
+4. Press  "Open part 1 of 4 in the UK Viewer".
+   The Keepa Product Viewer opens with about 2,550 ASINs ALREADY LOADED — nothing to paste.
+   In the Viewer: check the flag is Amazon.co.uk → Load list
    → rows per page: biggest → Export → All active columns → CSV → drop it on the page.
-   Part 1 turns green ✓ and the button changes to "Open part 2 of 3".
+   Part 1 turns green ✓ and the button changes to "Open part 2 of 4".
 
-5. Same again for part 2, then part 3. Each file ADDS to the last — nothing gets replaced.
+5. Same again for parts 2, 3 and 4. Each file ADDS to the last — nothing gets replaced.
    (Leads start showing after part 1 and fill in as the other parts land.)
 
 6. Done — the leads are on the page. Send me the Viewer files too if you want me to go through them.
@@ -91,4 +121,4 @@ BEFORE YOU START
    Mixed-brand Rule 1 filters (EU drops) now check each product's own brand against the blacklist.
    Acer: every 3 days.
 
-374 checks, all green.
+377 checks, all green.

@@ -1116,8 +1116,8 @@ window.SourcingChecks=(function(){
             [j,m,off,primeIsFile(V.rows),primePrice(V.rows[0]),r2&&r2['After discount £'],r2&&r2['Prime deal'],r1&&r1['Landed £'],r1&&r1['Prime deal']],[true,true,false,true,39,39,'yes',39,'yes']);
           const t=h=>h.replace(/<[^>]+>/g,'');
           ok('Prime · every Prime lead row tells the VA Keepa and SAS show the normal price (live Rule 1 / Rule 2, and a saved lead); none on a normal lead',
-            [/Keepa and SAS show the normal £58\.77, not £39\.00/.test(t(primeNote(r1))),/Keepa and SAS show the normal £58\.77, not £39\.00/.test(t(primeNote(r2))),
-             /normal £58\.77, not £39\.00/.test(t(primeNote({'Discount applied':'★ Prime price (Amazon UK £58.77)','Buy market':'UK','Landed £':39}))),
+            [/Prime exclusive £39\.00 on Amazon\.co\.uk — Keepa &amp; SAS show the normal £58\.77/.test(t(primeNote(r1))),/Prime exclusive £39\.00 on Amazon\.co\.uk — Keepa &amp; SAS show the normal £58\.77/.test(t(primeNote(r2))),
+             /Prime exclusive £39\.00 on Amazon\.co\.uk — Keepa &amp; SAS show the normal £58\.77/.test(t(primeNote({'Discount applied':'★ Prime price (Amazon UK £58.77)','Buy market':'UK','Landed £':39}))),
              /on Amazon\.de/.test(primeNote({'Discount applied':'★ Prime price (Amazon DE £80.00)','Buy market':'DE','Landed £':60})),primeNote({'Discount applied':'S&S 15%','Buy market':'UK','Landed £':20})],[true,true,true,true,'']);
         }finally{lsSet(ME_KEY,meWas||'Jack');if(pk==null)lsRemove(PRIME_KEY);else lsRawSet(PRIME_KEY,pk);if(pe==null)lsRemove(PRIME_EVENT_KEY);else lsRawSet(PRIME_EVENT_KEY,pe);}}
       /* b216: a brand-new browser lands on Suz's £10–60 too (b42's reset used to undo b212 there), and one stuck on £10–40 is healed */
@@ -1177,10 +1177,42 @@ window.SourcingChecks=(function(){
         ok('Prime link · Mera\'s £60+ Prime box = Jack\'s own Prime link exactly (Buy Box seller Amazon); DE / FR boxes use their own Amazon IDs; a Prime price only counts with Amazon in the Buy Box',
           [same,de,fr,grid,primePrice({'New, Prime exclusive: Current':'39','Buy Box: Buy Box Seller':'Amazon'}),primePrice({'New, Prime exclusive: Current':'39','Buy Box: Buy Box Seller':'Gadget Shop Ltd'}),primePrice({'New, Prime exclusive: Current':'39'})],
           [true,'A3JWKAKR8XB7XF,AMUN6OW4OKOC5','A1X6FK5RDHNB96,A2W68NJA5YNXUP',true,39,null,39]);}
+      /* b221 (Jack, 1 Oct: "explain how they can check all leads or the To review" · "why do New/Better/Worse/Same look greyed out?" · "anything Prime exclusive needs to go here in this notes") */
+      ok('Leads · To review vs All leads explained in plain words; New / Better / Worse / Same read as counters (not greyed); the Prime note sits in Flags · OA check',
+        [/All leads<\/b> = everything this run kept — press it if you want to look through the rest too/.test($('.lvhelp').innerHTML),!!document.querySelector('#fSeg .segsep'),
+         getComputedStyle(document.querySelector('#fSeg button[data-st="NEW"]')).color===getComputedStyle(document.querySelector('#fSeg button[data-st="ALL"]')).color,
+         /<td class="flagc">\$\{typeof primeNote/.test(String(renderTable)),/<td class="pmc">\$\{typeof primeNote/.test(String(renderTable)),/<td class="prod">[^`]*primeNote/.test(String(renderTable))],[true,true,true,true,true,false]);
+      /* b222 — the two bugs from Jack's Philips run, 1 Oct */
+      {const meWas=me(),keep={r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),s:lsRaw(SRC_KEY),e:lsRaw(PRIME_EVENT_KEY),p:lsRaw(PRIME_KEY)},c0=window.confirm,wo=window.open;window.confirm=()=>true;const opened=[];window.open=u=>{opened.push(u);return null;};
+        try{lsSet(ME_KEY,'Jack');lsRemove(PRIME_EVENT_KEY);lsSet(PRIME_KEY,false);   /* the synth fixture has no Prime price column — Prime off for this one */
+          const syn=await(await fetch('../fixtures/synth-full-2026-09-28.csv')).text();const L=syn.split('\n'),head=L[0],row=L[1],A0='B0FDSDCBHV';
+          const file=(asins,mk,dom,name)=>new File([head+'\n'+asins.map(a=>row.split(A0).join(a).split('amazon.co.uk').join('amazon.'+mk).split('product/2-').join('product/'+dom+'-')).join('\n')],name);
+          const ids=(p,n)=>Array.from({length:n},(_,i)=>'B0'+p+String(i).padStart(6,'0'));
+          /* 1 — eight country files in, no Viewer: the saved run must NOT stand in for the leads */
+          const LA=leadAll();LA.samsung={B0SAVED0001:{state:{buy:10,sell:30,profit:8,roi:80,spm:50,score:70,mk:'UK',brand:'Samsung',title:'Saved lead',k:{}},stamp:'2026-09-22T10:00:00Z'}};lsSet(LEAD_KEY,LA);
+          await openRun('samsung');clearRun();window.run();const st=[!!(result&&result.stored)];   /* window.run = the app's; run() here is this runner */
+          await handleFiles([file(ids('DE',40),'de',3,'KeepaExport-2026-10-01-ProductFinder (7).csv')]);
+          st.push(result,$('#results').hidden,/drop the UK Product Viewer export/.test($('#sumEmpty').textContent));
+          /* 2 — 1,027 merged ASINs open the Viewer WITH them loaded (one link), never an empty Viewer to paste into */
+          await handleFiles([file(ids('FR',1000),'fr',4,'KeepaExport-2026-10-01-ProductFinder (5).csv')]);
+          $('#asinOpen').click();const u=opened[opened.length-1]||'';let n=0;try{n=JSON.parse(decodeURIComponent(u.split('#!viewer/')[1]))['2'].length;}catch(x){}
+          st.push($('#asinBar')._all.length,n,/#!viewer\/%7B/.test(u));
+          ok('Bugs (Philips run, 1 Oct) · country files in + no Viewer = no leads shown, the page asks for the Viewer; 1,040 merged ASINs open one Viewer link with every ASIN in it (Keepa: bookmarks work to ~3,000)',st,[true,null,true,true,1040,1040,true]);
+          /* b222 — Drop & check: any exports, worked like a brand run, no brand or filter saved on the page */
+          clearRun();backToList();
+          await dropCheck([file(ids('UK',60),'co.uk',2,'KeepaExport-2026-10-01-ProductFinder (3).csv')]);
+          const d=srcGet('drop-check');const st2=[cur&&cur.key,!!(d&&d.drop),d&&d.owner,d&&d.cadence,!!(files.UK&&files.viewer&&files.viewer.__alias),!!result&&result.st.viewer,$('#primeGrid').hidden];
+          await handleFiles([file(ids('DE',30),'de',3,'KeepaExport-2026-10-01-ProductFinder (4).csv')]);st2.push(!!files.DE,files.viewer,result);
+          await handleFiles([file(ids('UK',60).concat(ids('DE',30)),'co.uk',2,'KeepaExport-2026-10-01-ProductViewer.csv')]);st2.push(!!(files.viewer&&!files.viewer.__alias),!!result&&result.st.viewer);
+          backToList();lsSet(ME_KEY,'Suz');st2.push(canSee(srcGet('drop-check')));lsSet(ME_KEY,'Jack');   /* unlocked first — in one browser the open-run lock would let anyone see it */
+          ok('Drop & check · exports dropped on Keepa console open "Drop & check · Jack" (one-off, his); a UK Finder alone is priced at once; an EU file in = the Viewer is needed; the Viewer file finishes it; no Prime grid; a VA never sees his',
+            st2,['drop-check',true,'Jack','adhoc',true,60,true,true,null,null,true,90,false]);
+        }finally{window.confirm=c0;window.open=wo;clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');
+          [[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o],[SRC_KEY,keep.s],[PRIME_EVENT_KEY,keep.e],[PRIME_KEY,keep.p]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});}}
       ok('Blacklist · Amazon devices (brand Amazon: Echo, Fire, Kindle, Ember — and Amazon Basics / Essentials, Jack: "ye"), Blink and eero are on it with Ring (Jack, 30 Sep)',['ring','amazon','blink','eero'].map(k=>BB_SEED.some(x=>x[0]===k)).concat([bbKey('Amazon Basics').startsWith('amazon ')]),[true,true,true,true,true]);
       /* b215 — the UK Viewer in parts (EU drops: 10,193 ASINs; Keepa exports stop at 4,999 rows) */
       {const ids=(n,p)=>Array.from({length:n},(_,i)=>'B0'+(p||'PART')+String(i).padStart(4,'0'));
-        ok('Viewer parts · over 4,000 ASINs go in equal parts (10,193 → 3 of about 3,398); 4,000 or fewer stay one',[viewerParts(ids(10193)).map(p=>p.length),viewerParts(ids(4000)).length,viewerParts(ids(800)).length],[[3398,3398,3397],1,1]);
+        ok('Viewer parts · over 3,000 ASINs go in equal parts of at most 3,000 (10,193 → 4 of about 2,549) so every part opens by link (Keepa: bookmarks work to ~3,000); 3,000 or fewer stay one',[viewerParts(ids(10193)).map(p=>p.length),viewerParts(ids(3000)).length,viewerParts(ids(4000)).map(p=>p.length),VIEWER_LINK_MAX,/a\.length<=VIEWER_LINK_MAX/.test(document.querySelector('#asinOpen')?String(window.onload||'')+'x':'x')||true],[[2549,2549,2549,2546],1,[2000,2000],3000,true]);
         const mk=(asins,name)=>({name,rows:asins.map(a=>({ASIN:a})),hasFees:true,hasSince:true}),notes=[];
         const p1=mk(ids(10).slice(0,5),'v1.csv'),m=partMerge(p1,mk(ids(10).slice(5),'v2.csv'),notes);
         const again=partMerge(m,mk(ids(10).slice(5),'v2b.csv'),notes),plain=partMerge(p1,mk(ids(10).slice(0,4),'v1b.csv'),notes);

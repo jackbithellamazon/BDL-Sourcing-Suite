@@ -292,6 +292,10 @@ function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runN
   const listed=isListed(s);   /* b202: a storefront or pasted list is Viewer files only — say so */
   $('#step1Title').textContent=listed?'Drop the Product Viewer files':r1&&!uk1?'Drop the Product Finder exports':"Drop this morning's export";
   $('#step1Sub').innerHTML=escapeHtml(listed?`One Viewer file per flag (${s.markets.join(' · ')}). Any order — the app knows which is which.`:r1&&!uk1?`One file per flag, plus the UK Product Viewer file. Any order — the app knows which is which.`:uk1?'UK Product Finder, all columns. One file — it carries the UK sell side too, so no Viewer is needed.':'UK Product Finder, all columns. One file.')+' <button type="button" class="linkbtn" data-cols="1">Keepa columns to tick (once)</button>';
+  if(s.drop){$('#step1Title').textContent='Drop any Keepa exports';
+    $('#step1Sub').innerHTML='Product Finder or Viewer, any country, as many as you like — they add up. UK files on their own are priced straight away. EU files in? Press <b>Open UK Product Viewer</b> below, export it, drop it. <button type="button" class="linkbtn" data-cols="1">Keepa columns to tick (once)</button>';
+    $('#keepaRow').innerHTML='<span class="nolinkmsg">Drop &amp; check — no Keepa link here: export whatever you like from Keepa and drop it on the box below. <b>Clear files</b> (top right) starts a fresh check.</span>';
+    const de=$('#doneEmpty');if(de)de.hidden=true;return;}   /* b222 */
   paintDoneEmpty();
   const link=finderLink(s);
   if(isListed(s)){paintStorefrontRow(s);return;}   /* b183 / b184 */
@@ -356,10 +360,13 @@ function guideSteps(){if(!cur)return{steps:[],now:0,saved:false};const r1=cur.ru
   const DROP=['Drag the file from Downloads onto the big box, or click the box and pick it.','The numbers appear on the right straight away. A yellow warning about a missing column means: switch that column on in Keepa (the columns button above the table) and export again.'];
   const JUDGE=['Click "Open all in Keepa" — every lead on the page opens in one go.','Read each graph. Back here, click Y (buy), N (no) or M (maybe) on that lead\'s row. A No needs a reason chip.','When the To-review list is empty, press Next due →.'];
   const judge={t:'Judge',h:'Judge the leads',d:result?(rev?`${rev} to review`:'all judged ✓'):'',done:!!result&&rev===0,
-    dos:['Press <b>Open all in Keepa</b> (or a lead\'s ASIN) and read the graph','Back here, press <b>Y</b> (buy) · <b>N</b> (no — pick a reason) · <b>M</b> (maybe) on that row','Nothing left to review? Press <b>Next due →</b> at the top'],how:JUDGE,hot:'#leadTop'};
+    dos:['Press <b>Open all in Keepa</b> (or a lead\'s ASIN) and read the graph','Back here, press <b>Y</b> (buy) · <b>N</b> (no — pick a reason) · <b>M</b> (maybe) on that row','Nothing left in <b>To review</b>? Press <b>Next due →</b> at the top — or <b>All leads</b> to look through the rest'],how:JUDGE,hot:'#leadTop'};
   const rest=(list,skip)=>list.filter(m=>m!==skip&&!files[m]).map(m=>F(m)+' '+m).join(', ');
   let steps;
-  if(r1&&isListed(cur)){const eu=cur.markets.filter(m=>m!=='UK'),euIn=eu.filter(m=>files[m]).length,nextEu=eu.find(m=>!files[m])||eu[0];
+  if(cur.drop){const eu=['DE','FR','IT','ES'].filter(m=>files[m]).length,n=SLOTS.filter(k=>files[k]&&!(k==='viewer'&&files.viewer.__alias)).length;   /* b222 */
+    steps=[{t:'Your files',h:'Drop any Keepa exports',d:n?`${n} file${n===1?'':'s'} in${eu&&!files.viewer?' · EU files in — the UK Viewer is next':''}`:'Finder or Viewer, any country',done:!!files.viewer||!!result,
+        dos:['Export anything from Keepa — Product Finder or Viewer, any country, <b>All active columns → CSV</b>','Drop the files anywhere on this page — as many as you like','EU files in? Press <b>Open UK Product Viewer</b> below, export it, drop it'],how:[],hot:'#dropAny'},judge];}
+  else if(r1&&isListed(cur)){const eu=cur.markets.filter(m=>m!=='UK'),euIn=eu.filter(m=>files[m]).length,nextEu=eu.find(m=>!files[m])||eu[0];
     const what=cur.list==='adhoc'?'the ASINs you pasted':'your storefront';
     steps=[{t:'UK file',h:'Get the UK file',d:`${(cur._sf||[]).length?(cur._sf.length.toLocaleString()+' products · '):''}the Viewer opens with ${what} already loaded`,done:!!files.viewer||!!result,
         dos:[`Press <b>${F('UK')} UK</b> below → the Keepa Product Viewer opens with ${what} in it`,'In Keepa: <b>Export → All active columns → CSV</b> <button type="button" class="linkbtn gcols" data-cols="1">first time? columns to tick</button>','Drag that file from Downloads onto the box below'],
@@ -406,7 +413,11 @@ function sig(){return SLOTS.map(k=>files[k]?files[k].name+':'+files[k].rows.leng
 /* b215 (EU drops, 30 Sep: 10,193 ASINs for the UK Viewer — Keepa exports stop at 4,999 rows, so one Viewer cannot carry it). Over 4,000
    ASINs the Viewer goes in equal parts, sorted so a part never changes under you. A part counts as in once its own ASINs show up in the
    Viewer file — a handful is enough, because many EU ASINs are not listed in the UK at all. */
-const VIEWER_PART=4000;
+/* b222 (Jack, 1 Oct, 1,027 ASINs → an EMPTY Viewer: "major bug — it's not merging, why not?"). b185 guessed 800 as the most a Viewer link
+   could carry and copied anything bigger to the clipboard for pasting — a toast nobody reads. Keepa's own Viewer page says "Bookmarks work
+   up to about 3,000 products", and a Viewer link is a bookmark. So: links up to 3,000, and the parts are 3,000 too — every part opens
+   with its ASINs already loaded, nothing to paste. */
+const VIEWER_PART=3000,VIEWER_LINK_MAX=3000;
 function viewerParts(all){if(all.length<=VIEWER_PART)return[all];const n=Math.ceil(all.length/VIEWER_PART),size=Math.ceil(all.length/n);
   return Array.from({length:n},(_,i)=>all.slice(i*size,(i+1)*size));}
 function partDone(part,covered){let n=0;for(const a of part)if(covered.has(a))n++;return n>=Math.max(1,Math.ceil(part.length*0.02));}
@@ -432,6 +443,7 @@ async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return
   if(!me()){pendingFiles=arr;needMe();toast('Pick your name first — the export is waiting',true);return;}
   const notes=[],accepted=[];let colsPop=null;   /* b203: after the drop, the popup lists every column this file has not got */
   if(typeof primeStrip==='function')primeStrip();   /* b214: the ★ Prime rows come off while files land, and go back on below */
+  if(cur.drop&&files.viewer&&files.viewer.__alias)files.viewer=null;   /* b222 */
   for(const file of arr){let d;try{d=describeExport(parseCSV(await readFileText(file)));}catch(e){d=null;}
     if(!d){notes.push(file.name+': no data rows');continue;}
     const f={name:file.name,rows:d.rows,hasFees:d.hasFees,asins:d.asins,domain:d.domain,hasSince:d.hasSince,missing:d.missing||[],missingAll:d.missingAll||[]};
@@ -459,11 +471,12 @@ async function handleFiles(list){const arr=[...list];if(!arr.length||!cur)return
        Unnamed files fall back to: the biggest UK file with the fee columns is the sell side. */
     const nm=file.name.toLowerCase(),v=files.viewer;
     if(nm.includes('productviewer'))files.viewer=partMerge(files.viewer,f,notes);
-    else if(nm.includes('productfinder'))files.UK=f;
+    else if(nm.includes('productfinder'))files.UK=partMerge(files.UK,f,notes);   /* b222: a second UK Finder export of new products joins the first */
     else if(!v)files.viewer=f;
     else if(f.hasFees&&(!v.hasFees||f.rows.length>=v.rows.length)){files.UK=v;files.viewer=f;}
     else files.UK=f;}
   if(typeof primeApply==='function')primeApply();
+  dropAlias();   /* b222 */
   touched.clear();paintSlots();warn(notes);if(typeof dropNudgeOff==='function')dropNudgeOff();
   if(typeof actLog==='function')actLog('drop',`${arr.length} file${arr.length===1?'':'s'} dropped · ${accepted.length} accepted${arr.length-accepted.length?' · '+(arr.length-accepted.length)+' refused':''}${colsPop&&colsPop.missing.length?' · '+colsPop.missing.length+' Keepa columns missing':''}`,undefined,
     {n:arr.length,ok:accepted.length,prime:typeof pfiles!=='undefined'?accepted.filter(f=>Object.values(pfiles).includes(f)).length:0});   /* b219 */
@@ -602,6 +615,22 @@ async function adhocCheck(asins,markets){const m=me();if(!m){toast('Pick who you
   s.list='adhoc';s.asins=asins;s.markets=markets&&markets.length?markets:['UK'];s.owner=m;s.status='active';s._sf=null;s.name='Check these · '+m;srcSave(s);
   const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b)b.click();
   await openRun(key);if(cur&&cur.key===key)cur._sf=asins;}
+/* b222 (Jack, 1 Oct: "I want it to work like the brands, but I just put in random exports"). Drop & check: any Keepa exports — Finder or
+   Viewer, any country — dropped on Keepa console → Check a list open in your own one-off run and are worked exactly like a brand run (Rule 1).
+   UK files on their own are priced straight away (a Finder export with every column is its own UK sell side, as on a UK-only brand);
+   once an EU file is in, the UK Viewer is needed — the usual Open UK Viewer button. More files keep adding in; Clear files starts again. */
+function dropKey(){const m=me();return !m||isJack()?'drop-check':'drop-'+m.toLowerCase().replace(/[^a-z0-9]+/g,'-');}
+async function dropCheck(list){const m=me();if(!m){toast('Pick who you are (top right) first — the run is saved under your name',true);return;}
+  const key=dropKey();const s=srcGet(key)||{key,type:'filter',rule:1,cadence:'adhoc',migV:12,link:''};
+  s.drop=true;s.name='Drop & check · '+m;s.markets=['UK','DE','FR','IT','ES'];s.owner=m;s.status='active';s.link='';
+  s.note='Any Keepa exports dropped on Keepa console → Check a list — worked like a brand run (Rule 1).';srcSave(s);
+  const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b)b.click();
+  if(!(cur&&cur.key===key))await openRun(key);
+  if(list&&list.length)await handleFiles(list);}
+/* the UK Finder file doubles as the UK sell side while no EU file is in (never over a real Viewer) */
+function dropAlias(){if(!cur||!cur.drop)return;const eu=['DE','FR','IT','ES'].some(m=>files[m]);
+  if(files.viewer&&files.viewer.__alias)files.viewer=null;
+  if(!files.viewer&&files.UK&&files.UK.hasFees&&!eu)files.viewer=Object.assign({},files.UK,{__alias:true,__prime:false,__base:null,name:files.UK.name+' — also the UK sell side'});}
 /* b203: the one-off Keepa column checklist, grouped exactly like Keepa's Configure Columns box; opened from any "columns to tick" link */
 function keepaColsHtml(need){const groups=[];KEEPA_COLS.forEach(c=>{let g=groups.find(x=>x.g===c.g);if(!g){g={g:c.g,subs:[]};groups.push(g);}let s=g.subs.find(x=>x.s===c.s);if(!s){s={s:c.s,cols:[]};g.subs.push(s);}s.cols.push(c);});
   return groups.map(g=>`<div class="kcg"><h4>${escapeHtml(g.g)}</h4>${g.subs.map(s=>`<div class="kcs">${s.s?`<span class="kss">${escapeHtml(s.s)}</span>`:`<span class="kss dim">no sub-heading — the plain list</span>`}<span class="kcl">${s.cols.map(c=>`<i class="${need?(need.has(c.h)?'need':'have'):c.m}" title="${escapeHtml(c.h)}">${need&&!need.has(c.h)?'✓':'☐'} ${escapeHtml(c.n)}</i>`).join('')}</span></div>`).join('')}</div>`).join('');}
@@ -629,6 +658,13 @@ document.addEventListener('DOMContentLoaded',()=>{const ta=$('#kcAsins'),btn=$('
   ta.addEventListener('input',()=>{const a=found();n.textContent=a.length+' ASIN'+(a.length===1?'':'s');btn.disabled=!a.length;});
   document.querySelectorAll('#kcCheck .kccmk input').forEach(c=>c.addEventListener('change',()=>c.closest('label').classList.toggle('on',c.checked)));
   btn.addEventListener('click',()=>{const mk=['UK'].concat([...document.querySelectorAll('#kcCheck .kccmk input:checked')].map(c=>c.value).filter(v=>v!=='UK'));adhocCheck(found(),mk);});});
+/* b222: Drop & check — the zone on Keepa console → Check a list */
+document.addEventListener('DOMContentLoaded',()=>{const z=$('#kcDrop'),inp=$('#kcDropIn');if(!z||!inp)return;
+  z.addEventListener('click',()=>inp.click());z.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();inp.click();}});
+  inp.addEventListener('change',e=>{const f=[...e.target.files];e.target.value='';if(f.length)dropCheck(f);});
+  ['dragenter','dragover'].forEach(t=>z.addEventListener(t,e=>{e.preventDefault();e.stopPropagation();z.classList.add('over');}));
+  z.addEventListener('dragleave',()=>z.classList.remove('over'));
+  z.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();z.classList.remove('over');const f=[...(e.dataTransfer&&e.dataTransfer.files||[])];if(f.length)dropCheck(f);});});
 async function sfAsins(){if(cur&&cur._sf&&cur._sf.length)return cur._sf;if(cur&&cur.list==='adhoc'){cur._sf=(cur.asins||[]).slice();return cur._sf;}let list=[];
   try{if(typeof cloudReadable==='function'&&cloudReadable()){const rows=await cloudGetAll('bdl_my_shelf','select=asin,on_now');list=rows.sort((a,b)=>(b.on_now?1:0)-(a.on_now?1:0)).map(r=>r.asin);}}catch(e){}
   if(!list.length&&typeof audState!=='undefined')list=[...audState.mineNow,...[...audState.mineEver].filter(a=>!audState.mineNow.has(a))];
@@ -801,7 +837,7 @@ async function fillUnknownShares(f){if(!f||!f.rows||typeof shareUnknown!=='funct
   lsSet(UNK_KEY,cache);if(asked&&typeof paintTokens==='function')paintTokens();return{asked,confirmed,cached:need.length-ask.length};}
 function warn(lines){const w=$('#warnRun');if(!lines||!lines.length){w.classList.remove('show');w.innerHTML='';return;}
   w.innerHTML=lines.map(l=>'<div>⚠ '+escapeHtml(l)+'</div>').join('');w.classList.add('show');}
-function removeFile(k){if(typeof primeStrip==='function')primeStrip();files[k]=null;if(typeof primeApply==='function')primeApply();paintSlots();run();}
+function removeFile(k){if(typeof primeStrip==='function')primeStrip();if(k==='viewer'&&files.viewer&&files.viewer.__alias)k='UK';files[k]=null;if(typeof primeApply==='function')primeApply();dropAlias();paintSlots();run();}
 /* b101 (Jack, 18 Sep, the Keepa export box: "is this worth checking?"). Keepa exports ONLY the page on
    screen. Across his ~150 exports that had cut two short without anyone knowing — one a SanDisk/Seagate
    brand run that stopped at exactly 50 rows when SanDisk alone has hundreds of UK listings. The step-by-step
@@ -825,6 +861,11 @@ function paintSlots(){if(!cur)return;const r1=cur.rule===1;
       +(more.length?`<div class="cutwarn"><b>${more.length} column${more.length===1?'':'s'} the rules read ${more.length===1?'is':'are'} not in this file — leads can be missed or priced wrong.</b> In Keepa: Configure Columns → tick ${more.slice(0,5).map(c=>escapeHtml(colPath(c))).join(' · ')}${more.length>5?` · and ${more.length-5} more`:''} — <button type="button" class="linkbtn" data-cols="${k}">show all ${more.length} to tick</button>. Then export again.</div>`:'');};
   let h='';
   if(r1&&ukOnly()){h+=chip('viewer','🇬🇧 UK',files.viewer,'UK Product Finder export · required (no Viewer needed)');}
+  else if(r1&&cur.drop){const any=MARKETS.some(m=>files[m])||!!files.viewer;   /* b222: Drop & check lists only what was dropped */
+    MARKETS.filter(m=>files[m]).forEach(m=>{h+=chip(m,FLAG[m]+' '+m,files[m],'');});
+    if(files.viewer&&!files.viewer.__alias)h+=chip('viewer','Viewer',files.viewer,'');
+    else if(!any)h+=chip('viewer','Files',null,'drop any Keepa exports — Finder or Viewer, any country');
+    else if(!files.viewer)h+=chip('viewer','Viewer',null,'UK Product Viewer · needed once an EU file is in');}
   else if(r1){cur.markets.filter(m=>!(isListed(cur)&&m==='UK')).forEach(m=>{h+=chip(m,FLAG[m]+' '+m,files[m],isListed(cur)?'Viewer export · expected':'Finder export · expected');});
     MARKETS.filter(m=>!cur.markets.includes(m)&&files[m]).forEach(m=>{h+=chip(m,FLAG[m]+' '+m,files[m],'');});
     h+=chip('viewer','Viewer',files.viewer,'UK Product Viewer · required');}
@@ -841,7 +882,7 @@ function paintSlots(){if(!cur)return;const r1=cur.rule===1;
   if(r1&&merged.size&&P.length>1&&pNext>=0){bar.classList.remove('done');const nIn=pIn.filter(Boolean).length;
     $('#asinMsg').innerHTML=`<b>${merged.size.toLocaleString()}</b> ASINs — too many for one Keepa export, so the Viewer goes in <b>${P.length} parts</b> of about ${P[0].length.toLocaleString()}. `
       +P.map((p,i)=>`<span class="vpart${pIn[i]?' in':i===pNext?' now':''}">${pIn[i]?'✓ ':''}Part ${i+1}</span>`).join(' ')
-      +(nIn?` · ${covered.size.toLocaleString()} products in so far`:' · press the button, paste, Load, export all columns, drop it here — then the next part');
+      +(nIn?` · ${covered.size.toLocaleString()} products in so far`:' · press the button (the Viewer opens with that part loaded), Load list, export all columns, drop it here — then the next part');
     $('#asinN').textContent=merged.size.toLocaleString();bar._all=[...merged].sort();$('#asinOpenLab').textContent=`Open part ${pNext+1} of ${P.length} in the UK Viewer`;}
   else if(r1&&merged.size){bar.classList.toggle('done',!missing.length);$('#asinOpenLab').textContent='Open UK Product Viewer with them loaded';
     $('#asinMsg').innerHTML=!missing.length?`all ${merged.size.toLocaleString()} ASINs covered by the Viewer`
@@ -940,7 +981,9 @@ function run(){if(!cur)return;stampLearned();
   /* UK-only brand with just the Finder export: the Finder carries the same columns, so it IS the sell side */
   if(cur.rule===1&&!files.viewer&&files.UK&&files.UK.hasFees&&cur.markets.every(m=>m==='UK')){files.viewer=files.UK;files.UK=null;paintSlots();}
   const ready=cur.rule===1?!!files.viewer:!!files.one;
-  if(!ready){if(runStored())return;result=null;$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;
+  /* b222 (Jack, 1 Oct, eight country files in and no Viewer: "it shouldn't be able to show without the Viewer being in play"): the saved run
+     only stands in while NOTHING has been dropped. Once a file is in, the leads area waits for the Viewer and says so. */
+  if(!ready){if(!SLOTS.some(k=>files[k])&&!files.one&&runStored())return;result=null;$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;
     ['#story','#statusRow','#sumDetail','#fell'].forEach(id=>{const e=$(id);if(e){e.innerHTML='';if(id==='#story')e.hidden=true;}});['#brandNote','#storedNote'].forEach(id=>{const e=$(id);if(e)e.hidden=true;});const fw=$('#feeWarn');if(fw)fw.classList.remove('show');
     $('#sumEmpty').textContent=cur.rule===1?(MARKETS.some(m=>files[m])?'Finder exports in — drop the UK Product Viewer export and the leads appear here.':'Drop the exports and the numbers appear here.'):'Drop the export and the numbers appear here.';renderGuide();return;}
   /* b111: the file is in but lacks the ladder columns — say so where the numbers would be, and stop */
@@ -1327,26 +1370,26 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
   const pmRow=o=>o['Buy market']!=='UK'?'':`<div class="pms pms-r1">${PM_OPTIONS.map(x=>`<button type="button" class="pm${(factGet(o.ASIN).pm||[]).includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}" title="Tick when you have confirmed ${x} price-matches">${pmLabel(x)}</button>`).join('')}</div>`;
   if(cur.rule===1){h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Product</th><th>Verdict</th><th class="r">Landed £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">/mo</th><th>Flags · OA check</th></tr></thead><tbody>`;
     rows.forEach((o,i)=>{const fl=(o.Flags||'').split('; ').filter(Boolean);const band=bandOf(o.Score||1);h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}${verdGet(o.ASIN)?' rdone':''}" data-asin="${o.ASIN}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td class="scorec"><span class="score ${band}">${o.Score||1}</span><div class="stat2">${statusCell(o)}</div></td>
-      <td class="prod"><span class="t" title="${escapeHtml(o.Title)}">${escapeHtml(o.Title)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o['Sell used'])}${o['LTD badge']?' · <b>LTD</b>':''}</span></span>${typeof primeNote==='function'?primeNote(o):''}${acts(o)}${pend(cur.name)}</td>
+      <td class="prod"><span class="t" title="${escapeHtml(o.Title)}">${escapeHtml(o.Title)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o['Sell used'])}${o['LTD badge']?' · <b>LTD</b>':''}</span></span>${acts(o)}${pend(cur.name)}</td>
       <td class="vcell">${verdCell(o)}</td>
       <td class="num r buyc">${mk(o['Buy market'])} <b>${gbp(o['Landed £'])}</b>${o['Discount applied']?`<span class="sub">${escapeHtml(o['Discount applied'])}</span>`:''}</td>
       <td class="num r sellc"><b class="${o.yourSell?'yours':''}">${gbp(o['Sell £ used'])}</b>${o.yourSell?`<span class="sub">yours · rule said ${gbp(o['Rule sell £'])}</span>`:((o['Sell low £']||0)>0&&(o['Sell low £']||0)<(o['Sell £ used']||0)-0.005?`<span class="sub" title="If it only ever fetches the Buy Box 90d average">worst £${(o['Sell low £']).toFixed(2)}</span>`:'')}<input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" min="0" placeholder="your £" value="${o.yourSell?o['Sell £ used']:''}" title="Read the graph? Type what it really sells at and the profit re-works">${lvlPicker(o.ASIN,o['Sell £ used'])}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r demc">${o.SPM}<span class="sub">${o['SPM from']}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
-      <td class="flagc">${(()=>{const oa=oaChip(o),fx=flagPick(fl);return`<span class="chips">${oa}${fx.show.map(flagChip).join('')}${fx.rest.length?`<i class="ch more" title="${escapeHtml(fx.rest.join(' · '))}">+${fx.rest.length}</i>`:''}</span>`;})()}${pmRow(o)}</td></tr>`;});}
+      <td class="flagc">${typeof primeNote==='function'?primeNote(o):''}${(()=>{const oa=oaChip(o),fx=flagPick(fl.filter(f=>!/★ PRIME DEAL/.test(f)));return`<span class="chips">${oa}${fx.show.map(flagChip).join('')}${fx.rest.length?`<i class="ch more" title="${escapeHtml(fx.rest.join(' · '))}">+${fx.rest.length}</i>`:''}</span>`;})()}${pmRow(o)}</td></tr>`;});}
   else{h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Product</th><th>Verdict</th><th class="r">Buy £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">Demand</th><th title="We cannot see other retailers' prices. These are the ones worth checking for this product — tick what you confirm.">OA check · you check</th></tr></thead><tbody>`;
     rows.forEach(o=>{const pot=o['Potential score']>o.Score+5?o['Potential score']:0;const band=bandOf(Math.max(o.Score,pot));
       const fact=factGet(o.ASIN);const alt=[['Buy Box 90d',o['Buy Box 90d £']],['Buy Box 180d',o['Buy Box 180d £']],['FBA 90d',o['FBA 90d £']],['FBM 90d',o['FBM 90d £']],['Buy Box high',o['Buy Box high £']]].filter(x=>x[1]).map(x=>`${x[0]} ${gbp(x[1])}`).join(' · ');
       const vcls=fact.vat==null?'':(+fact.vat===0?'z':'s');const vtxt=fact.vat==null?(o['VAT %']===0?(cur.vat0?'0% VAT · FILTER':'0% VAT · CONFIRM'):'VAT 20%'):(+fact.vat===0?'0% VAT ✓':'20% VAT ✓');
       h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}${verdGet(o.ASIN)?' rdone':''}" data-asin="${o.ASIN}">${sel(o)}<td class="idx">${o['#']}</td>
       <td class="scorec"><span class="score ${band}">${o.Score}</span>${pot?`<span class="potl" title="Potential score with ${escapeHtml(o['Potential via'])}">→ ${pot}</span>`:''}<div class="stat2">${statusCell(o)}</div></td>
-      <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d':''}</span></span>${typeof primeNote==='function'?primeNote(o):''}${acts(o)}<span class="chips">${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 3 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
+      <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d':''}</span></span>${acts(o)}<span class="chips">${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t)&&!/★ PRIME DEAL/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 3 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
       <td class="vcell">${verdCell(o)}</td>
       <td class="num r buyc"><b>${gbp(o['After discount £'])}</b><span class="sub">${o['Discount applied']?'Amazon '+gbp(o['Buy at £'])+' · '+escapeHtml(o['Discount applied']):(o['Amazon 90d drop %']!==''&&o['Amazon 90d drop %']!=null?o['Amazon 90d drop %']+'% under 90d avg':'')}</span></td>
       <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(o['Sell from']+' — '+alt)}">${escapeHtml(shortSell(o['Sell from']))}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit">${lvlPicker(o.ASIN,o['Sell for £'])}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r demc">${o['Sells /mo']}<span class="sub">/mo${o['Demand from']?' · '+escapeHtml(o['Demand from']):''}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
-      <td class="pmc">${oaCell(o)}</td></tr>`;});}
+      <td class="pmc">${typeof primeNote==='function'?primeNote(o):''}${oaCell(o)}</td></tr>`;});}
   $('#leads').innerHTML=h+'</tbody>';
   const from=all.length?(view.page-1)*PAGEN()+1:0,to=Math.min(all.length,view.page*PAGEN());
   let pg='';const win=[...new Set([1,2,view.page-1,view.page,view.page+1,pages-1,pages].filter(p=>p>=1&&p<=pages))].sort((a,b)=>a-b);
@@ -1714,10 +1757,10 @@ function brandsInit(){if(typeof bbSeed==='function')bbSeed();paintJackOnly();ren
   document.addEventListener('click',e=>{const v=e.target.closest('#keepaRow a.vwbtn');if(!v)return;e.preventDefault();$('#asinOpen').click();});   /* b209 */
   $('#asinOpen').addEventListener('click',e=>{const a=$('#asinBar')._all||[];if(!a.length){toast('Drop the Finder exports first',true);return;}
     {const P=viewerParts(a);if(P.length>1){const cov=new Set(files.viewer?files.viewer.asins||[]:[]);let i=P.findIndex(p=>!partDone(p,cov));if(i<0)i=0;   /* b215 */
-      copy(P[i].join('\n'),`Part ${i+1} of ${P.length} · ${P[i].length.toLocaleString()} ASINs copied — in the Viewer that just opened: click the ASIN box, Cmd+V, Load, export all columns, drop it here`,e.currentTarget,'Copied');
-      window.open('https://keepa.com/#!viewer','_blank');return;}}
-    if(a.length<=800){window.open(keepaLink(a,'2'),'_blank');return;}
+      window.open(keepaLink(P[i],'2'),'_blank');toast(`Part ${i+1} of ${P.length} · ${P[i].length.toLocaleString()} ASINs — the Viewer opens with them loaded: Load list, export all columns, drop the file here`);return;}}
+    if(a.length<=VIEWER_LINK_MAX){window.open(keepaLink(a,'2'),'_blank');return;}
     copy(a.join('\n'),`${a.length.toLocaleString()} ASINs copied — in the Viewer that just opened, click in the ASIN box and paste (Cmd+V), then Load`,e.currentTarget,'Copied');
+    const am=$('#asinMsg');if(am)am.innerHTML=`<b>${a.length.toLocaleString()} ASINs are on your clipboard</b> — too many for one Keepa link, so the Viewer opened empty on purpose: click in Keepa's ASIN box, <b>Cmd+V</b>, then <b>Load list</b>. Export all columns and drop the file here.`;
     window.open('https://keepa.com/#!viewer','_blank');});
   $('#dlSheet').addEventListener('click',dlSheet);$('#dlCsv').addEventListener('click',dlCsv);$('#dlDropped').addEventListener('click',dlDropped);
   $('#seenAll').addEventListener('click',markAllSeen);

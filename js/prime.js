@@ -67,7 +67,7 @@ function primeLinkFor(m,kind){if(!cur)return'';const base=(cur.links&&cur.links[
 function primeSlots(){const out=[];primeMarkets().forEach(m=>{out.push(m+'|n');if(PRIME_MK.includes(m))out.push(m+'|p');});return out;}
 function primeIn(key){const [m,k]=key.split('|');return k==='p'?!!pfiles[m]:!!primeNormal(m);}
 function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)return;
-  const on=!!cur&&primeOn()&&!(typeof isListed==='function'&&isListed(cur));vr.classList.toggle('primemode',on);paintPrimeSwitch();
+  const on=!!cur&&primeOn()&&!(typeof isListed==='function'&&isListed(cur))&&!cur.drop;vr.classList.toggle('primemode',on);paintPrimeSwitch();   /* b222: not on Drop & check */
   if(!on){host.hidden=true;host.innerHTML='';return;}
   host.hidden=false;const slots=primeSlots(),nx=slots.find(k=>!primeIn(k))||null,r1multi=cur.rule===1&&!ukOnly();
   const viewerIn=!!files.viewer&&r1multi,finIn=slots.filter(primeIn).length,allF=!nx;
@@ -120,7 +120,7 @@ function primeNote(o){const d=String((o&&o['Discount applied'])||'');if(!/★ Pr
   const mk=o['Buy market']||'UK',site={UK:'Amazon.co.uk',DE:'Amazon.de',FR:'Amazon.fr'}[mk]||'Amazon';
   const m=/\(Amazon [A-Z]{2} £([\d.,]+)\)/.exec(d),was=m?'£'+m[1]:(+o['Buy at £']>0?'£'+(+o['Buy at £']).toFixed(2):'');
   const buy=+(o['Landed £']!=null&&o['Buy market']?o['Landed £']:o['After discount £'])||0;
-  return`<span class="primenote" title="Keepa and SAS only see Amazon's normal price. The Prime exclusive price is for Prime members during the event.">★ <b>Prime exclusive price on ${site}</b> — Keepa and SAS show the normal ${was||'price'}, not ${buy?'£'+buy.toFixed(2):'this'}. They are wrong here: the numbers on this row (and our SAS button) use the Prime price.</span>`;}
+  return`<span class="primenote" title="Keepa and SAS only see Amazon's normal price. The Prime exclusive price is for Prime members during the event.">★ <b>Prime exclusive ${buy?'£'+buy.toFixed(2):''} on ${site}</b> — Keepa &amp; SAS show the normal ${was||'price'}, not this. Trust this row (our SAS button uses the Prime price).</span>`;}
 /* a file dropped while the switch is on: returns true when this module took it (placed in a Prime box, or refused / ignored with a note) */
 function primeTake(file,d,f,notes){if(!primeOn()||!cur||/productviewer/i.test(file.name)||!primeIsFile(d.rows))return false;
   const mk=d.domain||'UK';

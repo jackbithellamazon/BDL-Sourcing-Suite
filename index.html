@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b220">
-<link rel="stylesheet" href="css/brands.css?v=b220">
+<link rel="stylesheet" href="css/base.css?v=b222">
+<link rel="stylesheet" href="css/brands.css?v=b222">
 </head>
 <body>
 <div class="wrap">
@@ -168,6 +168,11 @@
             <label class="kccmk"><input type="checkbox" value="ES"> 🇪🇸 ES</label>
             <span class="kccn" id="kcAsinN">0 ASINs</span>
             <button class="btn primary sm" id="kcCheckBtn" type="button" disabled>Check these →</button>
+          </div>
+          <div class="kcdrop" id="kcDrop" tabindex="0" role="button" aria-label="Drop any Keepa exports to check them like a brand run">
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg></span>
+            <span class="t"><b>Or just drop Keepa exports here</b><span>Any Product Finder or Viewer files, any country, as many as you like — they open as <b>"Drop &amp; check · your name"</b> and are worked exactly like a brand run. UK files on their own are priced straight away; EU files → press Open UK Viewer, export, drop it.</span></span>
+            <input type="file" id="kcDropIn" accept=".csv,text/csv" multiple hidden>
           </div>
           <ol class="kcsteps"><li><b>Check these →</b> opens <b>"Check these · your name"</b> under Brands / Filters. Only you (and Jack) see it.</li><li>Press each flag button: the <b>Keepa Product Viewer</b> opens with your ASINs loaded. Free — no tokens.</li><li>In Keepa: <b>Export → All active columns → CSV</b>, then drop each file into the run. <button type="button" class="linkbtn" data-cols="1">First time? Keepa columns to tick</button></li><li>The leads come out scored — mark them <b>Y / N / M</b> like any run.</li></ol>
         </div>
@@ -442,10 +447,10 @@
           </div>
 
           <div class="leadhead" id="leadTop">
-            <h3 id="leadCount">Leads</h3><span class="sub"><b>To review</b> = new, or better than the last run (or better since it was judged) · <b>All leads</b> = everything this run kept · Y/N/M saves as you click · ⃠ = never show again</span>
+            <h3 id="leadCount">Leads</h3><span class="sub lvhelp"><b>To review</b> = your list for today: new leads, or ones that got better since last time — do these · <b>All leads</b> = everything this run kept — press it if you want to look through the rest too · New / Better / Worse / Same = what changed since the last run (just counts — press one to see those) · Y/N/M saves as you click · ⃠ = never show again</span>
             <div class="right">
               <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fQ" placeholder="ASIN, title, brand…" autocomplete="off"></div>
-              <div class="seg segl" id="fSeg" title="Which leads to show"><button class="on" data-st="REVIEW" type="button">To review <b>0</b></button><button data-st="ALL" type="button">All leads <b>0</b></button><button data-st="NEW" type="button">New <b>0</b></button><button data-st="BETTER" type="button">Better <b>0</b></button><button data-st="WORSE" type="button">Worse <b>0</b></button><button data-st="UNCHANGED" type="button">Same <b>0</b></button></div>
+              <div class="seg segl" id="fSeg" title="Which leads to show"><button class="on" data-st="REVIEW" type="button">To review <b>0</b></button><button data-st="ALL" type="button">All leads <b>0</b></button><span class="segsep">since last run</span><button data-st="NEW" type="button">New <b>0</b></button><button data-st="BETTER" type="button">Better <b>0</b></button><button data-st="WORSE" type="button">Worse <b>0</b></button><button data-st="UNCHANGED" type="button">Same <b>0</b></button></div>
               <select id="fPer" title="How many leads per page — Open in Keepa takes the page"><option value="50">50 per page</option><option value="100">100 per page</option><option value="200">200 per page</option><option value="0">All on one page</option></select>
               <select id="fSort"><option value="default">Sort · score</option><option value="gain">Sort · biggest improvement</option><option value="profit">Sort · profit</option><option value="roi">Sort · ROI</option><option value="month">Sort · £ / month</option></select>
               <select id="fMarket"><option value="ALL">Buy from · all</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
@@ -534,27 +539,27 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b220"></script>
-<script src="js/parse.js?v=b220"></script>
-<script src="js/rule1.js?v=b220"></script>
-<script src="js/rule2.js?v=b220"></script>
-<script src="js/export.js?v=b220"></script>
-<script src="js/rule4.js?v=b220"></script>
-<script src="js/queue.js?v=b220"></script>
-<script src="js/sources.js?v=b220"></script>
-<script src="js/prime.js?v=b220"></script>
-<script src="js/cloud.js?v=b220"></script>
-<script src="js/auth.js?v=b220"></script>
-<script src="js/leadtools.js?v=b220"></script>
-<script src="js/keepaconsole.js?v=b220"></script>
-<script src="js/euprice.js?v=b220"></script>
-<script src="js/apirun.js?v=b220"></script>
-<script src="js/brands.js?v=b220"></script>
-<script src="js/history.js?v=b220"></script>
-<script src="js/audit.js?v=b220"></script>
-<script src="js/kcjudge.js?v=b220"></script>
-<script src="js/activity.js?v=b220"></script>
-<script src="js/guest.js?v=b220"></script>
-<script src="js/boot.js?v=b220"></script>
+<script src="js/core.js?v=b222"></script>
+<script src="js/parse.js?v=b222"></script>
+<script src="js/rule1.js?v=b222"></script>
+<script src="js/rule2.js?v=b222"></script>
+<script src="js/export.js?v=b222"></script>
+<script src="js/rule4.js?v=b222"></script>
+<script src="js/queue.js?v=b222"></script>
+<script src="js/sources.js?v=b222"></script>
+<script src="js/prime.js?v=b222"></script>
+<script src="js/cloud.js?v=b222"></script>
+<script src="js/auth.js?v=b222"></script>
+<script src="js/leadtools.js?v=b222"></script>
+<script src="js/keepaconsole.js?v=b222"></script>
+<script src="js/euprice.js?v=b222"></script>
+<script src="js/apirun.js?v=b222"></script>
+<script src="js/brands.js?v=b222"></script>
+<script src="js/history.js?v=b222"></script>
+<script src="js/audit.js?v=b222"></script>
+<script src="js/kcjudge.js?v=b222"></script>
+<script src="js/activity.js?v=b222"></script>
+<script src="js/guest.js?v=b222"></script>
+<script src="js/boot.js?v=b222"></script>
 </body>
 </html>
