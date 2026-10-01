@@ -23,7 +23,10 @@ const pcell={};                          /* 'UK|n' / 'UK|p' / 'viewer' → {stat
    Jack's own switch is his (per browser); everyone else follows his shared 'prime-event' setting (no row yet = on). */
 function primeOn(){if(typeof isJack!=='function'||!me())return false;return primeEventOn();}
 /* the Prime price of one row: Keepa's column when ticked, nothing otherwise */
-function primePrice(r){if(!r)return null;let v=r[PRIME_COL];
+/* b220 (Jack, 1 Oct: "on Prime — Buy Box seller needs to be Amazon"): the Prime deal we buy is Amazon's own ("Deal price … Shipper / Seller:
+   Amazon"). A row whose Buy Box is held by someone else gets no Prime price; a file without the seller column is taken as it is. */
+function primeBBok(r){const s=String((r&&r['Buy Box: Buy Box Seller'])||'').trim();return!s||/^amazon/i.test(s);}
+function primePrice(r){if(!r||!primeBBok(r))return null;let v=r[PRIME_COL];
   if(v==null){const k=Object.keys(r).find(h=>/prime exclusive/i.test(h)&&/current/i.test(h)&&!/^buy box/i.test(h));v=k?r[k]:null;}
   const n=kNum(v);return n>0?n:null;}
 function primeHasCol(rows){const r=rows&&rows[0];return!!r&&(PRIME_COL in r||Object.keys(r).some(h=>/prime exclusive/i.test(h)&&/current/i.test(h)&&!/^buy box/i.test(h)));}
@@ -33,12 +36,15 @@ function primeIsFile(rows){return primeShare(rows)>=0.5;}
 /* the Prime version of a Finder link: every Amazon / Buy Box drop line comes out (they do not move during the event), one
    Prime-exclusive drop goes in at the same bar (the Amazon 90-day one's, else 9%), and the sort follows it */
 const PRIME_DROP_RE=/^(AMAZON|BUY_BOX_SHIPPING)_deltaPercent(7|30|90)$/;
-function primeLink(link){if(!link)return'';const m=/^(.*#!finder\/)(.+)$/.exec(link);if(!m)return'';let j;
+/* b220: and the Prime link asks Keepa for Amazon in the Buy Box — that country's own Amazon seller IDs (Jack's Mera £60+ Prime link, 1 Oct) */
+const AMZ_BB_IDS={UK:'A3P5ROKL5A1OLE,AZH2GF8Z5J95G',DE:'A3JWKAKR8XB7XF,AMUN6OW4OKOC5',FR:'A1X6FK5RDHNB96,A2W68NJA5YNXUP'};
+function primeLink(link,mk){if(!link)return'';const m=/^(.*#!finder\/)(.+)$/.exec(link);if(!m)return'';let j;
   try{j=JSON.parse(decodeURIComponent(m[2]));}catch(e){return'';}
   const f=j.f||(j.f={});const bar=f.AMAZON_deltaPercent90||f.BUY_BOX_SHIPPING_deltaPercent90||null;
   Object.keys(f).forEach(k=>{if(PRIME_DROP_RE.test(k))delete f[k];});
   f.PRIME_EXCL_deltaPercent90=bar?Object.assign({},bar):{filterType:'number',type:'greaterThanOrEqual',filter:9,filterTo:null};
   if(Array.isArray(j.s))j.s=j.s.map(x=>x&&PRIME_DROP_RE.test(x.colId||'')?Object.assign({},x,{colId:'PRIME_EXCL_deltaPercent90'}):x);
+  f.buyBoxSellerIdHistory={filterType:'dynamic',filter:AMZ_BB_IDS[mk]||AMZ_BB_IDS.UK,filterDetail:'',type:'equals'};
   return m[1]+encodeURIComponent(JSON.stringify(j));}
 /* which slot a country's Prime rows overlay: Rule 2 = the one UK file; a UK-only brand = its one UK file; otherwise that country's Finder */
 function primeSlot(k){if(!cur)return null;if(cur.rule!==1)return k==='UK'?'one':null;return(k==='UK'&&typeof ukOnly==='function'&&ukOnly())?'viewer':k;}
@@ -57,7 +63,7 @@ function primeNormal(k){const s=cur&&cur.rule!==1?(k==='UK'?'one':null):(k==='UK
 /* ---- the box grid (the approved preview, 30 Sep) ---- */
 function primeMarkets(){if(!cur)return[];if(cur.rule!==1||ukOnly())return['UK'];
   const ms=cur.markets.slice();MARKETS.forEach(m=>{if(!ms.includes(m)&&(files[m]||pfiles[m]))ms.push(m);});return MARKETS.filter(m=>ms.includes(m));}
-function primeLinkFor(m,kind){if(!cur)return'';const base=(cur.links&&cur.links[m])||finderLink(cur);return kind==='p'?primeLink(base):base;}
+function primeLinkFor(m,kind){if(!cur)return'';const base=(cur.links&&cur.links[m])||finderLink(cur);return kind==='p'?primeLink(base,m):base;}
 function primeSlots(){const out=[];primeMarkets().forEach(m=>{out.push(m+'|n');if(PRIME_MK.includes(m))out.push(m+'|p');});return out;}
 function primeIn(key){const [m,k]=key.split('|');return k==='p'?!!pfiles[m]:!!primeNormal(m);}
 function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)return;

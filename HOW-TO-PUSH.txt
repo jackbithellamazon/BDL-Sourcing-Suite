@@ -1,8 +1,14 @@
-BDL SOURCING — b219 · 1 Oct 2026   (includes b214–b218)
+BDL SOURCING — b220 · 1 Oct 2026   (includes b214–b219)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b219.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b220.
    js/prime.js is a new file (from b214) — it goes up with the js folder.
+
+═══ b220 — PRIME = AMAZON IN THE BUY BOX ═══
+   · Every ★ Prime box now opens with Keepa's  Buy Box Seller: Amazon  ticked — that country's own Amazon
+     (UK, DE and FR each have their own Amazon seller IDs, so the DE / FR Prime boxes search the right one).
+   · Checked: Mera's "chosen categories £60+" Prime box is now exactly the Prime link you sent.
+   · The maths follows the same rule: a Prime price only counts when Amazon holds the Buy Box.
 
 ═══ b219 — WHAT'S WORKING ═══
    · Every lead is tagged with how it's bought:  ★ Prime price  ·  Amazon offer (Amazon cut its own price — not Prime)  ·  Amazon price.
@@ -85,4 +91,4 @@ BEFORE YOU START
    Mixed-brand Rule 1 filters (EU drops) now check each product's own brand against the blacklist.
    Acer: every 3 days.
 
-373 checks, all green.
+374 checks, all green.
