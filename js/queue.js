@@ -35,7 +35,10 @@ function compareState(now,then){if(!then)return{status:'NEW',why:[],gain:0};
   return{status,why,gain};}
 /* out = a rule's kept rows (mutated). prevMap = {asin:{state,stamp}} from the last previous-day run. verdicts = {asin:{v,state,...}}.
    Sets STATUS / Changed / Last seen (vs last run) and QUEUE / Review? (vs the verdict). Returns the GONE list. */
-function applyQueue(out,rule,prevMap,verdicts){prevMap=prevMap||{};verdicts=verdicts||{};const seen=new Set();
+/* b233 (Jack, 1 Oct: "keep it in review until it's done — remember if they press Open in Keepa we count it as done"). carry = {q:Set, day, done(asin)}:
+   the To review list of this filter's last previous-day run. A lead that was on it and nobody who works this filter has done since stays To review
+   ('waiting'), even if it is the same or a bit worse — it leaves only when it is answered, opened in Keepa, marked Done, or stops being a lead. */
+function applyQueue(out,rule,prevMap,verdicts,carry){prevMap=prevMap||{};verdicts=verdicts||{};const seen=new Set();
   out.forEach((o,i)=>{o._i=i;const s=leadState(o,rule);const p=prevMap[o.ASIN];const c=compareState(s,p?p.state:null);
     o.STATUS=c.status;o.Changed=c.why.join('; ');o['Last seen']=p?p.stamp:'';o.gain=c.gain;o.state=s;seen.add(o.ASIN);
     if(p&&p.state&&c.status==='WORSE'&&+p.state.buy<+s.buy)o.low={buy:+p.state.buy,stamp:p.stamp};
@@ -43,12 +46,18 @@ function applyQueue(out,rule,prevMap,verdicts){prevMap=prevMap||{};verdicts=verd
     /* b47 (Jack, 15 Sep: "I thought it was only new or better leads in here") — a lead with no verdict is queued only if it is new,
        or better than the last run, or there was no last run. Unchanged and worse rows were on yesterday's list already; they stay in
        Everything and come back the moment they improve. */
-    if(!v){const fresh=!p||c.status==='NEW'||c.status==='BETTER';o.QUEUE=fresh?'new':'';o['Review?']=fresh?'no verdict yet':'';o.sinceVerdict='';}
+    /* b231 (Jack, 1 Oct: "To review should be everything which falls in better or new, full stop. I don't care if it was viewed yesterday
+       by a different filter — if it's new to this filter it's to review. Then All is To review + the ones that were here yesterday or are
+       still here but haven't got better"). The queue is the run's own status and nothing else: a verdict — yesterday's, another filter's,
+       anyone's — never takes a New or Better lead off To review. It shows on the row, and the lead counts as done only once it is answered TODAY. */
+    const fresh=c.status==='NEW'||c.status==='BETTER';
+    const waiting=!fresh&&!!carry&&carry.q.has(o.ASIN)&&!carry.done(o.ASIN);o.waitSince=waiting?carry.day:'';
+    if(waiting){o.QUEUE='waiting';o.sinceVerdict='';o['Review?']='not done yet — to review since '+carry.day;}
+    else if(!fresh){o.QUEUE='';o.sinceVerdict='';o['Review?']='';}
+    else if(!v){o.QUEUE='new';o.sinceVerdict='';o['Review?']='no verdict yet';}
     else{const cv=v.state?compareState(s,v.state):{status:'UNCHANGED',why:[]};
       if(cv.status==='BETTER'){o.QUEUE='better';o.sinceVerdict=cv.why.join('; ');o['Review?']='better since '+v.v+(v.who?' by '+v.who:'')+': '+o.sinceVerdict;}
-      /* b210 (Jack, 29 Sep: "if it's new since the last export I wanna see it"): NEW since the last run is always in the queue, whatever it was once judged */
-      else if(!p&&Object.keys(prevMap).length){o.QUEUE='new';o.sinceVerdict='';o['Review?']='new since the last run (was '+v.v+(v.who?' by '+v.who:'')+')';}
-      else{o.QUEUE='';o.sinceVerdict='';o['Review?']='';}}});
+      else{o.QUEUE='new';o.sinceVerdict='';o['Review?']=(c.status==='NEW'?'new':'better')+' since the last run (was '+v.v+(v.who?' by '+v.who:'')+')';}}});
   return Object.entries(prevMap).filter(([a])=>!seen.has(a)).map(([a,p])=>[a,(p.state.title||'')+(p.state.title?' · ':'')+`was £${(+p.state.buy).toFixed(2)} ROI ${p.state.roi}%`+(p.state.score?' score '+p.state.score:'')]);}
 /* the next lead-state map for a source: today's states, each remembering the last previous-day state as its `prev`
    (a second run on the same day compares against yesterday again, not against this morning) */

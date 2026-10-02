@@ -1,8 +1,111 @@
-BDL SOURCING — b222 · 1 Oct 2026   (includes b214–b221)
+BDL SOURCING — b233 · 1 Oct 2026   (includes b214–b232)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b222.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b233.
    js/prime.js is a new file (from b214) — it goes up with the js folder.
+
+═══ b233 — TO REVIEW UNTIL IT'S DONE + A ✓ DONE BUTTON ═══
+   · A lead on a filter's To review list that nobody on that filter has done STAYS To review on the next run,
+     even if it's the same or a bit worse. The row says "not done since 30/09" in amber. It leaves To review only when
+     it's answered (Y / N / M), opened in Keepa by a VA, marked ✓ Done, or stops being a lead.
+   · Header: "To review 9 = the 0 new + 0 better since the last run + 9 not done yet from an earlier run".
+   · Open in Keepa (a VA) now counts for EVERY lead it opens that isn't done today — including ones with an old
+     Yes / No / Maybe. The old answer is kept (the audit and the lead-sheet week need it); the look is stamped on it.
+   · NEW: ✓ Done button right next to Open in Keepa. It marks the same leads Open would open (ticked ones, or all,
+     or this page) as done by you. Your own Open in Keepa still marks nothing, so this is the button for you.
+   · Pressed by mistake? "Put N back in the queue" undoes Done and Open marks — real Y / N / M answers are never touched.
+
+═══ b232 — YOUR X1 EXAMPLE: NO HIDING ACROSS VAs ═══
+   · Suz says No to X1 on her filter. Mera runs her filter and X1 is New there → it is TO REVIEW on Mera's list,
+     and it stays in her "left" count until MERA answers it. (b231 counted Suz's answer as done on Mera's list.)
+   · A lead ticks off when it's answered today by someone who works THAT filter: its owner (both VAs on a
+     "VAs" filter, you on an unowned one) — or whoever is looking. Suz's answer still shows on the row as info.
+   · Your own answers today are remembered in your browser, so if Suz answers the same product later
+     (there is one verdict per product — the last answer wins) it can't un-tick yours.
+   · The Brands / Filters "to review" totals count the same way.
+
+═══ b231 — TO REVIEW = NEW OR BETTER, FULL STOP ═══
+   · To review = every lead that is NEW or BETTER on this filter since its last run. Nothing else decides it:
+     a No from yesterday, a Seen from another filter, anyone's old verdict — the lead is still to review.
+     The old verdict shows on the row so you can see it; the lead counts as DONE only once someone answers it TODAY.
+   · All leads = To review + the ones that were here last time and are the same or worse.
+   · The "To review now" total on the Brands / Filters page follows the same rule.
+
+═══ b229 — THE LEAD LIST HEADER, PROPERLY THIS TIME ═══
+   It said one thing four ways ("46 to do", "To review 71", "25 of 71 answered", "25 done") and never said how 71
+   and 85 fit together. Worse, the tab and the headline came from two different counts and could disagree after a reload.
+   Now ONE count, and it says how the numbers add up:
+       To review · 46 left of 71 · 25 done (Suz 24 · Jack 1)          [green bar: 25 of 71 done]
+       To review 71 = the 45 new + 26 better since the last run — do these.
+       All leads 85 = those + 14 worse — look if you want.
+
+═══ b230 — COST PRICE IS WHAT WE CAN BUY IT FOR ═══
+   Your Logitech mouse: we buy at £13.99 (Business 30%), ROI 78%. The OA check said "Logitech 10% → 42% ROI" — that's
+   £17.99, DEARER than what we pay. Now an OA route only shows when it beats the real cost. When the brand's own
+   route is dearer it says so in grey:  "Logitech up to 10% = £17.99 — dearer than your £13.99, skip".
+   Logitech (a promo brand) reads "up to 10%" everywhere now.
+
+═══ b228 — BUG HUNT ═══
+   Same family as your video bug — a run you've LEFT still doing things:
+   · Pressing N (or Y / M) on the Brands / Filters list, outside a text box, marked a lead No in the run you'd
+     just left — and that would sync. The ↓ / ↑ arrow keys also stopped scrolling the page everywhere.
+     Now the shortcut keys only work while the lead list is on screen.
+   · The green "✓ 18 to review · 20 leads — show me ↓" pill stayed floating on the list after you left
+     (it's in your video). Now it goes when you leave, clear files or switch page.
+   · Brands / Filters search: redraws once you stop typing, like the lead search.
+   · Sweep: every page and 56 runs, as you and as Suz — no errors.
+
+═══ YOUR VIDEO (20:24) — WHAT YOU SAW AND WHY ═══
+   Your live site is still b222 (the header in the video says so). The "files load, then I'm looking at the
+   Brands / Filters list" bug is the b226 one below — fixed here, not live until you push this folder.
+   I ran your exact two Brother files (18 + 19) through this build in guest mode: the run opens,
+   114 rows, 12 leads, 2 of them Prime. No errors.
+
+═══ b227 — LOTS OF FILES AT ONCE ═══
+   Drop as many as you like on Check a list — a bunch of brands, a bunch of countries, Prime and normal:
+   · UK Finder files from different brands join into one UK list.
+   · DE / FR / IT / ES files join per country. Then one UK Viewer for everything the UK files don't cover.
+   · ★ Prime files join per country too (this build — before, a second one replaced the first).
+   · A re-export of the SAME list replaces the old copy (so a fresh export never doubles up).
+   The leads come out as one list, each row with its own brand.
+
+═══ b226 — THE DROP & CHECK BUG ═══
+   What happened: you'd been in a Drop & check and pressed Done. That hides the run but the app kept it as
+   "the open one" — so your next drop on Keepa console → Check a list skipped opening it. The file went into
+   the hidden run (on top of the last check's files) and you were left looking at the Brands / Filters list.
+   Now: a drop there ALWAYS opens the run. If you'd left the last check, it starts a fresh one.
+   (Still on the run screen? Files you drop add to the check you're looking at, as before.)
+   Also: copy a file in Finder and press Cmd+V on Check a list — same as dropping it.
+
+═══ b225 — NO MORE JUMPING ═══
+   · Measured on a 549-product run before the fix:
+       Y / N / M on a row ............................. the row you were on moved 18px
+       first file drop after opening a run ............ the drop box moved 38px
+     After: 0px, every time. Whatever you press in a row (Y/N/M, a reason, a sell level, a retailer tick,
+     typing your own sell price) — that row stays exactly where it was. Same for the drop box when a file lands.
+   · Prime deals filters: NO price floor now (any £ / €). Both on, daily, due today for Mera and Suz.
+     Pause both when the event ends.
+
+═══ b224 — TWO PRIME DEALS FILTERS + A SMOOTHER SEARCH ═══
+   · "Prime deals · UK"      → Mera, daily, Rule 2 (buy on Amazon.co.uk at the Prime price, sell UK).
+   · "Prime deals · DE + FR" → Suz,  daily, Rule 1 (one file per flag at the Prime price, then the UK Viewer, sell UK).
+     Both: every product on that Amazon with a Prime exclusive price 9%+ under its 90-day average · Amazon in the
+     Buy Box · 50+ bought a month · any price (b225) · never-sell brands out (Amazon devices, Blink, eero, Ring, Microsoft,
+     Xiaomi, Staub). No category or brand limits — the event is the filter.
+     They are Prime-only, so the run screen shows just the ★ boxes. PAUSE BOTH when the event ends (one click each).
+   · Searching a title / brand / ASIN in the lead list: redraws after you stop typing, the list keeps its height
+     while you search, and the green progress bar no longer re-animates on every keystroke.
+
+═══ b223 — DROP & CHECK, ROUND TWO (your notes on the first go) ═══
+   · "DR" → the avatar is now ⇣ (a one-off).
+   · The flags at the top tick as each country's file lands:  UK ✓  DE ✓  FR ✓  IT  ES
+   · It's a one-off, so: no "since last run" counters, no NEW badges, no run strip, no AVM link.
+     It opens on ALL LEADS (everything it kept). "To review" = the ones nobody has judged yet.
+     The Done button just goes back to Brands / Filters.
+   · "I still need a Viewer": with EU files in, yes — the DE/FR/IT/ES products need UK sell prices and
+     only the Viewer has them. BUT your UK file already prices its own products, so the Viewer is now
+     asked only for the rest: "672 of 1,027 need the UK Viewer — the other 355 are priced from your UK file".
+     Its file then joins your UK file as one sell side. (Fewer ASINs = less Keepa quota.)
 
 ═══ b222 — THE TWO BUGS FROM YOUR PHILIPS RUN ═══
    1. "Open UK Viewer" opened an EMPTY Viewer with 1,027 ASINs.
@@ -121,4 +224,4 @@ BEFORE YOU START
    Mixed-brand Rule 1 filters (EU drops) now check each product's own brand against the blacklist.
    Acer: every 3 days.
 
-377 checks, all green.
+385 checks, all green.

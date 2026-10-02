@@ -42,7 +42,7 @@ function primeLink(link,mk){if(!link)return'';const m=/^(.*#!finder\/)(.+)$/.exe
   try{j=JSON.parse(decodeURIComponent(m[2]));}catch(e){return'';}
   const f=j.f||(j.f={});const bar=f.AMAZON_deltaPercent90||f.BUY_BOX_SHIPPING_deltaPercent90||null;
   Object.keys(f).forEach(k=>{if(PRIME_DROP_RE.test(k))delete f[k];});
-  f.PRIME_EXCL_deltaPercent90=bar?Object.assign({},bar):{filterType:'number',type:'greaterThanOrEqual',filter:9,filterTo:null};
+  if(!f.PRIME_EXCL_deltaPercent90)f.PRIME_EXCL_deltaPercent90=bar?Object.assign({},bar):{filterType:'number',type:'greaterThanOrEqual',filter:9,filterTo:null};   /* b224: a Prime-only filter keeps its own bar */
   if(Array.isArray(j.s))j.s=j.s.map(x=>x&&PRIME_DROP_RE.test(x.colId||'')?Object.assign({},x,{colId:'PRIME_EXCL_deltaPercent90'}):x);
   f.buyBoxSellerIdHistory={filterType:'dynamic',filter:AMZ_BB_IDS[mk]||AMZ_BB_IDS.UK,filterDetail:'',type:'equals'};
   return m[1]+encodeURIComponent(JSON.stringify(j));}
@@ -64,7 +64,7 @@ function primeNormal(k){const s=cur&&cur.rule!==1?(k==='UK'?'one':null):(k==='UK
 function primeMarkets(){if(!cur)return[];if(cur.rule!==1||ukOnly())return['UK'];
   const ms=cur.markets.slice();MARKETS.forEach(m=>{if(!ms.includes(m)&&(files[m]||pfiles[m]))ms.push(m);});return MARKETS.filter(m=>ms.includes(m));}
 function primeLinkFor(m,kind){if(!cur)return'';const base=(cur.links&&cur.links[m])||finderLink(cur);return kind==='p'?primeLink(base,m):base;}
-function primeSlots(){const out=[];primeMarkets().forEach(m=>{out.push(m+'|n');if(PRIME_MK.includes(m))out.push(m+'|p');});return out;}
+function primeSlots(){const out=[];primeMarkets().forEach(m=>{if(!(cur&&cur.primeOnly))out.push(m+'|n');if(PRIME_MK.includes(m))out.push(m+'|p');});return out;}   /* b224: Prime-only = ★ boxes only */
 function primeIn(key){const [m,k]=key.split('|');return k==='p'?!!pfiles[m]:!!primeNormal(m);}
 function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)return;
   const on=!!cur&&primeOn()&&!(typeof isListed==='function'&&isListed(cur))&&!cur.drop;vr.classList.toggle('primemode',on);paintPrimeSwitch();   /* b222: not on Drop & check */
@@ -77,6 +77,7 @@ function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)
   primeMarkets().forEach(m=>{h+=`<div class="pmk"><span class="fl">${FLAG[m]}</span><div>${m}<small>${site[m]}</small></div></div>`;
     ['n','p'].forEach(kind=>{const key=m+'|'+kind,pr=kind==='p';
       if(pr&&!PRIME_MK.includes(m)){h+=`<div class="pcell noprime"><span class="txt"><span class="t1">No Prime box</span><span class="t2">Prime deals can't be bought on ${site[m]}</span></span></div>`;return;}
+      if(!pr&&cur.primeOnly){h+=`<div class="pcell noprime"><span class="txt"><span class="t1">Prime-only filter</span><span class="t2">Just the ★ box for ${m}</span></span></div>`;return;}   /* b224 */
       const f=pr?pfiles[m]:primeNormal(m),c=pcell[key]||{},link=primeLinkFor(m,kind);
       const st=f?'in':c.state==='bad'?'bad':c.state==='keepa'?'keepa':'';
       const go=link?`<a class="go" href="${esc(link)}" target="_blank" rel="noopener" data-pkey="${key}">${st==='keepa'||st==='bad'?'Open again':'Open in Keepa'} ↗</a>`:'';
@@ -93,7 +94,7 @@ function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)
       :files.viewer
       ?`<div class="pcell in"><span class="box">✓</span><span class="txt"><span class="t1">${esc(files.viewer.name)}</span><span class="t2">${files.viewer.rows.length.toLocaleString()} products priced in the UK</span></span><button type="button" class="x" data-prm="viewer" aria-label="Remove the Viewer file">✕</button></div>`
       :`<div class="pcell ${allF?'next':finIn?'':'off'} ${(pcell.viewer||{}).state==='keepa'?'keepa':''}"><span class="box"></span><span class="txt"><span class="t1">${merged?`${merged.toLocaleString()} ASINs merged from ${finIn} file${finIn===1?'':'s'}${allF?'':' so far'}`:'Opens once the country files are in'}</span><span class="t2">${merged?'One press opens the Viewer with them loaded · export all columns · drop it here':'Every ASIN from the boxes above, de-duplicated'}</span></span>${merged?`<button type="button" class="go big" data-pview="1">${vN>1?`Open part 1 of ${vN}`:'Open UK Viewer'} ↗</button>`:''}</div>`)+'</div>';}
-  h+=`<p class="pnote">★ Prime deals are on until Jack turns them off — do the normal box AND the ★ Prime box for each flag · ${r1multi?'Prime boxes are UK, DE and FR only (Italy and Spain have none) · every file goes into the one UK Viewer':'both files join into one run'} · buy price = the Prime price when it is lower, plus any S&amp;S or coupon the export shows.</p>`;
+  h+=`<p class="pnote">${cur.primeOnly?'★ A Prime-only filter — just the ★ box for each flag':'★ Prime deals are on until Jack turns them off — do the normal box AND the ★ Prime box for each flag'} · ${r1multi?'Prime boxes are UK, DE and FR only (Italy and Spain have none) · every file goes into the one UK Viewer':'both files join into one run'} · buy price = the Prime price when it is lower, plus any S&amp;S or coupon the export shows.</p>`;
   host.innerHTML=h;}
 function paintPrimeSwitch(){const b=$('#primeTog');if(!b)return;const j=typeof isJack==='function'&&isJack();b.hidden=!j;if(!j)return;
   const on=!!lsGet(PRIME_KEY,true);b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');
@@ -129,7 +130,9 @@ function primeTake(file,d,f,notes){if(!primeOn()||!cur||/productviewer/i.test(fi
   const key=mk+'|p';
   if(!primeHasCol(d.rows)){pcell[key]={state:'bad',name:file.name,why:'no Prime price column'};
     notes.push(`${file.name}: a ★ Prime deals file without the Prime price. In Keepa press Configure Columns and tick New, Prime exclusive → Current, export again, drop the new file.`);return 'cols';}
-  pfiles[mk]=f;delete pcell[key];return true;}
+  /* b227 (Jack, 1 Oct: "I might add multiple files — a bunch of brands and a bunch of countries"): a second ★ Prime file for the same
+     country of mostly NEW products joins the first (Brother Prime + Samsung Prime); a re-export of the same list still replaces it. */
+  pfiles[mk]=(typeof partMerge==='function'&&pfiles[mk])?partMerge(pfiles[mk],f,notes):f;delete pcell[key];return true;}
 function primeRefused(file,d){if(!primeOn()||!cur||!d)return;const vw=/productviewer/i.test(file.name);
   const key=vw?'viewer':(d.domain||'UK')+'|'+(primeIsFile(d.rows)?'p':'n');pcell[key]={state:'bad',name:file.name,why:'Keepa columns not ticked'};}
 function primeAccepted(file,d){if(!cur||!d)return;const vw=/productviewer/i.test(file.name);delete pcell[vw?'viewer':(d.domain||'UK')+'|n'];}

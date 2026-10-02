@@ -68,6 +68,14 @@ const SRC_SEED=[
   {key:'logitech',name:'Logitech',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'2 days',brands:['Logitech','Logitech G','Logitech for Creators','Ultimate Ears'],status:'active',link:LINKS.logitech},
   {key:'msi',name:'MSI',type:'brand',rule:1,markets:['UK'],cadence:'weekly',status:'active',note:'goes in waves — on for a month, off for a month'},
   {key:'philips',name:'Philips',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'2 days',note:'Philips + Sonicare · Buy Box 30d £30+',brands:['Philips','Philips Sonicare'],status:'active',link:LINKS.philips},
+  /* b224 (Jack, 1 Oct: "add a new filter too — Prime day exclusive — UK for Mera only, Germany and France for Suz"). Everything on that
+     Amazon with a Prime exclusive price 9%+ under its 90-day average, Amazon in the Buy Box, 50+ bought a month, the never-sell brands
+     out — no price floor (Jack: "don't use any £ at all"). Prime-only: the run screen shows just the ★ Prime boxes. Pause both when the event ends. */
+  {key:'prime-uk',name:'Prime deals · UK',type:'filter',rule:2,markets:['UK'],cadence:'daily',owner:'Mera',status:'active',primeOnly:true,
+    note:'PRIME EVENT ONLY — every Prime exclusive price on Amazon.co.uk 9%+ under its 90-day average · Amazon in the Buy Box · 50+ bought a month · any price · never-sell brands out. Buy at the Prime price (Prime members), sell UK. Pause it when the event ends.',link:'https://keepa.com/#!finder/%7B%22f%22%3A%7B%22productType%22%3A%7B%22values%22%3A%5B%220%22%5D%2C%22filterType%22%3A%22set%22%7D%2C%22srAvgMonth%22%3A%7B%22filterType%22%3A%22text%22%2C%22type%22%3A%22equals%22%2C%22filter%22%3A%22202609%22%7D%2C%22monthlySold%22%3A%7B%22filterType%22%3A%22number%22%2C%22type%22%3A%22greaterThanOrEqual%22%2C%22filter%22%3A50%2C%22filterTo%22%3Anull%7D%2C%22buyBoxSellerIdHistory%22%3A%7B%22filterType%22%3A%22dynamic%22%2C%22filter%22%3A%22A3P5ROKL5A1OLE%2CAZH2GF8Z5J95G%22%2C%22filterDetail%22%3A%22%22%2C%22type%22%3A%22equals%22%7D%2C%22PRIME_EXCL_deltaPercent90%22%3A%7B%22filterType%22%3A%22number%22%2C%22type%22%3A%22greaterThanOrEqual%22%2C%22filter%22%3A9%2C%22filterTo%22%3Anull%7D%2C%22brand%22%3A%7B%22filterType%22%3A%22autocomplete%22%2C%22filter%22%3A%22amazon%23%23%23amazon%20basics%23%23%23amazon%20essentials%23%23%23blink%23%23%23eero%23%23%23ring%23%23%23microsoft%23%23%23xiaomi%23%23%23staub%22%2C%22type%22%3A%22isNoneOf%22%7D%7D%2C%22s%22%3A%5B%7B%22colId%22%3A%22PRIME_EXCL_deltaPercent90%22%2C%22sort%22%3A%22desc%22%7D%5D%2C%22t%22%3A%22g%22%7D'},
+  {key:'prime-eu',name:'Prime deals · DE + FR',type:'filter',rule:1,markets:['DE','FR'],cadence:'daily',owner:'Suz',status:'active',primeOnly:true,
+    note:'PRIME EVENT ONLY — every Prime exclusive price on Amazon.de and Amazon.fr 9%+ under its 90-day average · Amazon in the Buy Box · 50+ bought a month · any price · never-sell brands out. One file per flag, then the UK Viewer. Buy at the Prime price (Prime members), sell UK. Pause it when the event ends.',
+    link:'https://keepa.com/#!finder/%7B%22f%22%3A%7B%22productType%22%3A%7B%22values%22%3A%5B%220%22%5D%2C%22filterType%22%3A%22set%22%7D%2C%22srAvgMonth%22%3A%7B%22filterType%22%3A%22text%22%2C%22type%22%3A%22equals%22%2C%22filter%22%3A%22202609%22%7D%2C%22monthlySold%22%3A%7B%22filterType%22%3A%22number%22%2C%22type%22%3A%22greaterThanOrEqual%22%2C%22filter%22%3A50%2C%22filterTo%22%3Anull%7D%2C%22buyBoxSellerIdHistory%22%3A%7B%22filterType%22%3A%22dynamic%22%2C%22filter%22%3A%22A3JWKAKR8XB7XF%2CAMUN6OW4OKOC5%22%2C%22filterDetail%22%3A%22%22%2C%22type%22%3A%22equals%22%7D%2C%22PRIME_EXCL_deltaPercent90%22%3A%7B%22filterType%22%3A%22number%22%2C%22type%22%3A%22greaterThanOrEqual%22%2C%22filter%22%3A9%2C%22filterTo%22%3Anull%7D%2C%22brand%22%3A%7B%22filterType%22%3A%22autocomplete%22%2C%22filter%22%3A%22amazon%23%23%23amazon%20basics%23%23%23amazon%20essentials%23%23%23blink%23%23%23eero%23%23%23ring%23%23%23microsoft%23%23%23xiaomi%23%23%23staub%22%2C%22type%22%3A%22isNoneOf%22%7D%7D%2C%22s%22%3A%5B%7B%22colId%22%3A%22PRIME_EXCL_deltaPercent90%22%2C%22sort%22%3A%22desc%22%7D%5D%2C%22t%22%3A%22g%22%7D',links:{DE:'https://keepa.com/#!finder/%7B%22f%22%3A%7B%22productType%22%3A%7B%22values%22%3A%5B%220%22%5D%2C%22filterType%22%3A%22set%22%7D%2C%22srAvgMonth%22%3A%7B%22filterType%22%3A%22text%22%2C%22type%22%3A%22equals%22%2C%22filter%22%3A%22202609%22%7D%2C%22monthlySold%22%3A%7B%22filterType%22%3A%22number%22%2C%22type%22%3A%22greaterThanOrEqual%22%2C%22filter%22%3A50%2C%22filterTo%22%3Anull%7D%2C%22buyBoxSellerIdHistory%22%3A%7B%22filterType%22%3A%22dynamic%22%2C%22filter%22%3A%22A3JWKAKR8XB7XF%2CAMUN6OW4OKOC5%22%2C%22filterDetail%22%3A%22%22%2C%22type%22%3A%22equals%22%7D%2C%22PRIME_EXCL_deltaPercent90%22%3A%7B%22filterType%22%3A%22number%22%2C%22type%22%3A%22greaterThanOrEqual%22%2C%22filter%22%3A9%2C%22filterTo%22%3Anull%7D%2C%22brand%22%3A%7B%22filterType%22%3A%22autocomplete%22%2C%22filter%22%3A%22amazon%23%23%23amazon%20basics%23%23%23amazon%20essentials%23%23%23blink%23%23%23eero%23%23%23ring%23%23%23microsoft%23%23%23xiaomi%23%23%23staub%22%2C%22type%22%3A%22isNoneOf%22%7D%7D%2C%22s%22%3A%5B%7B%22colId%22%3A%22PRIME_EXCL_deltaPercent90%22%2C%22sort%22%3A%22desc%22%7D%5D%2C%22t%22%3A%22g%22%7D',FR:'https://keepa.com/#!finder/%7B%22f%22%3A%7B%22productType%22%3A%7B%22values%22%3A%5B%220%22%5D%2C%22filterType%22%3A%22set%22%7D%2C%22srAvgMonth%22%3A%7B%22filterType%22%3A%22text%22%2C%22type%22%3A%22equals%22%2C%22filter%22%3A%22202609%22%7D%2C%22monthlySold%22%3A%7B%22filterType%22%3A%22number%22%2C%22type%22%3A%22greaterThanOrEqual%22%2C%22filter%22%3A50%2C%22filterTo%22%3Anull%7D%2C%22buyBoxSellerIdHistory%22%3A%7B%22filterType%22%3A%22dynamic%22%2C%22filter%22%3A%22A1X6FK5RDHNB96%2CA2W68NJA5YNXUP%22%2C%22filterDetail%22%3A%22%22%2C%22type%22%3A%22equals%22%7D%2C%22PRIME_EXCL_deltaPercent90%22%3A%7B%22filterType%22%3A%22number%22%2C%22type%22%3A%22greaterThanOrEqual%22%2C%22filter%22%3A9%2C%22filterTo%22%3Anull%7D%2C%22brand%22%3A%7B%22filterType%22%3A%22autocomplete%22%2C%22filter%22%3A%22amazon%23%23%23amazon%20basics%23%23%23amazon%20essentials%23%23%23blink%23%23%23eero%23%23%23ring%23%23%23microsoft%23%23%23xiaomi%23%23%23staub%22%2C%22type%22%3A%22isNoneOf%22%7D%7D%2C%22s%22%3A%5B%7B%22colId%22%3A%22PRIME_EXCL_deltaPercent90%22%2C%22sort%22%3A%22desc%22%7D%5D%2C%22t%22%3A%22g%22%7D'}},
   {key:'samsung',name:'Samsung',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'2 days',note:'Amazon down 9% · Buy Box 30d £40+',status:'active',link:LINKS.samsung},
   {key:'sandisk-seagate',name:'SanDisk / Seagate / WD',type:'brand',rule:1,markets:['UK','DE','FR','IT','ES'],cadence:'3 days',note:'SanDisk, SanDisk Professional, Seagate, WD_Black in one filter',brands:['SanDisk','SanDisk Professional','Seagate','WD_BLACK'],status:'active',link:LINKS['sandisk-seagate']},
   {key:'ninja-shark',name:'Ninja / Shark',type:'brand',rule:1,markets:['UK'],cadence:'3 days',note:'one filter for both',brands:['Ninja','Shark'],status:'active',link:LINKS['ninja-shark']},
@@ -214,6 +222,8 @@ function srcAll(){let v=lsGet(SRC_KEY,null);if(!v||!v.length){v=SRC_SEED.map(s=>
   v.forEach(x=>{if(x.key==='bialetti'&&(x.migV||0)<4){x.markets=['UK','DE','FR','IT','ES'];x.migV=4;changed=true;}});   /* b50: Jack — "Bialetti needs all marketplaces" */
   /* b216: the seed itself is £10–60 now — b42's reset below used to run AFTER b212's widening on a fresh browser and put £10–40 back */
   v.forEach(x=>{if(x.key==='suz-deep-drops'&&(x.migV||0)<3){const sd=SRC_SEED.find(z=>z.key==='suz-deep-drops');if(sd){x.name=sd.name;x.note=sd.note;x.link=sd.link;}x.migV=3;changed=true;}});   /* b42: Jack's final A2A £10–40 link */
+  /* b225 (Jack, 1 Oct: "don't use any £ at all"): the two Prime deals filters lose their £30 / €20 floor wherever b224 already saved them */
+  v.forEach(x=>{if((x.key==='prime-uk'||x.key==='prime-eu')&&(x.migQ||0)<1){const sd=SRC_SEED.find(z=>z.key===x.key);if(sd){x.link=sd.link;if(sd.links)x.links=Object.assign({},sd.links);x.note=sd.note;}x.migQ=1;changed=true;}});
   /* b216: b212's widening moved here, AFTER the b42 reset, under a new flag — a browser first opened on b212–b215 got £10–40 back
      from that reset and kept it. Only ever turns a £40 ceiling into £60, so running it again anywhere is harmless. */
   v.forEach(x=>{if(x.key==='suz-deep-drops'&&(x.migW2||0)<1){try{const [pre,enc]=x.link.split('#!finder/');const j=JSON.parse(decodeURIComponent(enc));
@@ -353,24 +363,47 @@ function canSee(src){if(!src)return false;if(isJack())return true;const m=me();i
 function visibleSources(){return srcAll().filter(canSee);}
 function verdAll(){return lsGet(VERD_KEY,{});}
 function verdGet(asin){return verdAll()[asin]||null;}
+/* b232 (Jack, 1 Oct: "I don't care if Suz reviews one filter and Mera another — don't hide it from Mera because Suz saw the same ASIN somewhere else").
+   The products YOU answered today, kept in this browser only. There is one verdict per product (the last answer wins), so without this
+   Suz answering an ASIN after Mera would un-tick it on Mera's list. */
+const MINE_KEY='bdl-sourcing-mine-today';let MINE=null;
+function myToday(){const t=today(),w=me();if(!MINE||MINE.day!==t||MINE.who!==w){const m=lsGet(MINE_KEY,null);MINE={day:t,who:w,a:new Set(m&&m.day===t&&m.who===w?m.a:[])};}return MINE.a;}
+function myTodayEdit(asins,add){const s=myToday();(asins||[]).forEach(a=>add?s.add(a):s.delete(a));lsSet(MINE_KEY,{day:MINE.day,who:MINE.who,a:[...s]});}
 /* v = {v:'Yes'|'No'|'Maybe', reason, note, source, state} — state is the lead's numbers at the moment of the verdict; that is what "better since" compares against */
 /* b143 (Jack, 22 Sep: "what is the fix and improvement to make sure it never happens again"). Every verdict now records HOW it was
    written — a row's Y/N/M, the keyboard, or a bulk button by name. b142's bug was a button writing 82 verdicts as a side effect of
    looking, and nothing on the row could tell you that. `via` is kept in this browser only: src_verdicts has no such column, and
    sending one it does not know is what broke the audit sync in b109. */
 function verdSet(asin,v,via){const a=verdAll();
-  if(!v){delete a[asin];lsSet(VERD_KEY,a);cloudQueue('src_verdicts','delete',{col:'asin',vals:[asin]});return;}
-  const row=Object.assign({at:nowIso(),who:me(),via:via||'the row'},v);a[asin]=row;lsSet(VERD_KEY,a);
+  if(!v){delete a[asin];lsSet(VERD_KEY,a);myTodayEdit([asin],false);cloudQueue('src_verdicts','delete',{col:'asin',vals:[asin]});return;}
+  const row=Object.assign({at:nowIso(),who:me(),via:via||'the row'},v);a[asin]=row;lsSet(VERD_KEY,a);myTodayEdit([asin],true);
   cloudQueue('src_verdicts','upsert',[{asin,v:row.v,reason:row.reason||'',note:row.note||'',who:row.who||'',at:row.at,source_key:row.source||'',state:row.state||null}]);}
 /* many at once (the "mark all as seen" baseline) — one queued write, not hundreds */
 function verdSetMany(items,via){const a=verdAll();const at=nowIso(),who=me();const rows=[];
   items.forEach(({asin,v})=>{const row=Object.assign({at,who,via:via||'a bulk button'},v);a[asin]=row;rows.push({asin,v:row.v,reason:row.reason||'',note:row.note||'',who,at,source_key:row.source||'',state:row.state||null});});
-  lsSet(VERD_KEY,a);cloudQueue('src_verdicts','upsert',rows);}
+  lsSet(VERD_KEY,a);myTodayEdit(items.map(x=>x.asin),true);cloudQueue('src_verdicts','upsert',rows);}
+
+/* b233: Open in Keepa (a VA) and the Done button count as done. A lead with no answer, or only a Seen, gets a fresh Seen under your name.
+   A lead that already has a real Yes / No / Maybe KEEPS it (the audit, the lead-sheet week and Jack's calls read those) — who looked and
+   when goes in state.seen = {Name:{at,src}} on the same row instead. */
+function seenStampMany(items,via){const a=verdAll();const at=nowIso(),who=me();const rows=[];
+  items.forEach(({asin,v})=>{const old=a[asin];let row;
+    if(old&&old.v&&old.v!=='Seen'){const st=Object.assign({},old.state||{});st.seen=Object.assign({},st.seen||{},{[who]:{at,src:v.source||''}});row=Object.assign({},old,{state:st});}
+    else row=Object.assign({at,who,via:via||'a bulk button'},v);
+    a[asin]=row;rows.push({asin,v:row.v,reason:row.reason||'',note:row.note||'',who:row.who||'',at:row.at,source_key:row.source||'',state:row.state||null});});
+  lsSet(VERD_KEY,a);myTodayEdit(items.map(x=>x.asin),true);if(rows.length)cloudQueue('src_verdicts','upsert',rows);}
+/* b233: undo — clears the looked-at stamps a source put on real answers (the answers themselves stay) */
+function seenUnstampMany(asins,src){const a=verdAll();const rows=[];
+  (asins||[]).forEach(x=>{const r=a[x];const sn=r&&r.state&&r.state.seen;if(!sn)return;const keep={};let hit=false;
+    Object.entries(sn).forEach(([w,e])=>{if(e&&e.src===src)hit=true;else keep[w]=e;});if(!hit)return;
+    const st=Object.assign({},r.state);if(Object.keys(keep).length)st.seen=keep;else delete st.seen;a[x]=Object.assign({},r,{state:st});
+    rows.push({asin:x,v:r.v,reason:r.reason||'',note:r.note||'',who:r.who||'',at:r.at,source_key:r.source||'',state:st});});
+  if(!rows.length)return 0;lsSet(VERD_KEY,a);myTodayEdit(rows.map(r=>r.asin),false);cloudQueue('src_verdicts','upsert',rows);return rows.length;}
 
 /* b142 (Jack, 22 Sep): take a verdict back off a lead — used by "put them back in the queue" */
 function verdDelMany(asins){const a=verdAll();const gone=[];
   (asins||[]).forEach(x=>{if(a[x]){delete a[x];gone.push(x);}});
-  if(!gone.length)return 0;lsSet(VERD_KEY,a);cloudQueue('src_verdicts','delete',{col:'asin',vals:gone});return gone.length;}
+  if(!gone.length)return 0;lsSet(VERD_KEY,a);myTodayEdit(gone,false);cloudQueue('src_verdicts','delete',{col:'asin',vals:gone});return gone.length;}
 
 /* ---- ASIN facts: what a VA has confirmed about a product. Test-mode edition of the knowledge layer. ---- */
 const FACT_KEY='bdl-sourcing-facts';

@@ -277,7 +277,8 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     if(nd>0&&kept)chips.push([`NEEDS ${Math.round(nd)}% OFF`,'warn']);
     /* b111 (Jack, 18 Sep: "sometimes there is no price match and extra % off"): the row's own figures stay at Amazon's price — the price you can
        always buy at — and the price-match line says what the money would be, not just the score */
-    if(best.who&&best.score>score+5)chips.push([`→ ${Math.round(best.roi)}% ROI · £${best.p.toFixed(2)} WITH ${best.who.toUpperCase()} ${best.pct}%`,best.confirmed?'good':'info']);
+    if(best.who&&best.score>score+5){const pe=(typeof discAll==='function')?discAll().find(x=>x.name===best.who):null;   /* b230: a promo brand is "up to" */
+      chips.push([`→ ${Math.round(best.roi)}% ROI · £${best.p.toFixed(2)} WITH ${best.who.toUpperCase()} ${pe&&(pe.promo||pe.upTo)?'UP TO ':''}${best.pct}%`,best.confirmed?'good':'info']);}
     (fact.pm||[]).forEach(x=>chips.push([`PM CONFIRMED · ${x.toUpperCase()}`,'good']));
     if(bEntry&&bEntry.business)chips.push(['OPEN LISTING · BUSINESS TIERS','info']);
     else if(bEntry&&bEntry.fullPriceOnly&&!bEntry.salePct)chips.push([`${bEntry.name.toUpperCase()} ${bEntry.pct}% = FULL PRICE ONLY`,'warn']);
