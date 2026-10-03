@@ -54,9 +54,10 @@ function primeMerge(base,p){const at=new Map(),rows=[];
   return Object.assign({},base||p,{name:(base?base.name+' + ':'')+'★ '+p.name,rows,asins:[...at.keys()].filter(Boolean),
     hasFees:(base?base.hasFees:true)&&p.hasFees,hasSince:(base?base.hasSince:true)&&p.hasSince,__prime:true,__base:base||null});}
 /* the overlay comes off (back to exactly what was dropped) and goes back on — around every drop, remove and switch */
-function primeStrip(){['one','viewer','UK','DE','FR'].forEach(s=>{const f=files[s];if(f&&f.__prime)files[s]=f.__base||null;});}
-function primeApply(){primeStrip();if(!primeOn()||!cur)return;
-  PRIME_MK.forEach(k=>{const p=pfiles[k];if(!p)return;const s=primeSlot(k);if(s)files[s]=primeMerge(files[s],p);});}
+function primeStrip(){if(files.viewer&&files.viewer.__aug)files.viewer=files.viewer.__pure;   /* b242: the Viewer + UK file merge comes apart first */
+  ['one','viewer','UK','DE','FR'].forEach(s=>{const f=files[s];if(f&&f.__prime)files[s]=f.__base||null;});}
+function primeApply(){primeStrip();if(primeOn()&&cur)PRIME_MK.forEach(k=>{const p=pfiles[k];if(!p)return;const s=primeSlot(k);if(s)files[s]=primeMerge(files[s],p);});
+  if(typeof dropAlias==='function')dropAlias();}   /* b242: …and goes back together on top of the Prime rows */
 function primeClear(){PRIME_MK.forEach(k=>pfiles[k]=null);Object.keys(pcell).forEach(k=>delete pcell[k]);}
 /* the normal file in a country's box, underneath any overlay */
 function primeNormal(k){const s=cur&&cur.rule!==1?(k==='UK'?'one':null):(k==='UK'&&ukOnly()?'viewer':k);const f=s?files[s]:null;return f&&f.__prime?f.__base:f;}
@@ -64,7 +65,9 @@ function primeNormal(k){const s=cur&&cur.rule!==1?(k==='UK'?'one':null):(k==='UK
 function primeMarkets(){if(!cur)return[];if(cur.rule!==1||ukOnly())return['UK'];
   const ms=cur.markets.slice();MARKETS.forEach(m=>{if(!ms.includes(m)&&(files[m]||pfiles[m]))ms.push(m);});return MARKETS.filter(m=>ms.includes(m));}
 function primeLinkFor(m,kind){if(!cur)return'';const base=(cur.links&&cur.links[m])||finderLink(cur);return kind==='p'?primeLink(base,m):base;}
-function primeSlots(){const out=[];primeMarkets().forEach(m=>{if(!(cur&&cur.primeOnly))out.push(m+'|n');if(PRIME_MK.includes(m))out.push(m+'|p');});return out;}   /* b224: Prime-only = ★ boxes only */
+/* b243 (Jack, 3 Oct, Bialetti: "doesn't need the Prime one — it's just a sales one"): a source with noPrime has no ★ boxes — its filter has no
+   price-drop condition, so the normal export already holds every product and its Prime price column. The Prime PRICE is still used. */
+function primeSlots(){const out=[];primeMarkets().forEach(m=>{if(!(cur&&cur.primeOnly))out.push(m+'|n');if(PRIME_MK.includes(m)&&!(cur&&cur.noPrime))out.push(m+'|p');});return out;}   /* b224: Prime-only = ★ boxes only */
 function primeIn(key){const [m,k]=key.split('|');return k==='p'?!!pfiles[m]:!!primeNormal(m);}
 function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)return;
   const on=!!cur&&primeOn()&&!(typeof isListed==='function'&&isListed(cur))&&!cur.drop;vr.classList.toggle('primemode',on);paintPrimeSwitch();   /* b222: not on Drop & check */
@@ -79,6 +82,7 @@ function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)
   primeMarkets().forEach(m=>{h+=`<div class="pmk"><span class="fl">${FLAG[m]}</span><div>${m}<small>${site[m]}</small></div></div>`;
     ['n','p'].forEach(kind=>{const key=m+'|'+kind,pr=kind==='p';
       if(pr&&!PRIME_MK.includes(m)){h+=`<div class="pcell noprime"><span class="txt"><span class="t1">No Prime box</span><span class="t2">Prime deals can't be bought on ${site[m]}</span></span></div>`;return;}
+      if(pr&&cur.noPrime){h+=`<div class="pcell noprime"><span class="txt"><span class="t1">No ★ box needed</span><span class="t2">the normal ${m} file already has the Prime prices</span></span></div>`;return;}
       if(!pr&&cur.primeOnly){h+=`<div class="pcell noprime"><span class="txt"><span class="t1">Prime-only filter</span><span class="t2">Just the ★ box for ${m}</span></span></div>`;return;}   /* b224 */
       const f=pr?pfiles[m]:primeNormal(m),c=pcell[key]||{},link=primeLinkFor(m,kind);
       const st=f?'in':c.state==='bad'?'bad':c.state==='keepa'?'keepa':'';
@@ -99,7 +103,8 @@ function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)
       :files.viewer
       ?`<div class="pcell in"><span class="box">✓</span><span class="txt"><span class="t1">${esc(files.viewer.name)}</span><span class="t2">${files.viewer.rows.length.toLocaleString()} products priced in the UK</span></span><button type="button" class="x" data-prm="viewer" aria-label="Remove the Viewer file">✕</button></div>`
       :`<div class="pcell ${allF?'next':finIn?'':'off'} ${(pcell.viewer||{}).state==='keepa'?'keepa':''}"><span class="box"></span><span class="txt"><span class="t1">${merged?`${merged.toLocaleString()} ASINs merged from ${finIn} file${finIn===1?'':'s'}${allF?'':' so far'}`:'Opens once the country files are in'}</span><span class="t2">${merged?'One press opens the Viewer with them loaded · export all columns · drop it here':'Every ASIN from the boxes above, de-duplicated'}</span></span>${merged?`<button type="button" class="go big" data-pview="1">${vN>1?`Open part 1 of ${vN}`:'Open UK Viewer'} ↗</button>`:''}</div>`)+'</div>';}
-  h+=`<p class="pnote">${cur.primeOnly?'★ A Prime-only filter — just the ★ box for each flag':'★ Prime deals are on until Jack turns them off — do the normal box AND the ★ Prime box for each flag'} · ${r1multi?'Prime boxes are UK, DE and FR only (Italy and Spain have none) · every file goes into the one UK Viewer':'both files join into one run'} · buy price = the Prime price when it is lower, plus any S&amp;S or coupon the export shows.</p>`;
+  h+=`<details class="pwhat"><summary>What is Prime exclusive?</summary><p>${escapeHtml(PRIME_WHAT)}</p><p>Each ★ box is the same filter with the Prime price added. Its export needs Keepa's <b>New, Prime exclusive → Current</b> column (Configure Columns, tick it once). On the lead list: <b>Deal → ★ Prime exclusive</b> shows only the Prime leads; <b>Buy from</b> ticks countries.</p></details>`;
+  h+=`<p class="pnote">${cur.noPrime?'★ This filter needs the normal box for each flag only — no ★ Prime boxes. Prime prices are read from the normal files':cur.primeOnly?'★ A Prime-only filter — just the ★ box for each flag':'★ Prime deals are on until Jack turns them off — do the normal box AND the ★ Prime box for each flag'} · ${r1multi?'Prime boxes are UK, DE and FR only (Italy and Spain have none) · every file goes into the one UK Viewer':'both files join into one run'} · buy price = the Prime price when it is lower, plus any S&amp;S or coupon the export shows.</p>`;
   host.innerHTML=h;}
 function paintPrimeSwitch(){const b=$('#primeTog');if(!b)return;const j=typeof isJack==='function'&&isJack();b.hidden=!j;if(!j)return;
   const on=!!lsGet(PRIME_KEY,true);b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');
@@ -116,7 +121,9 @@ function primeToggle(){if(!isJack())return;const on=!lsGet(PRIME_KEY,true);lsSet
 const PRIME_EVENT_KEY='bdl-sourcing-prime-event';
 function primeEventOn(){if(typeof isJack==='function'&&isJack())return!!lsGet(PRIME_KEY,true);const v=lsGet(PRIME_EVENT_KEY,null);return v==null?true:!!(v&&v.on);}
 const PRIME_NOTE_SHORT='★ Prime: Keepa & SAS show normal price';
-const PRIME_NOTE_FULL='★ Prime deals are on (UK, DE, FR). Some Amazon prices right now are Prime exclusive — Keepa\'s price box and SAS only show the normal price, so a deal looks worse there than it is. A lead marked ★ Prime deal is priced at the Prime price: trust the numbers on its row, not Keepa or SAS.';
+/* b240 (Jack, 3 Oct: "improve the notes and what is Prime exclusive too") */
+const PRIME_WHAT='What is Prime exclusive? During a Prime event (Prime Big Deal Days, Prime Day) Amazon sells some products cheaper to Prime members only. We buy on Prime accounts, so we pay that price. It only exists on Amazon UK, Germany and France — not Italy or Spain. Keepa keeps it in its own column ("New, Prime exclusive"): Keepa\'s main price, its Europe box and SAS all show the normal price, so a Prime deal looks worse there than it really is.';
+const PRIME_NOTE_FULL='★ Prime deals are on (UK, Germany, France). Some Amazon prices right now are Prime exclusive — cheaper for Prime members only, and we buy on Prime accounts. Keepa\'s main price and SAS show the NORMAL price, so these leads look worse there than they are. A ★ lead is priced at the Prime price: trust its row. To see only those: Deal → ★ Prime exclusive; Buy from → tick a country (★ UK·DE·FR = the three Prime countries).';
 function primeNoteChip(s){return primeEventOn()&&!(s&&s.status==='paused')?`<b class="pnchip" title="${PRIME_NOTE_FULL.replace(/"/g,'&quot;')}">${PRIME_NOTE_SHORT}</b>`:'';}
 /* b216 (Jack, 1 Oct: "tell the VAs Keepa and SAS prices are wrong — the EU or UK price is Prime exclusive and not showing on SAS and
    Keepa — tell them on the notes"). Keepa's "Europe £" box and SAS's European Marketplaces panel show Amazon's NORMAL price (£58.77 on the
@@ -126,7 +133,8 @@ function primeNote(o){const d=String((o&&o['Discount applied'])||'');if(!/★ Pr
   const mk=o['Buy market']||'UK',site={UK:'Amazon.co.uk',DE:'Amazon.de',FR:'Amazon.fr'}[mk]||'Amazon';
   const m=/\(Amazon [A-Z]{2} £([\d.,]+)\)/.exec(d),was=m?'£'+m[1]:(+o['Buy at £']>0?'£'+(+o['Buy at £']).toFixed(2):'');
   const buy=+(o['Landed £']!=null&&o['Buy market']?o['Landed £']:o['After discount £'])||0;
-  return`<span class="primenote" title="Keepa and SAS only see Amazon's normal price. The Prime exclusive price is for Prime members during the event.">★ <b>Prime exclusive ${buy?'£'+buy.toFixed(2):''} on ${site}</b> — Keepa &amp; SAS show the normal ${was||'price'}, not this. Trust this row (our SAS button uses the Prime price).</span>`;}
+  const wasN=m?+String(m[1]).replace(/,/g,''):(+o['Buy at £']||0),save=wasN&&buy&&wasN>buy?wasN-buy:0;
+  return`<span class="primenote" title="${escapeHtml(PRIME_WHAT)}">★ <b>Prime exclusive ${buy?'£'+buy.toFixed(2):''} on ${site}</b>${was?` — normal price ${was}${save?`, £${save.toFixed(2)} less`:''}`:''}. Prime members only, during the event — we buy on a Prime account. <b>Keepa &amp; SAS show the normal price</b>: ignore them, this row is priced at the Prime price (our SAS button uses it).</span>`;}
 /* a file dropped while the switch is on: returns true when this module took it (placed in a Prime box, or refused / ignored with a note) */
 function primeTake(file,d,f,notes){if(!primeOn()||!cur||/productviewer/i.test(file.name)||!primeIsFile(d.rows))return false;
   const mk=d.domain||'UK';

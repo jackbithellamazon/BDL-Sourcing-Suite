@@ -1,9 +1,110 @@
-BDL SOURCING — b239 · 3 Oct 2026   (includes b214–b238)
+BDL SOURCING — b245 · 4 Oct 2026   (b239 is live — this adds b240 to b245)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b239.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b245.
+   js/leave.js is a NEW file (b243) — it goes up with the js folder.
    js/trace.js is a NEW file (b239) — it goes up with the js folder.
    js/prime.js is a new file (from b214) — it goes up with the js folder.
+
+═══ b245 — A REFUSED VIEWER EXPORT SAYS WHY, AND WHICH COLUMNS ═══
+   When a VA drops a Product Viewer export that is missing columns, the popup now reads:
+     "Your Product Viewer export was not taken — 14 columns are not ticked in the Viewer.
+      WHY: Keepa's Product Viewer keeps its own column list. Ticking a column in the Product Finder does NOT tick it
+      in the Viewer — that is why your country files went in and this one did not. No Viewer file = no leads.
+      WHAT TO DO (once): in the Viewer press Configure Columns and tick every red box below…"
+     + every missing column, in Keepa's own order, and the "Copy the missing ones" button.
+   · The line under the drop box says the same and names the first six columns.
+   · If she then tries to leave: "your Viewer export was REFUSED — 14 columns not ticked in the Viewer: …",
+     and Stay and finish reopens the list of columns.
+
+═══ b244 — DONE IS A PRESS ═══
+   A run is FINISHED only when someone presses the big button above the leads:
+        [ ✓ Done — I have finished this filter · next: Acer → ]        (always there on today's run)
+   · The press puts her name and the time on the run. The button then reads "✓ Done by Suz".
+   · Brands / Filters row until it's pressed:  AMBER  ◐ NOT FINISHED — files in by Suz · today 18:12 · 12 to review left · Done not pressed
+     after:                                    GREEN  ✓ DONE TODAY — by Suz · today 18:40 · next Mon 5 Oct
+   · A VA can't press Done while To review leads haven't been looked at (Y/N/M, Open all in Keepa, or the small
+     "✓ Leads looked at (N)" button first). You can.
+   · The small button next to Open in Keepa is now called "✓ Leads looked at (N)" so there is only ONE "Done".
+   · 0 leads, or "Keepa showed 0 results — mark done" = done by itself. Runs saved before this build are untouched.
+   · Leaving with only the press missing → popup: "you have not pressed ✓ Done".
+
+   THE MERGE (why Tefal / Brita / ASUS… stopped at the Viewer) — what fixes it:
+     1. ONE-OFF, each VA, 2 minutes: Keepa → Product VIEWER → Configure Columns → tick the same columns as the Finder.
+        The Viewer has its own list; until it's ticked every merge export is refused (your "all 49 columns" rule, 29 Sep).
+        The refusal popup lists exactly which ones are missing, with a "Copy the missing ones" button.
+     2. Fewer runs need the Viewer at all (b242): the UK export now prices its own products; the Viewer is only for the rest.
+     3. They can't walk away from it quietly any more (b243 popups) and the row stays red / amber until Done (b244).
+
+═══ b243 — VAs HAVE TO FINISH A RUN · ONE AT A TIME ═══
+   WHAT THE LIVE LOG SHOWED (read-only look, Fri 2 Oct):
+     · "In Keepa … Mera" was never a login — it is a PRESS of the Open in Keepa button, and it stayed on the row for ever.
+     · Mera pressed the ★ Prime button on 12 filters between 19:10 and 19:37 and dropped nothing back in.
+       She is using the app as a list of Keepa links and working in Keepa itself.
+     · When files DO come back, the run dies at the merge: Tefal (Suz, 6 files in), Brita, SteelSeries, ASUS, Corsair —
+       country files accepted, UK Viewer opened, Viewer export never dropped. On DJI Mera's Viewer export was refused:
+       14 columns missing — Keepa's Product Viewer keeps its OWN column list, separate from the Product Finder's.
+   WHAT'S NEW (VAs only — you never see the popups):
+     1. LEAVING AN UNFINISHED RUN (back arrow, logo, another page, Next due) → a popup:
+          "Hold on, Suz — this run isn't finished"  ✕ files (which boxes are missing) · the merge · the leads
+          DO THIS NOW: the exact next action.   [Stay and finish]  [Leave anyway]      Closing the tab asks too.
+          Only once she has pressed Open in Keepa or dropped a file. Not if today's run is already saved.
+     2. ONE AT A TIME: pressing Run on another filter while one she opened in Keepa TODAY has no file back →
+          "One filter at a time, Suz" — lists them, [Go to Philips] / [Start Brita anyway].
+          Both choices are written to her click log, so you can see who stays and who skips.
+     3. ROWS: "In Keepa" is gone. Under 2 hours: "Mera pressed Open in Keepa today 19:22 · UK ★ Prime · file not back yet".
+          Older: "✕ Mera opened Keepa yesterday 19:22 (UK ★ Prime) — no file came back" in red.
+     4. RUN STEPS: "Drag the file in — pressing Open in Keepa saves nothing" · "The merge: … the Viewer keeps its own
+          column list, tick them there too" · "Scroll down — your leads are under the summary, best first".
+   TELL SUZ AND MERA ONCE: in Keepa's Product VIEWER → Configure Columns → tick the same columns as in the Finder
+     (the app's "columns to tick in the Viewer" link lists them). Until they do, every merge export gets refused.
+
+   BIALETTI ONLY (nothing else touched):
+     · Keepa link: 5+ rank drops in 30 days, every country's export.
+     · No ★ Prime boxes to do — the normal files already carry the Prime price, and it is still used.
+     · Not cut as "mains appliance — UK plug required" unless the title looks electric (Gioia, Mokona, capsule
+       machines, watts/volts, timer). 475 of its 524 "coffee maker / machine / hob / grill" products have no plug.
+     · Your 3 Oct files: 34 leads (3 on the live app) — 14 at the Prime price, none electric.
+     · Coffee, beans, capsules stay 0% VAT; pots and hardware 20%.
+
+═══ b242 — BIALETTI: 3 LEADS → 19 ═══
+   WHY ONLY 3: your 5 country files had 3,654 Bialetti products — too many for one Keepa export, so the UK Viewer was
+   split in 2 parts. Only part 1 went in (1,546 rows), the run looked finished, and 2,108 products had no UK price.
+   FIX: your UK Finder export already has every UK column for its own 2,876 products, so it now prices them (every
+   multi-country run, not just Drop & check). The Viewer is only asked for the other 778 — ONE part.
+   Same files → 19 leads, incl. Brikka (IT 27.8%), Moka Express 6-cup (FR 18.6%), TAZZ110 cups (IT 42%).
+   And if a Viewer part is ever missing, the results open with a RED line: "These leads are incomplete — part 2 of 2…".
+   VAT: Bialetti pots/hardware always 20% (the tea/coffee rule had read "Coffee Makers" as coffee — plurals now read).
+        Bialetti's own coffee (capsules, beans, ground — ~280 products) stays 0%: it's food.
+   LEAD LIST: every run opens on To review · all leads on one page (no per-page box) · "Open all N in Keepa" opens
+        them all (up to 3,000 a link, then in parts) · "✓ Done (N)" marks every lead shown.
+
+═══ b241 — DONE / NOT DONE, LOUD ═══
+   Brands / Filters list — every row is one colour now:
+     GREEN  run inside its cadence     ✓ DONE TODAY   by Jack · today 18:12 · next Mon 5 Oct
+                                         ✓ DONE         by Suz · Thu 1 Oct 14:12 · next Sun 4 Oct
+     RED    due today / late / never   ✕ NOT DONE     due today · or "3 days late · was due Wed 30 Sep" · or "never run"
+                                                         + last run (who, when) + "Suz in Keepa 13:20 — file not back" if someone's on it
+     GREY   paused                     PAUSED
+   The "★ Prime: Keepa & SAS show normal price" reminder is now a quiet line on each row, not a box.
+
+═══ b240 — FILTER THE LEADS + CUT CHIP + PRIME EXPLAINED ═══
+   LEAD LIST — a new row under the toolbar:
+     Buy from   All · UK 17 · DE 3 · FR 8 · IT 3 · ES 3 · ★ UK·DE·FR      (tick one or more; nothing ticked = all)
+     Deal       All · ★ Prime exclusive · On offer · Normal price          (tick one or more, counts on each)
+     e.g. UK + Germany + ★ Prime exclusive. Remembered per filter, so Germany on one never empties another.
+   THE "STILL MISSING" LINE (amber, only while a filter is on):
+     "Showing only UK + Germany · ★ Prime exclusive — 2 of 34 leads. Still missing 32: other countries — France 8 · Italy 3 ·
+      Spain 3; UK + Germany not ★ Prime — on offer 18."   [Show the rest 32]  [Show all 34]
+     Show the rest = exactly the leads the filter is hiding, so nothing gets skipped. In To review it also says how many aren't done.
+   PRIME EXPLAINED:
+     · "What is Prime exclusive?" under the Prime box grid (click to open)
+     · the run note says it plainly and how to see only Prime leads
+     · each ★ lead: "Prime exclusive £39.00 on Amazon.co.uk — normal price £58.77, £19.77 less. Prime members only, during the
+       event — we buy on a Prime account. Keepa & SAS show the normal price: ignore them, this row is priced at the Prime price."
+   STOREFRONT AUDITS — CUT ×N chip:
+     our export had it, the rules threw it out. Hover = which filter, which days, why ("needs 54% off…"), buy, score.
+     Click = every day. Loads by itself a moment after you open a shelf. Starts from today's runs (the table is new).
 
 ═══ b239 — ASIN AUDIT (only you see it) ═══
    STEP 1 — Supabase, once (2 minutes):

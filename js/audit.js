@@ -456,6 +456,8 @@ function renderAudit(){const host=$('#page-audit');if(!host)return;audMineBust()
   if(!isJack()){auView._listHtml=null;host.innerHTML=`<div class="card"><div class="empty"><span>The storefront audit is Jack's. Pick your name top right if this is you.</span></div></div>`;return;}
   if(auView.mode==='audit'&&auView.shelf&&audShelf(auView.shelf))auRenderOne();else auRenderList();
   if(auView.mode!=='audit'&&typeof trMount==='function')trMount(host);   /* b239: ASIN audit box, top of the landing page */
+  /* b240: CUT chips — the shelf's cut rows load once, then the rows redraw */
+  if(auView.mode==='audit'&&auView.shelf&&typeof trSeenLoad==='function'){const sh=audShelf(auView.shelf);if(sh)trSeenLoad(sh.items.map(it=>it.a)).then(got=>{if(got&&auView.mode==='audit'&&auView.shelf===sh.id)renderAudit();}).catch(()=>{});}
   if(typeof trSheetLoad==='function'&&!trState.sheet&&!trState.sheetBusy&&cloudReadable())trSheetLoad().then(m=>{if(m&&Object.keys(m).length&&$('#page-audit').classList.contains('active'))renderAudit();});
   if(typeof auPaintBulk==='function')auPaintBulk();}
 /* b69 (Jack: "highest % of products I sell too") — the rival you overlap with most is the one worth auditing,

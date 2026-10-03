@@ -8,7 +8,9 @@ const touched=new Set();   /* rows judged this sitting stay visible in "To revie
 const files={viewer:null,UK:null,DE:null,FR:null,IT:null,ES:null,one:null};
 /* b202 (Jack, 28 Sep: "add an ability to see all leads"): To review / All leads is remembered in this browser, so picking All sticks */
 const LEADVIEW_KEY='bdl-sourcing-leadview';
-const view={status:(()=>{try{const v=localStorage.getItem(LEADVIEW_KEY);return v==='ALL'?'ALL':'REVIEW';}catch(e){return'REVIEW';}})(),market:'ALL',q:'',hideNo:false,sort:'default',page:1,per:50,sel:new Set()};
+/* b242 (Jack, 3 Oct: "default automatic To review, shouldn't it" · "default all on one page and only option pls"): every run opens on To review,
+   and every lead is on one page — no paging, no per-page choice, so Open all and ✓ Done always mean all of them */
+const view={status:'REVIEW',market:'ALL',q:'',hideNo:false,sort:'default',page:1,per:0,sel:new Set()};
 const PAGEN=()=>view.per>0?view.per:1e9;
 const LVIEW_KEY='bdl-sourcing-lview';
 const lview=Object.assign({q:'',market:'ALL',rule:'ALL',owner:'ALL',seg:'all',type:'ALL',sort:'due',tab:'brands'},lsGet(LVIEW_KEY,{})||{});
@@ -157,20 +159,42 @@ function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay()
   const tb=$('#brandTbl');
   if(!rows.length){tb.innerHTML=`<tbody><tr><td colspan="8" style="text-align:center;color:var(--faint);padding:22px">${lview.seg==='due'?'Nothing due — everything has been run inside its cadence.':lview.seg==='mine'?(me()?'Nothing is yours yet — Jack sets the owner in Edit.':'Pick who you are (top right) to see your list.'):'Nothing here.'}</td></tr></tbody>`;return;}
   const rowHtml=s=>{const d=dueState(s),last=runLast(s.key),nx=nextRun(s),tok=tokenEstimate(s),lk=lockFresh(s)?s.inProgress:null,mine=lk&&ownLock(s),tr=toReviewCount(last),op=openSinceRun(s),opToday=op&&new Date(op.at).toDateString()===new Date().toDateString(),kp=typeof keepaSinceRun==='function'?keepaSinceRun(s):null,kpToday=kp&&new Date(kp.at).toDateString()===new Date().toDateString();
-    return`<tr class="${s.status==='paused'?'paused':(d.due?'isdue is'+d.kind:d.cls==='done'?'isdone':'')}${kpToday&&d.cls!=='done'?' inkeepa':opToday&&d.cls!=='done'?' isopened':''}" data-key="${s.key}">
+    /* b241 (Jack, 3 Oct: "full row green saying DONE on it — bigger DONE so everyone knows — mention who did it — full row red if not done"):
+       done = run inside its cadence (today, or not due again yet) · not done = due today, late or never run · paused = grey */
+    const stK0=s.status==='paused'?'paused':d.due?'todo':(last&&(d.cls==='done'||d.cls==='ok'))?'done':'oneoff';
+    const stK=stK0==='done'&&last.needDone&&!last.done?'part':stK0;   /* b244: run in, Done not pressed */
+    return`<tr class="st-${stK} ${s.status==='paused'?'paused':(d.due?'isdue is'+d.kind:d.cls==='done'?'isdone':'')}${kpToday&&d.cls!=='done'?' inkeepa':opToday&&d.cls!=='done'?' isopened':''}" data-key="${s.key}">
       <td class="namec"><div class="brandcell">${avatar(s)}<div class="ntext"><div class="nline"><span class="bname">${escapeHtml(s.name)}</span><span class="rl r${s.rule}" title="${RULE_LABEL[s.rule]||''}">Rule ${s.rule}</span></div><span class="note" title="${escapeHtml(s.note||'')}">${escapeHtml(s.note||(s.type==='filter'?'Saved Keepa filter':'Brand run · UK sell side'))}</span>${typeof primeNoteChip==='function'?primeNoteChip(s):''}</div></div></td>
       <td class="ownc">${isJack()?`<select class="inl ownsel ${ownCls(s.owner||NO_OWNER)}" data-key="${s.key}" title="Who runs this — saves straight away">${OWNER_OPTS.map(u=>`<option${(s.owner||'VAs')===u?' selected':''}>${u}</option>`).join('')}</select>`:whoChip(s.owner||'VAs')}</td>
       <td><div class="flags" title="${s.markets.join(' · ')}">${s.markets.map(m=>`<span class="f">${FLAG[m]}</span>`).join('')}</div></td>
       <td class="stc">${isJack()?`<select class="inl stsel s-${s.status}" data-key="${s.key}" title="Active runs on its cadence · Testing = trial · Paused = off the list — saves straight away">${Object.entries(STATUS_LABEL).map(([k,l])=>`<option value="${k}"${s.status===k?' selected':''}>${l}</option>`).join('')}</select><select class="inl cadsel" data-key="${s.key}" title="How often it should run — saves straight away">${Object.entries(CADENCE_LABEL).map(([k,l])=>`<option value="${k}"${s.cadence===k?' selected':''}>${l}</option>`).join('')}</select>`:`<span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span><span class="l2">${CADENCE_LABEL[s.cadence]||s.cadence}</span>`}${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
-      <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` ${whoChip(last.who)}`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}${(()=>{const w=isJack()&&typeof weekLeads==='function'?weekLeads(s.key):{n:0};   /* Jack only */return w.n?`<span class="wkleads" title="${w.n} product${w.n===1?'':'s'} this filter found went on the lead sheet (or got a Yes) in the last 7 days: ${escapeHtml(w.asins.join(', '))}">${w.n} on the lead sheet this week${w.who.length?' · '+escapeHtml(w.who.join(' + ')):''}</span>`:'';})()}${kp?`<span class="opened kp" title="${escapeHtml(kp.who)} pressed Open in Keepa (${escapeHtml(kp.mk||'')}) ${fmtWhen(kp.at)} — working it in Keepa. It goes green once the export is dropped back in."><i></i>In Keepa ${fmtWhen(kp.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase())} · ${whoChip(kp.who)} · <b>${escapeHtml(kp.mk||'')}</b></span>`:''}${op&&!kp?`<span class="opened" title="${escapeHtml(op.who)} opened this ${fmtWhen(op.at)} but no Keepa export has been dropped in since — so nothing is saved and the row stays late. Drop the export into the run to finish it."><i></i>Opened ${fmtWhen(op.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase())} · ${whoChip(op.who)} · <b>not run yet — no Keepa file dropped back in</b></span>`:''}</td>
-      <td class="nextc"><span class="nx ${d.cls}">${d.due||d.cls==='done'?'<i></i>':''}${d.label}</span>${d.sub?`<span class="l2" title="Run by export today = 0 Keepa tokens. If this ran through the API by itself it would cost about ${tok.toLocaleString()} tokens.">${d.sub}</span>`:''}</td>
+      <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` ${whoChip(last.who)}`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span></span>`:`<span class="l1 dim">Not run yet</span>`}${(()=>{const w=isJack()&&typeof weekLeads==='function'?weekLeads(s.key):{n:0};   /* Jack only */return w.n?`<span class="wkleads" title="${w.n} product${w.n===1?'':'s'} this filter found went on the lead sheet (or got a Yes) in the last 7 days: ${escapeHtml(w.asins.join(', '))}">${w.n} on the lead sheet this week${w.who.length?' · '+escapeHtml(w.who.join(' + ')):''}</span>`:'';})()}${kp?(()=>{   /* b243 (Jack, 3 Oct: "what does In Keepa mean — are they both logged in?"): it is a PRESS of the Open in Keepa button, nothing more. Under 2 hours old it may still be in hand; after that it says what happened — she opened Keepa and no file came back. */
+        const fresh=Date.now()-new Date(kp.at).getTime()<2*3600e3,when=fmtWhen(kp.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase());
+        return fresh?`<span class="opened kp" title="${escapeHtml(kp.who)} pressed the Open in Keepa button (${escapeHtml(kp.mk||'')}) ${fmtWhen(kp.at)}. That is all this means — a button press, not a login. It goes green once the export is dropped back in."><i></i>${whoChip(kp.who)} pressed Open in Keepa ${when} · <b>${escapeHtml(kp.mk||'')}</b> · file not back yet</span>`
+          :`<span class="opened kp stale" title="${escapeHtml(kp.who)} pressed the Open in Keepa button (${escapeHtml(kp.mk||'')}) ${fmtWhen(kp.at)} and never dropped the export back in — so no run was saved. Nobody is working on this now.">✕ ${whoChip(kp.who)} opened Keepa ${when} (<b>${escapeHtml(kp.mk||'')}</b>) — <b>no file came back</b></span>`;})():''}${op&&!kp?`<span class="opened" title="${escapeHtml(op.who)} opened this ${fmtWhen(op.at)} but no Keepa export has been dropped in since — so nothing is saved and the row stays late. Drop the export into the run to finish it."><i></i>Opened ${fmtWhen(op.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase())} · ${whoChip(op.who)} · <b>not run yet — no Keepa file dropped back in</b></span>`:''}</td>
+      <td class="nextc">${dstateHtml(s,d,last,stK,kpToday?kp:null,opToday?op:null)}</td>
       <td class="actc"><div class="acts">${finderLink(s)?`<a class="ib" href="${finderLink(s)}" target="_blank" rel="noopener" title="${s.link?'Open the saved Keepa filter'+(s.link2?' — '+escapeHtml(s.linkLab||'1 of 2'):''):'Open the generated Keepa filter (edit to paste your own)'}">${ICONS.ext}</a>${s.link2?`<a class="ib" href="${rollRankMonth(s.link2)}" target="_blank" rel="noopener" title="Open the second Keepa filter — ${escapeHtml(s.link2Lab||'2 of 2')}">${ICONS.ext}</a>`:''}`:`<span class="ib nolink" title="No Keepa link saved yet — Edit and paste it">?</span>`}<button class="btn run xs" data-act="run" ${s.status==='paused'?'disabled':''} title="${lk&&!mine?'Someone else has it open — you can still join':''}">${ICONS.run}${lk&&!mine?'Join':'Run'}</button>${isJack()?`<button class="ib" data-act="edit" title="Edit">${ICONS.edit}</button>`:''}
         <div class="menu"><button class="ib" data-act="menu" aria-label="More">⋮</button>
           <div class="pop"><button data-act="history">${ICONS.hist}History</button>${isJack()?`<button data-act="pause">${s.status==='paused'?ICONS.play:ICONS.pause}${s.status==='paused'?'Set active':'Pause'}</button>`:''}${lk?`<button data-act="unlock">${ICONS.eye}Clear "on it"</button>`:''}${isJack()?`<button data-act="delete" class="danger">${ICONS.trash}Delete</button>`:''}</div></div></div></td></tr>`;};
-  const head=`<thead><tr><th>Name</th><th>Owner</th><th>Buy from</th><th>Status · cadence</th><th>Last run</th><th>Next run</th><th></th></tr></thead>`;
+  const head=`<thead><tr><th>Name</th><th>Owner</th><th>Buy from</th><th>Status · cadence</th><th>Last run</th><th>Done?</th><th></th></tr></thead>`;
   const filters=rows.filter(s=>s.type==='filter'),brands=rows.filter(s=>s.type!=='filter');
   const group=(label,list)=>list.length?`<tr class="grp"><td colspan="8"><span class="gl">${label}</span><span class="gn">${list.length}</span></td></tr>`+list.map(rowHtml).join(''):'';
   tb.innerHTML=head+'<tbody>'+group('Saved filters',filters)+group('Brands',brands)+'</tbody>';}
+/* b241: the Done? cell — one big word, who and when underneath, then what comes next */
+function dstateHtml(s,d,last,stK,kp,op){const when=last?fmtWhen(last.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase()):'';
+  const by=last&&last.who?`by ${whoChip(last.who)} · ${escapeHtml(when)}`:last?escapeHtml(when):'';
+  const ic={done:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>',
+    todo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg>'};
+  if(stK==='paused')return`<div class="dstate paused"><span class="dbig">PAUSED</span><span class="dsub">off the list</span></div>`;
+  if(stK==='oneoff')return`<div class="dstate oneoff"><span class="dbig">ONE-OFF</span>${by?`<span class="dsub">${by}</span>`:''}</div>`;
+  if(stK==='part'){const tr=typeof toReviewCount==='function'?toReviewCount(last):0;
+    return`<div class="dstate part" title="The files are in, but nobody has pressed ✓ Done on this filter"><span class="dbig">◐ NOT FINISHED</span><span class="dsub">files in ${by}</span><span class="dnext">${tr?`<b>${tr}</b> to review left · `:'leads looked at · '}<b>Done not pressed</b></span></div>`;}
+  if(stK==='done'&&last&&last.done&&last.done.who){const dw=fmtWhen(last.done.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase());
+    return`<div class="dstate done" title="${last.done.auto?'0 leads — nothing to do':'Done pressed by '+escapeHtml(last.done.who)}"><span class="dbig">${ic.done}${d.cls==='done'?'DONE TODAY':'DONE'}</span><span class="dsub">by ${whoChip(last.done.who)} · ${escapeHtml(dw)}${last.done.auto?' · 0 leads':''}</span><span class="dnext">next ${escapeHtml(d.cls==='done'?String(d.sub||'').replace(/^next /,''):d.label+(d.sub?' · '+d.sub:''))}</span></div>`;}
+  if(stK==='done')return`<div class="dstate done" title="Run inside its cadence${d.sub?' · '+escapeHtml(d.sub):''}"><span class="dbig">${ic.done}${d.cls==='done'?'DONE TODAY':'DONE'}</span><span class="dsub">${by}</span><span class="dnext">next ${escapeHtml(d.cls==='done'?String(d.sub||'').replace(/^next /,''):d.label+(d.sub?' · '+d.sub:''))}</span></div>`;
+  const why=d.kind==='first'?'never run':d.kind==='late'?`${escapeHtml(d.label)} · ${escapeHtml(d.sub||'')}`:'due today';
+  const busy=kp?`<span class="dbusy kp"><i></i>${escapeHtml(kp.who)} pressed Open in Keepa ${escapeHtml(fmtWhen(kp.at).replace(/^Today /,''))} — file not back</span>`:op?`<span class="dbusy op"><i></i>${escapeHtml(op.who)} opened it ${escapeHtml(fmtWhen(op.at).replace(/^Today /,''))}</span>`:'';
+  return`<div class="dstate todo"><span class="dbig">${ic.todo}NOT DONE</span><span class="dsub">${why}</span>${last?`<span class="dnext">last ${by}</span>`:''}${busy}</div>`;}
 function onListClick(e){const b=e.target.closest('button[data-act]');if(!b){closeMenus();return;}
   const tr=b.closest('tr'),key=tr&&tr.dataset.key,s=key&&srcGet(key);if(!s)return;const act=b.dataset.act;
   if(act==='menu'){const m=b.closest('.menu');const open=m.classList.contains('open');closeMenus();if(!open)m.classList.add('open');e.stopPropagation();return;}
@@ -282,7 +306,7 @@ function openBrandBlacklist(brand,fromAsin){if(!needMe())return;
 /* ============ run view ============ */
 async function openRun(key){const s=srcGet(key);if(!s)return;tmpFloors=null;const frr=$('#floorRow');if(frr)frr._open=false;   /* b211: limits reset to the default every time a source is opened */
   if(cur&&cur.key!==key){srcUnlock(cur);clearRun();view.q='';view.page=1;const fq=$('#fQ');if(fq)fq.value='';}cur=s;touched.clear();blPick=null;
-  if(s.drop)view.status='ALL';else if(view.status==='ALL'||view.status==='REVIEW'){try{const v=localStorage.getItem(LEADVIEW_KEY);view.status=v==='ALL'?'ALL':'REVIEW';}catch(e){}}   /* b223: a one-off shows every lead it kept; the remembered choice is for real sources */
+  if(s.drop)view.status='ALL';else view.status='REVIEW';   /* b242: every run opens on To review */   /* b223: a one-off shows every lead it kept; the remembered choice is for real sources */
   if(!(lockFresh(s)&&ownLock(s)))srcLock(cur);
   if(!me()){toast('Pick who you are (top right) so this run carries your name',true);const w=$('#whoSel');if(w){w.classList.add('shake');setTimeout(()=>w.classList.remove('shake'),600);}}
   $('#viewList').hidden=true;$('#viewRun').hidden=false;paintRunHead();paintSlots();paintFloors();renderGuide();
@@ -301,7 +325,7 @@ function paintRunHead(){const s=cur;$('#runAvatar').innerHTML=avatar(s);$('#runN
   paintRunMk();
   const ol=otherLock(s);const lk=ol?` · <span class="lock">${escapeHtml(ol.who)} is also on this (since ${new Date(ol.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})})</span>`:'';
   $('#runMeta').innerHTML=`${whoChip(s.owner||'VAs')} <span class="rl r${s.rule}">Rule ${s.rule} · ${RULE_LABEL[s.rule]||''}</span> <span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||''}</span> <span class="mchip">${CADENCE_LABEL[s.cadence]||s.cadence}</span>`+(s.note?` <span class="mnote" title="${escapeHtml(s.note)}">${escapeHtml(s.note)}</span>`:'')+lk
-    +(typeof primeEventOn==='function'&&primeEventOn()?`<span class="pnrun">${escapeHtml(PRIME_NOTE_FULL)}</span>`:'');   /* b217 */
+    +(typeof primeEventOn==='function'&&primeEventOn()?`<span class="pnrun">${escapeHtml(PRIME_NOTE_FULL)}</span>`:'');   /* b217 */   /* b217 */
   paintRunStrip();paintNext();
   const r1=s.rule===1;
   const uk1=r1&&s.markets.every(m=>m==='UK');
@@ -329,13 +353,29 @@ function paintDoneEmpty(){if(!cur)return;let b=$('#doneEmpty');const host=$('#ke
   b.hidden=!!result||ran;b.innerHTML='✓ Keepa showed <b>0 results</b>? Mark this done for today';}
 function doneEmpty(){if(!cur||!needMe())return;
   if(!confirm(`Mark ${cur.name} as done for today with 0 leads?\n\nUse this when the Keepa filter showed no results, so there was nothing to export. It is saved under ${me()}.`))return;
-  runSave({at:nowIso(),day:today(),source:cur.key,name:cur.name,rule:cur.rule,files:[],rowsIn:0,st:{},leads:0,new:0,better:0,worse:0,gone:0,blacklisted:0,asins:[],queue:[],goneAsins:[],who:me(),empty:true});
+  runSave({at:nowIso(),day:today(),source:cur.key,name:cur.name,rule:cur.rule,files:[],rowsIn:0,st:{},leads:0,new:0,better:0,worse:0,gone:0,blacklisted:0,asins:[],queue:[],goneAsins:[],who:me(),empty:true,needDone:true,done:{who:me(),at:nowIso(),auto:true}});
   if(typeof actLog==='function')actLog('drop','Done — Keepa showed 0 results');
   paintRunStrip();paintNext();paintDoneEmpty();renderGuide();toast(`${cur.name} marked done for today — 0 leads`);
   const nx=$('#runNext');if(nx&&!nx.hidden)nx.classList.add('ready');}
 function paintNext(){const nx=cur?nextDue(cur.key):null;['#runNext','#runNext2'].forEach(id=>{const b=$(id);if(!b)return;
     if(cur&&cur.drop){b.hidden=id!=='#runNext2';b.innerHTML='Done — back to Brands / Filters →';delete b.dataset.key;return;}   /* b223: a one-off has no next due */
-    b.hidden=!nx;if(nx){b.innerHTML=(id==='#runNext2'?'Done — next due: ':'Next due: ')+escapeHtml(nx.name)+' →';b.dataset.key=nx.key;}});}
+    /* b244 (Jack, 4 Oct: "they need to be pressing Done once they did it"): #runNext2 is THE Done button — there whenever today's run is saved,
+       even with nothing else due. Pressing it stamps the run (who, when) and that is what turns the row green. */
+    if(id==='#runNext2'){const r=cur?runLast(cur.key):null,mine=!!r&&(r.day||String(r.at).slice(0,10))===today()&&!!result&&!result.past&&!result.apiLook;
+      b.hidden=!mine&&!nx;b.classList.toggle('isdone',mine&&!!r.done);
+      b.innerHTML=mine?((r.done?`✓ Done${r.done.who?' by '+escapeHtml(r.done.who):''}`:'✓ Done — I have finished this filter')+(nx?` · next: ${escapeHtml(nx.name)} →`:' · back to the list →')):nx?'Next due: '+escapeHtml(nx.name)+' →':'';
+      if(nx)b.dataset.key=nx.key;else delete b.dataset.key;return;}
+    b.hidden=!nx;if(nx){b.innerHTML='Next due: '+escapeHtml(nx.name)+' →';b.dataset.key=nx.key;}});}
+/* b244: how many To review leads nobody on this filter has done today, and the Done stamp itself */
+function runDoneLeft(){return result?result.out.filter(o=>o.QUEUE&&!(typeof doneToday==='function'&&doneToday(o))).length:0;}
+function runMarkDone(){if(!cur||cur.drop||!result||result.past||result.apiLook||!me())return false;
+  const r=runLast(cur.key);if(!r||(r.day||String(r.at).slice(0,10))!==today())return false;   /* only today's saved run can be finished */
+  if(r.done&&!r.done.auto)return true;
+  const left=runDoneLeft();
+  if(left&&!isJack()){toast(`Not marked done — ${left} lead${left===1?'':'s'} in To review ${left===1?'has':'have'} not been looked at`,true);return false;}
+  runSave(Object.assign({},r,{done:{who:me(),at:nowIso(),left}}));
+  if(typeof actLog==='function')actLog('done','Done pressed · '+cur.name+(left?' · '+left+' left':''),cur.key);
+  toast(`${cur.name} — marked DONE by ${me()}`);return true;}
 /* b59 (Jack: "make it easier to see the history"): the last runs of this source sit under its name, one chip each; the whole history and
    every lead it ever kept are one click away */
 function paintRunStrip(){const el=$('#runStrip');if(!el||!cur)return;const runs=runsFor(cur.key).slice().reverse();const V=verdAll();
@@ -379,9 +419,11 @@ function guideSteps(){if(!cur)return{steps:[],now:0,saved:false};const r1=cur.ru
     'Click Export (top right of the table). What to export → All active columns. Format → CSV. Leave "Include currency symbols" unticked. Press Export.',
     'The file lands in your Downloads. Do not open or rename it.'];
   const DROP=['Drag the file from Downloads onto the big box, or click the box and pick it.','The numbers appear on the right straight away. A yellow warning about a missing column means: switch that column on in Keepa (the columns button above the table) and export again.'];
-  const JUDGE=['Click "Open all in Keepa" — every lead on the page opens in one go.','Read each graph. Back here, click Y (buy), N (no) or M (maybe) on that lead\'s row. A No needs a reason chip.','When the To-review list is empty, press Next due →.'];
+  const JUDGE=['Scroll down — the leads are under the summary, best score first, in To review.','Click "Open all in Keepa" — every lead opens in one go.','Read each graph. Back here, click Y (buy), N (no) or M (maybe) on that lead\'s row — or ✓ Leads looked at for all of them once you have looked.','When To review is empty, press ✓ Done — I have finished this filter. Until you do, the filter shows as NOT FINISHED for everyone.'];
+  /* b243: one sentence everyone sees under each file step */
+  const SAVE='<b class="gsave">⚠ Pressing Open in Keepa saves nothing — the file has to come back in here.</b>';
   const judge={t:'Judge',h:'Judge the leads',d:result?(rev?`${rev} to review`:'all judged ✓'):'',done:!!result&&rev===0,
-    dos:['Press <b>Open all in Keepa</b> (or a lead\'s ASIN) and read the graph','Back here, press <b>Y</b> (buy) · <b>N</b> (no — pick a reason) · <b>M</b> (maybe) on that row','Nothing left in <b>To review</b>? Press <b>Next due →</b> at the top — or <b>All leads</b> to look through the rest'],how:JUDGE,hot:'#leadTop'};
+    dos:['<b>Scroll down</b> ↓ — your leads are under the summary, the best ones first, in <b>To review</b>','Press <b>Open all in Keepa</b> and read each graph · back here <b>Y</b> (buy) · <b>N</b> (no — pick a reason) · <b>M</b> (maybe) — or <b>✓ Leads looked at</b> once you have looked at them all','Nothing left in <b>To review</b>? <b>Press ✓ Done</b> (above the leads) — that is what turns this filter green with your name on it. Then the next one'],how:JUDGE,hot:'#leadTop'};
   const rest=(list,skip)=>list.filter(m=>m!==skip&&!files[m]).map(m=>F(m)+' '+m).join(', ');
   let steps;
   if(cur.drop){const eu=['DE','FR','IT','ES'].filter(m=>files[m]).length,n=SLOTS.filter(k=>files[k]&&!(k==='viewer'&&files.viewer.__alias)).length;   /* b222 */
@@ -399,13 +441,13 @@ function guideSteps(){if(!cur)return{steps:[],now:0,saved:false};const r1=cur.ru
   else if(r1&&!ukOnly()){const have=MARKETS.filter(m=>files[m]).length,tot=cur.markets.length,nextMk=cur.markets.find(m=>!files[m])||cur.markets[0],own=!!cur.links;
     const bar=$('#asinBar'),merged=(bar&&bar._all)?bar._all.length:0,vLeft=viewerPartsLeft();
     steps=[{t:'Country files',h:'Get a file from every flag',d:`${cur.markets.map(m=>F(m)+(files[m]?' ✓':'')).join(' · ')} · ${have} of ${tot} in`,done:have>=tot&&tot>0,
-        dos:[`Press <b>${F(nextMk)} ${nextMk}</b> below → Keepa opens the filter${own?' for that country — in Keepa, pick the same flag at the top right':' — in Keepa, change the flag at the top right to that country and wait for the table'}`,'In Keepa: rows per page → <b>biggest</b> · <b>Export → All active columns → CSV</b> <button type="button" class="linkbtn gcols" data-cols="1">first time? columns to tick</button>','Drag the file from Downloads onto the box below'+(tot>1&&rest(cur.markets,nextMk)?` — then the same for ${rest(cur.markets,nextMk)}`:'')],
+        dos:[`Press <b>${F(nextMk)} ${nextMk}</b> below → Keepa opens the filter${own?' for that country — in Keepa, pick the same flag at the top right':' — in Keepa, change the flag at the top right to that country and wait for the table'}`,'In Keepa: rows per page → <b>biggest</b> · <b>Export → All active columns → CSV</b> <button type="button" class="linkbtn gcols" data-cols="1">first time? columns to tick</button>','<b>Drag the file from Downloads onto the box below</b>'+(tot>1&&rest(cur.markets,nextMk)?` — then the same for ${rest(cur.markets,nextMk)}`:'')+'<br>'+SAVE],
         how:(own?['Each button is that country\'s own filter with its own categories — always use the matching button.']:['Keepa opens the same filter each time; it cannot take the country from a link. Change it yourself with the flag at the top right of Keepa, then wait for the table to reload.']).concat(EXPORT,DROP),hot:'#keepaRow a[data-mk]:not([data-mk="viewer"])'},
       {t:'UK Viewer file',h:'Get the UK selling side',d:vLeft?`${vLeft} Viewer part${vLeft===1?'':'s'} still to do — press the button below for the next one`:merged?`${merged.toLocaleString()} ASINs merged from your files — one press below`:'the app merges every ASIN from the country files for you',done:(!!files.viewer||!!result)&&!vLeft,
-        dos:['Press <b>Open UK Product Viewer</b> below → Keepa opens with every ASIN already loaded','In Keepa: <b>Export → All active columns → CSV</b> <button type="button" class="linkbtn gcols" data-cols="1">first time? columns to tick</button>','Drag that file onto the box below → your leads appear'],how:['Wait for the Viewer table to fill before you export.'].concat(EXPORT,DROP),hot:'#asinOpen'},
+        dos:['<b>The merge:</b> press <b>Open UK Product Viewer</b> below → Keepa opens with every product from your country files already merged in','In Keepa: <b>Export → All active columns → CSV</b> — the Viewer keeps <b>its own column list</b>, so the first time tick them there too: <button type="button" class="linkbtn gcols" data-cols="1">columns to tick in the Viewer</button>','<b>Drag that file onto the box below</b> → your leads appear — no merge file, no leads'+(vLeft?' · <b>too many for one go: do every part</b> (the button says which)':'')],how:['Wait for the Viewer table to fill before you export.'].concat(EXPORT,DROP),hot:'#asinOpen'},
       judge];}
   else{steps=[{t:'The file',h:r1?'Get the UK file':'Get this morning\'s file',d:'one file — it has the selling side too',done:!!(r1?files.viewer:files.one)||!!result,
-        dos:[`Press <b>${F('UK')} the filter</b> below → Keepa opens it`,'In Keepa: rows per page → <b>biggest</b> · <b>Export → All active columns → CSV</b> <button type="button" class="linkbtn gcols" data-cols="1">first time? columns to tick</button>','Drag the file from Downloads onto the box below → your leads appear'],how:EXPORT.concat(DROP),hot:'#keepaRow a'},judge];}
+        dos:[`Press <b>${F('UK')} the filter</b> below → Keepa opens it`,'In Keepa: rows per page → <b>biggest</b> · <b>Export → All active columns → CSV</b> <button type="button" class="linkbtn gcols" data-cols="1">first time? columns to tick</button>','<b>Drag the file from Downloads onto the box below</b> → your leads appear<br>'+SAVE],how:EXPORT.concat(DROP),hot:'#keepaRow a'},judge];}
   /* done cascades backwards: nothing can be ticked behind an empty step */
   let last=-1;steps.forEach((s,i)=>{if(s.done)last=i;});steps.forEach((s,i)=>{s.done=i<=last;});
   if(saved){const j=steps[steps.length-1];const at=result.at?String(result.at):'';j.d=(j.d?j.d+' · ':'')+'this is the saved run'+(at?' from '+ukDate(at):'')+' — drop today\'s file on the box below to refresh it';}
@@ -474,14 +516,18 @@ async function handleFilesRaw(list){const arr=[...list];if(!arr.length||!cur)ret
   if(!me()){pendingFiles=arr;needMe();toast('Pick your name first — the export is waiting',true);return;}
   const notes=[],accepted=[];let colsPop=null;   /* b203: after the drop, the popup lists every column this file has not got */
   if(typeof primeStrip==='function')primeStrip();   /* b214: the ★ Prime rows come off while files land, and go back on below */
-  if(cur.drop&&files.viewer&&(files.viewer.__alias||files.viewer.__aug))files.viewer=files.viewer.__pure||null;   /* b222 / b223 */
+  if(files.viewer&&(files.viewer.__alias||files.viewer.__aug))files.viewer=files.viewer.__pure||null;   /* b222 / b223 / b242: the pure Viewer takes new parts */
   for(const file of arr){let d;try{d=describeExport(parseCSV(await readFileText(file)));}catch(e){d=null;}
     if(!d){notes.push(file.name+': no data rows');continue;}
     const f={name:file.name,rows:d.rows,hasFees:d.hasFees,asins:d.asins,domain:d.domain,hasSince:d.hasSince,missing:d.missing||[],missingAll:d.missingAll||[]};
     /* b203: name the exact columns, in Keepa's own words, instead of "not a full-column export" */
     if(!d.full&&!d.hasFees){const must=(d.missingAll||[]).filter(c=>c.m==='must');notes.push(file.name+': Keepa did not export the columns the rules need. In Keepa press Configure Columns (top left of the table) and tick '+(must.length?must.map(colPath).join(', '):'Product → Title and Categories & Rank → Sales Rank → Drops last 30 days')+((d.missingAll||[]).length>must.length?' — plus the rest of the list under "Keepa columns to tick" below ('+(d.missingAll.length-must.length)+' more)':'')+'. Then export again and drop the new file.');if(!colsPop)colsPop={name:file.name,missing:d.missingAll||[]};if(typeof primeRefused==='function')primeRefused(file,d);continue;}
     /* b209 (Jack, 29 Sep: "everything has to be ticked before a KPF or KPV export goes into the app"): every one of the 49 columns, or the file is refused */
-    if(!f.fromKeepa&&(d.missingAll||[]).length){const n=d.missingAll.length;notes.push(`${file.name}: not taken — ${n} Keepa column${n===1?' is':'s are'} not ticked (${d.missingAll.slice(0,3).map(colPath).join(' · ')}${n>3?' …':''}). Tick ${n===1?'it':'them'} in Keepa (Configure Columns), export again, drop the new file.`);if(!colsPop)colsPop={name:file.name,missing:d.missingAll};if(typeof primeRefused==='function')primeRefused(file,d);continue;}
+    if(!f.fromKeepa&&(d.missingAll||[]).length){const n=d.missingAll.length,isV=/productviewer/i.test(file.name);
+      /* b245 (Jack, 4 Oct: "tell them why the Viewer hasn't [gone in] — say which columns they need to tick") */
+      if(isV)viewerRefused={key:cur.key,name:file.name,missing:d.missingAll,at:Date.now()};
+      notes.push(isV?`${file.name}: not taken — this is the UK Viewer (merge) file and ${n} column${n===1?' is':'s are'} not ticked IN THE VIEWER. The Viewer has its own column list — ticking them in the Product Finder does not count. Tick in the Viewer's Configure Columns: ${d.missingAll.slice(0,6).map(colPath).join(' · ')}${n>6?' … (the popup lists all '+n+')':''}. Export again, drop the new file.`
+        :`${file.name}: not taken — ${n} Keepa column${n===1?' is':'s are'} not ticked (${d.missingAll.slice(0,3).map(colPath).join(' · ')}${n>3?' …':''}). Tick ${n===1?'it':'them'} in Keepa (Configure Columns), export again, drop the new file.`);if(!colsPop)colsPop={name:file.name,missing:d.missingAll};if(typeof primeRefused==='function')primeRefused(file,d);continue;}
     /* b218: while Prime deals are on, every export needs Keepa's Prime price — without it a Prime-only deal is priced at Amazon's normal price */
     if(typeof primeOn==='function'&&primeOn()&&!f.fromKeepa&&!primeHasCol(d.rows)){notes.push(`${file.name}: not taken — Prime deals are on, so every export needs the Prime price. In Keepa press Configure Columns and tick New, Prime exclusive → Current (once — Keepa remembers), export again, drop the new file.`);
       if(!colsPop)colsPop={name:file.name,missing:[{g:'New, Prime exclusive',s:'',n:'Current',h:'New, Prime exclusive: Current',m:'prime'}]};if(typeof primeRefused==='function')primeRefused(file,d);continue;}
@@ -489,6 +535,7 @@ async function handleFilesRaw(list){const arr=[...list];if(!arr.length||!cur)ret
     {const pt=typeof primeTake==='function'?primeTake(file,d,f,notes):false;
       if(pt){if(pt==='cols'&&!colsPop)colsPop={name:file.name,missing:[{g:'New, Prime exclusive',s:'',n:'Current',h:'New, Prime exclusive: Current',m:'prime'}]};else if(pt===true&&pfiles[d.domain||'UK']&&(pfiles[d.domain||'UK']===f||(pfiles[d.domain||'UK'].name||'').includes(f.name)||(pfiles[d.domain||'UK'].parts||1)>1))accepted.push(f);continue;}}
     accepted.push(f);if(typeof primeAccepted==='function')primeAccepted(file,d);
+    if(/productviewer/i.test(file.name))viewerRefused=null;   /* b245: a Viewer file that went in clears the refusal */
     if(cur.rule!==1){if(d.domain&&d.domain!=='UK')notes.push(file.name+': this is a '+d.domain+' export — Rule '+cur.rule+' is UK only');
       /* b37 (Jack, 15 Sep: two variants of Suz's filter, 17 leads shared, 23 not) — a second UK export merges into the first, de-duped by ASIN.
          Clear files starts again. */
@@ -542,7 +589,7 @@ async function euCheckLeads(){const sellF=cur?(cur.rule===1?files.viewer:files.o
   try{
     const got=await eupFetch(asins,EU_MK,(done,total,mk)=>{b.textContent=`${mk} · ${done}/${total}`;},rate());
     const set=new Set(asins);const sub={name:sellF.name,rows:sellF.rows.filter(r=>set.has((r.ASIN||'').trim())),hasFees:sellF.hasFees,asins,domain:'UK',hasSince:sellF.hasSince,missingAll:sellF.missingAll||[],missing:sellF.missing||[]};
-    const R=rule1Compute({viewer:sub,UK:null,DE:got.DE||null,FR:got.FR||null,IT:got.IT||null,ES:got.ES||null},cur.name,rate(),null);
+    const R=rule1Compute({viewer:sub,UK:null,DE:got.DE||null,FR:got.FR||null,IT:got.IT||null,ES:got.ES||null,plugOk:cur.plugOk||null},cur.name,rate(),null);
     euShow(R.out.filter(o=>o['Buy market']!=='UK'),asins.length);
   }catch(e){toast('Keepa did not answer — nothing was spent on the failed part',true);}
   b.disabled=false;paintEuLeads();}
@@ -664,10 +711,15 @@ async function dropCheck(list){const m=me();if(!m){toast('Pick who you are (top 
   if(!openNow){if(cur&&cur.key===key)clearRun();await openRun(key);}
   if(list&&list.length)await handleFiles(list);}
 /* the UK Finder file doubles as the UK sell side while no EU file is in (never over a real Viewer) */
-function dropAlias(){if(!cur||!cur.drop)return;const eu=['DE','FR','IT','ES'].some(m=>files[m]);
+/* b242 (Jack, 3 Oct, Bialetti: 3,654 products, a Viewer in 2 parts, only part 1 in → 3 leads; "loads more Bialetti leads than you're making out"):
+   on EVERY multi-country Rule 1 run the UK Finder export (all columns) is the UK sell side for its own products, like Drop & check (b223).
+   The Viewer is only asked for what the UK file has not got (2,876 of 3,654 on Bialetti → 778, one part), and its row still wins.
+   The UK file standing in as the WHOLE sell side before any Viewer stays a Drop & check thing (b222: a brand run waits for its Viewer). */
+function dropAlias(){if(!cur||cur.rule!==1)return;const eu=['DE','FR','IT','ES'].some(m=>files[m]);
   if(files.viewer&&files.viewer.__alias)files.viewer=null;
   if(files.viewer&&files.viewer.__aug)files.viewer=files.viewer.__pure;
-  if(!files.viewer&&files.UK&&files.UK.hasFees&&!eu){files.viewer=Object.assign({},files.UK,{__alias:true,__prime:false,__base:null,name:files.UK.name+' — also the UK sell side'});return;}
+  if(!cur.drop&&typeof ukOnly==='function'&&ukOnly())return;
+  if(cur.drop&&!files.viewer&&files.UK&&files.UK.hasFees&&!eu){files.viewer=Object.assign({},files.UK,{__alias:true,__prime:false,__base:null,name:files.UK.name+' — also the UK sell side'});return;}
   /* b223: the Viewer file + the UK Finder = one sell side (the Viewer's row wins) */
   if(files.viewer&&files.UK&&files.UK.hasFees){const pure=files.viewer;const by=new Map();files.UK.rows.forEach(r=>by.set((r.ASIN||'').trim(),r));pure.rows.forEach(r=>by.set((r.ASIN||'').trim(),r));
     files.viewer=Object.assign({},pure,{__aug:true,__pure:pure,rows:[...by.values()],asins:[...by.keys()].filter(Boolean),name:pure.name+' + your UK file',hasFees:pure.hasFees&&files.UK.hasFees,hasSince:pure.hasSince&&files.UK.hasSince});}}
@@ -677,6 +729,7 @@ function keepaColsHtml(need){const groups=[];KEEPA_COLS.forEach(c=>{let g=groups
 function keepaColsText(missing){if(missing&&missing.length)return 'TICK THESE IN KEEPA — Configure Columns (top left of the table), then export again:\n'+missing.map(c=>'  ☐ '+colPath(c)).join('\n')+'\n';
   let out='KEEPA COLUMNS TO TICK — once per computer\nIn Keepa press Configure Columns (top left of the table) and tick these, group by group. Quicker: type each name in the "Filter columns…" box.\n★ = the file is refused without it · ◆ = the UK selling-side file is refused without it\n';let g='';
   KEEPA_COLS.forEach(c=>{if(c.g!==g){g=c.g;out+='\n'+g.toUpperCase()+'\n';}out+='  '+(c.m==='must'?'★ ':c.m==='sell'?'◆ ':'   ')+(c.s?c.s+' → ':'')+c.n+'\n';});return out;}
+let viewerRefused=null;   /* b245: the last Viewer export this run refused, and the columns it lacked */
 function openColsPanel(missing,fname){let ov=$('#colsOv');const need=missing&&missing.length?new Set(missing.map(c=>c.h)):null;ov&&(ov._missing=need?missing:null);
   if(!ov){ov=document.createElement('div');ov.id='colsOv';ov.className='colsov';document.body.appendChild(ov);
     ov.addEventListener('click',e=>{if(e.target===ov||e.target.closest('[data-close]'))ov.hidden=true;
@@ -684,7 +737,10 @@ function openColsPanel(missing,fname){let ov=$('#colsOv');const need=missing&&mi
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!ov.hidden)ov.hidden=true;});}
   ov._missing=need?missing:null;const n=need?missing.length:0;
   ov.innerHTML=`<div class="colsbox ${need?'missing':''}" role="dialog" aria-label="Keepa columns to tick"><div class="colshead"><div>
-      ${need?`<h3>${escapeHtml(fname||'This file')} — <span class="bad">${n} column${n===1?'':'s'} missing</span>. Tick these in Keepa, then export again.</h3>
+      ${need&&/productviewer/i.test(fname||'')?`<h3>Your Product <u>Viewer</u> export was not taken — <span class="bad">${n} column${n===1?' is':'s are'} not ticked in the Viewer</span>.</h3>
+      <p class="colswhy"><b>Why:</b> Keepa's Product Viewer keeps <b>its own column list</b>. Ticking a column in the Product Finder does <b>not</b> tick it in the Viewer — that is why your country files went in and this one did not. No Viewer file = no leads.</p>
+      <p><b>What to do (once):</b> in the <b>Viewer</b> press <b>Configure Columns</b> (top left, above the table) and tick every <b class="bad">red</b> box below — type its name into the <b>Filter columns…</b> box and tick it. Grey ✓ = already in your export. Keepa remembers. Then <b>Export → All active columns → CSV</b> and drop the new Viewer file here — your leads appear straight after.</p>`
+      :need?`<h3>${escapeHtml(fname||'This file')} — <span class="bad">${n} column${n===1?'':'s'} missing</span>. Tick these in Keepa, then export again.</h3>
       <p>In Keepa press <b>Configure Columns</b> (top left, above the table). Every <b class="bad">red</b> box below needs ticking — type its name into the <b>Filter columns…</b> box at the top of that window and tick it. Grey ✓ = already in your export. Keepa remembers, so it is once. Then <b>Export → All active columns → CSV</b> and drop the new file.</p>`
       :`<h3>Keepa columns to tick — once per computer</h3>
       <p>In Keepa press <b>Configure Columns</b> (top left, above the table). Tick everything below, group by group — the tabs along the top of that box are the same groups. Quicker: type each name into the <b>Filter columns…</b> box at the top of it and tick. Keepa remembers, so it is once. <b>${KEEPA_COLS.length} columns.</b></p>`}</div>
@@ -892,7 +948,7 @@ async function fillUnknownShares(f){if(!f||!f.rows||typeof shareUnknown!=='funct
   stampShares(f.rows);const by={};f.rows.forEach(r=>by[(r.ASIN||'').trim()]=r);const cache=lsGet(UNK_KEY,{}),now=Date.now();
   /* which leads are standing on the family's drops with their own share unknown */
   const pOn=typeof primeOn==='function'&&primeOn();
-  const R=cur.rule===1?rule1Compute(Object.assign({},files,{prime:pOn}),cur.name,rate(),null):rule2Compute(f.rows,factsAll(),{vatFor:vatFor,rule:cur.rule,prime:pOn});   /* b123: the normal run — unknown-share options are leads on the family's drops */
+  const R=cur.rule===1?rule1Compute(Object.assign({},files,{prime:pOn,plugOk:cur.plugOk||null}),cur.name,rate(),null):rule2Compute(f.rows,factsAll(),{vatFor:vatFor,rule:cur.rule,prime:pOn});   /* b123: the normal run — unknown-share options are leads on the family's drops */
   const need=[];R.out.forEach(o=>{const r=by[o.ASIN];if(r&&shareUnknown(r)&&!need.includes(o.ASIN))need.push(o.ASIN);});
   let asked=0,confirmed=0;const ask=[];
   need.forEach(a=>{const c=cache[a];if(c&&now-c.at<UNK_TTL_H*3600e3){optionStamp(by[a],c);if(c.n>=50||(c.last&&c.last.n>0))confirmed++;}else ask.push(a);});
@@ -942,7 +998,7 @@ function paintSlots(){if(!cur)return;const r1=cur.rule===1;
   const covered=new Set(files.viewer?files.viewer.asins:[]);
   /* b223 (Jack, 1 Oct: "I still need a Viewer"): on Drop & check a UK Finder with every column IS the UK sell side for its own products — the
      Viewer is asked only for the EU products it has not got. The Viewer file then joins it (dropAlias), the Viewer's row winning. */
-  const ukCov=(cur.drop&&files.UK&&files.UK.hasFees)?new Set(files.UK.asins||[]):null;const need=ukCov?[...merged].filter(a=>!ukCov.has(a)):[...merged];
+  const ukCov=(files.UK&&files.UK.hasFees&&!(typeof ukOnly==='function'&&ukOnly()))?new Set(files.UK.asins||[]):null;   /* b242: every multi-country run, not just Drop & check */const need=ukCov?[...merged].filter(a=>!ukCov.has(a)):[...merged];
   if(ukCov)ukCov.forEach(a=>covered.add(a));const missing=need.filter(a=>!covered.has(a));
   const P=viewerParts(need.sort()),pIn=P.map(p=>partDone(p,covered)),pNext=pIn.indexOf(false);   /* b215 */
   /* b215: the UK Viewer button only ticks when every part is in */
@@ -1019,7 +1075,7 @@ function runStored(){if(!cur)return false;const {rows,last}=storedRows(cur.key,c
       :{rows:rst.rows||n,priced:rst.priced==null?'—':rst.priced,demand:rst.demand==null?'—':rst.demand,kept:rows.length}};
   R.gone=applyQueue(R.out,R.rule,prevMap,verdAll(),carryFor(cur)).filter(([a])=>!blAll()[a]);R.prevMap=prevMap;const pst=Object.values(prevMap).map(p=>p.stamp).filter(Boolean).sort();R.prevStamp=pst.length?pst[pst.length-1]:null;result=R;
   renderResults();renderGuide();return true;}
-function clearRun(){pillOff();SLOTS.forEach(k=>files[k]=null);files.one=null;if(typeof primeClear==='function')primeClear();result=null;lastSig='';$('#fileIn').value='';view.sel.clear();view.page=1;touched.clear();blPick=null;
+function clearRun(){pillOff();viewerRefused=null;SLOTS.forEach(k=>files[k]=null);files.one=null;if(typeof primeClear==='function')primeClear();result=null;lastSig='';$('#fileIn').value='';view.sel.clear();view.page=1;touched.clear();blPick=null;
   warn([]);$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;if(cur){paintSlots();renderGuide();}}
 
 /* ============ FX (Rule 1 EU buys) — lives in Settings, used here ============ */
@@ -1068,7 +1124,7 @@ function run(){if(!cur)return;stampLearned();
     $('#sumEmpty').classList.remove('err');}
   const prevMap=baselineOf(leadMap(cur.key));
   let R;
-  if(cur.rule===1){if(files.viewer)stampShares(files.viewer.rows);R=rule1Compute(Object.assign({},files,{prime:typeof primeOn==='function'&&primeOn()}),cur.name,rate(),null);R.rule=1;R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;o.Score=r2score(o['Profit £'],o['ROI %'],o.SPM,(o['Sell £ used']||0)<R2.LOW_TICKET);});}
+  if(cur.rule===1){if(files.viewer)stampShares(files.viewer.rows);R=rule1Compute(Object.assign({},files,{prime:typeof primeOn==='function'&&primeOn(),plugOk:cur.plugOk||null}),cur.name,rate(),null);R.rule=1;R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;o.Score=r2score(o['Profit £'],o['ROI %'],o.SPM,(o['Sell £ used']||0)<R2.LOW_TICKET);});}
   else{/* a tea & coffee filter: every row is 0% unless it reads like an appliance (machine, grinder…) or a VA has set it */
     const vf=cur.vat0?((row,fact)=>{if(fact&&fact.vat!=null&&fact.vat!=='')return vatFor(row,fact);
       const text=((row.Title||'')+' | '+(row['Categories: Sub']||'')).toLowerCase();if(r4isAppliance(text))return{rate:R4.STANDARD,why:'20% — reads like an appliance, not the drink',src:'rule'};
@@ -1227,6 +1283,9 @@ function logRun(){const R=result,c={NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};R.out.fo
   /* b143: the run remembers WHICH leads needed a look and which fell off, not just how many — so "what was I looking at yesterday?" has an answer */
   runSave({at:nowIso(),day:today(),source:cur.key,name:cur.name,rule:cur.rule,files:names,rowsIn,st:R.st,leads:R.out.length,new:c.NEW,better:c.BETTER,worse:c.WORSE,gone:R.gone.length,blacklisted:R.blacklisted.length,
     asins:R.out.map(o=>o.ASIN),queue:dayQueueFor(R),goneAsins:(R.gone||[]).slice(0,400).map(g=>g[0]),who:me(),
+    /* b244: the run is in — it is FINISHED when someone presses Done (0 leads = nothing to do, done by itself). The same files dropped again keep the stamp. */
+    needDone:true,done:(()=>{const p=runsFor(cur.key).find(x=>(x.day||String(x.at).slice(0,10))===today());
+      if(p&&p.done&&(p.asins||[]).join()===R.out.map(o=>o.ASIN).join())return p.done;return R.out.length?null:{who:me(),at:nowIso(),auto:true};})(),
     /* b239 (Jack's ASIN audit: "buy price at the time, score at the time"): each lead's buy £ / score / ROI, in the same order as asins */
     nb:R.out.map(o=>{const b=+(cur.rule===1?o['Landed £']:o['After discount £'])||0;return[b?Math.round(b*100)/100:null,o.Score!=null?Math.round(+o.Score):null,o['ROI %']!=null?Math.round(+o['ROI %']*10)/10:null];})});
   /* b239: every product the export had — cut ones too — goes to src_seen, so the audit can tell "never found" from "found and cut" */
@@ -1275,6 +1334,10 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
   $('#fell').innerHTML=`<span class="fl">Filtered out</span><span class="fr">${rs.length?rs.map(([k,n])=>`${escapeHtml(k)} ${n}`).join(' · '):'nothing'}</span><span class="fbar"><span style="width:${Math.min(100,R.dropped.length/((st.viewer||st.rows)||1)*100)}%"></span></span><span class="fn">${R.dropped.length} dropped</span>`;
   const est=cur.rule===1?out.filter(o=>(o['Fees from']||'').startsWith('ESTIMATED')).length:0;
   const fw=$('#feeWarn');const msgs=[];
+  /* b242 (Bialetti, 3 Oct: part 1 of 2 in, the run looked finished at 3 leads): while a Viewer part is missing, the results say so first */
+  if(R.rule===1&&!R.stored&&typeof viewerPartsLeft==='function'&&viewerPartsLeft()>0){const all=($('#asinBar')||{})._all||[],P=viewerParts(all),cov=new Set(files.viewer?files.viewer.asins||[]:[]);
+    const miss=all.filter(a=>!cov.has(a)).length,next=P.findIndex(p=>!partDone(p,cov));
+    msgs.push(`<span class="vpwarn"><b>⚠ These leads are incomplete — UK Viewer part ${next+1} of ${P.length} is not in.</b> ${miss.toLocaleString()} products have no UK price yet, so none of them can be a lead. Press <b>Open part ${next+1} of ${P.length}</b> in the Viewer bar, export all columns, drop it here — the leads update by themselves.</span>`);}
   /* b23: what Jack knows about this brand's channel (the note on its discount row) — once per run, not on every row */
   let bn=$('#brandNote');if(!bn){bn=document.createElement('div');bn.id='brandNote';bn.className='brandnote';fw.parentNode.insertBefore(bn,fw);}
   const be=cur.rule===1?discForBrand((cur.brands&&cur.brands[0])||cur.name):null;
@@ -1369,10 +1432,47 @@ function paintDayBar(total,done){let el=$('#dayBar');const host=$('#leadTop');if
   if(!total){el.hidden=true;el.innerHTML='';return;}
   el.hidden=false;const pct=Math.round(done/total*100);const k=total+'|'+done;if(el._k===k)return;el._k=k;   /* b224: unchanged = untouched, so the bar does not re-animate on every keystroke */
   el.innerHTML=`<span class="dbb"><i style="width:${pct}%"></i></span><span class="dbt">${done} of ${total} done${done===total?' — all done':''}</span>`;}
-function visible(){const q=view.q.toLowerCase();const day=dayList();const list=result.out.filter(o=>{
+/* b240: the lead list's country + deal filter, remembered per filter (Germany-only on one source never empties another) */
+const LF_KEY='bdl-sourcing-leadfilter';
+function leadFilt(){const all=lsGet(LF_KEY,{})||{};const f=(cur&&all[cur.key])||{};
+  return{mks:Array.isArray(f.mks)?f.mks:[],deals:Array.isArray(f.deals)?f.deals:(f.deal&&f.deal!=='ALL'?[f.deal]:[]),rest:!!f.rest};}
+const MK_NAME={UK:'UK',DE:'Germany',FR:'France',IT:'Italy',ES:'Spain'},DEAL_LAB={prime:'★ Prime exclusive',offer:'On offer',amazon:'Normal price'};
+/* is a lead in the current country + deal choice? (nothing ticked = everything) */
+function lfHit(o,LF){if(cur&&cur.rule===1&&LF.mks.length&&!LF.mks.includes(o['Buy market']||'UK'))return false;if(LF.deals.length&&!LF.deals.includes(leadDeal(o)))return false;return true;}
+function lfOn(LF){return!!((cur&&cur.rule===1&&LF.mks.length)||LF.deals.length);}
+function leadFiltSet(ch){if(!cur)return;const all=lsGet(LF_KEY,{})||{};all[cur.key]=Object.assign(leadFilt(),ch);lsSet(LF_KEY,all);}
+function leadDeal(o){const t=o&&o.BuyType;if(t==='prime'||t==='offer'||t==='amazon')return t;return typeof buyTypeOf==='function'?buyTypeOf(o,null):'amazon';}
+/* the chips, with how many leads each would show (everything else in the view applied) */
+function paintLeadFilt(){if(!cur||!result)return;const F=leadFilt(),host=$('#fMks'),dl=$('#fDeals');
+  const base=visible({mks:[],deals:F.deals,rest:false}),baseD=visible({mks:F.mks,deals:[],rest:false});
+  if(host&&cur.rule===1){const n={};base.forEach(o=>{const m=o['Buy market']||'UK';n[m]=(n[m]||0)+1;});
+    const mks=MARKETS.filter(m=>n[m]||(cur.markets||[]).includes(m)||F.mks.includes(m));const p=['UK','DE','FR'],pOn=F.mks.length===3&&p.every(x=>F.mks.includes(x));
+    host.innerHTML=`<button type="button" data-mk="ALL" class="${F.mks.length?'':'on'}">All</button>`+mks.map(m=>`<button type="button" data-mk="${m}" class="${F.mks.includes(m)?'on':''}${n[m]?'':' zero'}">${m}<b>${n[m]||0}</b></button>`).join('')
+      +`<button type="button" data-mk="PRIME" class="pr${pOn?' on':''}" title="The countries with Prime exclusive prices — UK, Germany, France">★ UK·DE·FR</button>`;}
+  if(dl){const n={prime:0,offer:0,amazon:0};baseD.forEach(o=>{const d=leadDeal(o);if(n[d]!=null)n[d]++;});
+    const tip={prime:'Bought at a Prime exclusive price — Prime members only, UK / Germany / France',offer:'Amazon has it on offer — a coupon, Subscribe & Save or a deal badge',amazon:'Amazon\'s normal price'};
+    dl.innerHTML=`<button type="button" data-deal="ALL" class="${F.deals.length?'':'on'}">All</button>`+['prime','offer','amazon'].map(k=>`<button type="button" data-deal="${k}" class="${k==='prime'?'pr ':''}${F.deals.includes(k)?'on':''}${n[k]?'':' zero'}" title="${tip[k]}">${DEAL_LAB[k]}<b>${n[k]}</b></button>`).join('');}
+  paintLfNote(F);}
+/* the "still missing" line: what the choice hides, and how much of it is not done yet */
+function paintLfNote(F){const el=$('#lfNote');if(!el)return;if(!lfOn(F)){el.hidden=true;el.innerHTML='';return;}
+  const all=visible({mks:[],deals:[],rest:false}),hit=all.filter(o=>lfHit(o,F)),hid=all.filter(o=>!lfHit(o,F));const word=view.status==='REVIEW'?'to review':'leads';
+  const what=[cur.rule===1&&F.mks.length?F.mks.map(m=>MK_NAME[m]||m).join(' + '):'',F.deals.length?F.deals.map(d=>DEAL_LAB[d]).join(' + '):''].filter(Boolean).join(' · ');
+  const left=L=>view.status==='REVIEW'&&typeof doneToday==='function'?L.filter(o=>!doneToday(o)).length:null;
+  /* two groups that never overlap: leads in the countries you did not tick, then leads in your countries the deal choice hides */
+  const brk=L=>{const mkOn=cur.rule===1&&F.mks.length,inMk=o=>!mkOn||F.mks.includes(o['Buy market']||'UK');const out=[];
+    if(mkOn){const n={};L.filter(o=>!inMk(o)).forEach(o=>{const m=o['Buy market']||'UK';n[m]=(n[m]||0)+1;});const p=MARKETS.filter(m=>n[m]).map(m=>`${MK_NAME[m]} ${n[m]}`);if(p.length)out.push('other countries — '+p.join(' · '));}
+    if(F.deals.length){const n={};L.filter(inMk).forEach(o=>{const d=leadDeal(o);n[d]=(n[d]||0)+1;});const p=['prime','offer','amazon'].filter(d=>n[d]&&!F.deals.includes(d)).map(d=>`${DEAL_LAB[d].toLowerCase()} ${n[d]}`);
+      if(p.length)out.push((mkOn?F.mks.map(m=>MK_NAME[m]||m).join(' + ')+' ':'')+'not '+F.deals.map(d=>DEAL_LAB[d]).join(' / ')+' — '+p.join(' · '));}
+    return out.join('; ');};
+  const lh=left(hid),ls=left(hit);el.hidden=false;
+  el.innerHTML=F.rest
+    ?`<span><b>Showing the rest</b> — the ${hid.length} ${word} that are not ${escapeHtml(what)}${lh!=null?` · <b>${lh} not done</b>`:''}.</span><span class="lfbtns"><button type="button" class="btn ghost xs" data-lf="rest">Back to ${escapeHtml(what)} (${hit.length})</button><button type="button" class="btn ghost xs" data-lf="all">Show all ${all.length}</button></span>`
+    :`<span><b>Showing only ${escapeHtml(what)}</b> — ${hit.length} of ${all.length} ${word}${ls!=null?` (${ls} not done)`:''}. ${hid.length?`<b class="miss">Still missing ${hid.length}</b>${lh!=null?` (${lh} not done)`:''}: ${escapeHtml(brk(hid))}.`:'Nothing else here.'}</span>${hid.length?`<span class="lfbtns"><button type="button" class="btn ghost xs" data-lf="rest">Show the rest ${hid.length}</button><button type="button" class="btn ghost xs" data-lf="all">Show all ${all.length}</button></span>`:''}`;}
+function visible(over){const q=view.q.toLowerCase();const LF=over||leadFilt();const day=dayList();const list=result.out.filter(o=>{
   if(view.status==='REVIEW'){if(!o.QUEUE&&!touched.has(o.ASIN)&&!(day&&day.has(o.ASIN)))return false;}
   else if(view.status!=='ALL'&&o.STATUS!==view.status)return false;
-  if(cur.rule===1&&view.market!=='ALL'&&o['Buy market']!==view.market)return false;
+  /* b240 (Jack, 3 Oct: "maybe I just wanna see Germany Prime exclusive leads atm — want the ability to customise and filter it more") */
+  if(lfOn(LF)){const hit=lfHit(o,LF);if(LF.rest?hit:!hit)return false;}   /* "the rest" = exactly what the choice hides */
   if(view.hideNo){const v=verdGet(o.ASIN);if(v&&v.v==='No')return false;}
   if(q&&!((o.ASIN+' '+(o.Title||o.Product||'')+' '+(o.Brand||'')).toLowerCase().includes(q)))return false;return true;});
   const sc=o=>o.Score||0;
@@ -1407,7 +1507,7 @@ function statusCell(o){const sp=`<span class="spill ${({NEW:'new',BETTER:'better
   const low=o.low?`<span class="chg" title="Lowest buy we saw, and when — set a Keepa track at it">low was £${o.low.buy.toFixed(2)} on ${escapeHtml(o.low.stamp.slice(8,10))}/${escapeHtml(o.low.stamp.slice(5,7))}</span>`:'';
   const wait=o.QUEUE==='waiting'&&o.waitSince?`<span class="chg wait" title="On the To review list from the ${escapeHtml(ukDate(o.waitSince))} run and nobody on this filter has done it yet — it stays until it is answered, opened in Keepa or marked Done">not done since ${escapeHtml(o.waitSince.slice(8,10))}/${escapeHtml(o.waitSince.slice(5,7))}</span>`:'';   /* b233 */
   return sp+wait+chg+since+low;}
-function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.length/PAGEN()));if(view.page>pages)view.page=pages;
+function renderTable(){paintLeadFilt();const all=visible();const pages=Math.max(1,Math.ceil(all.length/PAGEN()));if(view.page>pages)view.page=pages;
   const rows=all.slice((view.page-1)*PAGEN(),view.page*PAGEN());
   /* b229 (Jack, 1 Oct: "have we improved this — I have asked about clarification on this before"). The header said one thing four ways
      ("46 to do", "To review 71", "25 of 71 answered", "25 done") and never said how 71 and 85 relate — and the tab counted o.QUEUE while the
@@ -1499,9 +1599,10 @@ function renderTable(){const all=visible();const pages=Math.max(1,Math.ceil(all.
   let pg='';const win=[...new Set([1,2,view.page-1,view.page,view.page+1,pages-1,pages].filter(p=>p>=1&&p<=pages))].sort((a,b)=>a-b);
   let last=0;win.forEach(p=>{if(p-last>1)pg+='<span style="padding:0 4px;color:var(--faint)">…</span>';pg+=`<button data-pg="${p}" class="${p===view.page?'on':''}">${p}</button>`;last=p;});
   $('#pager').innerHTML=`<span>Showing ${from}–${to} of ${all.length}${view.sel.size?` · <b>${view.sel.size} selected</b>`:''}${pages>1&&view.page<pages?` · <span class="pghint">${all.length-to} more on the next page — ↓ carries on</span>`:''}</span><div class="pg"><button data-pg="${view.page-1}" ${view.page<=1?'disabled':''}>‹</button>${pg}<button data-pg="${view.page+1}" ${view.page>=pages?'disabled':''}>›</button></div>`;
-  $('#openSel').textContent=view.sel.size?`Open ${view.sel.size} ticked in Keepa`:all.length<=OPEN_ALL_MAX?`Open all ${all.length} in Keepa`:`Open ${rows.length} on this page in Keepa`;
-  $('#openSel').title=isJack()?'Opens them in one Keepa tab. Your opens mark nothing — press ✓ Done (or Y / N / M) when you have looked.':'Opens them in one Keepa tab — and counts them as done by you (Put back undoes it).';
-  {const db=$('#doneSel');if(db){const n=doneList().length;db.hidden=view.status!=='REVIEW'||!!result.past;db.disabled=!n;db.textContent=n?`✓ Done (${n})`:'✓ All done';
+  {const n=view.sel.size||all.length,P=Math.ceil(n/OPEN_ALL_MAX),p=(view.openPart||0)%Math.max(1,P);
+    $('#openSel').textContent=view.sel.size?`Open ${view.sel.size} ticked in Keepa`:n<=OPEN_ALL_MAX?`Open all ${n} in Keepa`:`Open ${(p*OPEN_ALL_MAX+1).toLocaleString()}–${Math.min(n,(p+1)*OPEN_ALL_MAX).toLocaleString()} of ${n.toLocaleString()} in Keepa`;}
+  $('#openSel').title=isJack()?'Opens them in one Keepa tab. Your opens mark nothing — press ✓ Leads looked at (or Y / N / M) when you have looked.':'Opens them in one Keepa tab — and counts them as done by you (Put back undoes it).';
+  {const db=$('#doneSel');if(db){const n=doneList().length;db.hidden=view.status!=='REVIEW'||!!result.past;db.disabled=!n;db.textContent=n?`✓ Leads looked at (${n})`:'✓ All looked at';   /* b244: "Done" now means the whole filter — the big button */
     db.title=`Marks ${n?'these '+n:'them'} as done by ${me()||'you'} — they tick off To review (same as opening them in Keepa). "Put back in the queue" undoes it.`;}}   /* b233 */
   setupKeys();paintJudged();paintEuLeads();if(view.active){const tr=document.querySelector(`.ltbl tbody tr[data-asin="${view.active}"]`);if(tr)tr.classList.add('active');}}
 /* b23 density pass (Jack, 14 Sep: "too busy") — the Sell cell already shows the worst case and the retailer buttons say
@@ -1586,9 +1687,10 @@ function dlSheet(){if(!result||!result.out.length){toast('Nothing on the sheet y
   const hdr=cur.rule===1?R1_HDR:R2_HDR;downloadBlob(base()+'-REVIEW.xlsx',buildXlsx(hdr,withVerdicts(result.out),cur.name+' Rule '+cur.rule));toast(result.out.length+' leads on the sheet');}
 function dlCsv(){if(!result||!result.out.length){toast('Nothing on the sheet yet',true);return;}download(base()+'-REVIEW.csv',rowsToCsv(cur.rule===1?R1_HDR:R2_HDR,withVerdicts(result.out)),'text/csv');}
 function dlDropped(){if(!result){toast('Run something first',true);return;}download(base()+'-DROPPED.csv',droppedCsv(result),'text/csv');}
-const OPEN_ALL_MAX=250;
+const OPEN_ALL_MAX=3000;   /* b242: Keepa's Viewer takes about 3,000 in one link (b215) — was 250, so a big run only ever opened one page */
 function openInKeepa(){if(!result){toast('Nothing to open',true);return;}
-  const all=visible();const list=view.sel.size?[...view.sel]:(all.length<=OPEN_ALL_MAX?all:all.slice((view.page-1)*PAGEN(),view.page*PAGEN())).map(o=>o.ASIN);
+  const all=visible();const every=view.sel.size?[...view.sel]:all.map(o=>o.ASIN);const part=every.length>OPEN_ALL_MAX?(view.openPart||0)%Math.ceil(every.length/OPEN_ALL_MAX):0;
+  const list=every.slice(part*OPEN_ALL_MAX,(part+1)*OPEN_ALL_MAX);view.openPart=every.length>OPEN_ALL_MAX?part+1:0;
   if(!list.length){toast('Nothing to open',true);return;}window.open(keepaLink(list,'2'),'_blank');
   if(typeof actLog==='function'){const by={};result.out.forEach(o=>{by[o.ASIN]=o;});const bt={};list.forEach(a=>{const t=(by[a]&&by[a].BuyType)||'untagged';bt[t]=(bt[t]||0)+1;});
     actLog('open',`Open ${list.length} in Keepa`,cur.key,{as:list.slice(0,400),bt});}   /* b219: which leads were looked at, and how they are bought */
@@ -1605,10 +1707,10 @@ function openInKeepa(){if(!result){toast('Nothing to open',true);return;}
     if(fresh.length){seenStampMany(fresh.map(a=>({asin:a,v:{v:'Seen',reason:'',note:'opened in Keepa',source:cur.key,state:(by[a]||{}).state}})),'Open all in Keepa');
       fresh.forEach(a=>{touched.add(a);const o=by[a];if(o){o.verdict=verdGet(a);o.QUEUE='';}});renderResults();
       toast(`Opened ${list.length} in Keepa · ${fresh.length} marked Seen by ${me()} — clicked by mistake? "Put ${fresh.length} back in the queue" undoes it`);return;}}
-  toast(`Opened ${list.length} in Keepa — nothing marked. Y / N / M judge a row; ✓ Done marks them done.`);}
+  toast(`Opened ${list.length} in Keepa — nothing marked. Y / N / M judge a row; ✓ Leads looked at marks them.`);}
 /* b233 (Jack, 1 Oct: "add a Done button next to Open in Keepa"). Marks the same leads Open in Keepa would open (ticked, or all, or this page) as done
    by you — for leads looked at without opening them from here, and for Jack, whose opens mark nothing (b142). Same stamp as a VA's open; undo = Put back. */
-function doneList(){const all=visible();return(view.sel.size?[...view.sel]:(all.length<=OPEN_ALL_MAX?all:all.slice((view.page-1)*PAGEN(),view.page*PAGEN())).map(o=>o.ASIN)).filter(a=>!doneToday({ASIN:a}));}
+function doneList(){const all=visible();return(view.sel.size?[...view.sel]:all.map(o=>o.ASIN)).filter(a=>!doneToday({ASIN:a}));}   /* b242: every lead shown, or the ticked ones */
 function markDone(){if(!result||!cur||!needMe())return;const list=doneList();if(!list.length){toast('All of these are done already');return;}
   const by={};result.out.forEach(o=>{by[o.ASIN]=o;});
   seenStampMany(list.map(a=>({asin:a,v:{v:'Seen',reason:'',note:'marked done',source:cur.key,state:(by[a]||{}).state}})),'Done button');
@@ -1904,16 +2006,25 @@ function brandsInit(){if(typeof bbSeed==='function')bbSeed();paintJackOnly();ren
     document.addEventListener('click',e=>{if(!m.contains(e.target)){m.classList.remove('open');b.setAttribute('aria-expanded','false');}});
     m.querySelector('.tbpop').addEventListener('click',e=>{if(e.target.closest('button'))setTimeout(()=>{m.classList.remove('open');b.setAttribute('aria-expanded','false');},0);});
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&m.classList.contains('open')){m.classList.remove('open');b.setAttribute('aria-expanded','false');}});}}
-  ['#runNext','#runNext2'].forEach(id=>$(id).addEventListener('click',e=>{const k=e.currentTarget.dataset.key;if(k&&srcGet(k)){backToList();openRun(k);window.scrollTo({top:0,behavior:'smooth'});}
-    else if(cur&&cur.drop){backToList();window.scrollTo({top:0,behavior:'smooth'});}}));   /* b223 */
+  ['#runNext','#runNext2'].forEach(id=>$(id).addEventListener('click',e=>{const k=e.currentTarget.dataset.key;
+    if(id==='#runNext2'&&cur&&!cur.drop)runMarkDone();   /* b244: Done is a press, with a name on it */
+    if(k&&srcGet(k)){backToList();openRun(k);window.scrollTo({top:0,behavior:'smooth'});}
+    else if(cur&&(cur.drop||id==='#runNext2')){backToList();window.scrollTo({top:0,behavior:'smooth'});}}));   /* b223 */
   $('#yourDay').addEventListener('click',e=>{const b=e.target.closest('button[data-start]');if(b)openRun(b.dataset.start);});
   $('#howToHide').addEventListener('click',()=>{lsSet(HOWTO_KEY,true);renderHowTo();});$('#howToShow').addEventListener('click',()=>{lsSet(HOWTO_KEY,false);renderHowTo();$('#howTo').scrollIntoView({behavior:'smooth',block:'center'});});
   $('#runStrip').addEventListener('click',e=>{const d=e.target.closest('[data-run]');if(d&&cur){openPastRun(d.dataset.run);return;}if(e.target.closest('[data-look]')&&cur){openApiLook();return;}if(e.target.closest('[data-act="hist"]')&&cur)openHistory(cur);});
   $('#runCopyLink').addEventListener('click',e=>{if(!cur)return;const w=USERS.includes(cur.owner)?'&who='+cur.owner:'';copy(location.origin+location.pathname+'#run='+cur.key+w,'Link copied — paste it into the AVM HQ task'+(w?' (opens as '+cur.owner+', no name prompt)':''),e.currentTarget,'Copied');});
   $('#runAllTime').addEventListener('click',()=>{if(!cur)return;const k=cur.key;backToList();historyOpenFor(k);});
   $('#fSort').addEventListener('change',e=>{view.sort=e.target.value;view.page=1;renderTable();});
-  $('#fPer').addEventListener('change',e=>{view.per=parseInt(e.target.value);view.page=1;renderTable();});
-  $('#fMarket').addEventListener('change',e=>{view.market=e.target.value;view.page=1;renderTable();});
+  {const fp=$('#fPer');if(fp)fp.addEventListener('change',e=>{view.per=parseInt(e.target.value);view.page=1;renderTable();});}
+  /* b240: Buy from = tick countries (none = all, UK·DE·FR = the Prime countries); Deal = ★ Prime exclusive / on offer / normal price */
+  $('#fMarket').addEventListener('click',e=>{const b=e.target.closest('button[data-mk]');if(!b||!cur)return;const F=leadFilt();let m=new Set(F.mks);const k=b.dataset.mk;
+    if(k==='ALL')m=new Set();else if(k==='PRIME'){const p=['UK','DE','FR'];m=(m.size===3&&p.every(x=>m.has(x)))?new Set():new Set(p);}else{m.has(k)?m.delete(k):m.add(k);}
+    leadFiltSet({mks:[...m],rest:false});view.page=1;renderTable();});
+  $('#fDeal').addEventListener('click',e=>{const b=e.target.closest('button[data-deal]');if(!b||!cur)return;const F=leadFilt();let d=new Set(F.deals);const k=b.dataset.deal;
+    if(k==='ALL')d=new Set();else{d.has(k)?d.delete(k):d.add(k);}leadFiltSet({deals:[...d],deal:null,rest:false});view.page=1;renderTable();});
+  $('#lfNote').addEventListener('click',e=>{const b=e.target.closest('[data-lf]');if(!b||!cur)return;
+    if(b.dataset.lf==='all')leadFiltSet({mks:[],deals:[],deal:null,rest:false});else leadFiltSet({rest:!leadFilt().rest});view.page=1;renderTable();});
   $('#floorRow').addEventListener('input',onFloorInput);
   $('#floorClear').addEventListener('click',()=>{if(!cur)return;tmpFloors=null;paintFloors();lastSig='';run();});
   /* b224 (Jack, 1 Oct: "improve smoothness and jumpiness of searching a title / brand / ASIN"): the table was rebuilt on every keystroke and the

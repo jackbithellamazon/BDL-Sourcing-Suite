@@ -29,6 +29,10 @@ function r4isDrinkForm(text){text=String(text||'').replace(/caffeine[- ]free|dec
 /* the appliance test the tea & coffee FILTER uses (every row is the drink unless it reads like a machine) */
 function r4isAppliance(text){return r4has(text,vat0Words().not)&&!r4isDrinkForm(text);}
 function vat0Words(){const v=lsGet(VAT0_KEY,null);return v&&v.zero&&v.not?v:{zero:R4.ZERO.slice(),not:R4.NOT.slice()};}
+/* b242 (Jack, 3 Oct: "Bialetti is all 20% VAT"): moka pots sat in Keepa's "Coffee Makers" — plural, so the singular 'maker' never matched and
+   they went 0% as if they were coffee. The appliance words now match their plural too, and a brand that only makes the hardware is always 20%. */
+const R4_STD_BRANDS=['bialetti'];
+function r4hasPl(text,words){return words.some(w=>{w=w.trim().toLowerCase();if(!w)return false;return new RegExp('(^|[^a-z])'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(e?s)?([^a-z]|$)').test(text);});}
 function r4has(text,words){return words.some(w=>{w=w.trim().toLowerCase();if(!w)return false;return new RegExp('(^|[^a-z])'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^a-z]|$)').test(text);});}
 /* row = a Keepa export row (Title, Categories…); fact = what a VA has stored for the ASIN ({vat:0|20}).
    → {rate, why, src:'va'|'rule'|'default'} */
@@ -38,5 +42,7 @@ function vatFor(row,fact){
   const w=vat0Words();
   if(R4.REDUCED_WORDS.some(x=>new RegExp('(^|[^a-z])'+x+'([^a-z]|$)').test(text)))return{rate:R4.REDUCED,why:'5% VAT — contraceptives, HMRC reduced rate',src:'rule'};
   if(r4has(text,w.zero)&&r4isDrinkForm(text))return{rate:0,why:'0% VAT — tea / coffee, the product not the machine',src:'rule'};
-  if(r4has(text,w.zero)&&!r4has(text,w.not))return{rate:0,why:'0% VAT assumed (tea / coffee) — confirm on the row',src:'rule'};
+  /* b242: the brand rule comes AFTER the coffee itself — Bialetti's own ground coffee (Omni Ground Espresso) is still food at 0%; its pots are 20% */
+  if(R4_STD_BRANDS.includes(String(row.Brand||'').trim().toLowerCase()))return{rate:R4.STANDARD,why:'',src:'brand'};
+  if(r4has(text,w.zero)&&!r4hasPl(text,w.not))return{rate:0,why:'0% VAT assumed (tea / coffee) — confirm on the row',src:'rule'};
   return{rate:R4.STANDARD,why:'',src:'default'};}

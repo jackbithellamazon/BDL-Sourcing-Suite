@@ -108,6 +108,9 @@ function brBrandDisc(brand){const b=(brand||'').trim().toLowerCase().split(/\s+/
 /* files = {viewer:{rows}, UK:{rows}|null, DE:..., FR:..., IT:..., ES:...}
    brand = string (only used for the result), rate = GBP per EUR,
    prevRun = {stamp, snap:{ASIN:{...}}} from the last downloaded sheet, or null */
+/* b243: a source's own "no plug" rule — {any:true} = nothing this source finds is a mains appliance, {words:[…]} = only titles with one of these;
+   `not` (a regex) is what still counts as electric. Only Bialetti passes one. */
+function r1PlugOk(po,tl){if(!po)return false;if(!(po.any||(po.words||[]).some(x=>tl.includes(x))))return false;return!(po.not&&new RegExp(po.not).test(tl));}
 function rule1Compute(files,brand,rate,prevRun){
   const eu={},euSS={},found={},oa=[],prm={};
   /* b214 (Jack, 30 Sep: "yes" — Rule 1 buys at the Prime price too). Only when the page passes files.prime (Jack's Prime event switch):
@@ -267,7 +270,9 @@ function rule1Compute(files,brand,rate,prevRun){
       const promo=(typeof discIsPromo==='function')&&discIsPromo(r.Brand)&&bp[0].toLowerCase()===String(r.Brand||'').toLowerCase().split(' ')[0];
       pmNote=promo?`if ${bp[0]} has a promo on (they usually do): £${pmCost.toFixed(2)} -> £${pmP_.toFixed(2)} / ${Math.round(pmRoi)}%`
         :`if ${bp[0]} price-matches: £${pmCost.toFixed(2)} -> £${pmP_.toFixed(2)} / ${Math.round(pmRoi)}%`;}}
-    const exempt=BR.EXEMPT.some(x=>tl.includes(x));
+    /* b243 (Jack's OK, 3 Oct: "most of Bialetti aren't electrical") — a source may pass words that mean "no plug" (files.plugOk: Bialetti's
+       stovetop / moka / caffettiera). Never when the title says electric. Every other source passes nothing, so nothing else changes. */
+    const exempt=BR.EXEMPT.some(x=>tl.includes(x))||r1PlugOk(files.plugOk,tl);
     if(BR.EU_PLUG.some(w=>tl.includes(w))){drop(a,title,'EU PLUG stated in the title','EU plug in title');continue;}
     if(d!=='UK'&&BR.EXCLUDE.some(w=>tl.includes(w))&&!exempt){drop(a,title,`MAINS APPLIANCE: would be an EU buy (${d}) - UK plug required`,'Appliance from EU');continue;}
     const plugRisk=d!=='UK'&&BR.FLAG.some(w=>tl.includes(w))&&!exempt;

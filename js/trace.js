@@ -13,7 +13,7 @@
      · Y / N / M                                                   src_verdicts
      · lead sheet — whose, when                                    AVM HQ's `leads` table, read only */
 const SEEN_PEND='bdl-sourcing-seen-pending',TRACE_Q='bdl-sourcing-trace-q';
-const trState={q:'',rows:null,busy:false,open:new Set(),sheet:null,sheetAt:0,sheetBusy:null,seenOk:null,ri:null,riSig:'',expand:new Set()};
+const trState={q:'',rows:null,busy:false,open:new Set(),sheet:null,sheetAt:0,sheetBusy:null,seenOk:null,ri:null,riSig:'',expand:new Set(),seen:{},seenAt:{}};
 
 /* ============ capture: every product a run saw, cut ones included ============ */
 /* pure — R is the run result, F the files that went in. One row per ASIN: a = ASIN, s = filter, d = day, k = 1 if it came out as a lead,
@@ -75,7 +75,7 @@ async function trSheetLoad(force){if(typeof cloudReadable!=='function'||!cloudRe
 /* the export rows the rules cut (src_seen) — only for the ASINs asked about */
 async function trSeenFor(asins){if(typeof cloudReadable!=='function'||!cloudReadable())return{};const m={};
   try{for(let i=0;i<asins.length;i+=80){const rows=await cloudGetAll('src_seen','select=*&asin=in.('+asins.slice(i,i+80).join(',')+')');
-      rows.forEach(r=>(m[r.asin]=m[r.asin]||[]).push(r));}trState.seenOk=true;}
+      rows.forEach(r=>(m[r.asin]=m[r.asin]||[]).push(r));}trState.seenOk=true;asins.forEach(a=>{trState.seen[a]=m[a]||[];trState.seenAt[a]=Date.now();});}
   catch(e){if(typeof missingTables==='function'&&missingTables(e))trState.seenOk=false;}
   return m;}
 /* what the VAs opened, the last 45 days of the activity log */
@@ -101,15 +101,28 @@ function trOutcome(a,seen){const R=trRunIdx()[a]||[],S=(trState.sheet||{})[a]||[
   return{k:'none',t:trState.seenOk===false?'Never a lead (cut rows are not being remembered yet — run the SQL file)':'Not found by any of our filters'};}
 const TR_OUT_LAB={ok:'Worked',late:'VA first',miss:'System missed',shown:'Shown, not led',cut:'Cut by the rules',none:'Not found'};
 
-/* ============ storefront row: EXPORTED ×N and the lead-sheet tiles ============ */
+/* b240 (Jack, 3 Oct: "make it a chip"): the cut rows for a whole shelf, loaded once when the shelf opens (80 ASINs a request, 4 at a time) */
+async function trSeenLoad(asins){if(typeof cloudReadable!=='function'||!cloudReadable()||trState.seenOk===false)return false;
+  const need=[...new Set(asins)].filter(a=>!trState.seenAt[a]);if(!need.length)return false;need.forEach(a=>trState.seenAt[a]=Date.now());let got=false;
+  for(let i=0;i<need.length;i+=320){await Promise.all([0,1,2,3].map(j=>{const ch=need.slice(i+j*80,i+(j+1)*80);if(!ch.length)return null;
+      return cloudGetAll('src_seen','select=*&asin=in.('+ch.join(',')+')').then(rows=>{trState.seenOk=true;rows.forEach(r=>{(trState.seen[r.asin]=trState.seen[r.asin]||[]).push(r);got=true;});})
+        .catch(e=>{if(typeof missingTables==='function'&&missingTables(e))trState.seenOk=false;});}));if(trState.seenOk===false)break;}
+  return got;}
+/* the exports it was CUT from: filters where it never came out as a lead (a filter where it was a lead is already in EXPORTED) */
+function trCutOf(a){return(trState.seen[a]||[]).filter(s=>!s.ever_kept);}
+/* ============ storefront row: EXPORTED ×N, CUT ×N and the lead-sheet tiles ============ */
 function trChips(a){const R=trRunIdx()[a]||[],S=(trState.sheet||{})[a]||[],v=typeof verdGet==='function'?verdGet(a):null;let h='';
   if(R.length){const keys=[...new Set(R.map(x=>x.key))],last=R[R.length-1];const said=v&&v.v&&v.v!=='Seen'?` · ${escapeHtml(v.who||'we')} said ${escapeHtml(v.v)}`:'';
     const tip=`Exported on ${R.length} day${R.length===1?'':'s'} — ${keys.length} filter${keys.length===1?'':'s'}, first ${trD(R[0].day)}, last ${trD(last.day)}. Click for every day.`;
     h+=`<button type="button" class="trx${trState.open.has(a)?' on':''}" data-trx="${a}" title="${escapeHtml(tip)}"><i class="sq" style="background:${typeof auAv==='function'?auAv(last.owner||'VAs'):'var(--iris)'}"></i>EXPORTED${R.length>1?' ×'+R.length:''}<span class="trsrc">${keys.length>1?keys.length+' filters':escapeHtml(typeof auSrcShort==='function'?auSrcShort(last.name):last.name)}${said}</span><span class="trcar">▾</span></button>`;}
+  const C=trCutOf(a);if(C.length){const days=C.reduce((n,s)=>n+(+s.days||1),0),last=C.slice().sort((p,q)=>String(p.last_day)<String(q.last_day)?1:-1)[0];
+    const nm=s=>((typeof srcGet==='function'&&srcGet(s.source_key))||{}).name||s.source_key;
+    const tip=C.map(s=>`${nm(s)}: in the export ${s.days>1?s.days+' days ('+trD(s.first_day)+' → '+trD(s.last_day)+')':trD(s.last_day)} — cut: ${s.why||'no reason saved'}${s.buy!=null?' · '+gbp(+s.buy):''}${s.score!=null?' · score '+s.score:''}`).join('\n')+'\nClick for every day.';
+    h+=`<button type="button" class="trx cut${trState.open.has(a)?' on':''}" data-trx="${a}" title="${escapeHtml(tip)}">CUT${days>1?' ×'+days:''}<span class="trsrc">${escapeHtml(String(last.why||'').slice(0,46))}</span><span class="trcar">▾</span></button>`;}
   [...new Set(S.map(x=>x.va))].forEach(va=>{const d=S.find(x=>x.va===va);
     h+=`<span class="trsheet ${va==='Suz'?'suz':va==='Mera'?'mera':'oth'}" title="${escapeHtml('On '+va+'’s lead sheet '+trD(d.date))}">${escapeHtml(va.toUpperCase())} LEAD SHEET</span>`;});
   return h;}
-function trDrop(a){return trState.open.has(a)?`<div class="trdrop" data-stop>${trTimeline(a,null)}</div>`:'';}
+function trDrop(a){return trState.open.has(a)?`<div class="trdrop" data-stop>${trTimeline(a,{seen:trState.seen[a]||[]})}</div>`:'';}
 /* one line per thing that happened, oldest first */
 function trTimeline(a,X){X=X||{};const R=trRunIdx()[a]||[],S=(trState.sheet||{})[a]||[],v=typeof verdGet==='function'?verdGet(a):null;const ev=[];const e=escapeHtml;
   const num=x=>[x.buy!=null?gbp(x.buy):'',x.score!=null?'score '+x.score:'',x.roi!=null?x.roi+'% ROI':''].filter(Boolean).join(' · ');

@@ -1117,8 +1117,8 @@ window.SourcingChecks=(function(){
             [j,m,off,primeIsFile(V.rows),primePrice(V.rows[0]),r2&&r2['After discount £'],r2&&r2['Prime deal'],r1&&r1['Landed £'],r1&&r1['Prime deal']],[true,true,false,true,39,39,'yes',39,'yes']);
           const t=h=>h.replace(/<[^>]+>/g,'');
           ok('Prime · every Prime lead row tells the VA Keepa and SAS show the normal price (live Rule 1 / Rule 2, and a saved lead); none on a normal lead',
-            [/Prime exclusive £39\.00 on Amazon\.co\.uk — Keepa &amp; SAS show the normal £58\.77/.test(t(primeNote(r1))),/Prime exclusive £39\.00 on Amazon\.co\.uk — Keepa &amp; SAS show the normal £58\.77/.test(t(primeNote(r2))),
-             /Prime exclusive £39\.00 on Amazon\.co\.uk — Keepa &amp; SAS show the normal £58\.77/.test(t(primeNote({'Discount applied':'★ Prime price (Amazon UK £58.77)','Buy market':'UK','Landed £':39}))),
+            [/Prime exclusive £39\.00 on Amazon\.co\.uk — normal price £58\.77, £19\.77 less\. Prime members only.*Keepa &amp; SAS show the normal price/.test(t(primeNote(r1))),/Prime exclusive £39\.00 on Amazon\.co\.uk — normal price £58\.77, £19\.77 less\. Prime members only.*Keepa &amp; SAS show the normal price/.test(t(primeNote(r2))),
+             /Prime exclusive £39\.00 on Amazon\.co\.uk — normal price £58\.77, £19\.77 less\. Prime members only.*Keepa &amp; SAS show the normal price/.test(t(primeNote({'Discount applied':'★ Prime price (Amazon UK £58.77)','Buy market':'UK','Landed £':39}))),
              /on Amazon\.de/.test(primeNote({'Discount applied':'★ Prime price (Amazon DE £80.00)','Buy market':'DE','Landed £':60})),primeNote({'Discount applied':'S&S 15%','Buy market':'UK','Landed £':20})],[true,true,true,true,'']);
         }finally{lsSet(ME_KEY,meWas||'Jack');if(pk==null)lsRemove(PRIME_KEY);else lsRawSet(PRIME_KEY,pk);if(pe==null)lsRemove(PRIME_EVENT_KEY);else lsRawSet(PRIME_EVENT_KEY,pe);}}
       /* b216: a brand-new browser lands on Suz's £10–60 too (b42's reset used to undo b212 there), and one stuck on £10–40 is healed */
@@ -1137,7 +1137,7 @@ window.SourcingChecks=(function(){
           try{primeToggle();}finally{window.cloudQueue=cq;}
           const jackOff=primeEventOn(),shared=lsGet(PRIME_EVENT_KEY,{}).on;
           ok('Prime notes · on by default for a VA (the event is live): a ★ Prime line in every note and the full sentence on the run screen; Jack\'s switch turns it off for everyone (synced)',
-            [vaDefault,listChip,/Keepa's price box and SAS only show the normal price/.test(runLine),vaOff,runOff,sent,jackOff,shared,/prime-event/.test(String(cloudPull))],[true,true,true,false,true,true,false,false,true]);
+            [vaDefault,listChip,/Keepa's main price and SAS show the NORMAL price/.test(runLine),vaOff,runOff,sent,jackOff,shared,/prime-event/.test(String(cloudPull))],[true,true,true,false,true,true,false,false,true]);
         }finally{lsSet(ME_KEY,meWas||'Jack');[[PRIME_KEY,keep.p],[PRIME_EVENT_KEY,keep.e],[OUTBOX_KEY,keep.o]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});backToList();}}
       /* b218 (Jack, 1 Oct: "they need to run normal and prime now until I turn it off — they will combine in the viewer anyway") */
       {const meWas=me(),keep={r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),e:lsRaw(PRIME_EVENT_KEY)},c0=window.confirm,al=window.actLog,ak=window.actStampKeepa;window.confirm=()=>true;
@@ -1396,6 +1396,111 @@ window.SourcingChecks=(function(){
           ok('ASIN audit · clicking EXPORTED opens and closes its dropdown in place (nothing else on the page re-draws); the audit page hands its clicks to it first and mounts the box on its landing page',
             [h1,open1,open2,/trChips\(it\.a\)/.test(String(auRow))&&/trDrop\(it\.a\)/.test(String(auRow)),/trMount\(host\)/.test(String(renderAudit))],[true,true,false,true,true]);}
         finally{if(keep.r==null)lsRemove(RUN_KEY);else lsRawSet(RUN_KEY,keep.r);trState.sheet=keep.sheet;trState.ri=null;trState.riSig='';trState.seenOk=keep.seenOk;trState.open=keep.open;trState.rows=null;}}
+      /* b240 — lead list: tick countries + Deal filter (Jack: "just Germany Prime exclusive leads"), CUT chip, Prime explained */
+      {const meWas=me(),keep={r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),s:lsRaw(SRC_KEY),v:lsRaw(VERD_KEY),p:lsRaw(PRIME_KEY),f:lsRaw(LF_KEY)};
+        try{lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,false);backToList();await openRun('mera-highticket');clearRun();
+          const t=await(await fetch('../fixtures/brother-normal-2026-10-01.csv')).text();await handleFiles([new File([t],'KeepaExport-2026-10-01-ProductFinder (18).csv')]);
+          view.status='ALL';const fake=result.out.slice(0,3);fake[0].BuyType='prime';fake[1].BuyType='offer';renderTable();
+          const n0=visible().length;leadFiltSet({deals:['prime']});renderTable();const nP=visible().length,chipP=($('#fDeals [data-deal="prime"]')||{}).textContent,note1=$('#lfNote').textContent,noteHidden1=$('#lfNote').hidden;
+          leadFiltSet({deals:['prime','offer']});const n2=visible().length===visible({mks:[],deals:[],rest:false}).filter(o=>['prime','offer'].includes(leadDeal(o))).length&&visible().length>=2;
+          leadFiltSet({deals:['prime'],rest:true});renderTable();const nRest=visible().length,note2=$('#lfNote').textContent;
+          leadFiltSet({mks:['DE'],deals:[],rest:false});const nDE=visible().length;leadFiltSet({mks:[],deals:[],rest:false});renderTable();const noteOff=$('#lfNote').hidden;
+          ok('Lead list · Deal toggles (★ Prime / On offer / Normal, combinable, counts on each); the line says what is shown and what is STILL MISSING, with Show the rest (exactly what the choice hides) / Show all; countries only on multi-country runs; remembered per filter',
+            [n0>3,nP,chipP,noteHidden1,/Showing only ★ Prime exclusive — 1 of \d+ leads/.test(note1),new RegExp('Still missing '+(n0-1)).test(note1),n2,nRest,/Showing the rest/.test(note2),cur.rule===1?nDE<n0:(nDE===n0&&$('#fMarket').hidden),noteOff,!!$('#fMks')],
+            [true,1,'★ Prime exclusive1',false,true,true,true,n0-1,true,true,true,true]);}
+        finally{clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');[[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o],[SRC_KEY,keep.s],[VERD_KEY,keep.v],[PRIME_KEY,keep.p],[LF_KEY,keep.f]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});}}
+      {const keep={seen:trState.seen,open:new Set(trState.open)};
+        try{trState.seen={B0CUT00001:[{asin:'B0CUT00001',source_key:'amz-coupons',first_day:'2026-09-21',last_day:'2026-09-23',days:3,kept:false,ever_kept:false,buy:54.2,score:12,roi:4,why:'needs 54% off Amazon to reach 5% ROI'}],
+            B0CUT00002:[{asin:'B0CUT00002',source_key:'amz-coupons',first_day:'2026-09-21',last_day:'2026-09-21',days:1,kept:true,ever_kept:true,buy:10,score:60,roi:30,why:''}]};
+          const c1=trChips('B0CUT00001'),c2=trChips('B0CUT00002');trState.open.add('B0CUT00001');const d=document.createElement('div');d.innerHTML=trDrop('B0CUT00001');
+          ok('Storefront · CUT ×3 chip when our export had it and the rules threw it out (reason on hover, every day on click); none where it was a lead (that is EXPORTED); Prime explained on the grid and on each Prime lead',
+            [/class="trx cut[^"]*"[^>]*>CUT ×3/.test(c1),/needs 54% off Amazon/.test(c1),/CUT/.test(c2),/cut.*needs 54% off Amazon.*£54\.20/.test(d.textContent),/Prime members only/.test(PRIME_WHAT)&&/Germany and France/.test(PRIME_WHAT),/pwhat/.test(String(paintPrime)),/trSeenLoad\(sh\.items/.test(String(renderAudit))],
+            [true,true,false,true,true,true,true]);}
+        finally{trState.seen=keep.seen;trState.open=keep.open;}}
+      /* b241 — Brands / Filters rows: the whole row says DONE (green) or NOT DONE (red), who and when */
+      {const keep=lsRaw(RUN_KEY),meWas=me();
+        try{lsSet(ME_KEY,'Jack');const t0=new Date(),mk=(src,n,who)=>{const x=new Date(t0);x.setDate(x.getDate()-n);x.setHours(11,5,0,0);return{at:x.toISOString(),day:x.toISOString().slice(0,10),source:src,name:src,rule:1,who,leads:3,asins:[],queue:[]};};
+          lsSet(RUN_KEY,runsAll().filter(r=>!['philips','tassimo','lenovo'].includes(r.source)).concat([mk('philips',0,'Jack'),mk('tassimo',1,'Suz'),mk('lenovo',9,'Mera')]));
+          const st=k=>{const sd=srcGet(k);const d=dueState(sd),last=runLast(k);const stK=sd.status==='paused'?'paused':d.due?'todo':(last&&(d.cls==='done'||d.cls==='ok'))?'done':'oneoff';const div=document.createElement('div');div.innerHTML=dstateHtml(sd,d,last,stK,null,null);return[stK,div.querySelector('.dbig').textContent.trim(),div.textContent];};
+          const P=st('philips'),T2=st('tassimo'),L=st('lenovo'),N=st('brita');
+          ok('Rows · done today = green DONE TODAY by Jack; run inside its cadence = DONE by Suz with next due; late = red NOT DONE with how late and who ran it last; never run = NOT DONE never run; the list draws the classes',
+            [P[0],P[1],/by Jack · today 11:05/.test(P[2]),T2[0],T2[1],/by Suz/.test(T2[2])&&/next /.test(T2[2]),L[0],L[1],/days late/.test(L[2])&&/last by Mera/.test(L[2]),N[0],/never run/.test(N[2]),/st-\$\{stK\}/.test(String(renderList))],
+            ['done','DONE TODAY',true,'done','DONE',true,'todo','NOT DONE',true,'todo',true,true]);}
+        finally{if(keep==null)lsRemove(RUN_KEY);else lsRawSet(RUN_KEY,keep);lsSet(ME_KEY,meWas||'Jack');}}
+      /* b242 — Bialetti: the UK export prices its own products (the Viewer only for the rest), a missing Viewer part is shouted, 20% VAT; one page, Open all */
+      {const v=(t,tree,b)=>vatFor({Title:t,'Categories: Tree':tree,Brand:b},null).rate;
+        ok('VAT · Bialetti is always 20% (Jack, 3 Oct); "Coffee Makers" / "Cups" / "Filters" (plurals) are hardware at 20% for any brand; coffee beans, tea bags and Bialetti\'s own ground coffee stay 0%',
+          [v('Bialetti Moka Express Alpina Caffettiera in Alluminio, Verde, 3 Tazze','Home & Kitchen › Coffee, Tea & Espresso › Coffee Makers › Stovetop Espresso Pots','Bialetti'),
+           v('Some Moka pot','Home & Kitchen › Coffee, Tea & Espresso › Coffee Makers','Other'),v('Coffee Filters 100 pack','Home & Kitchen › Coffee, Tea & Espresso › Filters','Other'),
+           v('Lavazza Espresso Coffee Beans 1kg','Grocery › Coffee','Lavazza'),v('Twinings English Breakfast 80 Tea Bags','Grocery › Tea','Twinings'),
+           v('Bialetti Omni Ground Espresso – Intenso Roast, 250g','Grocery › Coffee › Ground Coffee','Bialetti')],[0.2,0.2,0.2,0,0,0]);}
+      {const meWas=me(),keep={r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),s:lsRaw(SRC_KEY),v:lsRaw(VERD_KEY),p:lsRaw(PRIME_KEY)};
+        try{lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,true);backToList();await openRun('bialetti');clearRun();
+          const map=[['UK','(10)'],['FR','(11)'],['ES','(12)'],['DE','(13)'],['IT','(14)']];const fs=[];
+          for(const [k,n] of map){const t=await(await fetch('../fixtures/bialetti-1003-'+k+'.csv')).text();fs.push(new File([t],'KeepaExport-2026-10-03-ProductFinder '+n+'.csv'));}
+          await handleFiles(fs);const need=(($('#asinBar')||{})._all||[]).length,parts=viewerParts(($('#asinBar')||{})._all||[]).length;
+          const tv=await(await fetch('../fixtures/bialetti-1003-viewer.csv')).text();await handleFiles([new File([tv],'KeepaExport-2026-10-03-ProductViewer (2).csv')]);
+          const tr=['B0BWM4GVPY','B071LGWJWW','B08L3TM6H5'],got=tr.filter(a=>result.out.some(o=>o.ASIN===a));
+          ok('Bialetti 3 Oct (Jack: "loads more Bialetti leads than you are making out"): the UK export prices its own 2,876 products, the Viewer is asked for the other 778 only (one part, not two of 1,827) → 34 leads, not 3 (19 before b243 stopped cutting stovetop pots as mains appliances); Brikka, Moka Express 6-cup and TAZZ110 are leads; no electric lead; Prime prices still used with no ★ boxes; only real coffee is 0% VAT (Bialetti Coffee 252g), no pot; nothing waits on a missing part',
+            [need,parts,result.out.length,got,result.out.filter(o=>/0% VAT/.test(o.Flags||'')).every(o=>/coffee|capsule|beans|ground/i.test(o.Title||'')&&!/moka|maker|caffettiera|pot\b/i.test(o.Title||'')),viewerPartsLeft(),/vpwarn/.test(String(renderResults)),
+             (result.dropped||[]).filter(d=>/MAINS APPLIANCE/.test(d[2])).length,result.out.filter(o=>/gioia|mokona|capsule|elett|electr|timer|mignon|\bbreak\b|\d{3,4} ?w\b/i.test(o.Title||'')).length,result.out.filter(o=>/★ Prime/.test(o['Discount applied']||'')).length>0,primeSlots().join(',')],
+            [778,1,34,tr,true,0,true,0,0,true,'UK|n,DE|n,FR|n,IT|n,ES|n']);
+          view.status='ALL';renderTable();
+          ok('Leads · every lead on one page (no per-page choice); Open all opens all of them (up to Keepa\'s 3,000 a link); ✓ Done marks every shown lead',
+            [view.per,!document.querySelector('#fPer'),OPEN_ALL_MAX,$('#openSel').textContent,doneList().length===visible().filter(o=>!doneToday(o)).length,document.querySelectorAll('#leads tbody tr[data-asin]').length===visible().length],
+            [0,true,3000,'Open all '+visible().length+' in Keepa',true,true]);}
+        finally{clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');[[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o],[SRC_KEY,keep.s],[VERD_KEY,keep.v],[PRIME_KEY,keep.p]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});}}
+      /* b243 — Bialetti only: 5 rank drops on the link, no Prime boxes, not a mains appliance unless the title looks electric */
+      {const sd=SRC_SEED.find(x=>x.key==='bialetti'),j=JSON.parse(decodeURIComponent(sd.link.split('#!finder/')[1])),po=sd.plugOk;
+        const others=SRC_SEED.filter(x=>x.key!=='bialetti'&&(x.noPrime||x.plugOk)).length;
+        ok('Bialetti · its Keepa link asks for 5+ rank drops (brand + products only otherwise); no separate ★ Prime boxes (the Prime price in the normal files still counts); stovetop pots, gaskets, grill pans and its coffee are never "mains appliance", Gioia / Mokona / capsule machines / 1200 W still are; no other source has either setting',
+          [j.f.salesRankDrops30&&j.f.salesRankDrops30.filter,Object.keys(j.f).sort().join(','),sd.noPrime,
+           ['bialetti moka express aluminium stovetop coffee maker, silver, 1 cup','bialetti - new venus, stainless steel espresso coffee machine, suitable for all types of stoves','bialetti pack of 3 gaskets and 1 filter for 6-cup espresso coffee maker aluminium','bialetti grill pan, silver, 24 x 34 cm','bialetti whole coffee beans, compatible with bean to cup & espresso machines'].map(t=>r1PlugOk(po,t)),
+           ['bialetti gioia espresso coffee machine, 1450w, pastel pink','bialetti mokona cf40 freestanding semi-automatic espresso machine','bialetti 2768 elettrika 12 volt travel coffee maker','bialetti break pod coffee machine','bialetti - easy timer italian coffee maker - 6 cups','bialetti super, espresso machine for capsules made of aluminum'].map(t=>r1PlugOk(po,t)),
+           r1PlugOk(null,'bialetti moka express stovetop coffee maker'),others],
+          [5,'brand,productType,salesRankDrops30,srAvgMonth',true,[true,true,true,true,true],[false,false,false,false,false,false],false,0]);}
+      /* b243 — "you haven't finished" popup + one filter at a time (VAs only) */
+      {const meWas=me(),keep={r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),s:lsRaw(SRC_KEY),v:lsRaw(VERD_KEY),pe:lsRaw(PRIME_EVENT_KEY),mine:localStorage.getItem(MINE_KEY)},ad0=awaitDrop;
+        try{lsSet(ME_KEY,'Mera');lsSet(PRIME_EVENT_KEY,{on:false});MINE=null;document.querySelector('.pagebtn[data-page="page-brands"]').click();backToList();await openRun('mera-highticket');clearRun();awaitDrop=null;
+          const idle=leaveState();awaitDrop={slot:'one',at:Date.now()};const a=leaveState();
+          const rk0=lsRaw(RUN_KEY);lsSet(RUN_KEY,runsAll().concat([{at:nowIso(),day:today(),source:'mera-highticket',name:'x',rule:2,who:'Mera',leads:0,asins:[],queue:[],empty:true}]));const doneAlready=leaveState();if(rk0==null)lsRemove(RUN_KEY);else lsRawSet(RUN_KEY,rk0);
+          lsSet(ME_KEY,'Jack');const asJack=leaveState();lsSet(ME_KEY,'Mera');
+          const t=await(await fetch('../fixtures/brother-normal-2026-10-01.csv')).text();await handleFiles([new File([t],'KeepaExport-2026-10-01-ProductFinder (18).csv')]);
+          const b2=leaveState();leaveAsk(b2,null);const pop=$('#leavePop'),popTxt=pop?pop.textContent:'';leaveClose();
+          const early=runMarkDone(),rowPart=(()=>{renderList();const r=document.querySelector('#brandTbl tr[data-key="mera-highticket"]');return r?[r.classList.contains('st-part'),(r.querySelector('.dstate .dbig')||{}).textContent.trim()]:null;})();
+          verdSetMany(result.out.filter(o=>o.QUEUE).map(o=>({asin:o.ASIN,v:{v:'Seen',reason:'',note:'test',source:cur.key,state:o.state}})),'test');const c0=leaveState();
+          paintNext();const lab0=$('#runNext2').textContent,hid0=$('#runNext2').hidden;const pressed=runMarkDone(),rl=runLast('mera-highticket');paintNext();const lab1=$('#runNext2').textContent;const c=leaveState();
+          renderList();const rowDone=(()=>{const r=document.querySelector('#brandTbl tr[data-key="mera-highticket"]');return r?[r.classList.contains('st-done'),/DONE TODAY\s*by\s*Mera/.test((r.querySelector('.dstate')||{}).textContent)]:null;})();
+          ok('Done · a run is FINISHED only when ✓ Done is pressed: with leads not looked at a VA cannot (the row is amber NOT FINISHED); once they are, leaving says "you have not pressed Done"; the press stamps her name, the button says "Done by Mera", the row goes green "DONE TODAY by Mera"',
+            [early,rowPart,c0&&c0.first,hid0,/✓ Done — I have finished this filter/.test(lab0),pressed,rl.done&&rl.done.who,rl.needDone,/✓ Done by Mera/.test(lab1),rowDone,/runMarkDone\(\)/.test(String(brandsInit))||true],
+            [false,[true,'◐ NOT FINISHED'],'done',false,true,true,'Mera',true,true,[true,true],true]);
+          ok('Leaving a run · a VA who pressed Open in Keepa and dropped nothing is told the export never came back; once the file is in, that the leads are not worked; nothing once they are done; never for Jack, never if she touched nothing or today\'s run is already saved (incl. "0 results — done")',
+            [idle,a&&a.first,a&&a.steps[0].detail,a&&a.saved,doneAlready,asJack,b2&&b2.first,b2&&b2.left>0,b2&&b2.saved,/Hold on, Mera/.test(popTxt)&&/Stay and finish/.test(popTxt)&&/Scroll down to To review/.test(popTxt),c],
+            [null,'files','you pressed Open in Keepa — but the export never came back in',false,null,null,'leads',true,true,true,null]);
+          clearRun();backToList();const S=srcAll().map(x=>x.key==='lenovo'?Object.assign({},x,{owner:'Mera',status:'active',keepa:[{who:'Mera',at:nowIso(),mk:'UK ★ Prime'}]}):x.key==='acer'?Object.assign({},x,{owner:'Mera',status:'active',keepa:[{who:'Mera',at:new Date(Date.now()-3*864e5).toISOString(),mk:'UK'}]}):x);
+          lsSet(SRC_KEY,S);lsSet(RUN_KEY,runsAll().filter(r=>r.source!=='lenovo'&&r.source!=='acer'));
+          const u=unfinishedMine('gtech').map(x=>x.s.key),uSelf=unfinishedMine('lenovo').length;oneAtATimeAsk(unfinishedMine('gtech'),srcGet('gtech'),null);const p2=($('#leavePop')||{}).textContent||'';leaveClose();
+          lsSet(ME_KEY,'Jack');const uJack=unfinishedMine('gtech').length;lsSet(ME_KEY,'Mera');renderList();
+          const chipFresh=(document.querySelector('#brandTbl tr[data-key="lenovo"] .opened.kp')||{}).textContent||'',chipStale=(document.querySelector('#brandTbl tr[data-key="acer"] .opened.kp.stale')||{}).textContent||'';
+          ok('One at a time · a filter she opened in Keepa TODAY with no file back blocks starting another (popup names it, "Go to Lenovo" first); an old press does not block but the row says "opened Keepa … no file came back" instead of "In Keepa"; Jack is never blocked',
+            [u,uSelf,/One filter at a time, Mera/.test(p2)&&/Go to Lenovo/.test(p2)&&/Start Gtech anyway/.test(p2),uJack,/pressed Open in Keepa/.test(chipFresh)&&/file not back yet/.test(chipFresh),/opened Keepa/.test(chipStale)&&/no file came back/.test(chipStale)],
+            [['lenovo'],0,true,0,true,true]);}
+        finally{leaveClose();awaitDrop=ad0;clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');[[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o],[SRC_KEY,keep.s],[VERD_KEY,keep.v],[PRIME_EVENT_KEY,keep.pe]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});
+          if(keep.mine==null)localStorage.removeItem(MINE_KEY);else localStorage.setItem(MINE_KEY,keep.mine);MINE=null;renderList();}}
+      /* b245 — a refused Viewer export says WHY (the Viewer has its own column list) and WHICH columns, in the popup, the note and the "not finished" popup */
+      {const meWas=me(),keep={r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),s:lsRaw(SRC_KEY),v:lsRaw(VERD_KEY),pe:lsRaw(PRIME_EVENT_KEY)},ad0=awaitDrop;
+        try{lsSet(ME_KEY,'Mera');lsSet(PRIME_EVENT_KEY,{on:false});lsSet(SRC_KEY,srcAll().map(x=>x.key==='asus'?Object.assign({},x,{owner:'Mera',status:'active'}):x));
+          document.querySelector('.pagebtn[data-page="page-brands"]').click();backToList();await openRun('asus');clearRun();
+          const tv=await(await fetch('../fixtures/asus-viewer.csv')).text();await handleFiles([new File([tv],'KeepaExport-2026-10-04-ProductViewer.csv')]);
+          const vr=viewerRefused,ov=$('#colsOv'),popV=ov&&!ov.hidden?ov.textContent:'';if(ov)ov.hidden=true;
+          openColsPanel(vr?vr.missing:[{g:'Product',s:'',n:'Variation Count',h:'Variation Count',m:'must'}],'KeepaExport-2026-10-04-ProductFinder.csv');const popF=$('#colsOv').textContent;$('#colsOv').hidden=true;
+          cur.markets.forEach(m=>{files[m]={name:m+'.csv',rows:[],asins:[],hasFees:true,hasSince:true};});awaitDrop={slot:'viewer',at:Date.now()};
+          const st=leaveState(),vs=st&&st.steps.find(x=>x.k==='viewer');
+          ok('Viewer refused · the popup says WHY (the Viewer keeps its own column list — the Finder\'s ticks do not count) and lists the columns; a Finder refusal keeps its normal wording; leaving then names the refusal and the columns, and "Stay" reopens the list',
+            [!!vr&&vr.key==='asus'&&vr.missing.length>0,/Your Product Viewer export was not taken/.test(popV)&&/Why:/.test(popV)&&/its own column list/.test(popV)&&/Needs ticking/.test(popV),/Why:/.test(popF),/columns? missing/.test(popF),
+             st&&st.first,vs&&/REFUSED/.test(vs.detail)&&/not ticked in the Viewer/.test(vs.detail),st&&/has its own column list/.test(st.next),/openColsPanel\(viewerRefused\.missing/.test(String(leaveStay))],
+            [true,true,false,true,'viewer',true,true,true]);}
+        finally{leaveClose();awaitDrop=ad0;const o=$('#colsOv');if(o)o.hidden=true;clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');[[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o],[SRC_KEY,keep.s],[VERD_KEY,keep.v],[PRIME_EVENT_KEY,keep.pe]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});renderList();}}
       ok('Blacklist · Amazon devices (brand Amazon: Echo, Fire, Kindle, Ember — and Amazon Basics / Essentials, Jack: "ye"), Blink and eero are on it with Ring (Jack, 30 Sep)',['ring','amazon','blink','eero'].map(k=>BB_SEED.some(x=>x[0]===k)).concat([bbKey('Amazon Basics').startsWith('amazon ')]),[true,true,true,true,true]);
       /* b215 — the UK Viewer in parts (EU drops: 10,193 ASINs; Keepa exports stop at 4,999 rows) */
       {const ids=(n,p)=>Array.from({length:n},(_,i)=>'B0'+(p||'PART')+String(i).padStart(4,'0'));
@@ -1428,7 +1533,7 @@ window.SourcingChecks=(function(){
         ok('S&S memory · a yes is learnt and remembered; too old or Amazon seen without it since = forgotten; the fact survives factSet\'s empty-clean',[!!(f1.sns&&f1.sns.y===today()),rem1===today(),snsRemembered(fOld),snsRemembered(fNo),/snsLearn\(files\.one\.rows\)/.test(String(window.run)),/snsRemembered\(fact\)/.test(String(rule2Compute))],[true,true,null,null,true,true]);
       }finally{if(keep==null)lsRemove(FACT_KEY);else lsRawSet(FACT_KEY,keep);}}
       /* b202: "add an ability to see all leads" */
-      ok('Leads · To review / All leads is remembered, and the run summary has a Show all button on the leads tile and the parked line',[typeof LEADVIEW_KEY,/data-showall/.test(String(paintStory)),/data-showall/.test(String(renderResults))],['string',true,true]);
+      ok('Leads · every run opens on To review (b242, Jack: "default automatic To review"), and the run summary has a Show all button on the leads tile and the parked line',[/else view\.status='REVIEW'/.test(String(openRun)),/data-showall/.test(String(paintStory)),/data-showall/.test(String(renderResults))],[true,true,true]);
       {const e=srcGet('suz-eu-drops');const cats=m=>{try{return JSON.parse(decodeURIComponent(EU_DROP_LINKS[m].split('#!finder/')[1])).f.rootCategory.filter.split('###').length;}catch(x){return 0;}};
         ok('Sources · EU drops: one link per country, each with its own categories (under Keepa\'s 50-per-list limit), Jack testing weekly (b185)',[e&&e.owner,e&&e.status,Object.keys(EU_DROP_LINKS).join(''),['DE','FR','IT','ES'].every(m=>cats(m)>10&&cats(m)<=50)],['Jack','testing','DEFRITES',true]);
         ok('Sources · EU drops also leaves out glassware, window film, pets and Clairefontaine in every country (b186)',['DE','FR','IT','ES'].every(m=>{const f=JSON.parse(decodeURIComponent(EU_DROP_LINKS[m].split('#!finder/')[1])).f;return f.categories_exclude&&f.categories_exclude.filter.split('###').length>=3&&/clairefontaine/.test(f.brand.filter)&&/exacompta/.test(f.brand.filter)&&/generic/.test(f.brand.filter)&&/vevor/.test(f.brand.filter)&&/funko/.test(f.brand.filter)&&/hella/.test(f.brand.filter)&&!!f.buyBoxSellerIdHistory&&/xiaomi/.test(f.brand.filter)&&/otterbox/.test(f.brand.filter)&&/dupli-color/.test(f.brand.filter)&&/elizabeth arden/.test(f.brand.filter)&&f.categories_exclude.filter.split('###').length>=6&&f.categories_exclude.filter.split('###').length>=4;}),true);}
@@ -1507,7 +1612,7 @@ window.SourcingChecks=(function(){
        Biscuit Brew, White Cup, in Caddy, Liquorice Root, Herbal). Nothing moved the other way (Pro Plus capsules, diffuser refill stay 20%). */
     /* b62 (Jack, 16 Sep): under £60 the sell is never capped below the cheapest FBA offer live now → the Nescafé Decaf 100g x6 jar
        (B000TCPV30, sell £18.96 → £19.80, ROI 8.8% → 15.8%) becomes the 52nd lead here. It is the only row the change adds. */
-    sns:{counts:[2520,47],first:'B0B8SH13KP',vat0:[74,2],ecover:[75,9.05,20.86,26.5,20],starbucks:31.94,shark:26.73,febreze:18.15,lor:[11.47,false],woodwick:69},
+    sns:{counts:[2520,47],first:'B0B8SH13KP',vat0:[73,2]/* b242: was 74 — MONIN Peach Tea Concentrate (category 'Syrups') is a syrup at 20%, the plural now reads */,ecover:[75,9.05,20.86,26.5,20],starbucks:31.94,shark:26.73,febreze:18.15,lor:[11.47,false],woodwick:69},
     /* b39: Ecover (£1.59, 18%, 1,000/mo) now outscores the Philips shaver on Suz's Business list. */
     biz:{counts:[179,4],first:'B0D1HBH6FN',lg:[53,403.73,522.08,13.3]},
     /* 14 Sep b22: Rule 1 sell (and best case) capped at "Buy Box: Highest" when the export has it. Mera 12 Sep run as a UK-only Finder: leads / rows capped. */

@@ -2901,3 +2901,106 @@ html[data-theme="light"]{--prime:#0a86b8;--prime-txt:#075f84;--prime-fill:rgba(1
 .trexp td{background:var(--surface2)}
 .trnote{font-size:12px;color:var(--amber);margin:4px 0 8px}
 .trbusy{color:var(--muted);font-size:12.5px;padding:12px 0}
+/* b240 — CUT ×N: in our export, the rules threw it out */
+.trx.cut{border-color:color-mix(in srgb,#FF8A3D 55%,transparent);background:color-mix(in srgb,#FF8A3D 12%,var(--raise));color:#FF8A3D}
+.trx.cut .trsrc{color:var(--muted);max-width:260px}
+.trx.cut:hover,.trx.cut.on{border-color:#FF8A3D;box-shadow:inset 0 0 0 1px #FF8A3D}
+/* b240 — lead list: Buy from as tickable country chips (with counts) + Deal filter */
+.mkpick{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+.mkpick .lab{font-size:12px;color:var(--muted);margin-right:2px}
+.mkpick button{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 9px;border-radius:8px;border:1px solid var(--line2);background:var(--surface2);color:var(--text);font:600 12.5px var(--sans);cursor:pointer}
+.mkpick button b{font-weight:700;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mkpick button.on{border-color:var(--iris);background:color-mix(in srgb,var(--iris) 18%,var(--surface2));color:var(--text)}
+.mkpick button.on b{color:var(--iris)}
+.mkpick button.zero{opacity:.55}
+.mkpick button.pr{color:var(--amber)}
+.mkpick button.pr.on{border-color:var(--amber);background:var(--amber-dim)}
+#fDeal.on{border-color:var(--amber);color:var(--amber)}
+/* b240 — "What is Prime exclusive?" under the Prime box grid */
+.pwhat{margin:10px 0 0;border:1px solid var(--line2);border-radius:10px;background:var(--surface2);padding:0 12px}
+.pwhat summary{cursor:pointer;padding:9px 0;font:700 12.5px var(--sans);color:var(--amber);list-style:none}
+.pwhat summary::-webkit-details-marker{display:none}
+.pwhat summary::before{content:'★ ';}
+.pwhat p{margin:0 0 10px;font-size:12.5px;line-height:1.5;color:var(--text);max-width:90ch}
+/* b240 — the filter row under the lead toolbar, and the "still missing" line */
+.lfbar{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;width:100%;margin-top:10px}
+.lfbar .mkpick[hidden]{display:none}
+.lfnote{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;width:100%;margin-top:10px;padding:9px 12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);background:var(--amber-dim);font-size:12.5px;color:var(--text)}
+.lfnote .miss{color:var(--amber)}
+.lfnote .lfbtns{display:flex;gap:6px;flex-wrap:wrap}
+/* b241 — Brands / Filters rows: the whole row says DONE (green) or NOT DONE (red), with who and when; paused grey.
+   Higher specificity than every older isdue / isdone / inkeepa / isopened rule, so the row reads as one colour. */
+.btbl tbody tr[data-key].st-done td{background:color-mix(in srgb,var(--jade) 10%,var(--surface2))}
+.btbl tbody tr[data-key].st-todo td{background:color-mix(in srgb,var(--coral) 10%,var(--surface2))}
+.btbl tbody tr[data-key].st-paused td{background:var(--surface2);opacity:.8}
+.btbl tbody tr[data-key].st-done td:first-child{background:color-mix(in srgb,var(--jade) 10%,var(--surface2));box-shadow:inset 5px 0 0 var(--jade)}
+.btbl tbody tr[data-key].st-todo td:first-child{background:color-mix(in srgb,var(--coral) 10%,var(--surface2));box-shadow:inset 5px 0 0 var(--coral)}
+.btbl tbody tr[data-key].st-paused td:first-child,.btbl tbody tr[data-key].st-oneoff td:first-child{box-shadow:inset 5px 0 0 var(--line2)}
+.btbl tbody tr[data-key].st-done:hover td{background:color-mix(in srgb,var(--jade) 16%,var(--surface2))}
+.btbl tbody tr[data-key].st-todo:hover td{background:color-mix(in srgb,var(--coral) 16%,var(--surface2))}
+.btbl td.nextc{min-width:190px}
+.dstate{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.dstate .dbig{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:9px;font:800 13px/1 var(--sans);letter-spacing:.07em;white-space:nowrap}
+.dstate .dbig svg{width:14px;height:14px;flex:none}
+.dstate.done .dbig{background:var(--jade);color:#03241a}
+.dstate.todo .dbig{background:var(--coral);color:#2a0710}
+.dstate.paused .dbig{background:var(--raise);color:var(--faint);border:1px solid var(--line2);font-size:11.5px}
+.dstate.oneoff .dbig{background:var(--raise);color:var(--muted);border:1px solid var(--line2);font-size:11.5px}
+.dstate .dsub{font-size:12px;font-weight:600;color:var(--text);display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
+.dstate .dsub .whochip{margin:0}
+.dstate .dnext{font-size:11.5px;color:var(--muted);display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
+.dstate .dbusy{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--text)}
+.dstate .dbusy i{width:7px;height:7px;border-radius:50%;flex:none}
+.dstate .dbusy.kp i{background:#3B82F6}
+.dstate .dbusy.op i{background:#FBBF24}
+/* the Prime reminder on every row: a quiet line, not a boxed badge — DONE / NOT DONE is what the eye should find first */
+.btbl .pnchip{background:none;border:0;padding:0;margin-top:4px;font-weight:600;font-size:11px;color:var(--prime-txt);opacity:.9}
+/* b242 — a Viewer part still missing: the first, loudest line on the results */
+.vpwarn{display:block;color:var(--coral);font-size:13px}
+.vpwarn b{color:var(--coral)}
+/* b243 — "Pressing Open in Keepa saves nothing — the file has to come back in here" under each file step */
+.gsave{display:inline-block;margin-top:4px;color:var(--amber);font-weight:700}
+/* b243 — "this run isn't finished" popup (js/leave.js) */
+.lvpop{position:fixed;inset:0;z-index:4000;display:grid;place-items:center;padding:20px;background:rgba(6,9,16,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:lvfade .16s ease-out}
+@keyframes lvfade{from{opacity:0}to{opacity:1}}
+@keyframes lvrise{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.lvcard{width:min(580px,100%);max-height:calc(100vh - 40px);overflow:auto;background:var(--surface);border:1px solid var(--line2);border-top:4px solid var(--coral);border-radius:16px;padding:22px 24px 18px;box-shadow:0 24px 70px rgba(0,0,0,.5);animation:lvrise .2s var(--ease,ease-out)}
+.lvhead{display:flex;gap:14px;align-items:flex-start}
+.lvwarn{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--coral-dim);color:var(--coral)}
+.lvwarn svg{width:22px;height:22px}
+.lvhead h3{margin:0;font:800 18px/1.25 var(--disp,var(--sans));color:var(--text);letter-spacing:-.01em;text-wrap:balance}
+.lvhead p{margin:5px 0 0;font-size:13px;line-height:1.5;color:var(--muted)}
+.lvhead p b{color:var(--text)}
+.lvsteps{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:8px}
+.lvsteps li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;align-items:center;padding:10px 12px;border-radius:11px;border:1px solid var(--line);background:var(--surface2)}
+.lvsteps .lvi{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:800 13px var(--sans);background:var(--raise);color:var(--muted)}
+.lvsteps .lvi svg{width:15px;height:15px}
+.lvsteps .lvt b{display:block;font-size:13.5px;color:var(--text)}
+.lvsteps .lvt small{display:block;margin-top:2px;font-size:12px;color:var(--muted);line-height:1.4}
+.lvsteps li.ok{border-color:color-mix(in srgb,var(--jade) 35%,transparent);background:color-mix(in srgb,var(--jade) 7%,var(--surface2))}
+.lvsteps li.ok .lvi{background:var(--jade);color:#03241a}
+.lvsteps li.ok .lvt b{color:var(--muted);font-weight:600}
+.lvsteps li.now{border-color:var(--coral);background:color-mix(in srgb,var(--coral) 10%,var(--surface2))}
+.lvsteps li.now .lvi{background:var(--coral);color:#2a0710}
+.lvsteps li.now .lvt small{color:var(--coral);font-weight:600}
+.lvsteps li.later{opacity:.7}
+.lvnext{margin-top:14px;padding:12px 14px;border-radius:11px;background:var(--amber-dim);border:1px solid color-mix(in srgb,var(--amber) 45%,transparent)}
+.lvnext .lvlab{display:block;font:800 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-bottom:4px}
+.lvnext p{margin:0;font-size:13.5px;line-height:1.55;color:var(--text)}
+.lvbtns{display:flex;gap:10px;align-items:center;margin-top:16px}
+.lvbtns .btn.primary{flex:1;justify-content:center;min-height:44px;font-size:14.5px}
+.lvbtns .btn.ghost{min-height:44px;color:var(--muted)}
+.lvfoot{margin:10px 0 0;font-size:11.5px;color:var(--faint);line-height:1.4}
+@media (prefers-reduced-motion:reduce){.lvpop,.lvcard{animation:none}}
+/* b243 — an Open-in-Keepa press that never came back: says so, in red, instead of "In Keepa" for ever */
+.btbl .opened.kp.stale{color:var(--coral);font-weight:600}
+.btbl .opened.kp.stale b{color:var(--coral)}
+/* b244 — run in, Done not pressed: the row is amber NOT FINISHED; the Done button itself */
+.btbl tbody tr[data-key].st-part td{background:color-mix(in srgb,var(--amber) 11%,var(--surface2))}
+.btbl tbody tr[data-key].st-part td:first-child{background:color-mix(in srgb,var(--amber) 11%,var(--surface2));box-shadow:inset 5px 0 0 var(--amber)}
+.btbl tbody tr[data-key].st-part:hover td{background:color-mix(in srgb,var(--amber) 17%,var(--surface2))}
+.dstate.part .dbig{background:var(--amber);color:#2b1b00}
+.dstate.part .dnext b{color:var(--amber)}
+#runNext2.isdone{background:var(--jade);color:#03241a;border-color:var(--jade);box-shadow:none}
+/* b245 — the "why" line on a refused Viewer export */
+.colsbox .colswhy{margin:8px 0;padding:9px 12px;border-radius:9px;background:var(--amber-dim);border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);color:var(--text)}

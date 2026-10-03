@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b239">
-<link rel="stylesheet" href="css/brands.css?v=b239">
+<link rel="stylesheet" href="css/base.css?v=b245">
+<link rel="stylesheet" href="css/brands.css?v=b245">
 </head>
 <body>
 <div class="wrap">
@@ -452,11 +452,15 @@
             <div class="right">
               <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fQ" placeholder="ASIN, title, brand…" autocomplete="off"></div>
               <div class="seg segl" id="fSeg" title="Which leads to show"><button class="on" data-st="REVIEW" type="button">To review <b>0</b></button><button data-st="ALL" type="button">All leads <b>0</b></button><span class="segsep">since last run</span><button data-st="NEW" type="button">New <b>0</b></button><button data-st="BETTER" type="button">Better <b>0</b></button><button data-st="WORSE" type="button">Worse <b>0</b></button><button data-st="UNCHANGED" type="button">Same <b>0</b></button></div>
-              <select id="fPer" title="How many leads per page — Open in Keepa takes the page"><option value="50">50 per page</option><option value="100">100 per page</option><option value="200">200 per page</option><option value="0">All on one page</option></select>
               <select id="fSort"><option value="default">Sort · score</option><option value="gain">Sort · biggest improvement</option><option value="profit">Sort · profit</option><option value="roi">Sort · ROI</option><option value="month">Sort · £ / month</option></select>
-              <select id="fMarket"><option value="ALL">Buy from · all</option><option>UK</option><option>DE</option><option>FR</option><option>IT</option><option>ES</option></select>
               <label class="chk"><input type="checkbox" id="fHideNo">hide No</label>
             </div>
+            <!-- b240 (Jack, 3 Oct: "maybe I just wanna see UK and Germany, all Prime exclusive — more customisability, but mention what I'm still missing") -->
+            <div class="lfbar" id="lfBar">
+              <div class="mkpick" id="fMarket" title="Which country to buy from — tick one or more. Nothing ticked = every country."><span class="lab">Buy from</span><span id="fMks"></span></div>
+              <div class="mkpick" id="fDeal" title="What kind of price the lead is bought at — tick one or more. Nothing ticked = every kind."><span class="lab">Deal</span><span id="fDeals"></span></div>
+            </div>
+            <div class="lfnote" id="lfNote" hidden></div>
           </div>
           
           <div class="leadwrap"><div class="tablescroll"><table class="ltbl" id="leads"></table></div><div class="pager" id="pager"></div></div>
@@ -540,28 +544,29 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b239"></script>
-<script src="js/parse.js?v=b239"></script>
-<script src="js/rule1.js?v=b239"></script>
-<script src="js/rule2.js?v=b239"></script>
-<script src="js/export.js?v=b239"></script>
-<script src="js/rule4.js?v=b239"></script>
-<script src="js/queue.js?v=b239"></script>
-<script src="js/sources.js?v=b239"></script>
-<script src="js/prime.js?v=b239"></script>
-<script src="js/cloud.js?v=b239"></script>
-<script src="js/auth.js?v=b239"></script>
-<script src="js/leadtools.js?v=b239"></script>
-<script src="js/keepaconsole.js?v=b239"></script>
-<script src="js/euprice.js?v=b239"></script>
-<script src="js/apirun.js?v=b239"></script>
-<script src="js/brands.js?v=b239"></script>
-<script src="js/history.js?v=b239"></script>
-<script src="js/audit.js?v=b239"></script>
-<script src="js/trace.js?v=b239"></script>
-<script src="js/kcjudge.js?v=b239"></script>
-<script src="js/activity.js?v=b239"></script>
-<script src="js/guest.js?v=b239"></script>
-<script src="js/boot.js?v=b239"></script>
+<script src="js/core.js?v=b245"></script>
+<script src="js/parse.js?v=b245"></script>
+<script src="js/rule1.js?v=b245"></script>
+<script src="js/rule2.js?v=b245"></script>
+<script src="js/export.js?v=b245"></script>
+<script src="js/rule4.js?v=b245"></script>
+<script src="js/queue.js?v=b245"></script>
+<script src="js/sources.js?v=b245"></script>
+<script src="js/prime.js?v=b245"></script>
+<script src="js/cloud.js?v=b245"></script>
+<script src="js/auth.js?v=b245"></script>
+<script src="js/leadtools.js?v=b245"></script>
+<script src="js/keepaconsole.js?v=b245"></script>
+<script src="js/euprice.js?v=b245"></script>
+<script src="js/apirun.js?v=b245"></script>
+<script src="js/brands.js?v=b245"></script>
+<script src="js/history.js?v=b245"></script>
+<script src="js/audit.js?v=b245"></script>
+<script src="js/trace.js?v=b245"></script>
+<script src="js/leave.js?v=b245"></script>
+<script src="js/kcjudge.js?v=b245"></script>
+<script src="js/activity.js?v=b245"></script>
+<script src="js/guest.js?v=b245"></script>
+<script src="js/boot.js?v=b245"></script>
 </body>
 </html>
