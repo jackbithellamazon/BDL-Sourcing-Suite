@@ -2843,3 +2843,61 @@ html[data-theme="light"]{--prime:#0a86b8;--prime-txt:#075f84;--prime-fill:rgba(1
 .chg.wait{color:var(--amber);font-weight:600}
 .btn.donesel{margin-left:6px}
 .btn.donesel:disabled{opacity:.55;cursor:default}
+/* b234 — a two-export box in the Prime grid (coupons: % off + £ off) */
+.pcell.two .gos{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+/* b239 — ASIN audit box (Storefront audits), EXPORTED ×N chip with its day-by-day dropdown, and the lead-sheet tiles.
+   Suz yellow / Mera pink (Jack, 3 Oct) as solid tiles with dark text, so they read the same in both themes. */
+.trx{display:inline-flex;align-items:center;gap:6px;height:23px;padding:0 9px;border-radius:12px;border:1px solid var(--line2);background:var(--raise);color:var(--text);font:700 11.5px var(--sans);letter-spacing:.02em;cursor:pointer;white-space:nowrap;max-width:100%;overflow:hidden}
+.trx .sq{width:8px;height:8px;border-radius:2px;flex:none}
+.trx .trsrc{font-weight:600;color:var(--muted);overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
+.trx .trcar{color:var(--faint);transition:transform .15s var(--ease)}
+.trx:hover{border-color:var(--iris)}
+.trx.on{border-color:var(--iris);box-shadow:inset 0 0 0 1px var(--iris)}
+.trx.on .trcar{transform:rotate(180deg)}
+.trsheet{display:inline-flex;align-items:center;height:23px;padding:0 9px;border-radius:6px;font:800 11px var(--sans);letter-spacing:.05em;white-space:nowrap}
+.trsheet.suz{background:#FDE047;color:#1c1917}
+.trsheet.mera{background:#F472B6;color:#1f0a16}
+.trsheet.oth{background:var(--iris);color:#fff}
+.trdrop{grid-column:1/-1;margin:6px 0 2px;padding:10px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--surface2);cursor:default}
+.trtl{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.trtl li{display:grid;grid-template-columns:58px 10px minmax(0,1fr);align-items:baseline;gap:8px;font-size:12.5px;line-height:1.45;color:var(--text)}
+.trtl .trd{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.trtl .trdot{width:8px;height:8px;border-radius:50%;background:var(--line2);align-self:center}
+.trtl li.rev .trdot{background:var(--iris)}
+.trtl li.lead .trdot{background:var(--iris2)}
+.trtl li.cut .trdot{background:#FF8A3D}
+.trtl li.open .trdot{background:var(--p-suz)}
+.trtl li.said .trdot{background:var(--jade)}
+.trtl li.sheet .trdot{background:#FDE047}
+.trtl .trtx{min-width:0}
+.trtl .trwho{color:var(--muted);font-size:11.5px}
+.trtag{display:inline-block;padding:0 6px;border-radius:5px;font-size:10.5px;font-weight:700;background:var(--raise);color:var(--muted);margin:0 4px}
+.trtag.rev{background:var(--iris);color:#fff}
+.trtag.cut{background:#FF8A3D;color:#1c0d02}
+.trdrop .dim,.trtl .dim{color:var(--faint)}
+.trnone{color:var(--muted);font-size:12.5px;padding:6px 0}
+.trcard .trin{display:flex;gap:10px;align-items:stretch;margin-top:12px}
+.trcard textarea{flex:1;min-width:0;resize:vertical;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--surface2);color:var(--text);font:13px/1.4 var(--mono)}
+.trcard textarea:focus{outline:none;border-color:var(--iris)}
+.trsum{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 8px}
+.trout{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:11px;font:700 11.5px var(--sans);white-space:nowrap}
+.trout.ok{background:var(--jade-dim);color:var(--jade)}
+.trout.late{background:var(--amber-dim);color:var(--amber)}
+.trout.miss{background:var(--coral-dim);color:var(--coral)}
+.trout.shown{background:color-mix(in srgb,var(--iris) 16%,transparent);color:var(--iris)}
+.trout.cut{background:color-mix(in srgb,#FF8A3D 16%,transparent);color:#FF8A3D}
+.trout.none{background:var(--raise);color:var(--muted)}
+.trwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.trtbl{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.trtbl th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.trtbl td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.trtbl .r{text-align:right}
+.trtbl tr:last-child td{border-bottom:0}
+.trrow{cursor:pointer}
+.trrow:hover td,.trrow.open td{background:var(--raise)}
+.tra a{font:600 12.5px var(--mono);color:var(--iris);text-decoration:none}
+.trtitle{display:block;max-width:240px;color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trwhy{display:block;color:var(--muted);font-size:11.5px;margin-top:3px;max-width:340px;white-space:normal}
+.trexp td{background:var(--surface2)}
+.trnote{font-size:12px;color:var(--amber);margin:4px 0 8px}
+.trbusy{color:var(--muted);font-size:12.5px;padding:12px 0}

@@ -455,6 +455,8 @@ function renderAudit(){const host=$('#page-audit');if(!host)return;audMineBust()
   document.body.classList.toggle('auditing',auView.mode==='audit');
   if(!isJack()){auView._listHtml=null;host.innerHTML=`<div class="card"><div class="empty"><span>The storefront audit is Jack's. Pick your name top right if this is you.</span></div></div>`;return;}
   if(auView.mode==='audit'&&auView.shelf&&audShelf(auView.shelf))auRenderOne();else auRenderList();
+  if(auView.mode!=='audit'&&typeof trMount==='function')trMount(host);   /* b239: ASIN audit box, top of the landing page */
+  if(typeof trSheetLoad==='function'&&!trState.sheet&&!trState.sheetBusy&&cloudReadable())trSheetLoad().then(m=>{if(m&&Object.keys(m).length&&$('#page-audit').classList.contains('active'))renderAudit();});
   if(typeof auPaintBulk==='function')auPaintBulk();}
 /* b69 (Jack: "highest % of products I sell too") — the rival you overlap with most is the one worth auditing,
    because everything on their shelf you do not sell is a lead you have not found yet. */
@@ -664,7 +666,8 @@ function auRow(it,i,sh){const V=audAll();let v=V[it.a];const vOld=audExpired(v)?
   const old=why==='before'?`<span class="aupill p-had" title="Your storefront last had it on ${escapeHtml(audMineLastNice(it.a))}. ${escapeHtml(sh.name)} added it ${audAddedNice(sh.id,it.a)?'on '+escapeHtml(audAddedNice(sh.id,it.a)):'later'} — more than ${audJointDays()} days after — so it's new to check">You had it until ${escapeHtml(audMineLastNice(it.a))} · they added it ${escapeHtml(audAddedNice(sh.id,it.a)||'after')}</span>`:'';
   const again=vOld?`<span class="aupill p-had" title="${escapeHtml((audType(vOld.verdict)||{}).label+' · '+vOld.who+' · '+auUk(vOld.at)+(vOld.reason?' · '+vOld.reason:'')+' — answers like this stop counting after '+AUD_EXPIRE_DAYS+' days, in case the price has come back')}">You said ${escapeHtml((audType(vOld.verdict)||{}).short||vOld.verdict)} ${Math.round((Date.now()-new Date(vOld.at).getTime())/864e5)} days ago · check again</span>`:'';
   const sellChip=sells&&st!=='jointauto'?`<span class="aupill p-joint">${escapeHtml(AUD_MINE_WORDS[why]||'You sell this')}${why==='recent'?' · until '+escapeHtml(audMineLastNice(it.a)):''}</span>`:'';   /* the result already says it on an auto row */
-  const chips=again+sellChip+old+ourChip;
+  /* b239 (Jack, 3 Oct: "EXPORTED ×3 — click it for which exports, date, filter, buy, score, whose · a very obvious SUZ / MERA LEAD SHEET tile") */
+  const chips=again+sellChip+old+(typeof trChips==='function'?trChips(it.a):ourChip);
   return`<div class="aurow ${i===auView.focus?'focus':''} ${auView.sel.has(it.a)?'sel':''} ${st!=='todo'?'judged':''}${reasons?' reasoning':''}${elsewhere?' elsewhere':''}${landed}" data-i="${i}" data-a="${it.a}" style="--edge:${st==='todo'?'var(--iris)':(t?t.hex:(st==='jointauto'?'#2CE38B':'var(--line2)'))}">
     <button type="button" class="ausel" data-sel="${it.a}" data-i="${i}" aria-label="Select ${it.a}" title="Tick to judge several at once · shift-click ticks a run · drag down the ticks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></button>
     <div class="auimg" title="Click the picture to tick it">${p.image?`<img loading="lazy" src="${escapeHtml(p.image)}" alt="">`:escapeHtml(it.a.slice(0,2))}</div>
@@ -677,7 +680,7 @@ function auRow(it,i,sh){const V=audAll();let v=V[it.a];const vOld=audExpired(v)?
         ${chips?`<span class="auchips">${chips}</span>`:''}
       </div></div>
     <div class="aulinks">${links}</div>
-    <div class="aubtns">${btns}${mark}</div>${reasons}</div>`;}
+    <div class="aubtns">${btns}${mark}</div>${reasons}${typeof trDrop==='function'?trDrop(it.a):''}</div>`;}
 function auRenderOne(){auView._listHtml=null;const sh=audShelf(auView.shelf);const c=auCounts(sh);const vis=auVisible(sh);const tab=auView.tab[sh.id]||'todo';
   if(auView.focus>=vis.length)auView.focus=Math.max(0,vis.length-1);
   const secs=auView.secs.length?auView.secs.reduce((a,b)=>a+b,0)/auView.secs.length:6;
@@ -955,6 +958,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     row.classList.toggle('sel',auView.sel.has(row.dataset.a));const f=document.querySelector(`.aulist .aurow[data-a="${[...auDrag.seen][0]}"]`);if(f)f.classList.toggle('sel',auView.sel.has(f.dataset.a));auPaintBulk();});
   document.addEventListener('mouseup',()=>{if(!auDrag)return;const moved=auDrag.moved;auDrag=null;if(moved){auView.dragJustEnded=Date.now();auRefresh();}});
   host.addEventListener('click',async e=>{const t=e.target;
+    if(typeof trClick==='function'&&trClick(e))return;   /* b239: EXPORTED chip, the ASIN audit box */
     if(t.closest('[data-stop]')){e.stopPropagation();return;}
     const mo=t.closest('[data-more]');if(mo){auExtend(mo.dataset.more);return;}
     if(t.closest('#auLoadRest')){auTrickle(auView.shelf,true);return;}

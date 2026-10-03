@@ -70,9 +70,11 @@ function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)
   const on=!!cur&&primeOn()&&!(typeof isListed==='function'&&isListed(cur))&&!cur.drop;vr.classList.toggle('primemode',on);paintPrimeSwitch();   /* b222: not on Drop & check */
   if(!on){host.hidden=true;host.innerHTML='';return;}
   host.hidden=false;const slots=primeSlots(),nx=slots.find(k=>!primeIn(k))||null,r1multi=cur.rule===1&&!ukOnly();
-  const viewerIn=!!files.viewer&&r1multi,finIn=slots.filter(primeIn).length,allF=!nx;
+  /* b234: a two-link source (Suz's coupons: % off + £ off) — its normal box takes two exports, one button each */
+  const two=cur.rule!==1&&!!cur.link2&&!cur.primeOnly,nIn=two&&primeNormal('UK')?String(primeNormal('UK').name||'').split(' + ').length:0;
+  const viewerIn=!!files.viewer&&r1multi,finIn=slots.filter(primeIn).length+(two&&nIn>=2?1:0),allF=!nx;
   const esc=escapeHtml,site={UK:'Amazon.co.uk',DE:'Amazon.de',FR:'Amazon.fr',IT:'Amazon.it',ES:'Amazon.es'};
-  let h=`<div class="pghead"><b>Get a file from every box</b><span>Open in Keepa → rows per page biggest → Export → All active columns → CSV → drop it anywhere. Each file finds its own box.</span><span class="pgcount"><b>${finIn+(viewerIn?1:0)}</b> / ${slots.length+(r1multi?1:0)} files</span></div>`;
+  let h=`<div class="pghead"><b>Get a file from every box</b><span>Open in Keepa → rows per page biggest → Export → All active columns → CSV → drop it anywhere. Each file finds its own box.</span><span class="pgcount"><b>${finIn+(viewerIn?1:0)}</b> / ${slots.length+(r1multi?1:0)+(two?1:0)} files</span></div>`;
   h+=`<div class="pgrid"><div></div><div class="pcolh">Normal filter</div><div class="pcolh prime">★ Prime deals</div>`;
   primeMarkets().forEach(m=>{h+=`<div class="pmk"><span class="fl">${FLAG[m]}</span><div>${m}<small>${site[m]}</small></div></div>`;
     ['n','p'].forEach(kind=>{const key=m+'|'+kind,pr=kind==='p';
@@ -82,6 +84,9 @@ function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)
       const st=f?'in':c.state==='bad'?'bad':c.state==='keepa'?'keepa':'';
       const go=link?`<a class="go" href="${esc(link)}" target="_blank" rel="noopener" data-pkey="${key}">${st==='keepa'||st==='bad'?'Open again':'Open in Keepa'} ↗</a>`:'';
       let t1,t2,right='';
+      if(!pr&&two){const L=finderLinks(cur);const gos=L.map((x,i)=>`<a class="go" href="${esc(x.url)}" target="_blank" rel="noopener" data-pkey="${key}" title="${esc(x.lab)} — export all columns, drop it in">${nIn>i?'✓ ':''}${esc(x.lab.replace(/ coupons$/,''))} ↗</a>`).join('');
+        t1=f?(nIn>=2?'Both exports in':'1 of 2 in'):'UK filter';t2=f?`${f.rows.length.toLocaleString()} products`:'2 exports — drop both';
+        h+=`<div class="pcell two ${nIn>=2?'in':''} ${key===nx&&!f?'next':''}"><span class="box">${nIn>=2?'✓':''}</span><span class="txt"><span class="t1">${t1}</span><span class="t2">${t2}</span></span><span class="gos">${gos}</span>${f?`<button type="button" class="x" data-prm="${key}" aria-label="Remove the UK normal files">✕</button>`:''}</div>`;return;}
       if(f){t1=esc(f.name);t2=`${f.rows.length.toLocaleString()} products${pr?` · ${f.rows.filter(primePrice).length.toLocaleString()} with a Prime price`:''}`;right=`<button type="button" class="x" data-prm="${key}" aria-label="Remove ${m} ${pr?'Prime':'normal'} file">✕</button>`;}
       else if(st==='bad'){t1='Not taken — '+esc(c.why||'columns missing');t2=esc(c.name||'');right=go;}
       else if(st==='keepa'){t1='In Keepa — waiting for the file';t2='Export → All active columns → CSV, then drop it here';right=go;}

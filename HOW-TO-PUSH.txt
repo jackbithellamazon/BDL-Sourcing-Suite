@@ -1,8 +1,92 @@
-BDL SOURCING — b233 · 1 Oct 2026   (includes b214–b232)
+BDL SOURCING — b239 · 3 Oct 2026   (includes b214–b238)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b233.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b239.
+   js/trace.js is a NEW file (b239) — it goes up with the js folder.
    js/prime.js is a new file (from b214) — it goes up with the js folder.
+
+═══ b239 — ASIN AUDIT (only you see it) ═══
+   STEP 1 — Supabase, once (2 minutes):
+     Supabase → SQL Editor → New query → paste ALL of  2026-10-03-BDL-SOURCING-ASIN-AUDIT-SUPABASE.sql  (Downloads) → Run.
+     The last line should say:  src_seen | 0.   It fills up from the next filter run.
+     Create-only, touches nothing else, safe to run twice. Tested on real Postgres before it got to you.
+   STEP 2 — push this folder as usual.
+
+   WHERE: Storefront audits → the new "ASIN audit" box at the top.
+     Paste ASINs (any text — they're picked out) → Run audit (or Cmd+Enter). One row per ASIN:
+       Worked            the system found it, then it went on a lead sheet
+       VA first          on a lead sheet BEFORE our filters found it — the system was late
+       System missed     on a lead sheet, our filters never had it
+       Shown, not led    a lead in To review / All leads, never on a lead sheet
+       Cut by the rules  in a filter's export, the rules threw it out — and why ("needs 54% off…", "ROI 4%…")
+       Not found         no filter's export ever had it
+     + first found (date · filter), filters, exported ×N, To review, best score, buy price, opened by a VA, Y/N/M,
+       lead sheet. Click a row → day by day: each filter, To review or not, buy · score · ROI, cut exports + why,
+       VA clicks, the lead sheet.
+
+   ON EVERY STOREFRONT ROW:
+     EXPORTED ×3  → click: every day it was a lead — filter, whose filter, who ran it, To review or not, buy · score · ROI
+     SUZ LEAD SHEET (yellow) / MERA LEAD SHEET (pink)
+
+   WHAT STARTS NOW (history builds from here):
+     · each run keeps every lead's buy / score / ROI for that day (before today only the last day per filter survived)
+     · each run sends every product its export had — cut ones too, with the reason — to the new table
+       (VAs' browsers do it; they see nothing). "Cut by the rules" answers start from the first run after Step 1.
+     · runs done before Step 1 wait in the VA's browser (up to 40) and go once the table exists.
+
+═══ b238 — COUPON FILTER: THE JUNK OUT ═══
+   · Amazon must hold the Buy Box. We buy from Amazon, so a coupon on someone else's offer is no use — and no-name
+     brands mostly sell their own. −274 rows, −2 leads (a NEEWER flash and an Epson ink a 3rd party held).
+   · No car seats, pushchairs & prams (footmuffs too), nursery furniture (DockATot, cots), highchairs, carriers,
+     bouncers. −88 rows, 0 leads. The rest of Baby stays (bottles, monitors, bath…).
+   · Your screenshot brands out: SBC, Winx Club, Comely, MIUKAA, Tanice, nanoblock, HOSHANHO + a no-name tail
+     (Sour Lemon, Snailax, SERVED, Vida Designs, Riserva, Yabano, JUMMICO, COMFIER, MALOL, kleankin…).
+     The 50 Keepa brand slots re-ranked on what still costs rows; the app drops the rest (incl. Graco, Maxi-Cosi, Cybex, DockATot).
+   · 2 Oct data: ~683 rows (131 % + 552 £), 47 leads.
+   · New links in Downloads: 2026-10-02-SUZ-COUPON-FILTERS.txt (replaced)
+
+═══ b237 — COUPON FILTER: 15% + 2 RANK DROPS ═══
+   · % link: coupon 15%+ (b236 had 20%).   · Both links: 2+ rank drops in the last 30 days.
+   · On the 2 Oct data: % link ~121 rows / 15 leads (+ up to 329 rows where Keepa shows no %), £ link ~711 rows / 34 leads.
+     Only lead lost: the Belkin charger (0 drops — a brand-new listing).
+   · The two links are also in Downloads: 2026-10-02-SUZ-COUPON-FILTERS.txt
+
+═══ b235 + b236 — COUPON FILTER TIGHTENED ═══
+   · % link: coupon 20%+ (was 1%+) — now 15%, see b237. On your 2 Oct % export every lead scoring 20+ had a 20%+ coupon
+     (10 Canon printers at 20%, NEEWER 25%, SHAN ZU 40%, Baylis & Harding 50%). 15% gave one lead (score 13). Under 15%: none.
+   · £ link: stays £1+ — small £ coupons still made real leads.
+   · Both links: Buy Box 90-day average £7+.
+   · High-end fragrance / beauty out: Dior, Estée Lauder, Clarins, Lancôme, Mugler, Jimmy Choo, Azzaro, Chanel, YSL, Armani,
+     Gucci, Tom Ford, Prada, Givenchy, Guerlain, Jo Malone, Carolina Herrera, Valentino, Kérastase, Kiehl's, Too Faced,
+     Bumble and bumble, Perricone MD, ESPA, Christophe Robin, Aveda, Urban Decay, Erborian, Biossance.
+     Cheaper scents (Lacoste, Calvin Klein, Kylie, Liz Earle…) stay.
+   · All Amazon brands out.
+   · KEEPA ONLY TAKES 50 BRANDS A FILTER (its own docs — your filters stop at 48; b234's links had 57, too many).
+     So each link carries the 50 brands that cost the most rows, and the app drops the whole 98-brand list on top.
+     Edit → "Skip these brands on this filter" holds that list. Dropped list says "NOT ON THIS FILTER · Dior".
+     New check: no Keepa link in the app can go over 50 again.
+   · App blacklist (every filter): HP, Regatta, Estée Lauder.
+   · Fashion / shoes: Regatta was 116 of 117 rows in Amazon's Fashion category — the b234 links already drop all of
+     Fashion (shoes are inside it). DVDs and VHS were already out.
+   · Your 2 Oct exports with all of this: % link 1,885 → about 100 (could be up to a few hundred — 652 rows had a coupon
+     Keepa's export didn't show the % for), £ link 2,796 → about 850.
+
+═══ b234 — SUZ'S COUPON FILTER = YOUR TWO LINKS ═══
+   · "Suz · Amazon coupons" (was "coupons 15%+"): ANY one-time coupon — % off (1%+) OR £ off (£1+) — Amazon £5+,
+     products only, no rank-drop floor (the app's 9-sales-a-month check decides). Daily, Rule 2, Suz.
+   · ONE run, TWO Keepa buttons ("% off" and "£ off"). Suz exports both and drops both — they add up into one list.
+     Works in the Prime grid too (the normal box has both buttons; the ★ Prime box is as before).
+   · Added to BOTH links (your own filter settings untouched):
+       – no Fashion, Books, CDs & Vinyl, DVD & Blu-ray (+ the 2 other roots and 2 sub-categories Suz's filters always skip)
+       – Suz's never-sell brands (Amazon, Apple, Clinique, Elizabeth Arden, Dulux, eufy, Funko, Netgear, Swarovski…)
+       – 18 flat-pack / generic brands that filled your 2 Oct exports with 0 leads: Relaxdays, Julian Bowen, QLTYPRI,
+         Cressi, Outsunny, HOMCOM, Vinsetto, Yaheetech, Furinno, Feandrea, Vasagle, Songmics, DASFOND, AOFITEE,
+         Supdeal, IRONCK, Flyzoo, YITAHOME
+     Your 2 Oct exports: 1,885 + 2,795 rows → about 1,039 + 1,084. Leads 74 → 65.
+   · Edit has a new "Second filter link" box if you ever want to change the £ one.
+   · ALCOHOL LEAK FIXED (every rule): BuzzBallz / Funkin ready-to-drink cocktails came out as leads — Rule 2 only
+     looked at "Grocery › Pre-mixed & Ready to Drink" and never saw the "Beer, Wine & Spirits" in between.
+     That Amazon category now blocks, full stop.
 
 ═══ b233 — TO REVIEW UNTIL IT'S DONE + A ✓ DONE BUTTON ═══
    · A lead on a filter's To review list that nobody on that filter has done STAYS To review on the next run,

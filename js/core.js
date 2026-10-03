@@ -57,7 +57,7 @@ const LS_MEM={};const LS_SHED=['bdl-sourcing-howto-hidden','bdl-sourcing-guidefu
    Keepa rows, EU prices, console rows — now live in the browser's big store instead (IndexedDB: hundreds of MB, guest mode
    already uses it). They are loaded into memory once at boot and written back a moment after each change, so the rest of the
    app reads and writes them exactly as before. The 5 MB pot keeps only small settings and the unsent-changes queue. */
-const BIG_KEYS=['bdl-sourcing-audit-prod','bdl-sourcing-api-rows','bdl-sourcing-eu-price','bdl-sourcing-leadstate','bdl-sourcing-runs','bdl-sourcing-kc','bdl-sourcing-history',
+const BIG_KEYS=['bdl-sourcing-seen-pending','bdl-sourcing-audit-prod','bdl-sourcing-api-rows','bdl-sourcing-eu-price','bdl-sourcing-leadstate','bdl-sourcing-runs','bdl-sourcing-kc','bdl-sourcing-history',
   /* b181 (Jack, 27 Sep: "we shouldn't be storing much here locally — it should be 99% online"): every other copy of Supabase goes to the big store too.
      The shared pot keeps only the sign-in, this browser's view settings, a few small shared settings and the unsent queue — a few KB. */
   'bdl-sourcing-verdicts','bdl-sourcing-audit-v','bdl-sourcing-sources','bdl-sourcing-facts','bdl-sourcing-blacklist','bdl-sourcing-brandbl','bdl-sourcing-discounts','bdl-sourcing-audit-shelves',
