@@ -1682,6 +1682,7 @@ body.auditing .aulist{scroll-behavior:auto}
 /* b140: the pill and Done light up when the last lead is judged */
 .jpill.all b{color:var(--jade)}.jpill.all i{border-color:rgba(52,211,153,.5);color:var(--jade)}
 #runNext2.ready{box-shadow:0 0 0 2px rgba(52,211,153,.45)}
+#doneSel.ready{box-shadow:0 0 0 2px rgba(52,211,153,.55)}   /* b260: everything answered — this is the button to press */
 .pager .pghint{color:var(--iris)}
 /* a "No" row's reason chips were one per line in the narrower Verdict cell (126px of row) — chip-sized, they take three lines */
 .vr{font-size:10px;padding:2px 5px}
@@ -3004,3 +3005,71 @@ html[data-theme="light"]{--prime:#0a86b8;--prime-txt:#075f84;--prime-fill:rgba(1
 #runNext2.isdone{background:var(--jade);color:#03241a;border-color:var(--jade);box-shadow:none}
 /* b245 — the "why" line on a refused Viewer export */
 .colsbox .colswhy{margin:8px 0;padding:9px 12px;border-radius:9px;background:var(--amber-dim);border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);color:var(--text)}
+/* b247 — the Prime note was pale blue on blue ("this is greyed out"): full-contrast text now, the headline in Prime blue */
+.ltbl .primenote,.ltbl td.flagc .primenote,.ltbl td.pmc .primenote{color:var(--text);font-size:12px;line-height:1.45;background:color-mix(in srgb,var(--prime) 16%,var(--surface2));border-color:var(--prime);max-width:38ch;padding:6px 9px}
+.ltbl .primenote b{color:var(--text);font-weight:700}
+.ltbl .primenote b:first-of-type{color:var(--prime-txt)}
+/* b247 — proof tag under the score; the Amazon-not-selling rows at the end of All leads */
+.chg.proof{font-weight:700}
+.chg.proof.cap{color:var(--amber)}
+.chg.proof.up{color:var(--jade)}
+.ltbl tr.oarow td{background:color-mix(in srgb,var(--amber) 5%,transparent)}
+.ltbl tr.oarow .score.none{background:var(--raise);color:var(--faint);border-color:var(--line2)}
+.ltbl tr.oarow .dim{color:var(--muted)}
+.ltbl tr.oarow .sub.want{color:var(--jade);font-weight:700}
+.ltbl tr.oarow .links{display:flex;gap:6px;margin-top:5px}
+.ltbl .oanote{display:block;font-size:12px;line-height:1.45;color:var(--text);max-width:40ch;white-space:normal;padding:6px 9px;border-radius:7px;border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);background:var(--amber-dim)}
+.ltbl .oanote b:first-child{color:var(--amber)}
+.ltbl tr.oarow .oanot{color:var(--muted);font-size:12px}
+/* b251 — a not-Amazon row that still pays at the other seller's price */
+.ltbl tr.oarow.oaok td{background:color-mix(in srgb,var(--jade) 7%,transparent)}
+.ltbl .oanote.ok{border-color:color-mix(in srgb,var(--jade) 50%,transparent);background:color-mix(in srgb,var(--jade) 10%,transparent)}
+.ltbl .oanote.ok b:first-child{color:var(--jade)}
+/* b260 — the reasons under BETTER / WORSE: short lines, never cut off, good green / bad red */
+.ltbl td.scorec .stat2 .chg.why,.chg.why{white-space:normal;overflow:visible;text-overflow:clip;max-width:104px;line-height:1.3;margin-top:4px}
+.chg.why b{display:block;font-weight:600;font-size:10.5px;color:var(--faint);font-family:var(--mono);letter-spacing:-.01em;white-space:normal}
+.chg.why b.bad{color:var(--coral)}
+.chg.why b.good{color:var(--jade)}
+.gainb.down{color:var(--coral);border-color:rgba(247,106,131,.5)}
+/* b260 — "improve row": who answered and when is never cut off ("seen Mera · Fri 2 …") — it has the verdict cell's width and wraps */
+.ltbl td.vcell .chg{max-width:none;white-space:normal;overflow:visible;text-overflow:clip}
+.dstate.stale .dsub,.dstate.stale .dnext{white-space:normal}
+.dstate .dnext.stale2 b{color:var(--coral)}
+/* b264 — "Is Keepa set to Germany?" */
+.flagcard .lvsteps li .lvt b{font-size:14px}
+.flagcard .lvbtns{display:flex;gap:10px;flex-wrap:wrap}
+/* b260 — why a file was not taken · the Viewer-columns reminder */
+.refsteps li{grid-template-columns:minmax(0,1fr);align-items:start;padding:13px 15px}   /* no number bubble on these: the text has the whole width (it sat in the 30px bubble column, one word a line) */
+.refsteps .lvt b{display:inline;font-size:inherit;color:inherit}
+.refsteps .lvt>b{display:block;font-size:14.5px;color:var(--text);margin-bottom:2px}
+.refsteps li.now .lvt small{display:block;margin-top:5px;color:var(--muted);font-weight:400;font-size:12.5px;line-height:1.5}
+.refsteps li.now .lvt small b{color:var(--text);font-weight:700}
+.refsteps li.now .lvt small.reffile{font-family:var(--mono,ui-monospace,monospace);color:var(--faint);font-size:11px;margin-top:1px;overflow-wrap:anywhere}
+.refsteps li.now .lvt small.reftodo{color:var(--text);margin-top:9px;padding-top:9px;border-top:1px solid var(--line2)}
+.vnbtns{display:flex;gap:10px;margin:14px 0 6px;flex-wrap:wrap}
+/* b259 — fees Keepa does not know */
+.ch.feeest{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 45%,transparent);background:var(--amber-dim);font-style:normal}
+.feejump{color:var(--amber);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.ltbl tr.flash td{background:color-mix(in srgb,var(--amber) 14%,transparent);transition:background .4s}
+/* b258 — a slot holding two or more exports names each one */
+.fchip.multi{grid-column:span 2}   /* the chip grid is 3 columns — two names need two of them */
+.fchip.multi .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fchip .r{white-space:nowrap}
+.fchip.multi .n b{color:var(--text)}
+/* b252 — New, but it left and came back (out of stock → back in stock) */
+.chg.back{color:var(--amber);white-space:normal;overflow:visible;max-width:170px;font-weight:600}
+.chg.back.sure{color:var(--jade)}
+.oak{color:var(--jade)}
+.oaline:not([hidden]){display:block;flex:1 1 100%;margin-top:4px;color:var(--muted)}
+.oaline b{color:var(--text)}
+.oaline b.oak{color:var(--jade)}
+.oaline a{color:var(--iris2);font-weight:700;text-decoration:none}
+.oaline a:hover{text-decoration:underline}
+/* b248 — the one Done button (next to Open in Keepa) and "Last done by X · date · time" on the rows */
+#doneSel{font-weight:700}
+#doneSel:not(.isdone):not(:disabled){border-color:var(--jade);color:var(--jade)}
+#doneSel.isdone,#doneSel.isdone:disabled{background:var(--jade);color:#03241a;border-color:var(--jade);opacity:1;cursor:default}
+.dstate .dlast{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:12px;color:var(--text)}
+.dstate .dlast b{font-weight:700}
+.dstate .dlast i{font-style:normal;color:var(--muted)}
+.dstate .dlast .whochip{margin:0}

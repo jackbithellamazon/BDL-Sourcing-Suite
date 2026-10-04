@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b245">
-<link rel="stylesheet" href="css/brands.css?v=b245">
+<link rel="stylesheet" href="css/base.css?v=b264">
+<link rel="stylesheet" href="css/brands.css?v=b264">
 </head>
 <body>
 <div class="wrap">
@@ -292,7 +292,7 @@
             <li><b>Pick your name</b> top right. Everything you click is saved under it, for everyone.</li>
             <li><b>Hit Due.</b> The red rows are yours to run today. Start at the top — or press <b>Start</b> in the banner.</li>
             <li><b>On the run screen</b> follow the numbered steps: open the Keepa filter, set rows per page to the max, Export → All active columns → CSV, drop the file in the box. The rules do the maths.</li>
-            <li><b>Judge the To-review list.</b> Open them in Keepa, read the graph, then <b>Y</b> / <b>N</b> / <b>M</b> on the row. A No needs a reason. Then <b>Next due →</b>.</li>
+            <li><b>Judge the To-review list.</b> Open them in Keepa, read the graph, then <b>Y</b> / <b>N</b> / <b>M</b> on the row. A No needs a reason. Then press <b>✓ Done</b> (next to Open all in Keepa) — that is what turns the filter green — and <b>Next due →</b>.</li>
           </ol>
         </div>
         <div class="kpis" id="bKpis"></div>
@@ -421,10 +421,12 @@
           </div>
         </div>
         <div class="rulesbox" id="rulesBox">
-          <div><b>Rule 1 · brands</b> demand 10+ bought or 10+ rank drops in 30 days · sell = Buy Box 90d +8%, capped at FBA 90d · buy = cheapest Amazon UK/DE/FR/IT/ES landed (UK less S&amp;S 15%, EU less S&amp;S 5% + 1% card + shared postage) · SellerAmp fees to the penny · floor 0% ROI, −15% when Amazon owns the Buy Box and FBA sits 25%+ above · slow sellers under 50/mo need ROI 15% or £5 · EU plug, mains appliances from EU, blacklist off the sheet. FROZEN 9 Sep 2026.</div>
-          <div><b>Rule 2 · UK Amazon-to-Amazon</b> Amazon selling it · demand 10+ · buy = Amazon now less Business / coupon / S&amp;S 15% when Keepa shows them · sell: <b>£50+</b> = Buy Box today when a 3P holds it under Amazon, else the 90/180d Buy Box +25% (+5% with no 3P history) capped at the 3P 90d average and the Buy Box high; <b>under £50</b> = the lower Buy Box 90/180d average, no uplift, never above Amazon's 90d average · keep if the % off needed to reach 5% ROI is within what the brand's own store gives (10% default) · score /100 weights £/month first, then ROI, then profit per unit. Every UK filter runs this — Mera's, Suz's, the next one.</div>
-          <div><b>Rule 3 · VAT</b> tea and coffee are 0% VAT on both sides (the product, never the machine). A VA can set 0% or 20% on the row; that beats the keyword rule, which beats the 20% default. Keyword lists are in Settings.</div>
-          <div><b>Queue</b> a lead shows until someone gives it a verdict, then only comes back when it is <i>more profitable</i> than it was when judged — 2p counts. Blacklisted never shows.</div>
+          <div><b>Rule 1 · brands, EU → UK</b> needs 9+ a month (Amazon's “bought” figure, else Keepa's rank drops) · buy = the cheapest Amazon price in the UK / DE / FR / IT / ES, landed (UK less S&amp;S 15%; EU less S&amp;S 5%, plus 1% card and shared postage; the ★ Prime price while the Prime event is on) · sell = the one sell price below · fees from the Keepa export, worked out from category and weight when Keepa has none · cut if it loses money (floor 0% ROI; −15% when Amazon owns the Buy Box and the FBA sellers sit 25%+ above it) · the pace bar: under 50 a month needs 20% ROI or £3 profit · 50 a month 10% or £3 · 100 a month 9% or £3 · 200 a month 7.5% or £1 · 300+ a month 6% or £1 · EU plugs, mains appliances from the EU and the blacklist are cut. FROZEN 9 Sep 2026.</div>
+          <div><b>Rule 2 · UK Amazon-to-Amazon</b> Amazon selling it · needs 9+ a month · buy = Amazon's price now, less a Business price, coupon or S&amp;S 15% when Keepa shows them (the ★ Prime price while the Prime event is on) · sell = the one sell price below · kept if the % off needed to reach 5% ROI is within what the rule allows — 10%, or the brand's own code if that is bigger · then the same pace bar as Rule 1 · anything selling for £100+ needs 8% ROI or £15 profit · under-£60 leads need a score of 35+. Every UK filter runs this — Mera's, Suz's, the next one.</div>
+          <div><b>The one sell price</b> (both rules) <b>under £60</b>: Buy Box 90-day average +6%, never above the FBA sellers' 90-day average — or the FBA 30-day level when 8+ FBA sellers sit above the box or the box is often empty · <b>£60+</b>: Amazon owns the Buy Box → Buy Box 90-day average +8%, never above the FBA 90-day average; Amazon dips in and out → the third-party sellers' level · never above the highest the Buy Box has ever been · a price you type on the row beats all of it.</div>
+          <div><b>Score /100</b> mostly £ a month (profit × sales), then ROI, then profit per unit · under a <i>confirmed</i> 50 a month the score stops at 60 · +5 when Amazon confirms 100+ a month and FBA sellers already sell it.</div>
+          <div><b>Rule 3 · VAT</b> tea and coffee are 0% VAT on both sides (the product, never the machine) · contraceptives 5% · everything else 20%. A VA can set 0% or 20% on the row; that beats the keyword rule, which beats the 20% default. Keyword lists are in Settings.</div>
+          <div><b>To review</b> = new on this filter, or better than on its last run (2p counts), plus anything from the last run nobody has done yet. A lead that dropped off and came back is New again, with a note. Blacklisted never shows. <b>✓ Done</b> (next to Open all in Keepa) finishes the filter — a run not finished within 12 hours goes back to NOT DONE and needs running again.</div>
           <div><b>Flags, never rules</b> the graph reading stays with the human. A No needs a reason — that's what the system learns from.</div>
         </div>
 
@@ -442,13 +444,14 @@
                 <button class="btn ghost" id="dlSheet" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="lab">Review sheet (xlsx)</span></button>
                 <button class="btn ghost" id="dlCsv" type="button">CSV</button>
                 <button class="btn ghost" id="dlDropped" type="button">Dropped list</button>
+                <button class="btn ghost" id="oaCsv2" type="button" hidden>Amazon-not-selling list · CSV</button>
                 <button class="btn solid seen" id="seenAll" type="button" hidden title="Baseline: mark every lead without a verdict as SEEN — from the next run only NEW and BETTER show as to-review">Mark all as seen</button>
               </div></div>
             <button class="btn primary" id="runNext2" type="button" hidden title="Open the next filter that is due today">Done — next due →</button>
           </div>
 
           <div class="leadhead" id="leadTop">
-            <h3 id="leadCount">Leads</h3><span class="sub lvhelp2"><b>All leads</b> = everything this one-off check kept · <b>To review</b> = the ones nobody has judged yet · Y/N/M saves as you click · ⃠ = never show again</span><span class="sub lvhelp" id="lvHelp"></span>
+            <h3 id="leadCount">Leads</h3><span class="sub lvhelp2"><b>All leads</b> = everything this one-off check kept · <b>To review</b> = the ones nobody has judged yet · Y/N/M saves as you click · ⃠ = never show again</span><span class="sub lvhelp" id="lvHelp"></span><span class="sub oaline" id="oaLine" hidden></span>
             <div class="right">
               <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fQ" placeholder="ASIN, title, brand…" autocomplete="off"></div>
               <div class="seg segl" id="fSeg" title="Which leads to show"><button class="on" data-st="REVIEW" type="button">To review <b>0</b></button><button data-st="ALL" type="button">All leads <b>0</b></button><span class="segsep">since last run</span><button data-st="NEW" type="button">New <b>0</b></button><button data-st="BETTER" type="button">Better <b>0</b></button><button data-st="WORSE" type="button">Worse <b>0</b></button><button data-st="UNCHANGED" type="button">Same <b>0</b></button></div>
@@ -534,7 +537,7 @@
       <div class="ssec"><h3>This browser</h3><p>Housekeeping for the copy kept on this machine. The shared database is not touched by any of these.</p></div>
       <div class="sgrid">
         <div class="sbox wide"><h3>Local copy <span class="scope local">this browser</span></h3><p class="ssub" id="dataInfo"></p>
-          <div class="row"><button class="btn solid sm" id="dataExport" type="button">Backup to file</button><label class="btn ghost sm" style="cursor:pointer">Restore from file<input type="file" id="dataImport" accept=".json" hidden></label><button class="btn ghost danger sm" id="dataReset" type="button">Reset brand list to the seed</button></div>
+          <div class="row"><button class="btn solid sm" id="dataExport" type="button">Backup to file</button><label class="btn ghost sm" style="cursor:pointer">Restore from file<input type="file" id="dataImport" accept=".json" hidden></label><button class="btn ghost sm" id="dataReset" type="button" title="Drops this browser's copy of the filter list and loads the shared one again. Nothing is sent.">Reload the filter list</button></div>
           <p class="hint">Backup = everything this browser holds, as one file. Restore replaces this browser's copy only.</p></div>
       </div>
     </div>
@@ -544,29 +547,30 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b245"></script>
-<script src="js/parse.js?v=b245"></script>
-<script src="js/rule1.js?v=b245"></script>
-<script src="js/rule2.js?v=b245"></script>
-<script src="js/export.js?v=b245"></script>
-<script src="js/rule4.js?v=b245"></script>
-<script src="js/queue.js?v=b245"></script>
-<script src="js/sources.js?v=b245"></script>
-<script src="js/prime.js?v=b245"></script>
-<script src="js/cloud.js?v=b245"></script>
-<script src="js/auth.js?v=b245"></script>
-<script src="js/leadtools.js?v=b245"></script>
-<script src="js/keepaconsole.js?v=b245"></script>
-<script src="js/euprice.js?v=b245"></script>
-<script src="js/apirun.js?v=b245"></script>
-<script src="js/brands.js?v=b245"></script>
-<script src="js/history.js?v=b245"></script>
-<script src="js/audit.js?v=b245"></script>
-<script src="js/trace.js?v=b245"></script>
-<script src="js/leave.js?v=b245"></script>
-<script src="js/kcjudge.js?v=b245"></script>
-<script src="js/activity.js?v=b245"></script>
-<script src="js/guest.js?v=b245"></script>
-<script src="js/boot.js?v=b245"></script>
+<script src="js/core.js?v=b264"></script>
+<script src="js/parse.js?v=b264"></script>
+<script src="js/rule1.js?v=b264"></script>
+<script src="js/rule2.js?v=b264"></script>
+<script src="js/export.js?v=b264"></script>
+<script src="js/rule4.js?v=b264"></script>
+<script src="js/queue.js?v=b264"></script>
+<script src="js/sources.js?v=b264"></script>
+<script src="js/prime.js?v=b264"></script>
+<script src="js/cloud.js?v=b264"></script>
+<script src="js/auth.js?v=b264"></script>
+<script src="js/leadtools.js?v=b264"></script>
+<script src="js/keepaconsole.js?v=b264"></script>
+<script src="js/euprice.js?v=b264"></script>
+<script src="js/apirun.js?v=b264"></script>
+<script src="js/brands.js?v=b264"></script>
+<script src="js/history.js?v=b264"></script>
+<script src="js/audit.js?v=b264"></script>
+<script src="js/trace.js?v=b264"></script>
+<script src="js/notice.js?v=b264"></script>
+<script src="js/leave.js?v=b264"></script>
+<script src="js/kcjudge.js?v=b264"></script>
+<script src="js/activity.js?v=b264"></script>
+<script src="js/guest.js?v=b264"></script>
+<script src="js/boot.js?v=b264"></script>
 </body>
 </html>

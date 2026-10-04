@@ -307,7 +307,9 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
       'Reviews':reviews,'Category':[r['Categories: Root'],r['Categories: Sub']].filter(Boolean).join(' › '),'Category kind':grocery?'grocery':elec?'electrical':'general','Age days':age==null?'':age,'VAT %':Math.round(vat*100),'VAT from':vt.src==='va'?'VA':vt.src==='source'?'filter':vt.src==='rule'?'Rule 3':'default','Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||'',
       Keepa:`https://keepa.com/#!product/2-${a}`,'Buy link':`https://www.amazon.co.uk/dp/${a}`,'UK sell link':`https://www.amazon.co.uk/dp/${a}`,
       SAS:`https://sas.selleramp.com/sas/lookup?search_term=${a}&sas_cost_price=${eff.toFixed(2)}&sas_sale_price=${sell.toFixed(2)}`,
-      kept:keptFinal,lowScore:kept&&!keptFinal,lowRoi:kept&&thin,chips,pot,STATUS:'',Changed:'','Last seen':''};
+      kept:keptFinal,lowScore:kept&&!keptFinal,lowRoi:kept&&thin,chips,pot,STATUS:'',Changed:'','Last seen':'',
+      /* b260: WHY a row that passed the discount test was still cut — so the dropped list says the real reason (it called a £100+ bar miss "scored 50 — under 35") */
+      cutWhy:!kept||keptFinal?'':underBar?'bar':thin?'thin':'score',bestRoi:Math.round(bestRoi*10)/10,bestP:Math.round(bestP*100)/100,velBar:vb};
     all.push(o);}
   const out=all.filter(o=>o.kept).sort((x,y)=>y.Score-x.Score||y['Potential score']-x['Potential score']||y['£ per month']-x['£ per month']);
   out.forEach((o,i)=>o['#']=i+1);st.kept=out.length;

@@ -94,7 +94,7 @@ function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)
       if(f){t1=esc(f.name);t2=`${f.rows.length.toLocaleString()} products${pr?` · ${f.rows.filter(primePrice).length.toLocaleString()} with a Prime price`:''}`;right=`<button type="button" class="x" data-prm="${key}" aria-label="Remove ${m} ${pr?'Prime':'normal'} file">✕</button>`;}
       else if(st==='bad'){t1='Not taken — '+esc(c.why||'columns missing');t2=esc(c.name||'');right=go;}
       else if(st==='keepa'){t1='In Keepa — waiting for the file';t2='Export → All active columns → CSV, then drop it here';right=go;}
-      else{t1=pr?`${m} ★ Prime deals`:`${m} filter`;t2=m==='UK'?'Opens on Amazon.co.uk':`In Keepa, pick ${m} at the top right`;right=go;}
+      else{t1=pr?`${m} ★ Prime deals`:`${m} filter`;t2=m==='UK'?'Keepa on the UK flag first':`Set Keepa to ${m} first, then press`;right=go;}   /* b262: a link opened on another country loses "sold by Amazon" — the flag comes first */
       h+=`<div class="pcell ${pr?'prime':''} ${st} ${key===nx&&!st?'next':''}"><span class="box">${f?'✓':st==='bad'?'!':''}</span><span class="txt"><span class="t1">${t1}</span><span class="t2">${t2}</span></span>${right}</div>`;});});
   h+='</div>';
   if(r1multi){const bar=$('#asinBar'),merged=(bar&&bar._all)?bar._all.length:0,vLeft=typeof viewerPartsLeft==='function'?viewerPartsLeft():0,vN=merged?viewerParts(bar._all).length:1;
@@ -109,12 +109,12 @@ function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)
 function paintPrimeSwitch(){const b=$('#primeTog');if(!b)return;const j=typeof isJack==='function'&&isJack();b.hidden=!j;if(!j)return;
   const on=!!lsGet(PRIME_KEY,true);b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');
   b.innerHTML=`<i class="ptog"></i>★ Prime event${on?' on':''}`;
-  b.title=on?'Prime event mode is on — only you see the ★ Prime boxes. Press to switch it off.':'Switch on for the Prime event: every run gets a ★ Prime deals box for UK, DE and FR. Only you see it.';}
+  b.title=on?'Prime event mode is on — for everyone: Suz and Mera get the ★ Prime boxes too, and every export needs the Prime price column. Press to switch it off.':'Switch on for the Prime event: every run gets a ★ Prime deals box for UK, DE and FR — for you, Suz and Mera.';}   /* b260: it has been shared since b218 */
 function primeToggle(){if(!isJack())return;const on=!lsGet(PRIME_KEY,true);lsSet(PRIME_KEY,on);primeApply();
   lsSet(PRIME_EVENT_KEY,{on,at:nowIso()});if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('prime-event',{on,at:nowIso()})]);   /* b217: the VAs' notes follow */
   if(typeof renderList==='function')renderList();if(cur&&typeof paintRunHead==='function')paintRunHead();
   if(typeof paintSlots==='function'&&cur)paintSlots();paintPrime();if(cur&&typeof run==='function')run();
-  toast(on?'★ Prime event on — the Prime boxes are on every run (only you see them)':'Prime event off — normal filters only');}
+  toast(on?'★ Prime event on — the Prime boxes are on every run, for you, Suz and Mera':'Prime event off for everyone — normal filters only');}
 /* b217 (Jack, 1 Oct: "notes need say about prime deals please — in the notes"). While the Prime event is on, every source's note says
    so — for everyone. Jack's switch drives it and travels to the VAs as one src_settings row ('prime-event'); no row yet = on, because the
    early Prime deals are already live. Off = the line disappears everywhere on the VAs' next sync. */
@@ -134,9 +134,10 @@ function primeNote(o){const d=String((o&&o['Discount applied'])||'');if(!/★ Pr
   const m=/\(Amazon [A-Z]{2} £([\d.,]+)\)/.exec(d),was=m?'£'+m[1]:(+o['Buy at £']>0?'£'+(+o['Buy at £']).toFixed(2):'');
   const buy=+(o['Landed £']!=null&&o['Buy market']?o['Landed £']:o['After discount £'])||0;
   const wasN=m?+String(m[1]).replace(/,/g,''):(+o['Buy at £']||0),save=wasN&&buy&&wasN>buy?wasN-buy:0;
-  return`<span class="primenote" title="${escapeHtml(PRIME_WHAT)}">★ <b>Prime exclusive ${buy?'£'+buy.toFixed(2):''} on ${site}</b>${was?` — normal price ${was}${save?`, £${save.toFixed(2)} less`:''}`:''}. Prime members only, during the event — we buy on a Prime account. <b>Keepa &amp; SAS show the normal price</b>: ignore them, this row is priced at the Prime price (our SAS button uses it).</span>`;}
+  /* b247: short enough for the Flags column — the long explanation is the tooltip */
+  return`<span class="primenote" title="${escapeHtml(PRIME_WHAT)}">★ <b>Prime £${buy?buy.toFixed(2):''} on ${site}</b>${was?` (normal ${was}${save?`, £${save.toFixed(2)} less`:''})`:''}. <b>Keepa &amp; SAS show the normal price</b> — trust this row.</span>`;}
 /* a file dropped while the switch is on: returns true when this module took it (placed in a Prime box, or refused / ignored with a note) */
-function primeTake(file,d,f,notes){if(!primeOn()||!cur||/productviewer/i.test(file.name)||!primeIsFile(d.rows))return false;
+function primeTake(file,d,f,notes){if(!primeOn()||!cur||/productviewer/i.test(file.name)||(typeof isListed==='function'&&isListed(cur))||!primeIsFile(d.rows))return false;   /* b249: never on a list run (Replen) */
   const mk=d.domain||'UK';
   if(!PRIME_MK.includes(mk)){notes.push(`${file.name}: a ${mk} ★ Prime deals file — ignored. Prime deals can only be bought on Amazon.co.uk, .de and .fr.`);return true;}
   if(cur.rule!==1&&mk!=='UK'){notes.push(`${file.name}: a ${mk} Prime file — Rule ${cur.rule} is UK only.`);return true;}
@@ -164,6 +165,8 @@ document.addEventListener('click',e=>{
      amazon = Amazon's normal price (an S&S, coupon or Buy Box find) */
 const BUY_TYPE_LABEL={prime:'★ Prime price',offer:'Amazon offer',amazon:'Amazon price',untagged:'not tagged (before b219)'};
 function buyTypeOf(o,row){if(o&&(o['Prime deal']==='yes'||/★ Prime price/.test(o['Discount applied']||'')))return'prime';
+  /* b260: the "On offer" chip says "a coupon, Subscribe & Save or a deal badge" — coupon and S&S leads were landing under "Normal price" (Suz's coupon filter) */
+  if(o&&/coupon|S&S|business/i.test(o['Discount applied']||''))return'offer';
   if(row){const badge=String(row['Deals: Badge']||row['Deals: Deal Type']||'').trim();const d90=kNum(row['Amazon: 90 days drop %']);if(badge||(d90!=null&&d90>=9))return'offer';return'amazon';}
   if(o&&(String(o['LTD badge']||'').trim()||+o['Amazon 90d drop %']>=9))return'offer';return'amazon';}
 /* the buy market's own row: UK = the UK Finder / one export / Viewer, EU = that country's file */

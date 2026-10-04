@@ -53,6 +53,7 @@ let awaitDrop=null;
    was yanking the page to the drop box, and the banner appearing/vanishing shifted everything by a row. Now the drop box itself changes
    its words and glows, in place. */
 function dropNudge(){const box=$('#dropAny');if(!box||!awaitDrop||($('#viewRun')||{}).hidden)return;
+  if(awaitDrop.key&&typeof cur!=='undefined'&&cur&&awaitDrop.key!==cur.key){awaitDrop=null;return;}   /* b260: a press on another filter is not this one's */
   if(typeof files!=='undefined'&&awaitDrop.slot&&files[awaitDrop.slot]){awaitDrop=null;return;}
   const big=box.querySelector('.big'),small=box.querySelector('.small');
   if(big&&!big.dataset.orig){big.dataset.orig=big.innerHTML;if(small)small.dataset.orig=small.innerHTML;}
@@ -64,10 +65,12 @@ function dropNudgeOff(){awaitDrop=null;const box=$('#dropAny');if(!box)return;bo
   if(big&&big.dataset.orig){big.innerHTML=big.dataset.orig;delete big.dataset.orig;}if(small&&small.dataset.orig){small.innerHTML=small.dataset.orig;delete small.dataset.orig;}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&awaitDrop)setTimeout(dropNudge,250);});
 window.addEventListener('focus',()=>{if(awaitDrop&&Date.now()-awaitDrop.at>1500)setTimeout(dropNudge,250);});   /* back from another window, not just another tab */
-function actStampKeepa(key,m){awaitDrop={slot:m==='UK Viewer'||m==='UK'?'viewer':m,at:Date.now()};if(!key||typeof srcGet!=='function')return;const s=(typeof cur!=='undefined'&&cur&&cur.key===key)?cur:srcGet(key);if(!s)return;   /* the open run's own object, or leaving the run re-saves a copy without the stamp */
+function actStampKeepa(key,m){awaitDrop={slot:m==='UK Viewer'||m==='UK'?'viewer':m,at:Date.now(),key:key||(typeof cur!=='undefined'&&cur?cur.key:'')};   /* b260: the press belongs to a filter */if(!key||typeof srcGet!=='function')return;const s=(typeof cur!=='undefined'&&cur&&cur.key===key)?cur:srcGet(key);if(!s)return;   /* the open run's own object, or leaving the run re-saves a copy without the stamp */
   s.keepa=[{who:me(),at:nowIso(),mk:m}].concat((s.keepa||[]).filter(o=>o&&o.at)).slice(0,30);srcSave(s);}
 /* the newest Keepa press that no run has caught up with */
-function keepaSinceRun(s){const o=(s&&s.keepa||[])[0];if(!o)return null;const last=runLast(s.key);return(!last||new Date(o.at)>new Date(last.at))?o:null;}
+function keepaSinceRun(s){const o=(s&&s.keepa||[])[0];if(!o)return null;const last=runLast(s.key);
+  if(last&&new Date(last.at).toDateString()===new Date(o.at).toDateString())return null;   /* b250: a run saved that day covers the press — the file did come back */
+  return(!last||new Date(o.at)>new Date(last.at))?o:null;}
 
 /* ---------- Jack's page: Brands / Filters → VA activity ---------- */
 const actView={day:null,rows:null,loading:false};
@@ -101,7 +104,7 @@ document.addEventListener('DOMContentLoaded',()=>{const dp=$('#actDay');if(dp)dp
 
 /* the nudge is for everyone (Jack too); the recording above stays VA-only */
 document.addEventListener('click',e=>{if(typeof actOn==='function'&&actOn())return;const mk=e.target.closest('#keepaRow a,#asinOpen,#primeGrid a[data-pkey]');if(!mk)return;
-  const m=mk.id==='asinOpen'?'viewer':mk.dataset.pkey?mk.dataset.pkey.split('|')[0]:(!mk.dataset.mk||mk.dataset.mk==='viewer'?'viewer':mk.dataset.mk);awaitDrop={slot:m,at:Date.now()};},true);
+  const m=mk.id==='asinOpen'?'viewer':mk.dataset.pkey?mk.dataset.pkey.split('|')[0]:(!mk.dataset.mk||mk.dataset.mk==='viewer'?'viewer':mk.dataset.mk);awaitDrop={slot:m,at:Date.now(),key:typeof cur!=='undefined'&&cur?cur.key:''};},true);
 
 /* ---------- b208: the lead sheet teaches Sourcing ----------
    Jack, 29 Sep: "yes" to — any ASIN a VA puts on the lead sheet (AVM HQ's `leads` table, read only) that came up on a Sourcing run in the

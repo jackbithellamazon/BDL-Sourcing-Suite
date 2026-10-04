@@ -16,22 +16,31 @@ function leadState(o,rule){const id={brand:(o.Brand||'').slice(0,60),title:(o.Ti
 function discSet(s){return new Set((s||'').split(';').map(x=>x.trim().toLowerCase()).filter(Boolean));}
 function fmtP(v){return Math.abs(v)<1?Math.round(Math.abs(v)*100)+'p':'£'+Math.abs(v).toFixed(2);}
 /* now vs then → {status, why[], gain}. Mixed moves are decided by profit, because "more profitable" is the point. */
+/* b260 (Jack, 4 Oct, at a row marked WORSE whose only visible reason was "buy £48.71→£46.75 (−£1.96)": "why is it worse"). The reasons were listed in a fixed
+   order — buy first — so a lead that got cheaper to buy but made less (the sell price fell further) showed the GOOD news under the word WORSE. Now the reasons
+   that decided the status come first: on a WORSE lead what got worse (profit, sell, a lost discount), then "but" what improved; on a BETTER one the other way
+   round. A sell price that slipped 1–5% is named too (it is why the profit fell), without changing the status rules. */
 function compareState(now,then){if(!then)return{status:'NEW',why:[],gain:0};
-  const why=[];let better=false,worse=false;const n=x=>+x||0;
-  if(n(now.buy)<n(then.buy)-Q.EPS_GBP){better=true;why.push(`buy £${n(then.buy).toFixed(2)}→£${n(now.buy).toFixed(2)} (−${fmtP(n(then.buy)-n(now.buy))})`);}
-  else if(n(now.buy)>n(then.buy)+Q.EPS_GBP){worse=true;why.push(`buy £${n(then.buy).toFixed(2)}→£${n(now.buy).toFixed(2)} (+${fmtP(n(now.buy)-n(then.buy))})`);}
+  const good=[],bad=[],info=[];let better=false,worse=false;const n=x=>+x||0;
+  if(n(now.buy)<n(then.buy)-Q.EPS_GBP){better=true;good.push(`buy £${n(then.buy).toFixed(2)}→£${n(now.buy).toFixed(2)} (−${fmtP(n(then.buy)-n(now.buy))})`);}
+  else if(n(now.buy)>n(then.buy)+Q.EPS_GBP){worse=true;bad.push(`buy £${n(then.buy).toFixed(2)}→£${n(now.buy).toFixed(2)} (+${fmtP(n(now.buy)-n(then.buy))})`);}
   const nd=discSet(now.disc),td=discSet(then.disc);const gained=[...nd].filter(x=>!td.has(x)),lost=[...td].filter(x=>!nd.has(x));
-  if(gained.length){better=true;why.push('new: '+gained.join(', '));}
-  if(lost.length){worse=true;why.push('lost: '+lost.join(', '));}
-  if(n(now.profit)>n(then.profit)+Q.EPS_GBP){better=true;why.push(`profit £${n(then.profit).toFixed(2)}→£${n(now.profit).toFixed(2)}`);}
-  else if(n(now.profit)<n(then.profit)-Q.EPS_GBP){worse=true;why.push(`profit £${n(then.profit).toFixed(2)}→£${n(now.profit).toFixed(2)}`);}
-  if(n(now.roi)>n(then.roi)+Q.EPS_ROI){better=true;if(!why.some(w=>w.startsWith('profit')))why.push(`ROI ${n(then.roi)}→${n(now.roi)}%`);}
-  else if(n(now.roi)<n(then.roi)-Q.EPS_ROI){worse=true;if(!why.some(w=>w.startsWith('profit')))why.push(`ROI ${n(then.roi)}→${n(now.roi)}%`);}
-  if(then.sell&&n(now.sell)<n(then.sell)*Q.SELL_DROP){worse=true;why.push(`sell £${n(then.sell).toFixed(2)}→£${n(now.sell).toFixed(2)}`);}
-  else if(then.sell&&n(now.sell)>n(then.sell)*1.01)why.push(`sell £${n(then.sell).toFixed(2)}→£${n(now.sell).toFixed(2)}`);
-  if(n(now.spm)>n(then.spm)*1.25&&n(now.spm)-n(then.spm)>=10)why.push(`selling ${n(then.spm)}→${n(now.spm)}/mo`);
+  if(gained.length){better=true;good.push('new: '+gained.join(', '));}
+  if(lost.length){worse=true;bad.push('lost: '+lost.join(', '));}
+  let pUp=false,pDown=false;
+  if(n(now.profit)>n(then.profit)+Q.EPS_GBP){better=true;pUp=true;good.push(`profit £${n(then.profit).toFixed(2)}→£${n(now.profit).toFixed(2)}`);}
+  else if(n(now.profit)<n(then.profit)-Q.EPS_GBP){worse=true;pDown=true;bad.push(`profit £${n(then.profit).toFixed(2)}→£${n(now.profit).toFixed(2)}`);}
+  if(n(now.roi)>n(then.roi)+Q.EPS_ROI){better=true;if(!pUp&&!pDown)good.push(`ROI ${n(then.roi)}→${n(now.roi)}%`);}
+  else if(n(now.roi)<n(then.roi)-Q.EPS_ROI){worse=true;if(!pUp&&!pDown)bad.push(`ROI ${n(then.roi)}→${n(now.roi)}%`);}
+  if(then.sell&&n(now.sell)<n(then.sell)*Q.SELL_DROP){worse=true;bad.push(`sell £${n(then.sell).toFixed(2)}→£${n(now.sell).toFixed(2)}`);}
+  else if(then.sell&&n(now.sell)<n(then.sell)*0.99)bad.push(`sell £${n(then.sell).toFixed(2)}→£${n(now.sell).toFixed(2)}`);
+  else if(then.sell&&n(now.sell)>n(then.sell)*1.01)info.push(`sell £${n(then.sell).toFixed(2)}→£${n(now.sell).toFixed(2)}`);
+  if(n(now.spm)>n(then.spm)*1.25&&n(now.spm)-n(then.spm)>=10)info.push(`selling ${n(then.spm)}→${n(now.spm)}/mo`);
   const gain=Math.round((n(now.profit)-n(then.profit))*100)/100;
   const status=better&&!worse?'BETTER':worse&&!better?'WORSE':better&&worse?(gain>=0?'BETTER':'WORSE'):'UNCHANGED';
+  /* profit leads on a WORSE lead (it is what decided it), then the rest of the bad news, then the good */
+  const lead=x=>x.slice().sort((a,b)=>(/^profit/.test(b)?1:0)-(/^profit/.test(a)?1:0));
+  const why=status==='WORSE'?lead(bad).concat(good.map(g=>'but '+g),info):good.concat(bad,info);
   return{status,why,gain};}
 /* out = a rule's kept rows (mutated). prevMap = {asin:{state,stamp}} from the last previous-day run. verdicts = {asin:{v,state,...}}.
    Sets STATUS / Changed / Last seen (vs last run) and QUEUE / Review? (vs the verdict). Returns the GONE list. */

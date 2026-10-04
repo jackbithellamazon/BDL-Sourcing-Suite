@@ -1,10 +1,260 @@
-BDL SOURCING — b245 · 4 Oct 2026   (b239 is live — this adds b240 to b245)
+BDL SOURCING — b264 · 4 Oct 2026   (includes everything up to b264 — live is still b245, last upload Sat 3 Oct 21:05)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b245.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b264.
+   js/notice.js is a NEW file (b260) — it goes up with the js folder.
    js/leave.js is a NEW file (b243) — it goes up with the js folder.
    js/trace.js is a NEW file (b239) — it goes up with the js folder.
    js/prime.js is a new file (from b214) — it goes up with the js folder.
+
+═══ b264 — "IS KEEPA SET TO GERMANY?" ═══
+   · You: "tell them when they do it — to change Keepa to Germany and France".
+   · When Suz or Mera presses a Germany / France / Italy / Spain filter button, the app stops and asks first:
+         Is Keepa set to 🇩🇪 Germany?
+         1  In Keepa: the flag at the top right → Germany (amazon.de)
+         2  Then open the filter
+         [ Keepa is on Germany — open the filter ↗ ]   [ Cancel ]
+     Every time, so it can't be missed. Their "Keepa is on Germany" press goes in the activity log.
+   · You are not asked. UK buttons and Viewer links are never stopped.
+   · Every other place that said "switch the flag after it opens" now says "set it FIRST".
+
+═══ b263 — PRIME FRANCE: NO PERFUME ═══
+   · Your answers: France perfume out (13 on your export — Azzaro, Cacharel, Bourjois). Everything else stays.
+   · Your exports set to the right flag: UK 1,701 · Germany 1,155 (was 3,861) · France 447 — every one sold by Amazon.
+
+═══ b262 — PRIME GERMANY + FRANCE NARROWED ═══
+   · "we got amazon as seller id on the eu's?" — yes, it was in the link. Your 3,861 Germany list (rugs, filament, dumbbells,
+     water bottles — Amazon not selling them) means Keepa wasn't using it. Your two 5,000-row exports (41) and (42) are UK
+     products with the Germany / France link on them: the links were opened while Keepa was on the UK flag, and the German /
+     French Amazon IDs can't match UK sellers, so Keepa ignored them. Your own Germany export (16), made on the DE flag, was 100% Amazon.
+   · Fix 1: the links now also need "Amazon has a price now" — a plain price, it can't be ignored on any flag.
+   · Fix 2: the run screen now says SET KEEPA TO THE COUNTRY FIRST, then press the button.
+   · Out on both: nappies and Pampers. Out on Germany: all household cleaning (Finish, Fairy, Ariel, Lenor, Febreze,
+     Meister Proper ...). In France those sit under Grocery, which was already out.
+   · Prime deals · UK not touched: your export (43) = 1,696 products, every one sold by Amazon, 263 leads in the app.
+
+═══ b261 — PRIME DE + FR: 20 KG, NOT 10 KG ═══
+   · You: "20KG not 10KG". The Prime deals · DE + FR links now allow up to 20 kg (the 10 kg had come across with your EU drops
+     links' clean-up). Both links are hardcoded in the app; the first time anyone opens the app their saved copy updates itself.
+   · Prime deals · UK: Fashion, CDs, DVDs, VHS, Books, alcohol, curtains all stay out (you: "all out").
+   · Your own EU drops links (Suz) are still 10 kg and Mera £95+ is still 15 kg — not touched.
+   · Scoring NOT touched.
+
+═══ b260 — PRIME FIRST · 12-HOUR RULE · "WHY WAS MY FILE NOT TAKEN" · ROW FIXES ═══
+
+   YOUR SCREENSHOTS — ALL OF THESE ARE LIVE b245. This folder fixes them:
+   · "missing done button next to in keepa"  -> ✓ Done sits right next to Open all in Keepa (filters, brands AND Drop & check)
+   · "these still broke" (NOT FINISHED rows)  -> a filter is green only after ✓ Done; the row says who put files in and what is left
+   · "why is it worse / improve row"          -> see ROW below
+
+   PRIME (you: "super super super important")
+   · The two Prime filters sit at the TOP of the list under "★ Prime event — do these first", and Next due goes to them first.
+   · Prime deals · UK (Mera): Prime drop 11%+ and Buy Box 90-day average £6+ (UK only, as you said).
+     I also took out what you never sell: Fashion, CDs, DVDs, VHS, Books, alcohol, curtains.
+     Your UK Prime export: 1,885 products -> 1,683 with 11% + £6 -> 1,481 with those departments out.
+   · Prime deals · DE + FR (Suz): now carries the same clean-up as your EU drops links — 20 departments out, 33-34 categories
+     out (appliances, bedding, knives, vitamins, clothing, games, pest control ...), nothing over 20 kg (b261), the EU brand list.
+     Drop stays 9% on these two (you said 11% UK only). Your DE export: 2,731 -> 1,725 on departments alone; about 1,300
+     once the categories and brands bite — please run one export and I will check the real number.
+   · The three links are in  ~/Downloads/2026-10-04-PRIME-KEEPA-LINKS.txt  if you want to open them yourself.
+     Nothing to paste: the app updates its own copy the first time it opens.
+
+   12-HOUR RULE (you: "not finished if left for over 12 hours goes back to not done and needs to be redone")
+   · Files in, but ✓ Done not pressed within 12 hours -> the filter goes back to NOT DONE: "not finished within 12 hours —
+     run it again". The old run does not count; the Done button on it is switched off until today's export is dropped.
+
+   "WHY WAS MY FILE NOT TAKEN" (you: "tell her with a popup, and internally for us so we know")
+   · Every refused file now gives the person a popup saying why and what to do: empty export (0 products), Viewer / Finder
+     columns not ticked, no Prime price column, a Prime file for a country Prime is not bought in.
+   · The same reason goes in the activity log, e.g. "NOT TAKEN: Viewer missing 14 columns".
+   · Mera gets a popup every time she opens the app — "tick 14 columns in the Keepa Product VIEWER" — until one of her Viewer
+     exports goes in or she presses "I've ticked them". That is what killed her DJI / Samsung / SanDisk runs on 1 Oct.
+     Any VA whose Viewer export is refused from now on gets the same, with the exact columns in red.
+
+   ROW (you: "why is it worse — improve row")
+   · WORSE now says what got worse FIRST. Your Samsung case read "buy £48.71→£4… (−£1.96) …" under WORSE — the buy got
+     cheaper, but the profit fell because the sell price fell more. It now reads:
+            WORSE  −£1.96        <- profit a unit vs the last run
+            sell −£5.19          <- red: what got worse
+            buy −£1.96           <- green: what got better
+     Short lines, never cut off; hover for the full from → to. BETTER works the same way round.
+   · The 2 Germany leads stretched over a whole screen: a search typed earlier had pinned the table's height, and opening
+     another filter emptied the search box but left the pin. Fixed — a search can no longer stretch rows at all.
+   · "seen Mera · Fri 2 …" under Y / N / M is no longer cut off.
+
+   FOUND AND FIXED WHILE CHECKING THE WHOLE APP (you: "anything else to improve or fix, throughout the file?")
+   · Limits ("Change for this run") saved the cut-down list as the day's run — the hidden leads then looked GONE next run.
+   · Settings → "Reset the filter list" pushed the built-in list over everyone's edits. It is now "Reload the filter list" and
+     only re-reads the shared copy.
+   · Some one-off tidy-ups ran on every page load and undid your later edits (owner / status). They now run once.
+   · 0% VAT products: an OA code was priced as if VAT applied; the VAT label always said 20%. Both right now.
+   · Rule 2's "dropped" list said "scored under 35" for 203 products on £95+ that really missed the £100+ bar (8% or £15).
+     It now gives the real reason.
+   · "Show the rules" box rewritten from today's numbers (9+ a month, one sell price, the pace bar, VAT, To review, ✓ Done).
+   · A coupon / Subscribe & Save / Business price now counts as "On offer" in the Deal chips.
+   · "Keepa showed 0 results? Mark this done for today" stayed on screen after the files went in — one press would have
+     saved the day as 0 leads over the real run. It now disappears once there are leads.
+   · The bar that prices missing countries with Keepa tokens is Jack-only now (a VA saw it whenever a country file was
+     missing); the second "Mark all as seen" button is gone.
+
+   NOT CHANGED: scoring (waiting on your answer in chat), the sell price maths, rule1.js. 437 checks green.
+
+═══ b259 — "ESTIMATED FEES" EXPLAINED (not a bug) ═══
+   Your Logitech UK Viewer was right. 3 Logitech G products have no fee figure on Amazon UK yet (no FBA seller, no size on
+   the listing), so Keepa has nothing to give. 2 of them came out as leads (G522 headset bought in FR, PRO X SUPERLIGHT 2 SE).
+   · The note now names them — click a name and it jumps to that row — and says it isn't your export.
+   · It now gives the estimate actually used (worked out from the category and weight: 7% referral + £3.20 FBA), not
+     "15% referral" — the old wording was wrong.
+   · Each of those rows carries an amber "fees estimated · check SAS" chip.
+   Sell price maths unchanged — you said leave it.
+
+═══ b258 — DROP & CHECK SHOWS BOTH FILES · NO EMPTY VIEWER BUTTONS ═══
+   Two UK Product Finder exports dropped together (normal + ★ Prime) now read:
+        🇬🇧 UK   2 files · ProductFinder (2) · ★ ProductFinder (3)      108 rows
+   instead of one cut-off name. When your UK files price everything ("no Viewer needed") the "Copy 0 ASINs" and
+   "Open UK Product Viewer" buttons are gone — there is nothing to open.
+   ✓ Done next to Open all was already in b251 — it is waiting in this folder (live is b245).
+
+═══ b257 — "COULD BE A BANGER WITH A CODE" NO LONGER LISTS LOSSES ═══
+   Your laptop check listed Alienware "£-18.59 / -2%" and Dell "-1%" as bangers — every lead with a price-match note was
+   counted. Now a price-match only counts when it really lifts the lead: its score at that price is 60+ and at least 8
+   above today's (the same bar the codes already use), best first, shown like "40 → 66".
+
+   WHAT YOUR SCREENSHOTS SHOW THAT IS ALREADY FIXED (it's live b245 — push this folder):
+   · the amber "sell well, but Amazon is not selling them" table above the leads -> rows at the bottom of All leads, with the
+     other seller's price and profit (b247 + b251)
+   · "Done — back to Brands / Filters" on the far right -> one ✓ Done next to Open all (b251)
+   · "↑ since seen · Jack" -> "↑ better since Jack looked (22 Sept)" + what moved (b247)
+
+═══ b256 — MERA · ANYTHING £95+: GUITAR GEAR, CAR SEATS, PUSHCHAIRS, SWINGS, PERFUME, SKI HELMETS OUT ═══
+   From your first export of the new link (1,200 products):
+     · all guitar and bass-guitar gear (amps, pedals, parts, acoustic guitars) — audio interfaces / monitors / MIDI keyboards stay
+     · baby car seats, pushchairs, swings — carriers and breast pumps stay
+     · perfume — on a £95+ filter every one is high-end, so the whole category goes
+     · ski helmets (Amazon files them apart from cycling helmets)
+   The Keepa link is now at its limit of 50 categories; the app drops every one of these itself as well.
+   Your export run through it: 422 leads -> 415, nothing you asked to cut left in them.
+
+═══ b255 — CURTAINS OFF EVERY FILTER · LUMIE, RING, E-READERS, MATTRESSES OFF MERA £95+ ═══
+   CURTAINS, every filter (not the brand ones): added once to the Keepa link of every UK filter that had room —
+     Mera · anything £95+ · Mera · 7-Day Drops £20+ (already had it) · Suz · A2A £10–60 · Suz · Amazon coupons (both links) ·
+     Suz · Subscribe & Save UK · Suz · Business discount UK · Prime deals · UK · and the paused / retired ones.
+     Not added: Mera · chosen categories £60+ and Suz · tea & coffee (they only search their chosen categories, curtains
+     cannot be in them) · Replen (your own storefront) · the EU links (the category numbers are Amazon UK's).
+     The app also drops curtains itself on every filter.
+   MERA · ANYTHING £95+: Lumie and RING out by brand (46 of 50 used) · e-readers and mattresses out by category.
+
+═══ b253 + b254 — MERA · ANYTHING £95+ (was £150–£2,000) — YOUR NEW LINK, JUNK OUT BY CATEGORY ═══
+   The filter uses the link you pasted: Buy Box 90-day average £95+ with no top end, Amazon down 9%+.
+   Renamed "Mera · anything £95+". Rank drops 9, not 10. Amazfit not blocked.
+   OUT BY CATEGORY (in the Keepa link AND in the app, by name): Books · alcohol · motorbike helmets and clothing ·
+     cycling helmets · envelopes · curtains · rugs · mobility aids · Moses baskets · electric guitars.
+   OUT BY BRAND, only where no category does it: RingConn (other smart rings stay) and Swarovski.
+     The brand list is 44 of Keepa's 50 — six slots free. Blake / Yard / AGV / POC / SHIMA / THE RUGS were given back.
+   Edit → the filter has "Skip these categories on this filter" (one per line) next to "Skip these brands".
+   In the leads' dropped list they read "NOT ON THIS FILTER · category: helmets".
+   The full link and the list are in Downloads: 2026-10-04-MERA-95-PLUS-KEEPA-LINK.txt
+
+═══ b252 — OUT OF STOCK, THEN BACK IN STOCK ═══
+   A lead that fell off a run and is back is STILL "New" and still in To review — nothing about that changes.
+   It now carries a note under the New label, only when it left within the last 15 days:
+        ↩ Amazon out of stock 1 Oct · back in stock          (green — certain: that day's export still had the product,
+                                                               and Amazon had no price on it)
+        ↩ off the 1 Oct export · back — out of stock?         (amber — it was not on that export at all. Keepa leaves a
+                                                               product out when Amazon has no price, but also when the
+                                                               price goes back up, so this one is not certain)
+   No note when the rules cut it for another reason while Amazon still had it, or when it left more than 15 days ago.
+   From this build every run remembers which leads left because Amazon had no price. Runs saved before it cannot know,
+   so their comebacks show the amber note.
+
+═══ b251 — NOT AMAZON BUT STILL PROFITABLE · DONE NEXT TO OPEN ON ONE-OFFS · 9 NOT 10 ═══
+   THE "SELL WELL, BUT AMAZON IS NOT SELLING THEM" ROWS
+   · The amber table above the leads is gone (that was b247 — you were still looking at live b245). They are rows at the
+     bottom of All leads, and each one now says WHO ELSE has it and WHAT IT MAKES at that price:
+        £199.99  MyHenry UK · not Amazon   →   £11.83 profit · 6% ROI — thin (under 10%). Buy under £172.81 for 20%.
+   · Price used = the Buy Box on Amazon UK (else the lowest FBA / new offer). Profit and ROI are the rule's own sums.
+   · STILL PROFITABLE (green, first) = ROI 10%+ at that price.  THIN = makes a little.  NOT AMAZON = a loss there.
+     NO PRICE = nobody has a price on it.
+   · A line above the table counts them, with "show me ↓":
+        At the bottom of All leads: 1,134 more that sell well but Amazon is not selling — none make 10%+ from another
+        seller right now (10 make a little)            ← your storefront export of 3 Oct, as a Drop & check
+   · They are NOT scored leads and not in To review — nothing about what the rule keeps has changed.
+
+   DONE NEXT TO OPEN ON A DROP & CHECK TOO
+        [ Open all 41 in Keepa ]  [ ✓ Done — marks all 41 as looked at ]          …          [ Back to Brands / Filters → ]
+   One Done. The right-hand button is only the way back now.
+
+   9, NOT 10, IN EVERY KEEPA LINK
+   The app's own minimum has been 9 since b211, but the Keepa links (Mera · chosen categories £60+, Mera · anything
+   £150–£2,000, Mera · 7-Day Drops, EU drops…) still asked Keepa for 10 rank drops — so a product on exactly 9 never
+   reached the export. All changed to 9, once. (50 / 100 / 5 / 2 bars are not touched.)
+   NOTE: your own £60+ Prime link from 1 Oct had 10 in it — it is 9 now too.
+
+═══ b250 — "WHY ARE THESE ALL TO REVIEW IF SUZ DID IT YESTERDAY" — A REAL BUG, FIXED ═══
+   WHAT WENT WRONG: when a filter opens, the app fetches the LAST run's leads (whoever ran it) so it can say New / Better /
+   Same. That fetch was being skipped without a word — opening a filter first writes "Jack is on it", and the fetch gave up
+   because that write was still on its way. So the run compared against whatever THAT browser had last.
+     · Same person runs it again → their own browser has it → fine.   (10 of 10 right in the live history)
+     · Someone ELSE ran it last → nothing to compare → every lead "New". (Remington: Suz 2 Oct, you 3 Oct → 6 of 6 New,
+       5 of them were Suz's leads. Also Suz's tea & coffee 30 Sep, deep drops 30 Sep, Mera's Acer 30 Sep.)
+   NOW: it waits for that write, then fetches. If it ever cannot fetch (no internet) it says so in red before a file is dropped.
+   From the first run after this is live, a hand-over run shows only what is really New or Better.
+
+   ROW WORDING: a filter that was run today no longer ALSO says "Opened 21:43 · not run yet — no Keepa file dropped back in"
+   because you went back into it. A run saved that day covers it. Next day with no file → it is flagged again.
+
+   DONE BUTTON — THE NUMBERS ADD UP:   [ Open all 255 in Keepa ]  [ ✓ Done — marks the 242 left of 255 as looked at ]
+   Same words as the line under it ("242 left of 255 · 13 done"). Nothing done yet: "✓ Done — marks all 255 as looked at".
+   (Live b245 still shows the old two buttons — "✓ Leads looked at (242)" meant "mark the 242 left", not "242 are done".)
+
+   "TESTING" on the Remington row is only the label the filter was created with (new filters start as Testing). It changes
+   nothing about how it runs. Use the dropdown on the row to make it Active.
+
+═══ b249 — REPLEN RUNS FROM KEEPA PRODUCT FINDER ═══
+   Replen · my storefront, all markets — the new flow:
+     1. Press  [ 🇬🇧 Everything I've sold · Product Finder ]  → Keepa opens your link (seller A142PBK7GX1DM8, ever sold).
+        Rows per page biggest → Export → All active columns → CSV → drop it in.
+     2. The app mini-filters it: sells 9+ a month AND a 90-day sell price of £7+.
+        Your 3 Oct export: 3,153 products → 2,175 kept · 978 left out. It says so on screen.
+        That filtered export IS your UK file — no UK Viewer export needed. Leads from the UK side show straight away (114).
+     3. Four buttons appear:  [ 🇩🇪 DE ] [ 🇫🇷 FR ] [ 🇮🇹 IT ] [ 🇪🇸 ES ]  — each opens the Product Viewer on that country
+        with exactly those 2,175 loaded. Export each (All active columns), drop it in. The leads update as each lands.
+     Was: 15 Viewer buttons (UK 1/3 … ES 3/3) off OA Overview's storefront list.
+   How the mini filter counts:  9+ a month = Amazon's "bought in past month" or Keepa's rank drops, whichever is higher
+   (Rule 1 still does its exact demand check after).  £7+ = Buy Box 90-day average; if a listing has none, its FBA or New
+   90-day average.
+
+═══ b248 — ONE DONE BUTTON · "LAST DONE BY" ON THE ROWS ═══
+   WHY YOUR ROW WAS YELLOW: there were two buttons. You pressed the small one next to Open in Keepa ("✓ All looked at");
+   the row only went green from the big "✓ Done" on the far right. Too easy to get wrong — so now there is ONE:
+        [ Open all 37 in Keepa ]  [ ✓ Done (37 leads) ]                                  …  [ Next due: Acer → ]
+   · ✓ Done (next to Open in Keepa) marks the leads shown as looked at by you AND finishes the filter: your name and the
+     time go on it, the row turns green. After: "✓ Done by Jack · 21:35".
+   · Every lead already looked at (your Ninja / Shark row)? It still says "✓ Done" — one press and it's green.
+   · Leads ticked, or a country / deal filter hiding some: it marks those and tells you how many are still left.
+   · The button on the far right is only "Next due →" again.
+   ROWS: NOT DONE and NOT FINISHED rows now say, in normal text:
+        Last done by [Jack]  Tue 15 Sept · 11:53   19 days ago
+   (the last run that was actually finished).
+
+═══ b247 — PROOF BEFORE PROFIT · MERGED ROWS · READABLE NOTES ═══
+   SCORE (your rule, every filter):
+     · under a CONFIRMED 50 sales a month → the score can't go above 60.   Tag under the score: "max 60 · unconfirmed" / "max 60 · only 30/mo"
+     · Amazon confirms 100+ a month AND FBA sellers already on it → +5.     Tag: "+5 · proven"
+     Which leads exist doesn't change — only the number, so the order.
+     Your £60+ run: Zenbook 91 → 60 (1st → 38th) · ASUS V16 39th · Galaxy Book 40th · both Philips irons 7th / 8th · CarpetXpert 10th.
+     22 of the 294 leads capped, 45 lifted.
+   "SELL WELL BUT AMAZON IS NOT SELLING THEM": the separate table above the leads is gone. They are rows at the END of
+     All leads — no score, "no Amazon price · buy under £18.34", and the note: "Amazon isn't selling this anywhere — not a
+     lead yet. Buy under £18.34 elsewhere for 20% ROI (breakeven £22.74)." Not counted, not in To review, not opened by
+     Open all. Their CSV: More → "Amazon-not-selling list · CSV".
+   PRIME NOTE (Flags column): was pale blue on blue — now normal text, and shorter:
+     "★ Prime £304.99 on Amazon.co.uk (normal £359.00, £54.01 less). Keepa & SAS show the normal price — trust this row."
+   "↑ since seen · Jack" now reads: "↑ better since Jack looked (22 Sept)" + what moved ("buy £359.00→£304.99").
+
+═══ b246 — RESTRICTED ASIN BLOCKED ═══
+   Shark PowerDetect UV Reveal robot (B0GX9ZD3F5): you can't sell that ASIN, so it never shows as a lead again — for
+   everyone. Only that ASIN; Shark the brand is untouched.
 
 ═══ b245 — A REFUSED VIEWER EXPORT SAYS WHY, AND WHICH COLUMNS ═══
    When a VA drops a Product Viewer export that is missing columns, the popup now reads:

@@ -20,7 +20,7 @@ function leaveState(){
     :r1multi?cur.markets.map(m=>({lab:(FLAG[m]||'')+' '+m,in:!!files[m]}))
     :[{lab:'the export',in:!!(cur.rule===1?files.viewer:files.one)}];
   const anyFile=SLOTS.some(k=>files[k])||!!files.one;
-  const pressed=(typeof awaitDrop!=='undefined'&&!!awaitDrop)||(typeof pcell!=='undefined'&&Object.values(pcell).some(c=>c&&c.state==='keepa'));
+  const pressed=(typeof awaitDrop!=='undefined'&&!!awaitDrop&&(!awaitDrop.key||awaitDrop.key===cur.key))||(typeof pcell!=='undefined'&&Object.values(pcell).some(c=>c&&c.state==='keepa'));   /* b260: only a press made on THIS filter */
   if(!anyFile&&!pressed)return null;   /* opened it, touched nothing: free to go */
   /* today's run is already saved (files dropped earlier, or "Keepa showed 0 results — mark done") and nothing new is half-loaded: free to go */
   {const lr=typeof runLast==='function'?runLast(cur.key):null;if(!anyFile&&lr&&(lr.day||String(lr.at).slice(0,10))===today())return null;}
@@ -31,6 +31,7 @@ function leaveState(){
   const todo=fresh?result.out.filter(o=>o.QUEUE):[],left=todo.filter(o=>!(typeof doneToday==='function'&&doneToday(o))).length;
   /* b244: finished = files in, leads worked AND ✓ Done pressed (a run saved before b244 never needed the press) */
   const lrun=typeof runLast==='function'?runLast(cur.key):null,needPress=!!(lrun&&lrun.needDone&&!lrun.done&&(lrun.day||String(lrun.at).slice(0,10))===today());
+  if(lrun&&typeof runStale==='function'&&runStale(lrun)&&!pressed)return null;   /* b260: over 12 hours unfinished — it no longer counts, there is nothing to finish */
   if(runOk&&!left&&!needPress)return null;
   const nIn=boxes.length-missing.length,many=boxes.length>1;
   const steps=[{k:'files',ok:!missing.length,label:many?'Export every box from Keepa and drop the files in':'Export from Keepa and drop the file in',
@@ -40,9 +41,9 @@ function leaveState(){
   const vrCols=vr?vr.missing.slice(0,5).map(c=>typeof colPath==='function'?colPath(c):c.h).join(' · ')+(vr.missing.length>5?` … (+${vr.missing.length-5})`:''):'';
   if(r1multi)steps.push({k:'viewer',ok:viewerIn,label:'The merge — the UK Product Viewer file',
     detail:viewerIn?'in':vr?`your Viewer export was REFUSED — ${vr.missing.length} column${vr.missing.length===1?'':'s'} not ticked in the Viewer: ${vrCols}`:partsLeft&&files.viewer?`${partsLeft} part${partsLeft===1?'':'s'} still to do`:missing.length===boxes.length?'after the country files':'not in — no merge file, no leads'});
-  steps.push({k:'leads',ok:runOk&&!left,label:'Work the leads in To review',
-    detail:fresh?(left?`${left} of ${todo.length} not looked at yet`:'all done'):'they appear once the files are in'});
-  steps.push({k:'done',ok:runOk&&!left&&!needPress,label:'Press ✓ Done',detail:runOk&&!left?'not pressed yet — the filter still shows as NOT FINISHED':'last of all — it puts your name on the filter and turns it green'});
+  steps.push({k:'leads',ok:runOk&&!left,label:'Look at the leads in To review (Open all in Keepa)',
+    detail:fresh?(left?`${left} of ${todo.length} not looked at yet`:'all looked at'):'they appear once the files are in'});
+  steps.push({k:'done',ok:runOk&&!left&&!needPress,label:'Press ✓ Done (next to Open all in Keepa)',detail:runOk&&!left?'not pressed yet — the filter still shows as NOT FINISHED':'last of all — it puts your name on the filter and turns it green'});
   const first=steps.find(s=>!s.ok);let next,hot;
   if(first.k==='files'){hot=prime?'#primeGrid':'#dropAny';
     next=pressed&&!anyFile
@@ -52,10 +53,10 @@ function leaveState(){
   else if(first.k==='viewer'){hot='#asinOpen';
     next=vr?`Your Viewer export was refused because <b>the Viewer has its own column list</b> — ticking columns in the Product Finder does not tick them in the Viewer. In the <b>Viewer</b>: <b>Configure Columns</b> → tick the ${vr.missing.length} missing one${vr.missing.length===1?'':'s'} (press <b>Stay and finish</b> — the full list opens) → <b>Export → All active columns → CSV</b> → drop it in. Once only — Keepa remembers.`:partsLeft&&files.viewer?`The Viewer is in parts and <b>${partsLeft} part${partsLeft===1?' is':'s are'} still missing</b>. Press the <b>Open part…</b> button, export all columns, drop it in — for every part.`
       :'Press <b>Open UK Product Viewer</b> — Keepa opens with every product from your country files merged in. <b>Export → All active columns → CSV</b>, then drop that file in here. Your leads appear straight after.';}
-  else if(first.k==='done'){hot='#runNext2';
-    next='Press <b>✓ Done — I have finished this filter</b> (the big button above the leads). That is what marks it DONE with your name — without it the filter shows as NOT FINISHED for everyone.';}
+  else if(first.k==='done'){hot='#doneSel';
+    next='Press <b>✓ Done</b> — the button right next to <b>Open all in Keepa</b>. That is what marks this filter DONE with your name — without it the filter shows as NOT FINISHED for everyone.';}
   else{hot='#leadTop';
-    next=`<b>Scroll down to To review</b> — ${left} lead${left===1?'':'s'} to look at. Press <b>Open all in Keepa</b>, read each graph, then <b>Y / N / M</b> on its row — or <b>✓ Leads looked at</b> once you have looked at them all. Then press <b>✓ Done — I have finished this filter</b>.`;}
+    next=`<b>Scroll down to To review</b> — ${left} lead${left===1?'':'s'} to look at. Press <b>Open all in Keepa</b>, read each graph, <b>Y / N / M</b> if you want — then press <b>✓ Done</b> (right next to Open all in Keepa). Done marks them looked at and finishes the filter.`;}
   return{name:cur.name,who:me(),key:cur.key,steps,first:first.k,next,hot,saved:runOk,left,vr:!!vr};}
 
 function leaveClose(){const p=$('#leavePop');if(p)p.remove();document.removeEventListener('keydown',leaveKey,true);}
@@ -119,7 +120,6 @@ document.addEventListener('click',e=>{if(!e.isTrusted||leaveBypass||!e.target.cl
   const el=e.target.closest('#backBtn,#homeBtn,#runNext,#runNext2,#runAllTime,.pagebtn');if(!el)return;
   if(el.classList.contains('pagebtn')&&el.dataset.page==='page-brands')return;
   let st=null;try{st=leaveState();}catch(x){st=null;}if(!st)return;
-  if(el.id==='runNext2'&&st.first==='done')return;   /* b244: she is pressing Done — exactly what is asked */
   e.preventDefault();e.stopImmediatePropagation();
   leaveAsk(st,()=>{leaveBypass=true;try{el.click();}finally{leaveBypass=false;}});},true);
 /* closing or reloading the tab before the files are in */

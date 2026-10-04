@@ -58,7 +58,7 @@ async function cloudFlush(){if(!cloudEnabled()||cloud.busy)return;if(!outbox().l
   cloud.busy=false;paintCloud();}
 /* ---- pull: cloud → local. Called on boot and on demand. ---- */
 async function cloudPull(){if(!cloudEnabled()||cloud.pulling)return false;cloud.pulling=true;paintCloud();let ok=false;
-  try{await cloudFlush();if(outbox().length)throw new Error('unsent changes — pull skipped');
+  try{await cloudIdle();await cloudFlush();await cloudIdle();if(outbox().length)throw new Error('unsent changes — pull skipped');
     /* b154: the Keepa console's day rows (kc:<Name>:<day>) live in src_settings too — they come down on their own (kcPull), not with every boot */
     const [S,R,V,F,B,BB,D,ST]=await Promise.all(['src_sources','src_runs','src_verdicts','src_facts','src_blacklist','src_brand_blacklist','src_discounts','src_settings'].map(t=>cloudGetAll(t,t==='src_settings'?'key=not.like.kc:*':undefined)));
     cloud.tables=true;
@@ -76,6 +76,7 @@ async function cloudPull(){if(!cloudEnabled()||cloud.pulling)return false;cloud.
     else{const bb={};BB.forEach(r=>bb[r.brand]={display:r.display||r.brand,reason:r.reason,by:r.requested_by||'',at:r.requested_at,status:r.status,decidedBy:r.decided_by||'',decidedAt:r.decided_at||''});lsSet(BB_KEY,bb);}
     if(!D.length)cloudQueue('src_discounts','upsert',discAll().map(discRow));else lsSet(DISC_KEY,D.map(r=>r.data).sort((a,b)=>a.name.localeCompare(b.name)));
     const st={};ST.forEach(r=>st[r.key]=r.value);
+    if(typeof vneedFromCloud==='function')vneedFromCloud(st);   /* b260: a VA's 'tick the Viewer columns' reminder follows her to any browser */
     if(st.reasons)lsSet(REASONS_KEY,st.reasons);else cloudQueue('src_settings','upsert',[settingRow('reasons',noReasons())]);
     if(st.vat0)lsSet(VAT0_KEY,st.vat0);else cloudQueue('src_settings','upsert',[settingRow('vat0',vat0Words())]);
     if(st.catBlock)lsSet(CAT_KEY,st.catBlock);else cloudQueue('src_settings','upsert',[settingRow('catBlock',catWords())]);
@@ -100,15 +101,24 @@ async function cloudPullLight(){if(!cloudEnabled()||!cloud.tables||outbox().leng
   try{const [S,R]=await Promise.all([cloudGetAll('src_sources'),cloudGetAll('src_runs')]);
     if(S.length)lsSet(SRC_KEY,S.map(r=>r.data));lsSet(RUN_KEY,R.map(r=>r.data).sort((a,b)=>a.at<b.at?-1:1));cloud.last=Date.now();cloud.err='';paintCloud();return true;}
   catch(e){cloud.err=e.message;paintCloud();return false;}}
+/* b250 (Jack, 3 Oct: "why are these all To review if Suz did it yesterday"). Opening a filter writes its "X is on it" lock first, so a send was
+   always already on its way when the baseline was asked for — cloudFlush() returns at once while another flush is busy, the outbox still
+   showed 1, and the pull gave up without a word. The run then compared against whatever THIS browser had last (nothing, if somebody else
+   ran the filter last) and every lead came out NEW. Now the pull waits for the send that is in flight, and only stands down when lead
+   changes themselves are still unsent. */
+async function cloudIdle(ms){const t0=Date.now();while(cloud.busy&&Date.now()-t0<(ms||10000))await new Promise(r=>setTimeout(r,50));}
+const leadsUnsent=()=>outbox().some(it=>it.table==='src_leads');
 /* lead states for one source — pulled when its run view opens (the compare baseline must be shared, not per machine) */
 async function cloudPullLeads(sourceKey){if(!cloudEnabled()||!cloud.tables)return false;
-  if(outbox().length){await cloudFlush();if(outbox().length)return false;}  /* never replace a baseline that has unsent changes */
+  if(outbox().length){await cloudIdle();await cloudFlush();await cloudIdle();}
+  if(leadsUnsent())return false;  /* never replace a baseline that has unsent lead changes */
   try{const rows=await cloudGetAll('src_leads','select=*&source_key=eq.'+encodeURIComponent(sourceKey));
     const m={};rows.forEach(r=>m[r.asin]={state:r.state,stamp:r.stamp,prev:r.prev||null});const all=leadAll();all[sourceKey]=m;lsSet(LEAD_KEY,all);return true;}
   catch(e){cloud.err=e.message;if(missingTables(e))cloud.tables=false;paintCloud();return false;}}
 /* b58: every source's lead states in one go — the Lead history view. Replaces the local map wholesale (never with unsent changes pending). */
 async function cloudPullLeadsAll(){if(!cloudEnabled()||!cloud.tables)return false;
-  if(outbox().length){await cloudFlush();if(outbox().length)return false;}
+  if(outbox().length){await cloudIdle();await cloudFlush();await cloudIdle();}
+  if(leadsUnsent())return false;
   try{const rows=await cloudGetAll('src_leads','select=*');const all={};rows.forEach(r=>{(all[r.source_key]=all[r.source_key]||{})[r.asin]={state:r.state,stamp:r.stamp,prev:r.prev||null};});lsSet(LEAD_KEY,all);cloud.last=Date.now();cloud.err='';paintCloud();return true;}
   catch(e){cloud.err=e.message;if(missingTables(e))cloud.tables=false;paintCloud();return false;}}
 /* ---- the pill in the header ---- */
