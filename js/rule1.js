@@ -114,8 +114,9 @@ function r1PlugOk(po,tl){if(!po)return false;if(!(po.any||(po.words||[]).some(x=
 function rule1Compute(files,brand,rate,prevRun){
   const eu={},euSS={},found={},oa=[],prm={};
   /* b214 (Jack, 30 Sep: "yes" — Rule 1 buys at the Prime price too). Only when the page passes files.prime (Jack's Prime event switch):
-     Keepa's "New, Prime exclusive: Current" per country, UK / DE / FR only — Prime deals cannot be bought on .it or .es. */
-  const primeOK=!!files.prime&&typeof primePrice==='function',PMK=['UK','DE','FR'];
+     Keepa's "New, Prime exclusive: Current" per country. b269 (Jack, 5 Oct: "Amazon Spain is now OK for Prime — Italy is too now — make sure
+     you do all the changes"): every country, the page's own PRIME_MK list (was UK / DE / FR). */
+  const primeOK=!!files.prime&&typeof primePrice==='function',PMK=typeof PRIME_MK!=='undefined'?PRIME_MK:['UK','DE','FR','IT','ES'];
   ['UK','DE','FR','IT','ES'].forEach(d=>{const f=files[d];if(!f)return;f.rows.forEach(r=>{const a=(r.ASIN||'').trim();if(!a)return;
     (found[a]=found[a]||new Set()).add(d);
     if(primeOK&&PMK.includes(d)){const p=primePrice(r);if(p)(prm[a]=prm[a]||{})[d]=p;}

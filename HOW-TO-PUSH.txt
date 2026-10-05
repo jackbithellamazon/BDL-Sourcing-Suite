@@ -1,11 +1,111 @@
-BDL SOURCING — b264 · 4 Oct 2026   (includes everything up to b264 — live is still b245, last upload Sat 3 Oct 21:05)
+BUILD b273 — 5 Oct 2026 — push THIS one (it replaces b272 — b272 was never pushed, b273 has everything in it)
+
+Live is b264. This folder has b265 → b273.
+
+WHAT'S NEW IN b273
+• Drop & check is off the Brands / Filters page. It was showing as a filter row ("Drop & check · Jack — NOT FINISHED · 18 to review")
+  and was counted in "due". It is a one-off check, not a filter: it is still kept on the Keepa console and in Runs, it just isn't
+  on the filter list, isn't counted as due, and Start / Next due never send anyone to it.
+
+HOW TO PUSH (same as always)
+1. Open github.com → BDL-Sourcing-Suite → Add file → Upload files.
+2. Drag EVERYTHING inside this folder (index.html, css, js, tests, README-DEPLOY.txt) onto the page. Not the folder itself.
+3. Commit changes. Wait about a minute.
+4. Open https://jackbithellamazon.github.io/BDL-Sourcing-Suite/ and hard refresh (Cmd+Shift+R). Top right should say b273.
+5. Tell Mera and Suz: before opening a Prime link for Germany / France / Italy / Spain, set Keepa to THAT country first
+   (the flag top-left in Keepa). The link carries no country — the app pops up a reminder too.
+
+──────────── earlier notes (b272 and before) ────────────
+BDL SOURCING — b272 · 5 Oct 2026   (includes everything up to b272 — live is b264; b265–b271 are in here too)
 
 UPLOAD  (GitHub → Add file → Upload files → drag in index.html, css, js, tests, README-DEPLOY.txt → Commit)
-   Wait a couple of minutes, then Cmd+Shift+R. The header should say b264.
+   Wait a couple of minutes, then Cmd+Shift+R. The header should say b272.
    js/notice.js is a NEW file (b260) — it goes up with the js folder.
    js/leave.js is a NEW file (b243) — it goes up with the js folder.
    js/trace.js is a NEW file (b239) — it goes up with the js folder.
    js/prime.js is a new file (from b214) — it goes up with the js folder.
+
+═══ b272 — PRIME GERMANY / ITALY / SPAIN NARROWED ═══
+   · Your answers: 1 YICAIZI out (done in the app — no Keepa brand slot used) · 2 incontinence out · 3 LEONE 1947 out, PUMA and
+     footballs stay · 4 high-end perfume out, cheap perfume stays · 5 home fragrance out · 6 essential oils stay.
+   · Germany: incontinence + LEONE 1947 (Keepa link), YICAIZI + air fresheners (app). France: LEONE 1947 + YICAIZI + air fresheners
+     (app — France's Keepa brand list stays one under the 50 limit), incontinence kept (your 4 Oct answer).
+   · Italy + Spain: incontinence, home fragrance, LEONE 1947 (Keepa links); YICAIZI, air fresheners and designer perfume (Calvin
+     Klein, Davidoff, Hugo Boss, Dior, Chanel … — only when it is a fragrance) in the app. Chanson d'Eau / Nenuco type perfume stays.
+   · On your exports: Germany 1,467 → 1,435 · Italy 881 → 806 · Spain 716 → 693.
+
+═══ b271 — PRIME DEALS · UK NARROWED ═══
+   · You, off your UK Prime export (2,126): Buy Box 90-day average £7+ (was £6); brands ABENA, YICAIZI, Trespass, Tisserand,
+     Thatchers, THE RUGS, Theraband, Splash About out; rugs, outdoor rugs, swim nappies and swim vests out (category).
+   · On your export: 2,126 → 1,940. (Thatchers cider has no Amazon category yet, so the brand ban is what catches it.)
+
+═══ b270 — SUZ: TWO PRIME FILTERS · AUDIT FIXES ═══
+   · You: "France and Germany together on one and Italy and Spain on another so it's not too much for her".
+     Suz now has  Prime deals · DE + FR  and  Prime deals · IT + ES  — both at the top of the list (DE + FR first).
+   · Brand runs: a normal box AND a ★ Prime box for every country (you: "all normal and then all prime") — 10 files + the
+     UK Viewer on a 5-country brand during Prime.
+   · An independent check of the Italy / Spain change found 3 small things — fixed:
+       - a UK-only brand run (Acer, Lenovo…) took an Italian / Spanish / German / French ★ file in silently, with no box to see
+         or remove it — now it says "Acer is UK only, it takes the UK ★ file";
+       - a "Buy from" country choice saved with the old ★ UK·DE·FR chip would have hidden every Italian / Spanish lead — cleared once;
+       - the note "every country has a ★ Prime box" no longer shows on Bialetti or the Prime filters, where it was wrong.
+   · Tested in the sandbox: Italian + Spanish ★ files on a Logitech run (14 leads at the Italian Prime price, 10 at the Spanish),
+     Suz's IT + ES filter (flag popup asks "Is Keepa set to Italy?", 9 leads at the Prime price), an old Italian export refused.
+
+═══ b269 — PRIME IN ITALY AND SPAIN ═══
+   · You: "Amazon Spain is now OK for Prime — Italy is too now — make sure you do all the changes".
+   · Every country now has a ★ Prime box and Prime pricing: UK, DE, FR, IT, ES — on every brand run too (Tefal, Logitech…).
+   · Rule 1 now buys at the Italian / Spanish Prime price when it is cheapest (its Prime country list changed — on your word).
+     On the 3 Oct Bialetti files: 34 → 36 leads (2 at the Italian Prime price) and 10 leads now cheapest at an IT / ES Prime price.
+   · (b270: split — see above) Italy and Spain have their own links built like Germany's:
+     Prime drop 9%+, Amazon.it / Amazon.es selling it now and in the Buy Box (their Amazon seller IDs, checked on the live pages),
+     50+ a month, 20 kg, your EU drops departments / categories / brands for that country, never-sell brands + Pampers,
+     nappies and household cleaning out. The flag popup covers IT and ES too.
+   · All the "UK / Germany / France only" wording is gone (notes, tooltips, What is Prime exclusive?).
+   · Links file: 2026-10-05-PRIME-KEEPA-LINKS.txt in Downloads. I have not opened the new IT / ES links in Keepa — run one
+     export of each and send them over so I can check the counts.
+
+═══ b268 — YOUR REVIEW AFTER THE VA = ONLY NEW OR BETTER ═══
+   · You: "if they do it and then I export and run it — will my review just be stuff that is better or new?"
+   · NEW: yes — only what was not in her run (tested: her export again → 0 to review; a bigger export → only the new ones).
+   · BETTER: was broken, now fixed. A lead she looked at this morning that got cheaper by the time you ran it showed
+     "↑ better since Mera looked" but counted as done (she looked TODAY), so it never reached your To review — and ✓ Done
+     skipped it. Now it is in your To review with the new buy price; your Done marks it, and the day shows two runs
+     (Mera ✓, Jack ✓).
+
+═══ b267 — RUNS A DAY ARE RECORDED ═══
+   · You: "just get the data if they run it multiple times a day" — no schedule, cadences unchanged; Prime can be run as often as they like.
+   · Every run of a filter on one day is now kept (who, when, leads, its own ✓ Done). The row shows e.g.
+         2 runs today: 06:10 Mera ✓ · 14:20 Jack ✓
+     and the Runs log counts each run under its own name. Before, a second run simply replaced the first.
+   · More files for the same unfinished run (another country, the Viewer) or the same file again = still the same run.
+   · You running a filter after its VA the same day: you only get what is new since her run — the ones she already did
+     show "done by Mera" (tested: same export → 0 left; a bigger export → only the 68 new ones left).
+
+═══ b266 — FRESH EXPORTS ONLY · PROPER POPUPS (no grey Chrome boxes) ═══
+   · You: "make sure she's putting a fresh export in — tell her — popups nicely designed, not Google Chrome ones".
+   · ✓ Done on an old run now opens a designed popup:
+         Put today's export in first
+         This list is the run from Tue 15 Sep. ✓ Done finishes today's run, so it needs a fresh export from today.
+         1 Press Open in Keepa in step 1 at the top (Germany / France: set Keepa's flag first)
+         2 In Keepa: Export → All active columns → CSV
+         3 Drop the new file in the box — then press ✓ Done
+         [ Take me to the drop box ]  [ Close ]
+   · FRESH EXPORT CHECK: Keepa puts the day in every file name (KeepaExport-2026-10-05-…). If Suz or Mera drops an export
+     made on an earlier day, it is NOT taken — popup: "This export is not from today — Keepa made this file on Mon 28 Sep …
+     export it again now". The activity log says "NOT TAKEN: old export (date)". You can still drop anything.
+   · Every grey browser box in the app (25 "OK / Cancel" boxes + 1 type-in box) is now the app's own dialog: a clear title,
+     the detail, a button that says what happens ("Sign out", "Delete Tefal", "Spend 40 tokens"…) and Cancel. Esc = Cancel,
+     Enter = the button.
+
+═══ b265 — THE ONE ✓ DONE IS ALWAYS THERE (Mera: "I can't see where the button is") ═══
+   · Mera opened filters she hadn't exported today, so the app showed their OLD saved run (14 / 15 Sep). On those screens
+     there was no Done button — or "✓ Mark the 5 left of 28 as looked at" in its place.
+   · Now the same ✓ Done always sits next to "Open all in Keepa". On an old run it is dashed and reads:
+         ✓ Done — drop today's export first
+     Pressing it marks nothing — it jumps to the drop box (lit up) and says: "This is the run from 15 Sep — drop today's
+     Keepa export here first. Then ✓ Done finishes today's run."
+   · Once today's export is in, it is the normal ✓ Done (turns the filter green with her name).
 
 ═══ b264 — "IS KEEPA SET TO GERMANY?" ═══
    · You: "tell them when they do it — to change Keepa to Germany and France".

@@ -5,18 +5,19 @@
 
    What it is:
    · A switch only Jack sees (per browser, no end date). Off = the app is exactly as before, for everyone.
-   · On, every run screen gets a box grid: each country has its normal filter box and — UK, DE, FR only — a ★ Prime deals box.
+   · On, every run screen gets a box grid: each country has its normal filter box and a ★ Prime deals box (UK, DE, FR — and IT, ES since b269).
    · The Prime link is the source's own Finder link with the one drop line swapped: "Amazon price 9%+ under its 90-day average"
      becomes "Prime exclusive price 9%+ under its 90-day average" (PRIME_EXCL_deltaPercent90, the key in Jack's Samsung link).
      During the event Amazon's normal price and the Buy Box do not move, so the normal filter never sees the deal.
    · A file knows its own box: the country from the Amazon links inside it; Prime when most rows say "Buy Box: Prime exclusive = yes"
-     (37 of 37 on Jack's 30 Sep Prime export, 2.6% across 127k rows of normal exports). Italy / Spain Prime files are ignored.
+     (37 of 37 on Jack's 30 Sep Prime export, 2.6% across 127k rows of normal exports). Italy / Spain joined in b269.
    · The Prime file's rows merge into that country's normal file (one run, de-duplicated by ASIN) — an overlay that comes off
      again the moment the Prime file is removed or the switch goes off.
    · The buy price is Keepa's "New, Prime exclusive: Current" when it is lower, with the S&S or coupon the export shows on top
      (Jack, 30 Sep: "most things won't have S&S or coupons but some might — you can see if they do by the export"). */
-const PRIME_KEY='bdl-sourcing-prime',PRIME_MK=['UK','DE','FR'],PRIME_COL='New, Prime exclusive: Current';
-const pfiles={UK:null,DE:null,FR:null};   /* the ★ Prime deals file per country, exactly as dropped */
+/* b269 (Jack, 5 Oct: "Amazon Spain is now OK for Prime — Italy is too now"): Prime is bought in all five countries */
+const PRIME_KEY='bdl-sourcing-prime',PRIME_MK=['UK','DE','FR','IT','ES'],PRIME_COL='New, Prime exclusive: Current';
+const pfiles={UK:null,DE:null,FR:null,IT:null,ES:null};   /* the ★ Prime deals file per country, exactly as dropped */
 const pcell={};                          /* 'UK|n' / 'UK|p' / 'viewer' → {state:'keepa'} or {state:'bad',name,why} */
 /* b216 (Jack, 1 Oct 2026, early Prime deals already live: "default turn it on now") — ON unless Jack has switched it off. Still never for VAs. */
 /* b218 (Jack, 1 Oct: "they need to run normal and prime now until I turn it off"): the VAs get the same box grid and Prime pricing.
@@ -37,7 +38,7 @@ function primeIsFile(rows){return primeShare(rows)>=0.5;}
    Prime-exclusive drop goes in at the same bar (the Amazon 90-day one's, else 9%), and the sort follows it */
 const PRIME_DROP_RE=/^(AMAZON|BUY_BOX_SHIPPING)_deltaPercent(7|30|90)$/;
 /* b220: and the Prime link asks Keepa for Amazon in the Buy Box — that country's own Amazon seller IDs (Jack's Mera £60+ Prime link, 1 Oct) */
-const AMZ_BB_IDS={UK:'A3P5ROKL5A1OLE,AZH2GF8Z5J95G',DE:'A3JWKAKR8XB7XF,AMUN6OW4OKOC5',FR:'A1X6FK5RDHNB96,A2W68NJA5YNXUP'};
+const AMZ_BB_IDS={UK:'A3P5ROKL5A1OLE,AZH2GF8Z5J95G',DE:'A3JWKAKR8XB7XF,AMUN6OW4OKOC5',FR:'A1X6FK5RDHNB96,A2W68NJA5YNXUP',IT:'A11IL2PNWYJU7H',ES:'A1AT7YVPFBWXBL'};   /* b269: + Amazon.it / Amazon.es (their EU drops links' own IDs, checked on the live pages) */
 function primeLink(link,mk){if(!link)return'';const m=/^(.*#!finder\/)(.+)$/.exec(link);if(!m)return'';let j;
   try{j=JSON.parse(decodeURIComponent(m[2]));}catch(e){return'';}
   const f=j.f||(j.f={});const bar=f.AMAZON_deltaPercent90||f.BUY_BOX_SHIPPING_deltaPercent90||null;
@@ -55,7 +56,7 @@ function primeMerge(base,p){const at=new Map(),rows=[];
     hasFees:(base?base.hasFees:true)&&p.hasFees,hasSince:(base?base.hasSince:true)&&p.hasSince,__prime:true,__base:base||null});}
 /* the overlay comes off (back to exactly what was dropped) and goes back on — around every drop, remove and switch */
 function primeStrip(){if(files.viewer&&files.viewer.__aug)files.viewer=files.viewer.__pure;   /* b242: the Viewer + UK file merge comes apart first */
-  ['one','viewer','UK','DE','FR'].forEach(s=>{const f=files[s];if(f&&f.__prime)files[s]=f.__base||null;});}
+  ['one','viewer','UK','DE','FR','IT','ES'].forEach(s=>{const f=files[s];if(f&&f.__prime)files[s]=f.__base||null;});}
 function primeApply(){primeStrip();if(primeOn()&&cur)PRIME_MK.forEach(k=>{const p=pfiles[k];if(!p)return;const s=primeSlot(k);if(s)files[s]=primeMerge(files[s],p);});
   if(typeof dropAlias==='function')dropAlias();}   /* b242: …and goes back together on top of the Prime rows */
 function primeClear(){PRIME_MK.forEach(k=>pfiles[k]=null);Object.keys(pcell).forEach(k=>delete pcell[k]);}
@@ -104,12 +105,12 @@ function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)
       ?`<div class="pcell in"><span class="box">✓</span><span class="txt"><span class="t1">${esc(files.viewer.name)}</span><span class="t2">${files.viewer.rows.length.toLocaleString()} products priced in the UK</span></span><button type="button" class="x" data-prm="viewer" aria-label="Remove the Viewer file">✕</button></div>`
       :`<div class="pcell ${allF?'next':finIn?'':'off'} ${(pcell.viewer||{}).state==='keepa'?'keepa':''}"><span class="box"></span><span class="txt"><span class="t1">${merged?`${merged.toLocaleString()} ASINs merged from ${finIn} file${finIn===1?'':'s'}${allF?'':' so far'}`:'Opens once the country files are in'}</span><span class="t2">${merged?'One press opens the Viewer with them loaded · export all columns · drop it here':'Every ASIN from the boxes above, de-duplicated'}</span></span>${merged?`<button type="button" class="go big" data-pview="1">${vN>1?`Open part 1 of ${vN}`:'Open UK Viewer'} ↗</button>`:''}</div>`)+'</div>';}
   h+=`<details class="pwhat"><summary>What is Prime exclusive?</summary><p>${escapeHtml(PRIME_WHAT)}</p><p>Each ★ box is the same filter with the Prime price added. Its export needs Keepa's <b>New, Prime exclusive → Current</b> column (Configure Columns, tick it once). On the lead list: <b>Deal → ★ Prime exclusive</b> shows only the Prime leads; <b>Buy from</b> ticks countries.</p></details>`;
-  h+=`<p class="pnote">${cur.noPrime?'★ This filter needs the normal box for each flag only — no ★ Prime boxes. Prime prices are read from the normal files':cur.primeOnly?'★ A Prime-only filter — just the ★ box for each flag':'★ Prime deals are on until Jack turns them off — do the normal box AND the ★ Prime box for each flag'} · ${r1multi?'Prime boxes are UK, DE and FR only (Italy and Spain have none) · every file goes into the one UK Viewer':'both files join into one run'} · buy price = the Prime price when it is lower, plus any S&amp;S or coupon the export shows.</p>`;
+  h+=`<p class="pnote">${cur.noPrime?'★ This filter needs the normal box for each flag only — no ★ Prime boxes. Prime prices are read from the normal files':cur.primeOnly?'★ A Prime-only filter — just the ★ box for each flag':'★ Prime deals are on until Jack turns them off — do the normal box AND the ★ Prime box for each flag'} · ${r1multi?(cur.noPrime||cur.primeOnly?'every file goes into the one UK Viewer':'every country has a ★ Prime box now — Italy and Spain too · every file goes into the one UK Viewer'):'both files join into one run'} · buy price = the Prime price when it is lower, plus any S&amp;S or coupon the export shows.</p>`;
   host.innerHTML=h;}
 function paintPrimeSwitch(){const b=$('#primeTog');if(!b)return;const j=typeof isJack==='function'&&isJack();b.hidden=!j;if(!j)return;
   const on=!!lsGet(PRIME_KEY,true);b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');
   b.innerHTML=`<i class="ptog"></i>★ Prime event${on?' on':''}`;
-  b.title=on?'Prime event mode is on — for everyone: Suz and Mera get the ★ Prime boxes too, and every export needs the Prime price column. Press to switch it off.':'Switch on for the Prime event: every run gets a ★ Prime deals box for UK, DE and FR — for you, Suz and Mera.';}   /* b260: it has been shared since b218 */
+  b.title=on?'Prime event mode is on — for everyone: Suz and Mera get the ★ Prime boxes too, and every export needs the Prime price column. Press to switch it off.':'Switch on for the Prime event: every run gets a ★ Prime deals box for every country — for you, Suz and Mera.';}   /* b260: it has been shared since b218 */
 function primeToggle(){if(!isJack())return;const on=!lsGet(PRIME_KEY,true);lsSet(PRIME_KEY,on);primeApply();
   lsSet(PRIME_EVENT_KEY,{on,at:nowIso()});if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('prime-event',{on,at:nowIso()})]);   /* b217: the VAs' notes follow */
   if(typeof renderList==='function')renderList();if(cur&&typeof paintRunHead==='function')paintRunHead();
@@ -122,15 +123,15 @@ const PRIME_EVENT_KEY='bdl-sourcing-prime-event';
 function primeEventOn(){if(typeof isJack==='function'&&isJack())return!!lsGet(PRIME_KEY,true);const v=lsGet(PRIME_EVENT_KEY,null);return v==null?true:!!(v&&v.on);}
 const PRIME_NOTE_SHORT='★ Prime: Keepa & SAS show normal price';
 /* b240 (Jack, 3 Oct: "improve the notes and what is Prime exclusive too") */
-const PRIME_WHAT='What is Prime exclusive? During a Prime event (Prime Big Deal Days, Prime Day) Amazon sells some products cheaper to Prime members only. We buy on Prime accounts, so we pay that price. It only exists on Amazon UK, Germany and France — not Italy or Spain. Keepa keeps it in its own column ("New, Prime exclusive"): Keepa\'s main price, its Europe box and SAS all show the normal price, so a Prime deal looks worse there than it really is.';
-const PRIME_NOTE_FULL='★ Prime deals are on (UK, Germany, France). Some Amazon prices right now are Prime exclusive — cheaper for Prime members only, and we buy on Prime accounts. Keepa\'s main price and SAS show the NORMAL price, so these leads look worse there than they are. A ★ lead is priced at the Prime price: trust its row. To see only those: Deal → ★ Prime exclusive; Buy from → tick a country (★ UK·DE·FR = the three Prime countries).';
+const PRIME_WHAT='What is Prime exclusive? During a Prime event (Prime Big Deal Days, Prime Day) Amazon sells some products cheaper to Prime members only. We buy on Prime accounts, so we pay that price. It is on Amazon UK, Germany, France, Italy and Spain. Keepa keeps it in its own column ("New, Prime exclusive"): Keepa\'s main price, its Europe box and SAS all show the normal price, so a Prime deal looks worse there than it really is.';
+const PRIME_NOTE_FULL='★ Prime deals are on (UK, Germany, France, Italy, Spain). Some Amazon prices right now are Prime exclusive — cheaper for Prime members only, and we buy on Prime accounts. Keepa\'s main price and SAS show the NORMAL price, so these leads look worse there than they are. A ★ lead is priced at the Prime price: trust its row. To see only those: Deal → ★ Prime exclusive; Buy from → tick a country.';
 function primeNoteChip(s){return primeEventOn()&&!(s&&s.status==='paused')?`<b class="pnchip" title="${PRIME_NOTE_FULL.replace(/"/g,'&quot;')}">${PRIME_NOTE_SHORT}</b>`:'';}
 /* b216 (Jack, 1 Oct: "tell the VAs Keepa and SAS prices are wrong — the EU or UK price is Prime exclusive and not showing on SAS and
    Keepa — tell them on the notes"). Keepa's "Europe £" box and SAS's European Marketplaces panel show Amazon's NORMAL price (£58.77 on the
    Galaxy Buds), never the Prime one (£39). Every Prime lead says so on its row — for everyone, VAs included, live run or saved run
    (it is read from the lead's own "★ Prime price" line, which the saved leads keep). */
 function primeNote(o){const d=String((o&&o['Discount applied'])||'');if(!/★ Prime price/.test(d))return'';
-  const mk=o['Buy market']||'UK',site={UK:'Amazon.co.uk',DE:'Amazon.de',FR:'Amazon.fr'}[mk]||'Amazon';
+  const mk=o['Buy market']||'UK',site={UK:'Amazon.co.uk',DE:'Amazon.de',FR:'Amazon.fr',IT:'Amazon.it',ES:'Amazon.es'}[mk]||'Amazon';
   const m=/\(Amazon [A-Z]{2} £([\d.,]+)\)/.exec(d),was=m?'£'+m[1]:(+o['Buy at £']>0?'£'+(+o['Buy at £']).toFixed(2):'');
   const buy=+(o['Landed £']!=null&&o['Buy market']?o['Landed £']:o['After discount £'])||0;
   const wasN=m?+String(m[1]).replace(/,/g,''):(+o['Buy at £']||0),save=wasN&&buy&&wasN>buy?wasN-buy:0;
@@ -139,8 +140,11 @@ function primeNote(o){const d=String((o&&o['Discount applied'])||'');if(!/★ Pr
 /* a file dropped while the switch is on: returns true when this module took it (placed in a Prime box, or refused / ignored with a note) */
 function primeTake(file,d,f,notes){if(!primeOn()||!cur||/productviewer/i.test(file.name)||(typeof isListed==='function'&&isListed(cur))||!primeIsFile(d.rows))return false;   /* b249: never on a list run (Replen) */
   const mk=d.domain||'UK';
-  if(!PRIME_MK.includes(mk)){notes.push(`${file.name}: a ${mk} ★ Prime deals file — ignored. Prime deals can only be bought on Amazon.co.uk, .de and .fr.`);return true;}
+  if(!PRIME_MK.includes(mk)){notes.push(`${file.name}: a ${mk} ★ Prime deals file — ignored. Prime deals are not bought on that Amazon.`);return true;}
   if(cur.rule!==1&&mk!=='UK'){notes.push(`${file.name}: a ${mk} Prime file — Rule ${cur.rule} is UK only.`);return true;}
+  /* b270 (found in the Italy / Spain audit): a UK-only brand run has only a UK ★ box — another country's ★ file was taken in silently (no box,
+     no ✕) and priced EU buys this filter never asks for. Now it is turned away like on a Rule 2 filter. */
+  if(cur.rule===1&&typeof ukOnly==='function'&&ukOnly()&&mk!=='UK'){notes.push(`${file.name}: a ${mk} Prime file — ${cur.name} is UK only, it takes the UK ★ file.`);return true;}
   const key=mk+'|p';
   if(!primeHasCol(d.rows)){pcell[key]={state:'bad',name:file.name,why:'no Prime price column'};
     notes.push(`${file.name}: a ★ Prime deals file without the Prime price. In Keepa press Configure Columns and tick New, Prime exclusive → Current, export again, drop the new file.`);return 'cols';}

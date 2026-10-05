@@ -36,7 +36,7 @@ async function guestStart(btn){if(guestBusy||guestOn())return;if(!isJack()){toas
   }catch(e){toast('Guest mode did not start — '+(e&&e.message||e)+'. Nothing changed.',true);}
   finally{guestBusy=false;if(btn){btn.disabled=false;btn.innerHTML=lab;}}}
 async function guestLeave(){if(!guestOn())return;
-  if(!confirm('Leave guest mode?\n\nEverything done in guest mode is thrown away — runs, Yes / No, audits, blacklists, edits — and this browser goes back to the real shared data. None of it was ever sent.'))return;
+  if(!await uiConfirm('Leave guest mode?\n\nEverything done in guest mode is thrown away — runs, Yes / No, audits, blacklists, edits — and this browser goes back to the real shared data. None of it was ever sent.',{ok:'Leave guest mode',tone:'warn'}))return;
   let snap=null;try{snap=await guestSnapGet();}catch(e){}
   guestKeys().forEach(k=>lsRemove(k));   /* both outboxes included: anything in them was made in guest mode */
   if(snap&&snap.keys)Object.entries(snap.keys).forEach(([k,v])=>{try{if(v!=null)lsRawSet(k,v);}catch(e){}});

@@ -1,6 +1,6 @@
 /* BDL Sourcing — b260: "tell her with a popup" (Jack, 4 Oct).
    1. WHY A FILE WAS NOT TAKEN. Every refused export now has a reason — empty, Viewer / Finder columns not ticked, no Prime price column,
-      a Prime file for a country Prime cannot be bought in. The person who dropped it gets a popup saying why and what to do (the column
+      a Prime file for another country on a UK-only filter. The person who dropped it gets a popup saying why and what to do (the column
       list keeps its own popup), and the activity log keeps the reason so Jack can see it on the Activity page.
    2. THE VIEWER'S OWN COLUMN LIST. Mera's DJI, Samsung and SanDisk runs died on 1 Oct: her Product Viewer exports were refused three times,
       14 columns not ticked IN THE VIEWER (the Viewer keeps its own list — the Finder's ticks do not count). When a VA's Viewer export is
@@ -49,11 +49,21 @@ const REFUSE_WHY={
   'prime-col':{short:'no Prime price column',head:'Prime price column not ticked',
     body:'Prime deals are on, so every export needs Keepa\'s Prime price — without it a Prime-only deal would be priced at Amazon\'s normal price.',
     todo:'In Keepa press <b>Configure Columns</b> and tick <b>New, Prime exclusive → Current</b> (once — Keepa remembers). Export again and drop the new file.'},
-  'prime-market':{short:'Prime file for a country Prime is not bought in',head:'Prime deals file for the wrong country',
-    body:'Prime-only prices can only be bought on Amazon.co.uk, .de and .fr — or this filter is UK only.',
+  'prime-market':{short:'Prime file for another country on a UK-only filter',head:'Prime deals file for the wrong country',
+    body:'This filter is UK only — it takes the UK ★ Prime file, not another country\'s.',
     todo:'Use the normal export for that country (or the UK one), and drop that instead.'},
-  cols:{short:'columns not ticked',head:'Keepa columns not ticked',body:'',todo:''}};
-function refusedShort(r){if(r.why==='cols')return`${r.kind==='viewer'?'Viewer':'Finder'} missing ${r.n} column${r.n===1?'':'s'}`;return(REFUSE_WHY[r.why]||{}).short||r.why;}
+  cols:{short:'columns not ticked',head:'Keepa columns not ticked',body:'',todo:''},
+  /* b266 (Jack, 5 Oct: "make sure she's putting a fresh export in"): Keepa names every export with the day it was made */
+  old:{short:r=>`old export (${typeof ukDate==='function'?ukDate(r.day):r.day})`,head:'This export is not from today',
+    body:r=>`Keepa made this file on <b>${escapeHtml(typeof ukDate==='function'?ukDate(r.day):r.day)}</b> — it says so in the file name. Prices change every day, so an old export gives wrong leads.`,
+    todo:'In Keepa press <b>Export → All active columns → CSV</b> again now, and drop the new file. Find it at the top of Downloads (newest first).'}};
+/* "KeepaExport-2026-10-05-ProductFinder (3).csv" → "2026-10-05"; a renamed file gives null and is never refused for its date */
+function exportDay(name){const m=String(name||'').match(/KeepaExport-(\d{4}-\d{2}-\d{2})-/i);return m?m[1]:null;}
+/* the earliest day that still counts as today: the browser's own date or the UTC date, whichever is earlier — so a VA in another
+   time zone is never refused for a file Keepa named by the other clock */
+function freshFloor(){const l=typeof today==='function'?today():new Date().toISOString().slice(0,10),u=new Date().toISOString().slice(0,10);return l<u?l:u;}
+function exportIsOld(name){const d=exportDay(name);return!!(d&&d<freshFloor());}
+function refusedShort(r){if(r.why==='cols')return`${r.kind==='viewer'?'Viewer':'Finder'} missing ${r.n} column${r.n===1?'':'s'}`;const s=(REFUSE_WHY[r.why]||{}).short;return typeof s==='function'?s(r):s||r.why;}
 /* the popup for refusals that have no column list (that one has its own) */
 function refusedPop(list){const L=(list||[]).filter(r=>r.why!=='cols');if(!L.length)return false;const e=escapeHtml;
   const old=$('#refPop');if(old)old.remove();
@@ -61,7 +71,7 @@ function refusedPop(list){const L=(list||[]).filter(r=>r.why!=='cols');if(!L.len
   d.innerHTML=`<div class="lvcard" role="dialog" aria-modal="true" aria-labelledby="refTitle">
     <div class="lvhead"><span class="lvwarn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4.5M12 17.6v.2"/></svg></span>
       <div><h3 id="refTitle">${L.length===1?'This file was not taken':L.length+' files were not taken'}</h3><p>Here is why, and what to do.</p></div></div>
-    <ol class="lvsteps refsteps">${L.map(r=>{const w=REFUSE_WHY[r.why]||{};return`<li class="now"><span class="lvt"><b>${e(w.head||r.why)}</b><small class="reffile">${e(r.f)}</small><small>${w.body||''}</small><small class="reftodo"><b>Do this:</b> ${w.todo||''}</small></span></li>`;}).join('')}</ol>
+    <ol class="lvsteps refsteps">${L.map(r=>{const w=REFUSE_WHY[r.why]||{};const fx=v=>typeof v==='function'?v(r):(v||'');return`<li class="now"><span class="lvt"><b>${e(w.head||r.why)}</b><small class="reffile">${e(r.f)}</small><small>${fx(w.body)}</small><small class="reftodo"><b>Do this:</b> ${fx(w.todo)}</small></span></li>`;}).join('')}</ol>
     <div class="lvbtns"><button type="button" class="btn primary" id="refOk">OK</button></div></div>`;
   document.body.appendChild(d);const close=()=>d.remove();$('#refOk').addEventListener('click',close);d.addEventListener('click',ev=>{if(ev.target===d)close();});
   document.addEventListener('keydown',function k(ev){if(ev.key==='Escape'){close();document.removeEventListener('keydown',k);}});
@@ -98,3 +108,31 @@ function flagPop(a,m){const [name,site]=MK_SITE[m],F=(typeof FLAG!=='undefined'&
   return true;}
 document.addEventListener('click',e=>{if(flagPass)return;const a=e.target.closest&&e.target.closest('#keepaRow a[data-mk],#primeGrid a[data-pkey]');const m=flagNeed(a);if(!m)return;
   e.preventDefault();e.stopImmediatePropagation();flagPop(a,m);},true);
+
+/* ---- the app's own dialogs (b266) ----
+   Jack, 5 Oct: "popups nicely UI / UX designed — not Google Chrome ones". Every question the app asks used the browser's grey
+   confirm() box. One designed dialog now asks them all: a title, the detail, a real button saying what happens, Cancel.
+   Enter = the button, Esc or a click outside = Cancel. uiConfirm(message) splits the old "title\n\ndetail" text by itself.
+   window.__uiAnswer (checks only) answers at once. */
+const UI_ICON={
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.2"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4.5M12 17.6v.2"/></svg>',
+  danger:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  token:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4.5a1.8 1.8 0 0 1 0 3.6H9"/></svg>'};
+function uiDialog(o){o=o||{};
+  if(window.__uiAnswer!==undefined){const a=window.__uiAnswer;return Promise.resolve(o.input?(a===true?String(o.input.value==null?'':o.input.value):a):!!a);}
+  return new Promise(res=>{const old=document.getElementById('uiDlg');if(old)old.remove();const tone=o.tone||'info',e=escapeHtml;
+    const d=document.createElement('div');d.id='uiDlg';d.className='lvpop uidlg';
+    d.innerHTML=`<div class="lvcard uicard t-${tone}" role="dialog" aria-modal="true" aria-labelledby="uiT">
+      <div class="lvhead"><span class="lvwarn uiic">${UI_ICON[tone]||UI_ICON.info}</span><div class="uitxt"><h3 id="uiT">${o.titleHtml||e(o.title||'')}</h3>${o.body?`<div class="uibody">${o.body}</div>`:''}</div></div>
+      ${o.input?`<input class="uiin" id="uiIn" type="text" inputmode="${o.input.mode||'text'}" value="${e(String(o.input.value==null?'':o.input.value))}" placeholder="${e(o.input.placeholder||'')}" aria-labelledby="uiT">`:''}
+      <div class="lvbtns"><button type="button" class="btn primary${tone==='danger'?' danger':''}" id="uiOk">${e(o.ok||'OK')}</button>${o.cancel===false?'':`<button type="button" class="btn ghost" id="uiNo">${e(o.cancel||'Cancel')}</button>`}</div></div>`;
+    document.body.appendChild(d);const inp=document.getElementById('uiIn'),okB=document.getElementById('uiOk');
+    const done=v=>{d.remove();document.removeEventListener('keydown',key,true);res(v);};
+    const yes=()=>done(o.input?(inp?inp.value:''):true),no=()=>done(o.input?null:false);
+    function key(ev){if(ev.key==='Escape'){ev.preventDefault();ev.stopPropagation();no();}else if(ev.key==='Enter'&&(document.activeElement===inp||document.activeElement===okB)){ev.preventDefault();yes();}}
+    document.addEventListener('keydown',key,true);okB.addEventListener('click',yes);const nb=document.getElementById('uiNo');if(nb)nb.addEventListener('click',no);
+    d.addEventListener('click',ev=>{if(ev.target===d)no();});setTimeout(()=>{(inp||okB).focus();if(inp)inp.select();},30);});}
+function uiConfirm(msg,o){const p=String(msg).split('\n\n');
+  return uiDialog(Object.assign({title:p[0],body:p.slice(1).map(x=>`<p>${escapeHtml(x).replace(/\n/g,'<br>')}</p>`).join('')},o||{}));}
+function uiPrompt(msg,value,o){return uiDialog(Object.assign({title:msg,input:{value}},o||{}));}

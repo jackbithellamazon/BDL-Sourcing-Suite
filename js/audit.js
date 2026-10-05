@@ -917,11 +917,11 @@ function auOpenKeepaViewer(){const sh=audShelf(auView.shelf);if(!sh)return;const
 async function auLoadTokens(){const sh=audShelf(auView.shelf);if(!sh)return;
   const need=sh.items.map(it=>it.a).filter(a=>!audState.prod[a]||audState.prod[a].source==='ours'||!audState.prod[a].asked);
   if(!need.length){toast('Every product already has its details');return;}
-  if(!confirm(`Load titles, pictures and prices for ${need.length} product${need.length===1?'':'s'}?\n\nThat costs about ${need.length} Keepa tokens, once. They are saved for good.`))return;
+  if(!await uiConfirm(`Load titles, pictures and prices for ${need.length} product${need.length===1?'':'s'}?\n\nThat costs about ${need.length} Keepa tokens, once. They are saved for good.`,{ok:`Load them · ~${need.length} tokens`,tone:'token'}))return;
   auNote('Loading details…');const got=await audLoadDetails(need,true,(n,t)=>auNote(`Loading details… ${n} of ${t}`));
   renderAudit();auNote('');toast(got?got+' products loaded':'Nothing came back',!got);}
 async function auPullSeller(id){id=(id||'').trim().toUpperCase();if(!/^A[0-9A-Z]{5,}$/.test(id)){toast('That does not look like a seller ID',true);return;}
-  if(!confirm('Pull this seller\'s whole shelf from Keepa?\n\nThat costs about 10 tokens.'))return;
+  if(!await uiConfirm('Pull this seller\'s whole shelf from Keepa?\n\nThat costs about 10 tokens.',{ok:'Pull the shelf · ~10 tokens',tone:'token'}))return;
   toast('Asking Keepa…');
   try{const r=await fetch(WORKER+'/keepa?path=seller&domain=2&storefront=1&seller='+id);const j=await r.json();
     const s=j.sellers&&j.sellers[id];const asins=(s&&(s.asinList||[]))||[];
@@ -975,7 +975,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     if(t.closest('#auMineSave')){const a=audAsinsIn($('#auMineIn').value);const msg=$('#auMineMsg');
       if(!a.length){msg.textContent='No ASINs found in that — paste the export or a list of ASINs.';return;}
       const n=audMineSave([...audMineList(),...a]);renderAudit();toast(n.toLocaleString()+' products on your inventory list — they are marked You sell this everywhere');return;}
-    if(t.closest('#auMineClear')){if(!confirm('Clear your inventory list? Keepa\'s list and everything seen before still count.'))return;audMineSave([]);renderAudit();toast('Inventory list cleared');return;}
+    if(t.closest('#auMineClear')){if(!await uiConfirm('Clear your inventory list?\n\nKeepa\'s list and everything seen before still count.',{ok:'Clear it',tone:'danger'}))return;audMineSave([]);renderAudit();toast('Inventory list cleared');return;}
     const cp=t.closest('[data-copy]');if(cp){copy(cp.dataset.copy,cp.dataset.copy+' copied');e.stopPropagation();return;}
     const op=t.closest('[data-open]');if(op){auOpen(op.dataset.open);return;}
     const trOpen=t.closest('tr[data-open]');if(trOpen){auOpen(trOpen.dataset.open);return;}
@@ -993,7 +993,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     if(t.closest('#auWs')){const sh=audShelf(auView.shelf);const a=sh.items.filter(it=>(audGet(it.a)||{}).verdict==='ws').map(it=>it.a);copy(a.join(', '),a.length+' WS ASINs copied');return;}
     if(t.closest('#auRest')){const sh=audShelf(auView.shelf);const V=audAll();const left=auVisible(sh).filter(it=>audStatus(V[it.a],audSells(sh.id,it.a))==='todo').map(it=>it.a);
       if(!left.length){toast('Nothing left to judge in this tab');return;}
-      if(confirm(`Mark ${left.length} product${left.length===1?'':'s'} Not lead?`))auJudgeNow(left,'not');return;}
+      if(await uiConfirm(`Mark ${left.length} product${left.length===1?'':'s'} Not lead?`,{ok:'Mark them Not lead'}))auJudgeNow(left,'not');return;}
     const tab=t.closest('[data-tab]');if(tab){const sh=audShelf(auView.shelf);auView.tab[sh.id]=tab.dataset.tab;auView.order=null;auView.stay=new Set();auView.focus=0;auSave();
       const vis=auVisible(sh);const V=audAll();const f=vis.findIndex(it=>audStatus(V[it.a],audSells(sh.id,it.a))==='todo');auView.focus=Math.max(0,f);renderAudit();return;}
     const vb=t.closest('[data-v]');if(vb){const sh=audShelf(auView.shelf);const vis=auVisible(sh);const k=vis.findIndex(it=>it.a===vb.dataset.a);if(k>=0)auView.focus=k;

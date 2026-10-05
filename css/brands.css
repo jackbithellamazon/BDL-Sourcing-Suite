@@ -3035,6 +3035,28 @@ html[data-theme="light"]{--prime:#0a86b8;--prime-txt:#075f84;--prime-fill:rgba(1
 .ltbl td.vcell .chg{max-width:none;white-space:normal;overflow:visible;text-overflow:clip}
 .dstate.stale .dsub,.dstate.stale .dnext{white-space:normal}
 .dstate .dnext.stale2 b{color:var(--coral)}
+.dstate .druns{font-size:11px;color:var(--muted);white-space:normal;line-height:1.35}   /* b267 */
+/* b266 — the app's own dialogs (every question it asks — no grey browser boxes) */
+.uicard{width:min(500px,100%)}
+.uicard.t-info{border-top-color:var(--iris)}.uicard.t-info .uiic{background:color-mix(in srgb,var(--iris) 16%,transparent);color:var(--iris)}
+.uicard.t-warn{border-top-color:var(--amber)}.uicard.t-warn .uiic{background:color-mix(in srgb,var(--amber) 16%,transparent);color:var(--amber)}
+.uicard.t-danger{border-top-color:var(--coral)}
+.uicard.t-token{border-top-color:var(--jade)}.uicard.t-token .uiic{background:color-mix(in srgb,var(--jade) 16%,transparent);color:var(--jade)}
+.uitxt{min-width:0}
+.uibody{margin-top:6px;font-size:13.5px;line-height:1.55;color:var(--muted)}
+.uibody p{margin:0 0 8px}.uibody p:last-child{margin-bottom:0}
+.uibody b{color:var(--text)}
+.uisteps{margin:10px 0 0;padding:0;list-style:none;counter-reset:st;display:grid;gap:7px}
+.uisteps li{counter-increment:st;display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start;font-size:13.5px;color:var(--text);line-height:1.45}
+.uisteps li>span{min-width:0;padding-top:2px}
+.uisteps li::before{content:counter(st);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:800 12px var(--sans);background:var(--raise);color:var(--muted)}
+.uiin{display:block;width:100%;margin-top:14px;height:42px;padding:0 12px;border-radius:10px;border:1px solid var(--line2);background:var(--surface2);color:var(--text);font:600 15px var(--sans)}
+.uiin:focus{outline:none;border-color:var(--iris);box-shadow:0 0 0 3px color-mix(in srgb,var(--iris) 25%,transparent)}
+.lvbtns .btn.primary.danger{background:var(--coral);border-color:var(--coral);color:#2a0710}
+/* b265 — the one Done on an older run: there, clearly not the thing to press yet */
+#doneSel.notyet{background:transparent;color:var(--muted);border:1px dashed var(--line2);box-shadow:none}
+#doneSel.notyet:hover{color:var(--text);border-color:var(--iris)}
+#dropAny.flash{outline:3px solid var(--amber);outline-offset:3px;transition:outline-color .4s}
 /* b264 — "Is Keepa set to Germany?" */
 .flagcard .lvsteps li .lvt b{font-size:14px}
 .flagcard .lvbtns{display:flex;gap:10px;flex-wrap:wrap}
