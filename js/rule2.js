@@ -11,7 +11,7 @@
    v1 was FBA 90d else Buy Box 90d: +26% on the Vax, +11% on the Siemens, always high.
    ============================================================================ */
 const R2={
-  VAT:0.20, TARGET_ROI:5.0, MIN_SPM:9,   /* b211: 9 a month, Jack 29 Sep */ PREP_MISC:1.00, DST:0.02, DEF_REF:15, DEF_FBA:3.50, SS_UK:0.15,
+  VAT:0.20, TARGET_ROI:5.0, MIN_SPM:9,   /* b211: 9 a month, Jack 29 Sep */ PREP_MISC:1.00, SELF_PREP_UNDER:11,   /* b274 (Jack, 6 Oct): no £1 handling when it sells under £11 — he preps those himself */ DST:0.02, DEF_REF:15, DEF_FBA:3.50, SS_UK:0.15,
   SELL_UPLIFT:1.25, MOVED:0.70, FBM_LIFT:1.10, SELL_UPLIFT_NO3P:1.05, LOW_TICKET:60, REGIME_GAP:1.35, LONE_FBA_GAP:1.30, LONE_FBA_OFFERS:2, YOUNG_DAYS:90, THIN_REVIEWS:25,
   /* score = 100 * ( sat(profit*spm,6000)^0.50 * sat(roi,9)^0.24 * sat(profit,18)^0.26 )^0.8
      under £60 (14 Sep, Jack: WoodWick candle £3.08 × 300/mo at 21% ROI "is a good lead", scored 28) the money and profit scales
@@ -36,12 +36,14 @@ function r2sat(x,h){return x>0?x/(x+h):0;}
 function r2score(p,roi,spm,low){if(p<=0||roi<=0)return 1;const S=low?R2.SAT_LOW:R2.SAT,P=low?(R2.POW_LOW||R2.POW):R2.POW;
   const v=100*Math.pow(Math.pow(r2sat(p*spm,S.money),P.money)*Math.pow(r2sat(roi,S.roi),P.roi)*Math.pow(r2sat(p,S.profit),P.profit),P.all);
   return Math.max(1,Math.min(100,Math.round(v)));}
-function r2fees(sale,ref,fba){const r=sale*ref;return r+fba+R2.PREP_MISC+(r+fba)*R2.DST;}
+function r2selfPrep(sale){return sale>0&&sale<R2.SELF_PREP_UNDER;}
+const SELF_PREP_NOTE="PREP FEE OFF — sells under £11, so Jack preps it himself: the profit here is £1 more than SAS shows";
+function r2fees(sale,ref,fba){const r=sale*ref;return r+fba+(r2selfPrep(sale)?0:R2.PREP_MISC)+(r+fba)*R2.DST;}
 function r2prof(sale,cost,ref,fba,vat){const V=1+(vat==null?R2.VAT:vat);const p=sale/V-cost/V-r2fees(sale,ref,fba);
   return[Math.round(p*100)/100,cost?Math.round(1000*p/cost)/10:0];}
 /* what % off Amazon's price gets this to the target ROI */
 function r2needed(sale,amz,ref,fba,t,vat){t=t==null?R2.TARGET_ROI:t;let lo=0,hi=0.95;
-  for(let i=0;i<50;i++){const m=(lo+hi)/2;if(r2prof(sale,amz*(1-m),ref,fba,vat)[1]<t)lo=m;else hi=m;}return hi*100;}
+  for(let i=0;i<30;i++){const m=(lo+hi)/2;if(r2prof(sale,amz*(1-m),ref,fba,vat)[1]<t)lo=m;else hi=m;}return hi*100;}   /* b276: 30 halvings = 1e-9 — the 0.1% shown never moves; was 50, half of every run's maths */
 /* brand rate = the brand's own channel from the Settings discount list (sale rate when full-price-only), falling back to the built-in map */
 function r2brate(b,cost){if(typeof discForBrand==='function'){const e=discForBrand(b);if(e){if(e.business)return null;const p=discRate(e,cost||100);return p>0?Math.round(p*10)/10:0;}}   /* b113: a Business entry is not a code */
   const bl=(b||'').toLowerCase().trim();for(const k of Object.keys(R2.BRAND)){if(bl===k||bl.startsWith(k+' '))return R2.BRAND[k];}return null;}
@@ -307,6 +309,7 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
       'Reviews':reviews,'Category':[r['Categories: Root'],r['Categories: Sub']].filter(Boolean).join(' › '),'Category kind':grocery?'grocery':elec?'electrical':'general','Age days':age==null?'':age,'VAT %':Math.round(vat*100),'VAT from':vt.src==='va'?'VA':vt.src==='source'?'filter':vt.src==='rule'?'Rule 3':'default','Tracking since':r['Tracking since']||'','Listed since':r['Listed since']||'',
       Keepa:`https://keepa.com/#!product/2-${a}`,'Buy link':`https://www.amazon.co.uk/dp/${a}`,'UK sell link':`https://www.amazon.co.uk/dp/${a}`,
       SAS:`https://sas.selleramp.com/sas/lookup?search_term=${a}&sas_cost_price=${eff.toFixed(2)}&sas_sale_price=${sell.toFixed(2)}`,
+      'Prep fee £':r2selfPrep(sell)?0:R2.PREP_MISC,Flags:r2selfPrep(sell)?SELF_PREP_NOTE:'',
       kept:keptFinal,lowScore:kept&&!keptFinal,lowRoi:kept&&thin,chips,pot,STATUS:'',Changed:'','Last seen':'',
       /* b260: WHY a row that passed the discount test was still cut — so the dropped list says the real reason (it called a £100+ bar miss "scored 50 — under 35") */
       cutWhy:!kept||keptFinal?'':underBar?'bar':thin?'thin':'score',bestRoi:Math.round(bestRoi*10)/10,bestP:Math.round(bestP*100)/100,velBar:vb};

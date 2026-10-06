@@ -26,7 +26,7 @@ function leaveState(){
   {const lr=typeof runLast==='function'?runLast(cur.key):null;if(!anyFile&&lr&&(lr.day||String(lr.at).slice(0,10))===today())return null;}
   const fresh=!!result&&!result.stored;
   const missing=boxes.filter(b=>!b.in),partsLeft=r1multi&&typeof viewerPartsLeft==='function'?viewerPartsLeft():0;
-  const viewerIn=!r1multi||(!!files.viewer&&!files.viewer.__alias&&!partsLeft);
+  const viewerIn=!r1multi||(!!files.viewer&&(!files.viewer.__alias||!!files.viewer.__allUk)&&!partsLeft);   /* b278: the UK file covers everything — no Viewer to wait for */
   const runOk=fresh&&!missing.length&&viewerIn;
   const todo=fresh?result.out.filter(o=>o.QUEUE):[],left=todo.filter(o=>!(typeof doneToday==='function'&&doneToday(o))).length;
   /* b244: finished = files in, leads worked AND ✓ Done pressed (a run saved before b244 never needed the press) */

@@ -617,7 +617,7 @@ window.SourcingChecks=(function(){
         ok('Sources · Suz A2A opens on Aug 2026, not Sep 2025',[suz.link.includes('%22202509%22'),opened.includes('%22202608%22'),opened.includes('202509')],[true,true,false]);
         ok('Sources · finderLink hands out the rolled link',finderLink(suz)===rollRankMonth(suz.link),true);
         const t=apiSelection(suz);
-        ok('API · Suz A2A translates to the Product Finder API',[t.selection.avg90_AMAZON_gte,t.selection.avg90_AMAZON_lte,t.selection.deltaPercent90_AMAZON_gte,t.selection.current_AMAZON_gte,t.selection.totalOfferCount_gte,t.selection.monthlySold_gte,t.selection.productType,t.selection.categories_exclude.length,t.selection.perPage],[1000,6000,27,400,3,100,[0],2,50]);   /* b216: £10–60 (b212) — the seed carries it now */
+        ok('API · Suz A2A translates to the Product Finder API',[t.selection.avg90_AMAZON_gte,t.selection.avg90_AMAZON_lte,t.selection.deltaPercent90_AMAZON_gte,t.selection.current_AMAZON_gte,t.selection.totalOfferCount_gte,t.selection.monthlySold_gte,t.selection.productType,t.selection.categories_exclude.length,t.selection.perPage],[700,6000,27,400,3,100,[0],2,50]);   /* b216: £10–60 (b212) — the seed carries it now */
         ok('API · what the API cannot do comes back as after-filters',[t.after.brandNot.includes('amazon'),t.after.rootNot.length,t.skipped],[true,6,['rank month (website only)']]);
         ok('API · after-filters drop a blocked brand and keep the rest',[apiKeep({brand:'Amazon',rootCategory:1},t.after),apiKeep({brand:'Tefal',rootCategory:1},t.after),apiKeep({brand:'Tefal',rootCategory:t.after.rootNot[0]},t.after)],[false,true,false]);
         ok('API · parked',APIRUN.on,false);}
@@ -763,13 +763,13 @@ window.SourcingChecks=(function(){
        const big=better.filter(o=>Math.abs(o.gain||0)>=1).length,tiny=better.filter(o=>Math.abs(o.gain||0)<0.25).length;
        ok('Better · measured on two real Mera runs: 25 flagged, 9 worth £1+ a unit, 13 under 25p',[better.length,big,tiny],[26,10,13]);}
       /* b146 (Jack, 22 Sep: "order of cheapness on EU if price matched - italy france germany - unsure where spain sits just yet") */
-      {const P=(a,l)=>euPick(a,['IT','FR','DE'],l==null?0.25:l);
+      {const P=(a,l)=>euPick(a,BR.EU_ORDER,l==null?0.25:l);
         const mk=(m,c)=>[m,c/1.17,c,1];
         const L=BR.EU_LEVEL;
-        ok('EU order · on a matched price it goes Italy, France, Germany',[P([mk('ES',20.00),mk('FR',20.00),mk('DE',20.00)],L)[0],P([mk('DE',20.00),mk('FR',20.00)],L)[0],P([mk('FR',20.00),mk('IT',20.00)],L)[0]],['FR','FR','IT']);
+        ok('EU order · on a matched price it goes Italy, Spain, France, Germany (b277, Jack 6 Oct — Spain placed)',[BR.EU_ORDER.join(','),P([mk('ES',20.00),mk('FR',20.00),mk('DE',20.00)],L)[0],P([mk('DE',20.00),mk('FR',20.00)],L)[0],P([mk('FR',20.00),mk('IT',20.00)],L)[0],P([mk('DE',20.00),mk('ES',20.00),mk('IT',20.00),mk('FR',20.00)],L)[0]],['IT,ES,FR,DE','ES','FR','IT','IT']);
         ok('EU order · a penny cheaper wins, whoever it is (Jack, 22 Sep)',[P([mk('ES',19.99),mk('IT',20.00)],L)[0],P([mk('DE',19.99),mk('IT',20.00),mk('FR',20.00)],L)[0],P([mk('ES',20.00),mk('IT',20.01)],L)[0]],['ES','DE','ES']);
-        ok('EU order · the UK is never displaced when it is cheapest or level',[P([mk('UK',20.00),mk('IT',20.00)],L)[0],P([mk('UK',19.99),mk('IT',20.00)],L)[0],P([mk('UK',20.01),mk('IT',20.00)],L)[0]],['UK','UK','IT']);
-        ok('EU order · Spain is not in the order, so it only ever wins on price',[P([mk('ES',20.00),mk('DE',20.00)],L)[0],P([mk('ES',19.99),mk('DE',20.00)],L)[0]],['DE','ES']);}
+        ok('EU order · the UK is never displaced when it is cheapest or level (level = the same half-penny, b277); a penny dearer and it loses',[P([mk('UK',20.00),mk('IT',20.00)],L)[0],P([mk('UK',19.99),mk('IT',20.00)],L)[0],P([mk('UK',20.01),mk('IT',20.00)],L)[0],P([mk('UK',20.004),mk('IT',20.00),mk('ES',20.00)],L)[0]],['UK','UK','IT','UK']);
+        ok('EU order · Spain beats France and Germany on a matched price, loses to Italy, and a penny cheaper still wins whoever it is',[P([mk('ES',20.00),mk('DE',20.00)],L)[0],P([mk('ES',20.00),mk('IT',20.00)],L)[0],P([mk('DE',19.99),mk('ES',20.00)],L)[0]],['ES','IT','DE']);}
       /* b147 (Jack, 22 Sep: "but if we had an OA sell price that is fine - remember it's a2a but if we find something profitable then we still want it") */
       {const L=await rule1('logitech',['UK','DE','FR','IT','ES']);
         ok('OA targets · a product Amazon sells nowhere leaves as an OA target, and the leads are untouched',[Array.isArray(L.oa),L.out.length],[true,EXPECT.logitech.leads]);}
@@ -1072,7 +1072,7 @@ window.SourcingChecks=(function(){
       ok('Limits · default 9 a month, per run only (never saved, reset on open); both rules floor at 9; the banger note reads potential score + OA price-match',[R2.MIN_SPM,/spm<9&&!yearOk/.test(String(rule1Compute)),/srcSave/.test(String(onFloorInput)),/tmpFloors=null/.test(String(openRun)),/Could be a banger with a code/.test(String(paintStory))],[9,true,false,true,true]);
       /* b212 */
       {const a=srcGet('suz-deep-drops');const j=a&&JSON.parse(decodeURIComponent(a.link.split('#!finder/')[1]));const c=srcGet('amz-coupons');const cj=c&&JSON.parse(decodeURIComponent(c.link.split('#!finder/')[1]));
-        ok('Suz A2A widened to £10–60 (both averages); the coupon source is Suz\'s, daily, Rule 2, coupon 15%+ (b237 — Jack, 2 Oct) with Amazon selling',[a&&a.name,j&&j.f.AMAZON_avg90.filterTo,j&&j.f.BUY_BOX_SHIPPING_avg90.filterTo,c&&c.owner,c&&c.cadence,c&&c.rule,cj&&cj.f.couponOneTimePercent.filter,cj&&cj.f.AMAZON_current.filter],['Suz · A2A £10–60',60,60,'Suz','daily',2,15,5]);}
+        ok('Suz A2A widened to £10–60 (both averages); the coupon source is Suz\'s, daily, Rule 2, coupon 15%+ (b237 — Jack, 2 Oct) with Amazon selling',[a&&a.name,j&&j.f.AMAZON_avg90.filterTo,j&&j.f.BUY_BOX_SHIPPING_avg90.filterTo,c&&c.owner,c&&c.cadence,c&&c.rule,cj&&cj.f.couponOneTimePercent.filter,cj&&cj.f.AMAZON_current.filter],['Suz · A2A £7–60',60,60,'Suz','daily',2,15,5]);}
       /* b213 */
       {const rk=lsRaw(RUN_KEY);window.__uiAnswer=true;const meWas=me();try{lsSet(ME_KEY,'Suz');await openRun('brita');clearRun();const shown=!$('#doneEmpty').hidden;await doneEmpty();const r=runsFor('brita').find(x=>x.day===today());
         ok('Done with 0 results · one press saves an empty run under the VA (row goes done), then the button hides; Ring is blacklisted',[shown,!!r&&r.leads,r&&r.who,r&&r.empty,$('#doneEmpty').hidden,dueState(srcGet('brita')).cls,BB_SEED.some(x=>x[0]==='ring')],[true,0,'Suz',true,true,'done',true]);
@@ -1129,11 +1129,13 @@ window.SourcingChecks=(function(){
              /on Amazon\.de/.test(primeNote({'Discount applied':'★ Prime price (Amazon DE £80.00)','Buy market':'DE','Landed £':60})),primeNote({'Discount applied':'S&S 15%','Buy market':'UK','Landed £':20})],[true,true,true,true,'']);
         }finally{lsSet(ME_KEY,meWas||'Jack');if(pk==null)lsRemove(PRIME_KEY);else lsRawSet(PRIME_KEY,pk);if(pe==null)lsRemove(PRIME_EVENT_KEY);else lsRawSet(PRIME_EVENT_KEY,pe);}}
       /* b216: a brand-new browser lands on Suz's £10–60 too (b42's reset used to undo b212 there), and one stuck on £10–40 is healed */
-      {const keep=lsRaw(SRC_KEY);try{const ceil=x=>{const f=JSON.parse(decodeURIComponent(x.link.split('#!finder/')[1])).f;return[x.name,f.AMAZON_avg90.filterTo,f.BUY_BOX_SHIPPING_avg90.filterTo];};
+      {const keep=lsRaw(SRC_KEY);try{const ceil=x=>{const f=JSON.parse(decodeURIComponent(x.link.split('#!finder/')[1])).f;return[x.name,+f.AMAZON_avg90.filter,f.AMAZON_avg90.filterTo,+f.BUY_BOX_SHIPPING_avg90.filter,f.BUY_BOX_SHIPPING_avg90.filterTo];};
           lsRemove(SRC_KEY);const fresh=ceil(srcGet('suz-deep-drops'));
           const v=lsGet(SRC_KEY,[]);const x=v.find(z=>z.key==='suz-deep-drops');const old=SRC_SEED.find(z=>z.key==='suz-deep-drops');
-          x.link=old.link.split('%22filterTo%22%3A60').join('%22filterTo%22%3A40');x.name='Suz · A2A £10–40';x.migW=1;x.migV=3;delete x.migW2;lsSet(SRC_KEY,v);const healed=ceil(srcGet('suz-deep-drops'));
-          ok('Sources · Suz A2A is £10–60 on a brand-new browser, and a browser stuck on £10–40 is healed',[fresh,healed],[['Suz · A2A £10–60',60,60],['Suz · A2A £10–60',60,60]]);
+          x.link=old.link.split('%22filterTo%22%3A60').join('%22filterTo%22%3A40').split('%22filter%22%3A7%2C').join('%22filter%22%3A10%2C');x.name='Suz · A2A £10–40';x.migW=1;x.migV=3;delete x.migW2;delete x.migW3;lsSet(SRC_KEY,v);const healed=ceil(srcGet('suz-deep-drops'));
+          const v2=lsGet(SRC_KEY,[]);const y=v2.find(z=>z.key==='suz-deep-drops');y.link=old.link.split('%22filter%22%3A7%2C').join('%22filter%22%3A10%2C');y.name='Suz · A2A £10–60';y.note=String(y.note).replace('£7–60','£10–60');delete y.migW3;lsSet(SRC_KEY,v2);const b264=ceil(srcGet('suz-deep-drops'));
+          /* b274 (Jack, 6 Oct: "yeah change it pls"): the floor is £7 now — a live b264 browser on £10–60 moves too, once */
+          ok('Sources · Suz A2A is £7–60 (b274, was £10) on a brand-new browser; a browser stuck on £10–40 and a live one on £10–60 both land on £7–60',[fresh,healed,b264],[['Suz · A2A £7–60',7,60,7,60],['Suz · A2A £7–60',7,60,7,60],['Suz · A2A £7–60',7,60,7,60]]);
         }finally{if(keep==null)lsRemove(SRC_KEY);else lsRawSet(SRC_KEY,keep);}}
       /* b217 (Jack, 1 Oct: "notes need say about prime deals — in the notes") — every note says so while the event is on, VAs included */
       {const meWas=me(),keep={p:lsRaw(PRIME_KEY),e:lsRaw(PRIME_EVENT_KEY),o:lsRaw(OUTBOX_KEY)};
@@ -1327,6 +1329,62 @@ window.SourcingChecks=(function(){
           [C(d).includes('2860414031'),C(it).includes('4327125031'),C(es).includes('4346921031'),C(it).includes('2908793031'),C(es).includes('2844313031'),[B(d),B(it),B(es)].every(x=>x.includes('leone 1947')),B(fr).length,
            pe.noBrands.join(','),pe.noCats.join(','),pi.noBrands.includes('yicaizi')&&pi.noBrands.includes('calvin klein|fragrance')&&pi.noBrands.includes('davidoff|fragrance'),pi.noCats.join(','),pe.migX,pi.migX,fn],
           [true,true,true,true,true,true,49,'yicaizi,leone 1947','air freshener',true,'air freshener',1,1,[true,true,true]]);}
+      /* b278 — Jack, 6 Oct ("think it's broke / crashed"): UK Finder + EU Viewers that hold only UK products. The screen said "no Viewer needed"
+         and hid the button, but the run waited for a Viewer for ever. Now the UK file is the sell side and the leads come. Brand runs too. */
+      {const meWas=me(),keep={r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),s:lsRaw(SRC_KEY),v:lsRaw(VERD_KEY),p:lsRaw(PRIME_KEY),f:lsRaw(FACT_KEY)};let got=[];
+        try{lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,false);const uk=await(await fetch('../fixtures/bialetti-1003-UK.csv')).text(),de=await(await fetch('../fixtures/bialetti-1003-DE.csv')).text();
+          const U=parseCSV(uk),D=parseCSV(de),ua=U[0].indexOf('ASIN'),da=D[0].indexOf('ASIN'),inUk=new Set(U.slice(1).map(r=>r[ua]));
+          const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+          const deUk=[D[0]].concat(D.slice(1).filter(r=>inUk.has(r[da]))).map(r=>r.map(q).join(',')).join('\n');
+          const mk=()=>[new File([uk],'KeepaExport-2026-10-06-ProductFinder (43).csv'),new File([deUk],'KeepaExport-2026-10-06-ProductViewer (13).csv')];
+          clearRun();backToList();await dropCheck(mk());await new Promise(r=>setTimeout(r,60));
+          got.push(!!files.DE,!!(files.viewer&&files.viewer.__allUk),/no Viewer needed/.test($('#asinMsg').textContent),!!result&&result.out.length>0,$('#results').hidden===false);
+          clearRun();backToList();await openRun('bialetti');clearRun();await handleFiles(mk());await new Promise(r=>setTimeout(r,60));
+          got.push(!!result&&result.out.length>0);}
+        finally{clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');[[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o],[SRC_KEY,keep.s],[VERD_KEY,keep.v],[PRIME_KEY,keep.p],[FACT_KEY,keep.f]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});}
+        ok('No Viewer needed means no Viewer waited for: a UK Finder + an EU file that only holds UK products runs straight away (Drop & check and a brand run) — it used to say "no Viewer needed" and then sit there for ever',
+          got,[true,true,true,true,true,true]);}
+      /* b276 — Jack, 6 Oct: "any way to improve it at all". A Y / N / M press swaps in only the row it changed; the table it leaves is the
+         same table a full redraw makes. */
+      {const meWas=me(),keep={p:lsRaw(PRIME_KEY),r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),v:lsRaw(VERD_KEY),f:lsRaw(FACT_KEY)};let got=[];
+        try{lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,true);clearRun();backToList();await openRun('prime-uk');clearRun();
+          const txt=await(await fetch('../fixtures/prime-uk-1005.csv?t='+Date.now())).text();
+          await handleFiles([new File([txt],'KeepaExport-2026-10-05-ProductFinder (2).csv')]);view.status='ALL';renderTable();
+          const lt=$('#leads'),n0=lt.tBodies[0].rows.length;renderTable();const again=lt._paint&&lt._paint.swapped;
+          const first=lt.querySelector('tbody tr[data-asin]'),A=first.dataset.asin,other=lt.querySelectorAll('tbody tr[data-asin]')[5];
+          verdSet(A,{v:'y'});renderTable();const one=lt._paint&&lt._paint.swapped,keptOther=lt.querySelectorAll('tbody tr[data-asin]')[5]===other;
+          const patched=lt.innerHTML;lt._paint=null;renderTable();const whole=lt.innerHTML;
+          got=[n0>300,again,one,keptOther,patched===whole,lt.querySelector(`tbody tr[data-asin="${A}"]`).classList.contains('y')];}
+        finally{lsSet(ME_KEY,meWas||'Jack');[['p',PRIME_KEY],['r',RUN_KEY],['l',LEAD_KEY],['o',OUTBOX_KEY],['v',VERD_KEY],['f',FACT_KEY]].forEach(([k,K])=>{if(keep[k]==null)lsRemove(K);else lsRawSet(K,keep[k]);});view.status='REVIEW';clearRun();backToList();}
+        ok('Speed · a Y press on a 328-lead run swaps in 1 row, not 328; a redraw with nothing changed swaps 0; the table is identical to a full redraw',
+          got,[true,0,1,true,true,true]);}
+      /* b275 — Jack, 6 Oct: "super buggy and laggy — dropping and it loading to the leads". The ~600 KB facts store was unpacked 1,300 times
+         per table draw (and every Y/N/M redraws it): 1.8 s a click. Now it is unpacked once and reused until it changes. */
+      {const keepF=lsRaw(FACT_KEY);let got=[];const LG=window.lsGet;let parses=0;
+        try{const A='B0B275TEST',a1=factsAll(),a2=factsAll();window.lsGet=function(k,fb){if(k===FACT_KEY)parses++;return LG.apply(this,arguments);};
+          for(let i=0;i<50;i++){factGet('B0'+i);factsAll();}const quiet=parses;window.lsGet=LG;
+          factSet(A,{note:'b275 check'});const a3=factsAll();
+          got=[a1===a2,quiet,!(A in a1),!!(a3[A]&&a3[A].note==='b275 check'),a3!==a1,factsAll()===a3];}
+        finally{window.lsGet=LG;if(keepF==null)lsRemove(FACT_KEY);else lsRawSet(FACT_KEY,keepF);}
+        ok('Speed · the facts store is unpacked once, not once per row: 100 reads in a row unpack it 0 times; a save is seen straight away and never edits the copy a reader already holds',
+          got,[true,0,true,true,true,true]);}
+      /* b274 — Jack, 6 Oct, at the API tap-water conditioner (cost £3.77, sells about £10, 400/mo): "take the full prep fee off the app on stuff
+         that is going to sell under £11" — and the notes must say so, because SAS still charges it */
+      {const w2=R2.SELF_PREP_UNDER,w1=BR.SELF_PREP_UNDER;let money=[];
+        try{const f2=s=>r2fees(s,0.15,2.69),f1=s=>brFees(s,0.15,2.69,0.5,'');const on=[f2(10.5),f1(10.5),f2(12),f1(12)];R2.SELF_PREP_UNDER=0;BR.SELF_PREP_UNDER=0;const off=[f2(10.5),f1(10.5),f2(12),f1(12)];
+          money=on.map((x,i)=>Math.round((off[i]-x)*100)/100);}finally{R2.SELF_PREP_UNDER=w2;BR.SELF_PREP_UNDER=w1;}
+        ok('Prep fee · no £1 handling when the sell price is under £11 (Rule 2 and Rule 1); £11 and over still pays it; the API row is £1.53 profit at £10.89 off a £3.77 cost',
+          [money,r2prof(10.89,3.77,0.1497,2.69,0.2)[0],r2prof(10.89,3.77,0.1497,2.69,0.2)[1]],[[1,1,0,0],1.53,40.5]);}
+      {const meWas=me(),keep={p:lsRaw(PRIME_KEY),r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),v:lsRaw(VERD_KEY)};let got=[];
+        try{lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,true);clearRun();backToList();await openRun('prime-uk');clearRun();
+          const txt=await(await fetch('../fixtures/api-1006.csv?t='+Date.now())).text();
+          await handleFiles([new File([txt],'KeepaExport-2026-10-06-ProductFinder.csv')]);
+          const o=result&&result.out.find(x=>x.ASIN==='B004LO9KSY');const tr=document.querySelector('#leads tr[data-asin="B004LO9KSY"]');
+          got=[!!o,o&&o['Prep fee £'],o&&o['After discount £'],o&&o['Sell for £'],o&&o['Profit £'],/^PREP FEE OFF — sells under £11, so Jack preps it himself: the profit here is £1 more than SAS shows/.test(o&&o.Flags||''),
+            !!tr&&/PREP OFF · \+£1 vs SAS/.test(tr.textContent),!!o&&leadState(o,2).sp===1,storedRows('prime-uk',2).rows.some(x=>x.ASIN==='B004LO9KSY'&&x['Prep fee £']===0&&/PREP OFF/.test(prepChip(x)))];}
+        finally{lsSet(ME_KEY,meWas||'Jack');[['p',PRIME_KEY],['r',RUN_KEY],['l',LEAD_KEY],['o',OUTBOX_KEY],['v',VERD_KEY]].forEach(([k,K])=>{if(keep[k]==null)lsRemove(K);else lsRawSet(K,keep[k]);});clearRun();backToList();}
+        ok('Prep fee · the API tap-water conditioner (Prime £4.71, S&S, sells £10.23) is a lead with no £1 handling: £0.89 profit, the note says "PREP FEE OFF … £1 more than SAS", the row shows PREP OFF, and the saved view keeps it',
+          got,[true,0,4,10.23,0.89,true,true,true,true]);}
       /* b273 — Jack, 5 Oct: "that a bug — Drop & check in the filter and brands page?" */
       {const keep={s:lsRaw(SRC_KEY),r:lsRaw(RUN_KEY)},meWas=me(),lv=Object.assign({},lview);let got=[];
         try{lsSet(ME_KEY,'Jack');const d=srcGet('drop-check')||{key:'drop-check',type:'filter',rule:1,cadence:'adhoc',link:''};Object.assign(d,{drop:true,name:'Drop & check · Jack',markets:['UK','DE','FR','IT','ES'],owner:'Jack',status:'active'});srcSave(d);
@@ -1370,9 +1428,9 @@ window.SourcingChecks=(function(){
           const n2=re(n18,'B0','B1'),p2=re(p19,'B0','B1'),de=re(re(n18,'amazon.co.uk','amazon.de'),'product/2-','product/3-');
           backToList();await dropCheck([mk(n18,'KeepaExport-2026-10-01-ProductFinder (18).csv'),mk(p19,'KeepaExport-2026-10-01-ProductFinder (19).csv'),mk(n2,'KeepaExport-2026-10-01-ProductFinder (20).csv'),mk(p2,'KeepaExport-2026-10-01-ProductFinder (21).csv'),mk(de,'KeepaExport-2026-10-01-ProductFinder (22).csv')]);
           await new Promise(r=>setTimeout(r,300));
-          ok('Drop & check · five files from two brands and two countries at once: both normal UK files join (204), both ★ Prime files join (24), the DE file lands, the Viewer is asked only for what the UK files lack',
-            [!$('#viewRun').hidden,files.UK&&files.UK.__base?files.UK.__base.rows.length:(files.UK&&files.UK.rows.length),pfiles.UK&&pfiles.UK.rows.length,files.UK&&files.UK.rows.length,!!files.DE,$('#asinBar')._all.length,result],
-            [true,204,24,228,true,0,null]);
+          ok('Drop & check · five files from two brands and two countries at once: both normal UK files join (204), both ★ Prime files join (24), the DE file lands, the Viewer is asked only for what the UK files lack — and with nothing to ask for, the leads come straight away (b278: it used to wait here for ever)',
+            [!$('#viewRun').hidden,files.UK&&files.UK.__base?files.UK.__base.rows.length:(files.UK&&files.UK.rows.length),pfiles.UK&&pfiles.UK.rows.length,files.UK&&files.UK.rows.length,!!files.DE,$('#asinBar')._all.length,!!result&&Array.isArray(result.out)],
+            [true,204,24,228,true,0,true]);
         }finally{window.confirm=c0;clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');
           [[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o],[SRC_KEY,keep.s],[PRIME_KEY,keep.p],[PRIME_EVENT_KEY,keep.e]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});}}
       /* b228 — keys only act on a run that is on screen */
@@ -1556,10 +1614,10 @@ window.SourcingChecks=(function(){
           await handleFiles(fs);const need=(($('#asinBar')||{})._all||[]).length,parts=viewerParts(($('#asinBar')||{})._all||[]).length;
           const tv=await(await fetch('../fixtures/bialetti-1003-viewer.csv')).text();await handleFiles([new File([tv],'KeepaExport-2026-10-03-ProductViewer (2).csv')]);
           const tr=['B0BWM4GVPY','B071LGWJWW','B08L3TM6H5'],got=tr.filter(a=>result.out.some(o=>o.ASIN===a));
-          ok('Bialetti 3 Oct (Jack: "loads more Bialetti leads than you are making out"): the UK export prices its own 2,876 products, the Viewer is asked for the other 778 only (one part, not two of 1,827) → 36 leads, not 3 (19 before b243 stopped cutting stovetop pots as mains appliances; 34 before b269 — 2 more bought at the Italian Prime price); Brikka, Moka Express 6-cup and TAZZ110 are leads; no electric lead; Prime prices still used with no ★ boxes; only real coffee is 0% VAT (Bialetti Coffee 252g), no pot; nothing waits on a missing part',
+          ok('Bialetti 3 Oct (Jack: "loads more Bialetti leads than you are making out"): the UK export prices its own 2,876 products, the Viewer is asked for the other 778 only (one part, not two of 1,827) → 40 leads, not 3 (19 before b243 stopped cutting stovetop pots as mains appliances; 34 before b269 — 2 more bought at the Italian Prime price; 36 before b274 — 4 gasket kits under £11 pay no £1 handling); Brikka, Moka Express 6-cup and TAZZ110 are leads; no electric lead; Prime prices still used with no ★ boxes; only real coffee is 0% VAT (Bialetti Coffee 252g), no pot; nothing waits on a missing part',
             [need,parts,result.out.length,got,result.out.filter(o=>/0% VAT/.test(o.Flags||'')).every(o=>/coffee|capsule|beans|ground/i.test(o.Title||'')&&!/moka|maker|caffettiera|pot\b/i.test(o.Title||'')),viewerPartsLeft(),/vpwarn/.test(String(renderResults)),
-             (result.dropped||[]).filter(d=>/MAINS APPLIANCE/.test(d[2])).length,result.out.filter(o=>/gioia|mokona|capsule|elett|electr|timer|mignon|\bbreak\b|\d{3,4} ?w\b/i.test(o.Title||'')).length,result.out.filter(o=>/★ Prime/.test(o['Discount applied']||'')).length>0,primeSlots().join(',')],
-            [778,1,36,tr,true,0,true,0,0,true,'UK|n,DE|n,FR|n,IT|n,ES|n']);
+             (result.dropped||[]).filter(d=>/MAINS APPLIANCE/.test(d[2])).length,result.out.filter(o=>/gioia|mokona|capsule|elett|electr|timer|mignon|\bbreak\b|\d{3,4} ?w\b/i.test(o.Title||'')&&!/ricambi|guarnizion|gasket|spare/i.test(o.Title||'')).length,result.out.filter(o=>/★ Prime/.test(o['Discount applied']||'')).length>0,primeSlots().join(',')],
+            [778,1,40,tr,true,0,true,0,0,true,'UK|n,DE|n,FR|n,IT|n,ES|n']);
           view.status='ALL';renderTable();
           ok('Leads · every lead on one page (no per-page choice); Open all opens all of them (up to Keepa\'s 3,000 a link); ✓ Done marks every shown lead',
             [view.per,!document.querySelector('#fPer'),OPEN_ALL_MAX,$('#openSel').textContent,doneList().length===visible().filter(o=>!doneToday(o)).length,document.querySelectorAll('#leads tbody tr[data-asin]').length===visible().length],
@@ -2003,7 +2061,7 @@ window.SourcingChecks=(function(){
     /* b134 (Jack: "for Logitech if it's UK A2A be more lenient — they nearly always have a promo on"): a 10% promo allowance on UK buys, so 13 thin ones are kept for a human to check. 78 -> 91 */
     /* b135 (Jack: "Logitech is multi-buys on the brand website, not Amazon — be extra more lenient on UK A2A even if it's a small loss"): a UK Logitech lead is an OA lead, so it is kept when the promo brings it near break-even and the thin-lead bar does not judge it on Amazon's price. 91 -> 112 */
     /* b211 (Jack, 29 Sep: minimum 9 a month, was 10) — only adds: Logitech demand +1, ASUS +5 demand / +1 lead, Mera UK-only +1, Mera 11/12 Sep +1, electricals +2, laptops +2 */
-    logitech:{demand:242,leads:112,first:'B07MTXLFXV'},
+    logitech:{demand:242,leads:113,/* b274: +1 — sub-£11 sells pay no £1 handling (Jack, 6 Oct) */first:'B07MTXLFXV'},
     asus:{demand:119,leads:39,mb:[46.46,51.8]},   /* B550M: Amazon out of stock 53%, a 3P holds the box at £164 - the market today, not the £192 average */
     /* 14 Sep evening b25: 366 → 364 (STATUS toaster + BELLA air fryer: a month flat 30%+ under the 90-day average = the price moved). */
     /* b26: 364 → 356 (FBA 30/90d midpoint floor). */
@@ -2021,9 +2079,9 @@ window.SourcingChecks=(function(){
        Biscuit Brew, White Cup, in Caddy, Liquorice Root, Herbal). Nothing moved the other way (Pro Plus capsules, diffuser refill stay 20%). */
     /* b62 (Jack, 16 Sep): under £60 the sell is never capped below the cheapest FBA offer live now → the Nescafé Decaf 100g x6 jar
        (B000TCPV30, sell £18.96 → £19.80, ROI 8.8% → 15.8%) becomes the 52nd lead here. It is the only row the change adds. */
-    sns:{counts:[2520,47],first:'B0B8SH13KP',vat0:[73,2]/* b242: was 74 — MONIN Peach Tea Concentrate (category 'Syrups') is a syrup at 20%, the plural now reads */,ecover:[75,9.05,20.86,26.5,20],starbucks:31.94,shark:26.73,febreze:18.15,lor:[11.47,false],woodwick:69},
+    sns:{counts:[2520,64]/* b274: +17, all sell under £11 (Centrum, Solgar Lysine, Bassetts…) — no £1 handling, Jack preps them */,first:'B0B8SH13KP',vat0:[73,2]/* b242: was 74 — MONIN Peach Tea Concentrate (category 'Syrups') is a syrup at 20%, the plural now reads */,ecover:[75,9.05,20.86,26.5,20],starbucks:31.94,shark:26.73,febreze:18.15,lor:[11.47,false],woodwick:69},
     /* b39: Ecover (£1.59, 18%, 1,000/mo) now outscores the Philips shaver on Suz's Business list. */
-    biz:{counts:[179,4],first:'B0D1HBH6FN',lg:[53,403.73,522.08,13.3]},
+    biz:{counts:[179,5]/* b274: +1 L'Oréal Lash Serum, sells £10.20 */,first:'B0D1HBH6FN',lg:[53,403.73,522.08,13.3]},
     /* 14 Sep b22: Rule 1 sell (and best case) capped at "Buy Box: Highest" when the export has it. Mera 12 Sep run as a UK-only Finder: leads / rows capped. */
     /* b112/b113: one discount list — +6 Hoover (Hoover Direct 15%, a brand store), -2 Acer laptops (15% is full-price only; 5% on a match), -1 AOC monitor (Argos 6% now assumed at 5%) */
     /* b123: an option with an unknown share stays on the family's drops (Jack: under 50 confirmed we use Keepa drops) - flagged, and the page's Keepa check can upgrade it */

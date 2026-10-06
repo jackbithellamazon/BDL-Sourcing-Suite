@@ -1,3 +1,44 @@
+BUILD b278 — 6 Oct 2026 — push THIS one (it replaces b277 — b274 → b277 are in it too)
+
+Live is b273. This folder adds b274 → b278 on top.
+
+WHAT'S NEW IN b278 — THE STUCK DROP & CHECK
+• UK Product Finder + EU Viewers (all of them UK products) said "all priced from your UK file — no Viewer needed", hid the
+  Viewer button, then waited for a Viewer for ever. Now the leads come straight away. Your 6 Oct files: 370 leads in 2.6 s.
+  Brand runs had the same dead end — fixed there too.
+
+WHAT'S NEW IN b277 — WHICH COUNTRY TO BUY FROM
+• Cheapest landed price always wins, even by a penny.
+• Only when prices are exactly the same: UK → Italy → Spain → France → Germany. (Spain used to have no place.)
+
+WHAT'S NEW IN b276 — SMOOTHER
+• Y / N / M now swaps in just the row you pressed, instead of rebuilding every row on the page
+  (a 328-lead run was 27,000 page elements redrawn per click).
+• The discount list is read once per run instead of 7,000 times, and the "% off needed" maths does a third less work
+  (same numbers on screen).
+
+WHAT'S NEW IN b275 — SPEED
+• Dropping a file and pressing Y / N / M were freezing the page. The app was unpacking its ~600 KB product memory
+  (VA sell prices, VAT, which products have S&S — 7,000+ products and growing every day) 1,300 times every time it
+  drew the leads, and every Y / N / M press redraws them. Now it unpacks it once.
+  Same 328-lead Prime UK run: leads appear 2.2 s → 0.5 s after the drop, each Y / N / M 2 s → 0.1 s.
+
+WHAT'S NEW IN b274 (still in this folder)
+• No £1 prep/handling on anything that sells under £11 (Rule 1 and Rule 2) — you prep those yourself. The £1 stays on everything £11+.
+  Those leads say so: a green "PREP OFF · +£1 vs SAS" tag on the row, and the note reads
+  "PREP FEE OFF — sells under £11, so Jack preps it himself: the profit here is £1 more than SAS shows".
+• Suz · A2A £10–60 is now £7–60, so fast sellers under £10 (like the API tap-water conditioner, missed by 9p) get caught.
+  Her browser switches over by itself on the first load after the push.
+
+HOW TO PUSH (same as always)
+1. Open github.com → BDL-Sourcing-Suite → Add file → Upload files.
+2. Drag EVERYTHING inside this folder (index.html, css, js, tests, README-DEPLOY.txt) onto the page. Not the folder itself.
+3. Commit changes. Wait about a minute.
+4. Open https://jackbithellamazon.github.io/BDL-Sourcing-Suite/ and hard refresh (Cmd+Shift+R). Top right should say b278.
+5. Tell Mera and Suz: before opening a Prime link for Germany / France / Italy / Spain, set Keepa to THAT country first
+   (the flag top-left in Keepa). The link carries no country — the app pops up a reminder too.
+
+──────────── earlier notes (b273 and before) ────────────
 BUILD b273 — 5 Oct 2026 — push THIS one (it replaces b272 — b272 was never pushed, b273 has everything in it)
 
 Live is b264. This folder has b265 → b273.

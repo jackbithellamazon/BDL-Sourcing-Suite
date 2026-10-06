@@ -775,6 +775,11 @@ function dropAlias(){if(!cur||cur.rule!==1)return;const eu=['DE','FR','IT','ES']
   if(files.viewer&&files.viewer.__aug)files.viewer=files.viewer.__pure;
   if(!cur.drop&&typeof ukOnly==='function'&&ukOnly())return;
   if(cur.drop&&!files.viewer&&files.UK&&files.UK.hasFees&&!eu){files.viewer=Object.assign({},files.UK,{__alias:true,__prime:false,__base:null,name:files.UK.name+' — also the UK sell side'});return;}
+  /* b278 (Jack, 6 Oct, Drop & check: UK Finder 3,973 + the four EU Viewers → "all 3,952 products are priced from your UK file — no Viewer
+     needed", the Viewer button hidden … and no leads, ever: "think it's broke / crashed"). The screen knew no Viewer was needed; the run
+     still waited for one. When the UK file (all columns) has every product the EU files have, it IS the whole sell side — any multi-country run. */
+  if(!files.viewer&&files.UK&&files.UK.hasFees&&eu&&!ukOnly()&&!isListed(cur)){const uk=new Set(files.UK.asins||[]);
+    if(['DE','FR','IT','ES'].every(m=>!files[m]||(files[m].asins||[]).every(a=>uk.has(a)))){files.viewer=Object.assign({},files.UK,{__alias:true,__allUk:true,__prime:false,__base:null,name:files.UK.name+' — also the UK sell side'});return;}}
   /* b223: the Viewer file + the UK Finder = one sell side (the Viewer's row wins) */
   if(files.viewer&&files.UK&&files.UK.hasFees){const pure=files.viewer;const by=new Map();files.UK.rows.forEach(r=>by.set((r.ASIN||'').trim(),r));pure.rows.forEach(r=>by.set((r.ASIN||'').trim(),r));
     files.viewer=Object.assign({},pure,{__aug:true,__pure:pure,rows:[...by.values()],asins:[...by.keys()].filter(Boolean),name:pure.name+' + your UK file',hasFees:pure.hasFees&&files.UK.hasFees,hasSince:pure.hasSince&&files.UK.hasSince});}}
@@ -1145,7 +1150,7 @@ function storedRows(key,rule){const m=leadMap(key)||{};const rows=[];let last=''
     const o=rule===1
       ?Object.assign({ASIN:a,Title:s.title||'',Brand:s.brand||'','Buy market':mk,'Landed £':buy,'Discount applied':s.disc||'','Sell £ used':sell,'Sell used':k.why||'','Sell low £':k.bb90||0,'Profit £':+s.profit||0,'ROI %':+s.roi||0,SPM:+s.spm||0,'SPM from':'','Flags':'','LTD badge':'',Score:+s.score||r2score(+s.profit||0,+s.roi||0,+s.spm||0,sell<R2.LOW_TICKET),'Fees from':'',Category:''},links)
       :Object.assign({ASIN:a,Product:s.title||'',Brand:s.brand||'',Score:+s.score||1,'Potential score':0,'Potential via':'','Buy at £':k.amz||buy,'After discount £':buy,'Discount applied':s.disc||'','Sell for £':sell,'Sell from':k.why||'','Sell confidence':'','Buy Box 90d £':k.bb90||0,'Buy Box 180d £':k.bb180||0,'FBA 90d £':k.f90||0,'FBM 90d £':k.fbm90||0,'Buy Box high £':k.hi||0,'Profit £':+s.profit||0,'ROI %':+s.roi||0,'Sells /mo':+s.spm||0,'Demand from':'','£ per month':Math.round((+s.profit||0)*(+s.spm||0)),'Amazon 90d drop %':'',Reviews:0,'Age days':'','VAT %':20,'VAT from':'','Category kind':'general',Category:'',chips:[],pot:[],kept:true,'#':0},links);
-    o.BuyType=s.bt||'';o.stamp=e.stamp;o._prev=e.prev||null;rows.push(o);});   /* b219 */
+    o.BuyType=s.bt||'';o.stamp=e.stamp;o._prev=e.prev||null;if(s.sp)o['Prep fee £']=0;rows.push(o);});   /* b219 · b274: PREP OFF survives the saved view */
   rows.sort((a,b)=>(b.Score||0)-(a.Score||0));rows.forEach((o,i)=>o['#']=i+1);return{rows,last};}
 function runStored(){if(!cur)return false;const {rows,last}=storedRows(cur.key,cur.rule);if(!rows.length)return false;
   const prevMap={};rows.forEach(o=>{if(o._prev&&o._prev.state)prevMap[o.ASIN]={state:o._prev.state,stamp:o._prev.stamp};});
@@ -1177,8 +1182,10 @@ function rate(){const inp=$('#fxIn');const v=inp?parseFloat(inp.value):NaN;retur
 /* b122: stampShares moved to parse.js so the rules can call it themselves (checks and page then agree) */
 /* b116: the levels under the sell price. rawRowOf finds the Keepa row behind a lead; lvlPicker draws the chips. */
 function rawRowOf(asin){const pools=[files.viewer,files.one,files.UK].filter(Boolean);for(const f of pools){const r=(f.rows||[]).find(x=>(x.ASIN||'').trim()===asin);if(r)return r;}return null;}
+/* b275: what was picked on each shape — worked out once per facts store, not once per row (it walks all ~7,000 products) */
+const LVL_C=new WeakMap();function lvlStatsFor(F,shape){let m=LVL_C.get(F);if(!m){m={};LVL_C.set(F,m);}return m[shape]||(m[shape]=lvlStats(F,shape));}
 function lvlPicker(asin,sellNow){if(typeof sellLevels!=='function')return'';const r=rawRowOf(asin);if(!r)return'';const lv=sellLevels(r);if(!lv.length)return'';
-  const fact=factGet(asin);const shape=sellShape(r);const st=shape?lvlStats(factsAll(),shape):{n:0};
+  const fact=factGet(asin);const shape=sellShape(r);const st=shape?lvlStatsFor(factsAll(),shape):{n:0};
   const chips=lv.map(x=>{const on=fact.lvl===x.key||(!fact.lvl&&Math.abs(x.value-(sellNow||0))<0.005);
     /* b128: short codes so the levels take two lines, not six — the full name is in the tooltip */
     return `<button type="button" class="lv${on?' on':''}" data-lv="${x.key}" data-asin="${asin}" data-val="${x.value}" data-shape="${shape||''}" title="Sell at the ${x.label} level · £${x.value.toFixed(2)}${x.n!=null?` · ${x.n} FBA seller${x.n===1?'':'s'} there`:''}">${x.short} <b>${x.value>=100?Math.round(x.value):x.value.toFixed(2)}</b></button>`;}).join('');   /* b140: £100+ chips drop the pence so two fit a line */
@@ -1760,10 +1767,10 @@ function renderTable(){{const lt=$('#leads');if(lt){if(lt.style.minHeight)lt.sty
   const asin=o=>`<td class="asin">${o.ASIN}<button type="button" data-copy="${o.ASIN}" title="Copy ASIN">${ICONS.copy}</button></td>`;
   const sel=o=>`<td class="sel"><input type="checkbox" data-sel="${o.ASIN}"${view.sel.has(o.ASIN)?' checked':''}></td>`;
   const pend=b=>bbStatusFor(b)==='pending'?`<i class="ch pend" title="Brand blacklist requested — waiting for Jack">BRAND BLACKLIST PENDING</i>`:'';
-  let h;
+  let h;const RH=[];let H0=-1;   /* b276: each row's HTML, so a redraw swaps in only the rows that changed */
   if(!all.length){const n=result.out.length;
     /* b129: the empty To-review state was a dead end — a VA read "hit All leads above" and had to find it. One button. */
-    $('#leads').innerHTML=`<tbody><tr><td class="emptyrow">${view.status==='REVIEW'?`<b>Nothing new to review.</b><span>Every lead on this run is the same as or worse than the last run, or already judged and not improved since.</span>${n?`<button type="button" class="btn solid sm" id="seeAll">See all ${n} lead${n===1?'':'s'}</button>`:''}`:'<b>Nothing matches.</b>'}</td></tr></tbody>`;
+    $('#leads')._paint=null;$('#leads').innerHTML=`<tbody><tr><td class="emptyrow">${view.status==='REVIEW'?`<b>Nothing new to review.</b><span>Every lead on this run is the same as or worse than the last run, or already judged and not improved since.</span>${n?`<button type="button" class="btn solid sm" id="seeAll">See all ${n} lead${n===1?'':'s'}</button>`:''}`:'<b>Nothing matches.</b>'}</td></tr></tbody>`;
     const b=$('#seeAll');if(b)b.addEventListener('click',()=>{view.status='ALL';view.page=1;renderTable();});
     $('#pager').innerHTML='';$('#openSel').textContent='Open in Keepa';paintDoneBtn();return;}   /* b248: Done stays, even with nothing left to review */
   const asinl=o=>`<span class="asinl">${o.ASIN}<button type="button" data-copy="${o.ASIN}" title="Copy ASIN">${ICONS.copy}</button></span>`;
@@ -1801,30 +1808,30 @@ function renderTable(){{const lt=$('#leads');if(lt){if(lt.style.minHeight)lt.sty
     return`<i class="ch ${conf?'good':'oa'}" title="${escapeHtml(rows.map(x=>`${x.who} ${Math.round(x.pct*10)/10}% → £${x.p.toFixed(2)} profit · ${Math.round(x.roi)}% ROI`).join(' · '))}">${escapeHtml(lab)}</i>`;};
   const pmRow=o=>o['Buy market']!=='UK'?'':`<div class="pms pms-r1">${PM_OPTIONS.map(x=>`<button type="button" class="pm${(factGet(o.ASIN).pm||[]).includes(x)?' on':''}" data-pm="${x}" data-asin="${o.ASIN}" title="Tick when you have confirmed ${x} price-matches">${pmLabel(x)}</button>`).join('')}</div>`;
   if(cur.rule===1){h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Product</th><th>Verdict</th><th class="r">Landed £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">/mo</th><th>Flags · OA check</th></tr></thead><tbody>`;
-    rows.forEach((o,i)=>{const fl=(o.Flags||'').split('; ').filter(Boolean);const band=bandOf(o.Score||1);h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}${verdGet(o.ASIN)?' rdone':''}" data-asin="${o.ASIN}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td class="scorec"><span class="score ${band}">${o.Score||1}</span><div class="stat2">${statusCell(o)}</div></td>
+    rows.forEach((o,i)=>{const s0=h.length;if(H0<0)H0=s0;const fl=(o.Flags||'').split('; ').filter(Boolean);const band=bandOf(o.Score||1);h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}${verdGet(o.ASIN)?' rdone':''}" data-asin="${o.ASIN}">${sel(o)}<td class="idx">${(view.page-1)*PAGEN()+i+1}</td><td class="scorec"><span class="score ${band}">${o.Score||1}</span><div class="stat2">${statusCell(o)}</div></td>
       <td class="prod"><span class="t" title="${escapeHtml(o.Title)}">${escapeHtml(o.Title)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o['Sell used'])}${o['LTD badge']?' · <b>LTD</b>':''}</span></span>${acts(o)}${pend(cur.name)}</td>
       <td class="vcell">${verdCell(o)}</td>
       <td class="num r buyc">${mk(o['Buy market'])} <b>${gbp(o['Landed £'])}</b>${o['Discount applied']?`<span class="sub">${escapeHtml(o['Discount applied'])}</span>`:''}</td>
       <td class="num r sellc"><b class="${o.yourSell?'yours':''}">${gbp(o['Sell £ used'])}</b>${o.yourSell?`<span class="sub">yours · rule said ${gbp(o['Rule sell £'])}</span>`:((o['Sell low £']||0)>0&&(o['Sell low £']||0)<(o['Sell £ used']||0)-0.005?`<span class="sub" title="If it only ever fetches the Buy Box 90d average">worst £${(o['Sell low £']).toFixed(2)}</span>`:'')}<input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" min="0" placeholder="your £" value="${o.yourSell?o['Sell £ used']:''}" title="Read the graph? Type what it really sells at and the profit re-works">${lvlPicker(o.ASIN,o['Sell £ used'])}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r demc">${o.SPM}<span class="sub">${o['SPM from']}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
-      <td class="flagc">${typeof primeNote==='function'?primeNote(o):''}${(()=>{const oa=oaChip(o),fx=flagPick(fl.filter(f=>!/★ PRIME DEAL/.test(f)));const fe=String(o['Fees from']||'').startsWith('ESTIMATED')?`<i class="ch feeest" title="Keepa has no fee figure for this product on Amazon UK (no FBA seller and no size on the listing yet), so the fees are worked out from the category and weight: ${o['Referral %']}% referral + £${(+o['FBA fee £']||0).toFixed(2)} FBA. The profit is an estimate — check it in SAS before buying.">fees estimated · check SAS</i>`:'';   /* b259 */
-        return`<span class="chips">${fe}${oa}${fx.show.map(flagChip).join('')}${fx.rest.length?`<i class="ch more" title="${escapeHtml(fx.rest.join(' · '))}">+${fx.rest.length}</i>`:''}</span>`;})()}${pmRow(o)}</td></tr>`;});}
+      <td class="flagc">${typeof primeNote==='function'?primeNote(o):''}${(()=>{const oa=oaChip(o),fx=flagPick(fl.filter(f=>!/★ PRIME DEAL|^PREP FEE OFF/.test(f)));const fe=String(o['Fees from']||'').startsWith('ESTIMATED')?`<i class="ch feeest" title="Keepa has no fee figure for this product on Amazon UK (no FBA seller and no size on the listing yet), so the fees are worked out from the category and weight: ${o['Referral %']}% referral + £${(+o['FBA fee £']||0).toFixed(2)} FBA. The profit is an estimate — check it in SAS before buying.">fees estimated · check SAS</i>`:'';   /* b259 */
+        return`<span class="chips">${fe}${prepChip(o)}${oa}${fx.show.map(flagChip).join('')}${fx.rest.length?`<i class="ch more" title="${escapeHtml(fx.rest.join(' · '))}">+${fx.rest.length}</i>`:''}</span>`;})()}${pmRow(o)}</td></tr>`;RH.push(h.slice(s0));});}
   else{h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Product</th><th>Verdict</th><th class="r">Buy £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">Demand</th><th title="We cannot see other retailers' prices. These are the ones worth checking for this product — tick what you confirm.">OA check · you check</th></tr></thead><tbody>`;
-    rows.forEach(o=>{const pot=o['Potential score']>o.Score+5?o['Potential score']:0;const band=bandOf(Math.max(o.Score,pot));
+    rows.forEach(o=>{const s0=h.length;if(H0<0)H0=s0;const pot=o['Potential score']>o.Score+5?o['Potential score']:0;const band=bandOf(Math.max(o.Score,pot));
       const fact=factGet(o.ASIN);const alt=[['Buy Box 90d',o['Buy Box 90d £']],['Buy Box 180d',o['Buy Box 180d £']],['FBA 90d',o['FBA 90d £']],['FBM 90d',o['FBM 90d £']],['Buy Box high',o['Buy Box high £']]].filter(x=>x[1]).map(x=>`${x[0]} ${gbp(x[1])}`).join(' · ');
       const vcls=fact.vat==null?'':(+fact.vat===0?'z':'s');const vtxt=fact.vat==null?(o['VAT %']===0?(cur.vat0?'0% VAT · FILTER':'0% VAT · CONFIRM'):'VAT '+(o['VAT %']!=null&&o['VAT %']!==''?o['VAT %']:20)+'%'):(+fact.vat===0?'0% VAT ✓':'20% VAT ✓');
       h+=`<tr class="${(verdGet(o.ASIN)||{}).v||''} band-${band}${verdGet(o.ASIN)?' rdone':''}" data-asin="${o.ASIN}">${sel(o)}<td class="idx">${o['#']}</td>
       <td class="scorec"><span class="score ${band}">${o.Score}</span>${pot?`<span class="potl" title="Potential score with ${escapeHtml(o['Potential via'])}">→ ${pot}</span>`:''}<div class="stat2">${statusCell(o)}</div></td>
-      <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d':''}</span></span>${acts(o)}<span class="chips">${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t)&&!/★ PRIME DEAL/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 3 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
+      <td class="prod"><span class="t" title="${escapeHtml(o.Product)}">${escapeHtml(o.Product)}</span><span class="s">${asinl(o)}<span>${escapeHtml(o.Brand)} · ${o['Sells /mo']}/mo ${o['Demand from']}${o.Reviews?' · '+o.Reviews.toLocaleString()+' reviews':''}${o['Age days']!==''?' · '+o['Age days']+'d':''}</span></span>${acts(o)}<span class="chips">${prepChip(o)}${(()=>{const cs=(o.chips||[]).filter(([t])=>!/VAT/.test(t)&&!/★ PRIME DEAL/.test(t));const show=cs.slice(0,4),more=cs.slice(4);return show.map(([t,c])=>`<i class="ch ${c}">${escapeHtml(t)}</i>`).join('')+(more.length?`<i class="ch more" title="${escapeHtml(more.map(x=>x[0]).join(' · '))}">+${more.length}</i>`:'');})()}<button type="button" class="ch vatb ${vcls}" data-vat="${o.ASIN}" title="Rule 3 — click to cycle: 0% VAT set by you → 20% set by you → back to the rule">${vtxt}</button>${pend(o.Brand)}</span></td>
       <td class="vcell">${verdCell(o)}</td>
       <td class="num r buyc"><b>${gbp(o['After discount £'])}</b><span class="sub">${o['Discount applied']?'Amazon '+gbp(o['Buy at £'])+' · '+escapeHtml(o['Discount applied']):(o['Amazon 90d drop %']!==''&&o['Amazon 90d drop %']!=null?o['Amazon 90d drop %']+'% under 90d avg':'')}</span></td>
       <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(o['Sell from']+' — '+alt)}">${escapeHtml(shortSell(o['Sell from']))}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit">${lvlPicker(o.ASIN,o['Sell for £'])}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r demc">${o['Sells /mo']}<span class="sub">/mo${o['Demand from']?' · '+escapeHtml(o['Demand from']):''}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
-      <td class="pmc">${typeof primeNote==='function'?primeNote(o):''}${oaCell(o)}</td></tr>`;});}
-  h+=oaRowsHtml();   /* b247 */
-  $('#leads').innerHTML=h+'</tbody>';
+      <td class="pmc">${typeof primeNote==='function'?primeNote(o):''}${oaCell(o)}</td></tr>`;RH.push(h.slice(s0));});}
+  const T0=h.length;h+=oaRowsHtml();   /* b247 */
+  leadsPaint(h+'</tbody>',H0<0||RH.reduce((n,x)=>n+x.length,0)!==T0-H0?null:h.slice(0,H0),RH,h.slice(T0)+'</tbody>');   /* anything between the rows = draw it whole */
   const from=all.length?(view.page-1)*PAGEN()+1:0,to=Math.min(all.length,view.page*PAGEN());
   let pg='';const win=[...new Set([1,2,view.page-1,view.page,view.page+1,pages-1,pages].filter(p=>p>=1&&p<=pages))].sort((a,b)=>a-b);
   let last=0;win.forEach(p=>{if(p-last>1)pg+='<span style="padding:0 4px;color:var(--faint)">…</span>';pg+=`<button data-pg="${p}" class="${p===view.page?'on':''}">${p}</button>`;last=p;});
@@ -1833,10 +1840,21 @@ function renderTable(){{const lt=$('#leads');if(lt){if(lt.style.minHeight)lt.sty
     $('#openSel').textContent=view.sel.size?`Open ${view.sel.size} ticked in Keepa`:n<=OPEN_ALL_MAX?`Open all ${n} in Keepa`:`Open ${(p*OPEN_ALL_MAX+1).toLocaleString()}–${Math.min(n,(p+1)*OPEN_ALL_MAX).toLocaleString()} of ${n.toLocaleString()} in Keepa`;}
   $('#openSel').title=isJack()?'Opens them in one Keepa tab. Your opens mark nothing — press ✓ Done when you have looked.':'Opens them in one Keepa tab — and counts them as done by you (Put back undoes it).';
   paintDoneBtn();   /* b248 */
-  setupKeys();paintJudged();paintEuLeads();if(view.active){const tr=document.querySelector(`.ltbl tbody tr[data-asin="${view.active}"]`);if(tr)tr.classList.add('active');}}
+  setupKeys();paintJudged();paintEuLeads();document.querySelectorAll('.ltbl tbody tr.active').forEach(r=>r.classList.remove('active'));if(view.active){const tr=document.querySelector(`.ltbl tbody tr[data-asin="${view.active}"]`);if(tr)tr.classList.add('active');}}
+/* b276 (Jack, 6 Oct: "any way to improve it at all"): every Y / N / M press redrew all the rows (328 rows = 27,000 elements) and the
+   browser laid the whole table out again — ~0.3 s a click. Same header, same rows below = only the rows whose HTML changed are swapped in.
+   Anything else (a new run, a filter, a different page, rows added or gone) is drawn whole, exactly as before. */
+function leadsPaint(full,head,rows,tail){const lt=$('#leads');if(!lt)return;const P=lt._paint,tb=lt.tBodies[0];
+  if(head!=null&&P&&P.head===head&&P.tail===tail&&P.rows.length===rows.length&&tb&&lt.tBodies.length===1&&tb.rows.length>=rows.length){
+    let n=0;const tmp=document.createElement('tbody');
+    for(let i=0;i<rows.length;i++){if(rows[i]===P.rows[i])continue;tmp.innerHTML=rows[i];const nr=tmp.firstElementChild;if(!nr){n=-1;break;}tb.rows[i].replaceWith(nr);n++;}
+    if(n>=0){lt._paint={head,tail,rows,swapped:n};return;}}
+  lt.innerHTML=full;lt._paint=head!=null?{head,tail,rows,swapped:'all'}:null;}
 /* b23 density pass (Jack, 14 Sep: "too busy") — the Sell cell already shows the worst case and the retailer buttons say
    "check OA", so those two flags are noise; the rest are ranked and only two show, the others sit behind "+n" on hover */
 const FLAG_RANK=[/PRIME DEAL/,/EU PLUG|PLUG CHECK/i,/tanked/i,/NOT A DROP/i,/no FBA seller/i,/LIMITED TIME/i,/AMAZON OWNS/i,/WIDE SELL/i,/volatile/i,/drops only/i,/not in a drop/i,/A2A->OA/i,/^0% VAT/i];
+/* b274: a lead that sells under £11 carries no £1 handling (Jack preps it himself) — say so on the row, because SAS will show £1 less */
+function prepChip(o){return o&&o['Prep fee £']===0?`<i class="ch good" title="${escapeHtml((typeof SELF_PREP_NOTE!=='undefined'&&SELF_PREP_NOTE)||'')}">PREP OFF · +£1 vs SAS</i>`:'';}
 function flagPick(fl,max){max=max==null?2:max;const keep=(fl||[]).filter(f=>!/^worst case|^UK buy: check OA/i.test(f));
   const rank=f=>{const i=FLAG_RANK.findIndex(re=>re.test(f));return i<0?FLAG_RANK.length:i;};
   const sorted=keep.slice().sort((a,b)=>rank(a)-rank(b));return{show:sorted.slice(0,max),rest:sorted.slice(max)};}
