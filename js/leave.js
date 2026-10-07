@@ -90,7 +90,7 @@ function leaveAsk(st,proceed){leaveClose();const e=escapeHtml;
    The live log, Fri 2 Oct: Mera pressed the ★ Prime button on 12 filters in 27 minutes (19:10–19:37) and dropped nothing back in.
    A VA starting another filter while one she opened in Keepa TODAY has no file back gets told to finish that one first. ---- */
 function unfinishedMine(skipKey){if(!me()||isJack()||typeof keepaSinceRun!=='function')return[];const t=new Date().toDateString(),w=me();
-  return visibleSources().filter(s=>s.key!==skipKey&&s.status!=='paused'&&!s.drop).map(s=>({s,kp:keepaSinceRun(s)}))
+  return visibleSources().filter(s=>s.key!==skipKey&&s.status!=='paused'&&!s.drop&&!primeHidden(s)).map(s=>({s,kp:keepaSinceRun(s)}))
     .filter(x=>x.kp&&x.kp.who===w&&new Date(x.kp.at).toDateString()===t).sort((a,b)=>new Date(a.kp.at)-new Date(b.kp.at));}
 function oneAtATimeAsk(list,target,proceed){leaveClose();const e=escapeHtml,first=list[0],hm=x=>new Date(x.kp.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
   const d=document.createElement('div');d.id='leavePop';d.className='lvpop';d.dataset.key=first.s.key;d.dataset.first='one-at-a-time';

@@ -3095,3 +3095,33 @@ html[data-theme="light"]{--prime:#0a86b8;--prime-txt:#075f84;--prime-fill:rgba(1
 .dstate .dlast b{font-weight:700}
 .dstate .dlast i{font-style:normal;color:var(--muted)}
 .dstate .dlast .whochip{margin:0}
+
+/* b280: the flat 5% code line under a lead (normal numbers stay on the row) */
+.ch.code{color:var(--text);border-color:rgba(110,123,255,.45);background:rgba(110,123,255,.14);white-space:normal;display:inline-block;margin:2px 0;font-variant-numeric:tabular-nums}
+.pmc .ch.code{display:block;width:max-content;max-width:100%;margin-bottom:4px}
+
+/* b282: the loading card on a big drop — under every popup (.colsov 1000, .lvpop 4000); spinner + bar are transforms so they keep moving */
+.busyov{position:fixed;inset:0;z-index:900;display:flex;align-items:flex-start;justify-content:center;padding:18vh 16px 0;background:rgba(5,8,14,.42);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.busyov[hidden]{display:none}
+.busycard{width:min(460px,100%);background:var(--surface);border:1px solid var(--line2);border-radius:14px;padding:18px 20px;box-shadow:0 18px 60px rgba(0,0,0,.45)}
+.busycard .bhead{display:flex;gap:12px;align-items:center}
+.busycard .btitle{display:block;font:700 15px var(--sans);color:var(--text)}
+.busycard .bsub{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.busycard .bbar{height:4px;border-radius:4px;background:var(--surface2);overflow:hidden;margin:14px 0 12px;position:relative}
+.busycard .bbar i{position:absolute;top:0;bottom:0;left:0;width:40%;background:var(--iris);border-radius:4px;animation:bslide 1.1s ease-in-out infinite;will-change:transform}
+@keyframes bslide{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+.bspin{display:inline-block;width:12px;height:12px;border:2px solid rgba(110,123,255,.3);border-top-color:var(--iris);border-radius:50%;animation:bspin .8s linear infinite;will-change:transform;vertical-align:-2px}
+.bspin.big{width:22px;height:22px;border-width:3px;flex:none}
+@keyframes bspin{to{transform:rotate(360deg)}}
+.busycard .bsteps{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.busycard .bsteps li{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--faint)}
+.busycard .bsteps li.now{color:var(--text);font-weight:600}
+.busycard .bsteps li.done{color:var(--muted)}
+.busycard .bsteps .bi{width:16px;flex:none;text-align:center;color:var(--jade)}
+.busycard .bsteps .bt{min-width:0}
+.busycard .bsteps small{display:block;color:var(--muted);font-weight:400;font-size:12px;margin-top:2px;overflow-wrap:anywhere}
+.busyov.ok .bbar i{animation:none;width:100%;transform:none;background:var(--jade)}
+.busyov.ok .bhead .bspin{animation:none;border-color:var(--jade)}
+@media (prefers-reduced-motion:reduce){.busycard .bbar i,.bspin{animation-duration:2.4s}}
+/* b282: Buy from hint */
+.mkpick .lfhint{font-size:11.5px;color:var(--faint);margin-left:6px}

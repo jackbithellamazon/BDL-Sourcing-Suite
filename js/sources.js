@@ -505,6 +505,15 @@ const NO_OWNER='—';
 const OWNER_OPTS=['Jack','Mera','Suz','VAs',NO_OWNER];
 function noReasons(){return lsGet(REASONS_KEY,NO_REASONS_DEFAULT);}
 function settingRow(key,value){return{key,value,updated_at:nowIso(),updated_by:me()};}
+/* b283 (Jack, 7 Oct, at the Galaxy S26+ — restricted for him on that one ASIN, other Samsung phones bought and sold fine: "having an idea
+   we can sell it would boost it — but only if it's a good lead, don't want a 0 to turn into an 80 because we can sell it"). Every product
+   his seller account has ever sold = the Replen storefront export; each Replen drop saves it here and shares it (src_settings 'sold-before'),
+   so a VA's scores match his. The storefront audit's own list joins it. */
+const SOLD_KEY='bdl-sourcing-sold-before';let SOLD_C=null;
+function soldSet(){if(!SOLD_C){const s=new Set();const a=lsGet(SOLD_KEY,null),m=lsGet('bdl-sourcing-audit-mine',null);[a,m].forEach(v=>{if(v&&Array.isArray(v.asins))v.asins.forEach(x=>s.add(x));});SOLD_C=s;}return SOLD_C;}
+function soldBefore(asin){return soldSet().has(asin);}
+function soldSave(asins){const v={asins:[...new Set((asins||[]).filter(a=>/^B[0-9A-Z]{9}$/.test(a)))],at:nowIso(),who:me()};if(!v.asins.length)return 0;lsSet(SOLD_KEY,v);SOLD_C=null;
+  if(typeof cloudQueue==='function')cloudQueue('src_settings','upsert',[settingRow('sold-before',v)]);return v.asins.length;}
 function reasonsSave(list){lsSet(REASONS_KEY,list);cloudQueue('src_settings','upsert',[settingRow('reasons',list)]);}
 function vat0Save(words){lsSet(VAT0_KEY,words);cloudQueue('src_settings','upsert',[settingRow('vat0',words)]);}
 function me(){return lsGet(ME_KEY,'');}
@@ -519,6 +528,8 @@ function canSee(src){if(!src)return false;if(isJack())return true;const m=me();i
   if(typeof lockFresh==='function'&&lockFresh(src)&&typeof ownLock==='function'&&ownLock(src))return true;
   return false;}
 function visibleSources(){return srcAll().filter(canSee);}
+/* b285: a Prime-only filter (Prime deals · UK / DE + FR / IT + ES) is off the lists while the Prime event is off — never due, never late, never "yours" */
+function primeHidden(s){return!!(s&&s.primeOnly)&&typeof primeEventOn==='function'&&!primeEventOn();}
 function verdAll(){return lsGet(VERD_KEY,{});}
 function verdGet(asin){return verdAll()[asin]||null;}
 /* b232 (Jack, 1 Oct: "I don't care if Suz reviews one filter and Mera another — don't hide it from Mera because Suz saw the same ASIN somewhere else").
@@ -610,7 +621,7 @@ function blRemove(asin){const a=blAll();delete a[asin];lsSet(BL_KEY,a);cloudQueu
 const BB_KEY='bdl-sourcing-brandbl';
 function bbAll(){return lsGet(BB_KEY,{});}
 /* ---- brands Jack has banned outright (16 Sep 2026: "3 - yes"). Seeded as APPROVED so every browser drops them without asking. ---- */
-const BB_SEED=[['microsoft','Microsoft','Jack, 16 Sep 2026 — cannot sell'],['staub','Staub','Jack, 16 Sep 2026 — cannot sell'],['xiaomi','Xiaomi','Jack, 16 Sep 2026 — cannot sell'],['ring','Ring','Jack, 30 Sep 2026 — blacklist'],['amazon','Amazon','Jack, 30 Sep 2026 — Amazon devices (Echo, Fire, Kindle, Ember): cannot sell'],['blink','Blink','Jack, 30 Sep 2026 — Amazon devices: cannot sell'],['eero','eero','Jack, 30 Sep 2026 — Amazon devices: cannot sell'],['hp','HP','Jack, 2 Oct 2026 — blacklist (on Mera\'s never list too)'],['regatta','Regatta','Jack, 2 Oct 2026 — clothing: blacklist'],['estée lauder','Estée Lauder','Jack, 2 Oct 2026 — high-end beauty: blacklist'],['estee lauder','Estee Lauder','Jack, 2 Oct 2026 — high-end beauty: blacklist']];
+const BB_SEED=[['microsoft','Microsoft','Jack, 16 Sep 2026 — cannot sell'],['staub','Staub','Jack, 16 Sep 2026 — cannot sell'],['xiaomi','Xiaomi','Jack, 16 Sep 2026 — cannot sell'],['ring','Ring','Jack, 30 Sep 2026 — blacklist'],['amazon','Amazon','Jack, 30 Sep 2026 — Amazon devices (Echo, Fire, Kindle, Ember): cannot sell'],['blink','Blink','Jack, 30 Sep 2026 — Amazon devices: cannot sell'],['eero','eero','Jack, 30 Sep 2026 — Amazon devices: cannot sell'],['hp','HP','Jack, 2 Oct 2026 — blacklist (on Mera\'s never list too)'],['regatta','Regatta','Jack, 2 Oct 2026 — clothing: blacklist'],['estée lauder','Estée Lauder','Jack, 2 Oct 2026 — high-end beauty: blacklist'],['estee lauder','Estee Lauder','Jack, 2 Oct 2026 — high-end beauty: blacklist'],['davidoff','Davidoff','Jack, 6 Oct 2026 — cannot sell'],['le creuset','Le Creuset','Jack, 6 Oct 2026 — cannot sell the brand']];
 /* b246 (Jack, 4 Oct, going through the £60+ leads: "Shark [PowerDetect UV robot] ye but can't sell it — it's a restricted ASIN, brand is ok tho").
    ASINs Jack cannot sell, blocked for everyone like any ⃠ press. The brand is NOT blocked. */
 const BL_SEED=[['B0GX9ZD3F5','restricted ASIN','Shark PowerDetect UV Reveal Robot Mop and Vacuum — restricted ASIN, the Shark brand is fine (Jack, 4 Oct 2026)']];

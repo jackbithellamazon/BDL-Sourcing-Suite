@@ -94,7 +94,7 @@ function toReviewCount(run){if(!run)return 0;const V=verdAll(),B=blAll(),day=run
 /* b273 (Jack, 5 Oct, at "Drop & check · Jack — NOT FINISHED · 18 to review" in the list: "that a bug, drop and check in the filter and brands page?").
    A Drop & check is a one-off scratch check — it is saved like a source only so its runs are kept. It is not a filter: it never shows on Brands /
    Filters, never counts as due, mine or not finished, and Start / Next due never send anyone to it. It stays on the Keepa console and in Runs. */
-function listSources(){return visibleSources().filter(s=>!s.drop);}
+function listSources(){return visibleSources().filter(s=>!s.drop&&!primeHidden(s));}   /* b285: + Prime-only filters after the event */
 function renderKpis(){const all=listSources(),keys=new Set(visibleSources().map(s=>s.key));
   /* b132: a VA's week counts her own sources only — Jack's tiles still count everything */
   const runs=runsAll().filter(r=>isJack()||keys.has(r.source)),V=verdAll(),LA=leadAll();
@@ -144,9 +144,9 @@ function primeFirst(s){return s&&(s.primeOnly||s.key==='prime-uk'||s.key==='prim
 function nextDue(fromKey){const m=me();const L=listSources().filter(s=>s.status!=='paused'&&s.key!==fromKey&&dueState(s).due);
   L.sort((a,b)=>(ownsIt(b,m)-ownsIt(a,m))||(primeFirst(b)-primeFirst(a))||(dueRank(a)-dueRank(b))||a.name.localeCompare(b.name));return L[0]||null;}
 function renderYourDay(){const el=$('#yourDay');if(!el)return;const m=me();if(!m){el.hidden=true;return;}
-  const mine=srcAll().filter(s=>s.status!=='paused'&&ownsIt(s,m));const due=mine.filter(s=>dueState(s).due);const what=m==='Jack'?'brands & filters':'filters';
+  const mine=srcAll().filter(s=>s.status!=='paused'&&!primeHidden(s)&&ownsIt(s,m));const due=mine.filter(s=>dueState(s).due);const what=m==='Jack'?'brands & filters':'filters';
   const tr=mine.reduce((n,s)=>n+toReviewCount(runLast(s.key)),0);const nx=nextDue(null);
-  const dueAny=srcAll().filter(s=>s.status!=='paused'&&dueState(s).due).length;
+  const dueAny=srcAll().filter(s=>s.status!=='paused'&&!primeHidden(s)&&dueState(s).due).length;
   el.innerHTML=`<div class="yd"><span class="ydn">${whoChip(m)}</span><span class="ydt">${mine.length?(due.length?`<b>${due.length}</b> of your ${mine.length} ${what} ${due.length===1?'is':'are'} due${(()=>{const l=due.filter(s=>dueState(s).kind==='late').length;return l?` · <b class="ydlate">${l} late</b>`:'';})()}`:`all ${mine.length} of your ${what} are done for today ✓`):`nothing is assigned to you yet`}${tr?` · <b>${tr.toLocaleString()}</b> lead${tr===1?'':'s'} waiting for a look`:''}${!due.length&&dueAny?` · ${dueAny} due for others`:''}</span>
     ${nx?`<button class="btn primary sm" type="button" data-start="${nx.key}">${ICONS.run}Start with ${escapeHtml(nx.name)}${!ownsIt(nx,m)?' ('+((!nx.owner||nx.owner===NO_OWNER)?'unassigned':(nx.owner==='VAs'?'VAs':escapeHtml(nx.owner)+"'s"))+')':''}</button>`:''}</div>`;el.hidden=false;}
 const HOWTO_KEY='bdl-sourcing-howto-hidden';
@@ -155,6 +155,7 @@ function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay()
   const rows=listSorted().filter(s=>{
     if(!canSee(s))return false;   /* b132: a VA sees her own sources and nobody else's */
     if(s.drop)return false;   /* b273: a Drop & check is not a filter */
+    if(primeHidden(s))return false;   /* b285: the Prime event is over */
     if(lview.seg==='due'&&!dueState(s).due)return false;
     if(lview.seg==='paused'&&s.status!=='paused')return false;
     if(lview.seg==='active'&&s.status==='paused')return false;
@@ -542,20 +543,36 @@ function keepStill(find,fn){let t0=null;try{const e=find();if(e&&e.isConnected){
   let r;try{r=fn();}catch(x){fix();throw x;}
   if(r&&typeof r.then==='function')return r.then(v=>{fix();return v;},x=>{fix();throw x;});fix();return r;}
 const rowOf=a=>()=>document.querySelector(`.ltbl tbody tr[data-asin="${a}"]`);
-function handleFiles(list){return keepStill(()=>$('#dropAny'),()=>handleFilesRaw(list));}   /* b225: the drop box stays where it was */
+/* b282 (Jack, 7 Oct: "once I put in the Viewer it just goes still for a second, then it works — let there be an interactive loading
+   screen"). A big drop (200 KB+, ~150+ products) shows what it is doing: each file read with its product count, the country boxes, then
+   pricing / scoring / drawing — and how many leads came out. The spinner and the bar are CSS transforms, so they keep moving while the
+   maths holds the page. Small drops are instant and show nothing. It sits under every popup (a refused file still says why). */
+const BUSY={el:null,on:false,steps:[],hideT:null};
+function busyPaint(){return new Promise(r=>{let d=false;const go=()=>{if(!d){d=true;r();}};try{requestAnimationFrame(()=>setTimeout(go,0));}catch(e){}setTimeout(go,80);});}
+function busyRender(){const el=BUSY.el;if(!el)return;el.querySelector('.bsteps').innerHTML=BUSY.steps.map(s=>`<li class="${s.st}"><span class="bi">${s.st==='done'?'✓':s.st==='now'?'<i class="bspin"></i>':'·'}</span><span class="bt">${s.t}${s.d?`<small>${s.d}</small>`:''}</span></li>`).join('');}
+function busyOpen(n){clearTimeout(BUSY.hideT);if(!BUSY.el){const el=document.createElement('div');el.id='busyOv';el.className='busyov';el.setAttribute('role','status');el.setAttribute('aria-live','polite');
+    el.innerHTML=`<div class="busycard"><div class="bhead"><i class="bspin big"></i><div><b class="btitle"></b><span class="bsub">A big run takes a second or two — nothing is stuck.</span></div></div><div class="bbar"><i></i></div><ol class="bsteps"></ol></div>`;document.body.appendChild(el);BUSY.el=el;}
+  BUSY.steps=[{t:`Reading ${n} file${n===1?'':'s'}`,st:'now',d:''},{t:'Putting each file in its country box',st:'todo',d:''},{t:'Pricing, scoring and drawing your leads',st:'todo',d:''}];
+  BUSY.el.querySelector('.btitle').textContent='Working on your files';BUSY.el.classList.remove('ok');BUSY.el.hidden=false;BUSY.on=true;busyRender();}
+function busyNote(i,d){if(!BUSY.on)return;BUSY.steps.forEach((s,k)=>{s.st=k<i?'done':k===i?'now':'todo';});if(d!=null)BUSY.steps[i].d=d;busyRender();}
+function busyDone(msg){if(!BUSY.on)return;BUSY.steps.forEach(s=>s.st='done');busyRender();BUSY.el.classList.add('ok');BUSY.el.querySelector('.btitle').textContent=msg||'Done';BUSY.on=false;BUSY.hideT=setTimeout(busyClose,900);}
+function busyClose(){clearTimeout(BUSY.hideT);BUSY.on=false;if(BUSY.el)BUSY.el.hidden=true;}
+function handleFiles(list){const p=keepStill(()=>$('#dropAny'),()=>handleFilesRaw(list));if(p&&typeof p.then==='function')p.then(()=>{if(BUSY.on)busyClose();},()=>{if(BUSY.on)busyClose();});return p;}   /* b225: the drop box stays where it was · b282: the loading card never outlives the drop */
 async function handleFilesRaw(list){const arr=[...list];if(!arr.length||!cur)return;
   /* b131 (ShiftTrack, 21 Sep: 13 of 35 runs came back with a blank who). Judging always asked who you are, dropping an export
      never did — so a run could be saved with nobody's name on it, and ShiftTrack cannot say what Suz ran today. The export is
      held, the question is asked, and the drop replays itself the moment a name is set. */
   if(!me()){pendingFiles=arr;needMe();toast('Pick your name first — the export is waiting',true);return;}
+  const bigDrop=arr.reduce((n,f)=>n+(f.size||0),0)>=200000;if(bigDrop){busyOpen(arr.length);await busyPaint();}let bi=0;   /* b282 */
   const notes=[],accepted=[],refused=[];let colsPop=null;   /* b203: after the drop, the popup lists every column this file has not got · b260: refused = why each file was not taken */
   if(typeof primeStrip==='function')primeStrip();   /* b214: the ★ Prime rows come off while files land, and go back on below */
   if(files.viewer&&(files.viewer.__alias||files.viewer.__aug))files.viewer=files.viewer.__pure||null;   /* b222 / b223 / b242: the pure Viewer takes new parts */
-  for(const file of arr){
+  for(const file of arr){bi++;if(bigDrop){busyNote(0,`${bi} of ${arr.length} · ${escapeHtml(file.name)}`);await busyPaint();}
     /* b266 (Jack, 5 Oct: "make sure she's putting a fresh export in"): a VA's export made on an earlier day is not taken — Keepa names
        every file with its day. Jack can drop anything (he re-runs old exports on purpose). */
     if(typeof exportIsOld==='function'&&!isJack()&&exportIsOld(file.name)){const dd=exportDay(file.name);notes.push(`${file.name}: not taken — Keepa made it on ${ukDate(dd)}, not today. Export it again now and drop the new file.`);refused.push({f:file.name,why:'old',day:dd});continue;}
     let d;try{d=describeExport(parseCSV(await readFileText(file)));}catch(e){d=null;}
+    if(bigDrop&&d)busyNote(0,`${bi} of ${arr.length} · ${escapeHtml(file.name)} · ${d.rows.length.toLocaleString()} products`);
     if(!d){notes.push(file.name+': no data rows — Keepa found 0 products for this filter');refused.push({f:file.name,why:'empty'});continue;}
     const f={name:file.name,rows:d.rows,hasFees:d.hasFees,asins:d.asins,domain:d.domain,hasSince:d.hasSince,missing:d.missing||[],missingAll:d.missingAll||[]};
     /* b203: name the exact columns, in Keepa's own words, instead of "not a full-column export" */
@@ -591,6 +608,7 @@ async function handleFilesRaw(list){const arr=[...list];if(!arr.length||!cur)ret
     const nm=file.name.toLowerCase(),v=files.viewer;
     /* b249: Replen — the storefront's Finder export is mini-filtered and becomes the UK file (buy side and sell side); its ASINs feed the EU Viewer buttons */
     if(cur.list==='finder'&&nm.includes('productfinder')){const keep=sfMini(f.rows,cur.mini),m=Object.assign({spm:9,sell:7},cur.mini||{});
+      if(typeof soldSave==='function')soldSave(f.rows.map(r=>(r.ASIN||'').trim()));   /* b283: everything you have ever sold — the 'you've sold this' boost */
       files.viewer=Object.assign({},f,{rows:keep,asins:keep.map(r=>(r.ASIN||'').trim()).filter(Boolean)});files.UK=null;
       cur._sf=files.viewer.asins.slice();cur._sfMini={all:f.rows.length,kept:keep.length};
       notes.push(`${file.name}: ${f.rows.length.toLocaleString()} products you have sold → ${keep.length.toLocaleString()} kept (sell ${m.spm}+ a month · 90-day sell price £${m.sell}+). This is your UK file. Now press each EU flag above — the Viewer opens with those ${keep.length.toLocaleString()} loaded — export, drop.`);continue;}
@@ -599,6 +617,7 @@ async function handleFilesRaw(list){const arr=[...list];if(!arr.length||!cur)ret
     else if(!v)files.viewer=f;
     else if(f.hasFees&&(!v.hasFees||f.rows.length>=v.rows.length)){files.UK=v;files.viewer=f;}
     else files.UK=f;}
+  if(bigDrop)busyNote(1);
   if(typeof primeApply==='function')primeApply();
   dropAlias();   /* b222 */
   if(cur.list==='finder')paintStorefrontRow(cur);   /* b249: the EU buttons follow the list the export produced */
@@ -610,7 +629,8 @@ async function handleFilesRaw(list){const arr=[...list];if(!arr.length||!cur)ret
   if(colsPop&&colsPop.missing.length)openColsPanel(colsPop.missing,colsPop.name);   /* b203 (Jack, 29 Sep: "the popup should say each one that needs ticking") */
   else if(refused.length&&typeof refusedPop==='function')refusedPop(refused);   /* b260: no column list to show — say why the file was not taken */
   /* b123 (Jack: "we use exports so it should cost 0 tokens"): nothing is asked of Keepa on a drop — the option check is a button Jack presses */
-  run();}
+  if(bigDrop){const sell=cur.rule===1?files.viewer:files.one,mk=MARKETS.filter(k=>files[k]).length;busyNote(2,sell?`${(sell.rows||[]).length.toLocaleString()} products${cur.rule===1&&mk>1?` · buy prices in ${mk} countries`:''} — about a second`:'');await busyPaint();}
+  try{run();}finally{if(bigDrop){const n=result&&result.out&&!result.stored?result.out.length:null;busyDone(n!=null?`✓ ${n.toLocaleString()} lead${n===1?'':'s'} ready`:(cur&&cur.rule===1&&!files.viewer&&MARKETS.some(k=>files[k])?'✓ Files in — now the UK Viewer':'✓ Files in'));}}}
 /* b128 (Jack, 20 Sep: "add a way where we do a Keepa tracker for all EU prices without export on drops — sometimes EU stuff is
    always profitable in the UK, very very rarely though"). A UK filter run only ever looks at the UK price. This asks Keepa what
    the same product costs in Germany, France, Italy and Spain and runs the brand-run maths on it: EU buy, UK sell, landed.
@@ -638,7 +658,7 @@ async function euCheckLeads(){const sellF=cur?(cur.rule===1?files.viewer:files.o
   try{
     const got=await eupFetch(asins,EU_MK,(done,total,mk)=>{b.textContent=`${mk} · ${done}/${total}`;},rate());
     const set=new Set(asins);const sub={name:sellF.name,rows:sellF.rows.filter(r=>set.has((r.ASIN||'').trim())),hasFees:sellF.hasFees,asins,domain:'UK',hasSince:sellF.hasSince,missingAll:sellF.missingAll||[],missing:sellF.missing||[]};
-    const R=rule1Compute({viewer:sub,UK:null,DE:got.DE||null,FR:got.FR||null,IT:got.IT||null,ES:got.ES||null,plugOk:cur.plugOk||null},cur.name,rate(),null);
+    const NB=euNoBuy({viewer:sub,UK:null,DE:got.DE||null,FR:got.FR||null,IT:got.IT||null,ES:got.ES||null,plugOk:cur.plugOk||null});const R=rule1Compute(NB.F,cur.name,rate(),null);euNoBuyNote(R,NB);   /* b279 */
     euShow(R.out.filter(o=>o['Buy market']!=='UK'),asins.length);
   }catch(e){toast('Keepa did not answer — nothing was spent on the failed part',true);}
   b.disabled=false;paintEuLeads();}
@@ -1026,7 +1046,7 @@ async function fillUnknownShares(f){if(!f||!f.rows||typeof shareUnknown!=='funct
   stampShares(f.rows);const by={};f.rows.forEach(r=>by[(r.ASIN||'').trim()]=r);const cache=lsGet(UNK_KEY,{}),now=Date.now();
   /* which leads are standing on the family's drops with their own share unknown */
   const pOn=typeof primeOn==='function'&&primeOn();
-  const R=cur.rule===1?rule1Compute(Object.assign({},files,{prime:pOn,plugOk:cur.plugOk||null}),cur.name,rate(),null):rule2Compute(f.rows,factsAll(),{vatFor:vatFor,rule:cur.rule,prime:pOn});   /* b123: the normal run — unknown-share options are leads on the family's drops */
+  const R=cur.rule===1?(()=>{const NB=euNoBuy(Object.assign({},files,{prime:pOn,plugOk:cur.plugOk||null}));const X=rule1Compute(NB.F,cur.name,rate(),null);euNoBuyNote(X,NB);return X;})():rule2Compute(f.rows,factsAll(),{vatFor:vatFor,rule:cur.rule,prime:pOn});   /* b123: the normal run — unknown-share options are leads on the family's drops */
   const need=[];R.out.forEach(o=>{const r=by[o.ASIN];if(r&&shareUnknown(r)&&!need.includes(o.ASIN))need.push(o.ASIN);});
   let asked=0,confirmed=0;const ask=[];
   need.forEach(a=>{const c=cache[a];if(c&&now-c.at<UNK_TTL_H*3600e3){optionStamp(by[a],c);if(c.n>=50||(c.last&&c.last.n>0))confirmed++;}else ask.push(a);});
@@ -1194,6 +1214,15 @@ function lvlPicker(asin,sellNow){if(typeof sellLevels!=='function')return'';cons
   return `<div class="lvls">${chips}${learn}${stale}</div>`;}
 /* the app's pick becomes Jack's pick: hand the learned levels to sellPick before each run */
 function stampLearned(){if(typeof UNIFIED_SELL==='undefined'||typeof learnedLevels!=='function')return;UNIFIED_SELL.learned=learnedLevels(factsAll());}
+/* b279 (Jack, 6 Oct, at Bulk Pure Whey bought from Italy: "can't buy from EU"; 4 Oct: nappies / Pampers and washing tablets like Finish
+   "can't come to the UK from the EU"). The Prime EU links already leave these out, but Drop & check and brand runs had nothing stopping them.
+   A product whose UK category is one of these is priced from Amazon UK only — its EU rows never reach the maths (rule1.js untouched). */
+const EU_NO_BUY=[['sports supplements','sports nutrition'],['nappies','nappies'],['home care & cleaning','household cleaning']];
+function euNoBuy(F){const tree=new Map();[F.UK,F.viewer].forEach(f=>{if(f&&f.rows)f.rows.forEach(r=>{const a=(r.ASIN||'').trim();if(a&&!tree.has(a))tree.set(a,String(r['Categories: Tree']||[r['Categories: Root'],r['Categories: Sub']].filter(Boolean).join(' › ')).toLowerCase());});});
+  const block=new Map();tree.forEach((t,a)=>{const h=EU_NO_BUY.find(([w])=>t.includes(w));if(h)block.set(a,h[1]);});if(!block.size)return{F,block};
+  const G=Object.assign({},F);['DE','FR','IT','ES'].forEach(m=>{const f=F[m];if(!f||!f.rows)return;const rows=f.rows.filter(r=>!block.has((r.ASIN||'').trim()));
+    if(rows.length!==f.rows.length)G[m]=Object.assign({},f,{rows,asins:(f.asins||[]).filter(a=>!block.has(a))});});return{F:G,block};}
+function euNoBuyNote(R,NB){if(!NB||!NB.block.size||!R)return;R.out.forEach(o=>{const w=NB.block.get(o.ASIN);if(w)o.Flags=(o.Flags?o.Flags+'; ':'')+`UK ONLY — ${w} can't be bought from the EU (Jack), so it is priced from Amazon UK`;});}
 /* ============ the run ============ */
 function run(){if(!cur)return;stampLearned();
   /* UK-only brand with just the Finder export: the Finder carries the same columns, so it IS the sell side */
@@ -1211,7 +1240,7 @@ function run(){if(!cur)return;stampLearned();
     $('#sumEmpty').classList.remove('err');}
   const prevMap=baselineOf(leadMap(cur.key));
   let R;
-  if(cur.rule===1){if(files.viewer)stampShares(files.viewer.rows);R=rule1Compute(Object.assign({},files,{prime:typeof primeOn==='function'&&primeOn(),plugOk:cur.plugOk||null}),cur.name,rate(),null);R.rule=1;R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;o.Score=r2score(o['Profit £'],o['ROI %'],o.SPM,(o['Sell £ used']||0)<R2.LOW_TICKET);});}
+  if(cur.rule===1){if(files.viewer)stampShares(files.viewer.rows);const NB=euNoBuy(Object.assign({},files,{prime:typeof primeOn==='function'&&primeOn(),plugOk:cur.plugOk||null}));R=rule1Compute(NB.F,cur.name,rate(),null);R.rule=1;euNoBuyNote(R,NB);R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;o.Score=r2score(o['Profit £'],o['ROI %'],o.SPM,(o['Sell £ used']||0)<R2.LOW_TICKET);});}
   else{/* a tea & coffee filter: every row is 0% unless it reads like an appliance (machine, grinder…) or a VA has set it */
     const vf=cur.vat0?((row,fact)=>{if(fact&&fact.vat!=null&&fact.vat!=='')return vatFor(row,fact);
       const text=((row.Title||'')+' | '+(row['Categories: Sub']||'')).toLowerCase();if(r4isAppliance(text))return{rate:R4.STANDARD,why:'20% — reads like an appliance, not the drink',src:'rule'};
@@ -1439,13 +1468,23 @@ function backNote(R){if(!R||!R.out)return;R.out.forEach(o=>{if(o.back){delete o.
     const sure=(G.goneOos||[]).includes(o.ASIN);
     o.back={last:dOf(L),gone:gd,sure,missed:runs.length-1-k};
     o.Changed=sure?`↩ Amazon out of stock ${d(gd)} · back in stock`:`↩ off the ${d(gd)} export · back — out of stock?`;});}
-const PROOF={MIN:50,CAP:60,BOOST:5,BOOST_SPM:100};
+const PROOF={MIN:50,CAP:60,BOOST:5,BOOST_SPM:100,FBA:4,FBM:2,FAST:1,NONE:-3,SOLD:3,SOLD_MIN:70};
+/* b283 (Jack, 7 Oct, at the Galaxy Fit3 — 78, "a banger": "if there has been history with FBA or FBM it should add a few points, and
+   without history it should stay the same or lower — something we are unsure we can sell … tweak it slightly, not a massive change").
+   Proof points: FBA sellers in the last 90 days +4 · FBM sellers +2 · confirmed 100+ a month with that history +1 (so FBA + 100+/mo is
+   still +5, as before) · nobody but Amazon has ever sold it −3. Still never lifts a lead into 95+. */
+function proofHist(o,rule){if(rule===1){const r=typeof rawRowOf==='function'?rawRowOf(o.ASIN):null;return{fba:+o['Sell FBA 90d £']>0,fbm:!!(r&&kNum(r['New, 3rd Party FBM: 90 days avg.'])>0)};}
+  return{fba:o['FBA resale proven?']==='yes',fbm:+o['FBM 90d £']>0};}
 function proofScore(o,rule){const from=String((rule===1?o['SPM from']:o['Demand from'])||'').toLowerCase(),spm=+(rule===1?o.SPM:o['Sells /mo'])||0;
-  const confirmed=/^(bought|confirmed)/.test(from),proven=rule===1?(+o['Sell FBA 90d £']>0):o['FBA resale proven?']==='yes';
+  const confirmed=/^(bought|confirmed)/.test(from),H=proofHist(o,rule);
   let sc=+o.Score||0;o.proof='';
   if(!(confirmed&&spm>=PROOF.MIN)){if(sc>PROOF.CAP){sc=PROOF.CAP;o.proof=confirmed?`max ${PROOF.CAP} · only ${Math.round(spm)}/mo`:`max ${PROOF.CAP} · unconfirmed`;}
     if(+o['Potential score']>PROOF.CAP)o['Potential score']=PROOF.CAP;}
-  else if(spm>=PROOF.BOOST_SPM&&proven){sc=Math.min(99,sc+PROOF.BOOST);o.proof=`+${PROOF.BOOST} · proven`;}
+  else if((H.fba||H.fbm)&&sc<95){const pts=(H.fba?PROOF.FBA:0)+(H.fbm?PROOF.FBM:0)+(spm>=PROOF.BOOST_SPM?PROOF.FAST:0),to=Math.min(sc>90?94:90,sc+pts);   /* b281: never a world-class 95+ on its own · b283: never makes a lead 'unreal' (91+) — only adds on top of one that already is */
+    if(to>sc){o.proof=`+${to-sc} · others sell it`;o.proofWhy=H.fba&&H.fbm?'FBA and FBM sellers in the last 90 days':H.fba?'FBA sellers in the last 90 days':'FBM sellers in the last 90 days';sc=to;}}
+  if(!H.fba&&!H.fbm&&sc>1){sc=Math.max(1,sc+PROOF.NONE);o.proof=(o.proof?o.proof+' · ':'')+`${PROOF.NONE} · only Amazon`;o.proofWhy='Nobody but Amazon has sold it in the last 90 days — no FBA or FBM history, so less sure we can sell it';}
+  /* b283: you have sold this exact ASIN before = we know we can sell it — +3, but only on a lead that is already good (70+), never into 95+ */
+  if(sc>=PROOF.SOLD_MIN&&sc<95&&typeof soldBefore==='function'&&soldBefore(o.ASIN)){const to=Math.min(sc>90?94:90,sc+PROOF.SOLD);if(to>sc){o.proof=(o.proof?o.proof+' · ':'')+`+${to-sc} · you sold it`;sc=to;}}
   o.Score=sc;return o;}
 /* ============ results ============ */
 function sumTile(v,l,cls,attrs){return`<div class="sum ${cls||''}"${attrs||''}><span class="sv">${typeof v==='number'?v.toLocaleString():v}</span><span class="sl">${l}</span></div>`;}
@@ -1656,7 +1695,7 @@ function paintLeadFilt(){if(!cur||!result)return;const F=leadFilt(),host=$('#fMk
   const base=visible({mks:[],deals:F.deals,rest:false}),baseD=visible({mks:F.mks,deals:[],rest:false});
   if(host&&cur.rule===1){const n={};base.forEach(o=>{const m=o['Buy market']||'UK';n[m]=(n[m]||0)+1;});
     const mks=MARKETS.filter(m=>n[m]||(cur.markets||[]).includes(m)||F.mks.includes(m));const p=(typeof PRIME_MK!=='undefined'?PRIME_MK:MARKETS).filter(m=>mks.includes(m)),pOn=p.length&&F.mks.length===p.length&&p.every(x=>F.mks.includes(x));   /* b269: the Prime countries — all five now */
-    host.innerHTML=`<button type="button" data-mk="ALL" class="${F.mks.length?'':'on'}">All</button>`+mks.map(m=>`<button type="button" data-mk="${m}" class="${F.mks.includes(m)?'on':''}${n[m]?'':' zero'}">${m}<b>${n[m]||0}</b></button>`).join('')
+    host.innerHTML=`<button type="button" data-mk="ALL" class="${F.mks.length?'':'on'}">All</button>`+mks.map(m=>`<button type="button" data-mk="${m}" class="${F.mks.includes(m)?'on':''}${n[m]?'':' zero'}" title="${F.mks.length===1&&F.mks[0]===m?'Click again to show every country':`Just ${MK_NAME[m]||m}`} · ⇧ Shift-click to ${F.mks.includes(m)?'take it off':'add it alongside the others'}">${m}<b>${n[m]||0}</b></button>`).join('')
       +(p.length&&p.length<mks.length?`<button type="button" data-mk="PRIME" class="pr${pOn?' on':''}" title="The countries with Prime exclusive prices">★ ${p.join('·')}</button>`:'');}   /* b269: no chip when every country here has Prime (it would be the same as All) */
   if(dl){const n={prime:0,offer:0,amazon:0};baseD.forEach(o=>{const d=leadDeal(o);if(n[d]!=null)n[d]++;});
     const tip={prime:'Bought at a Prime exclusive price — Prime members only (UK, Germany, France, Italy, Spain)',offer:'Amazon has it on offer — a coupon, Subscribe & Save, a Business price, a deal badge, or 9%+ under its 90-day average',amazon:'Amazon\'s normal price'};
@@ -1735,7 +1774,12 @@ function statusCell(o){const sp=`<span class="spill ${({NEW:'new',BETTER:'better
     return`<span class="chg since" title="${escapeHtml('Better than when '+who+(v.v==='Seen'?' last looked at it':' said '+v.v)+(when?' on '+when:'')+': '+(o.sinceVerdict||''))}">↑ better since ${escapeHtml(who)} ${v.v==='Seen'?'looked':'said '+escapeHtml(v.v)}${when?' ('+escapeHtml(when)+')':''}${what?'<br>'+escapeHtml(what):''}</span>`;})():'';
   const low=o.low?`<span class="chg" title="Lowest buy we saw, and when — set a Keepa track at it">low was £${o.low.buy.toFixed(2)} on ${escapeHtml(o.low.stamp.slice(8,10))}/${escapeHtml(o.low.stamp.slice(5,7))}</span>`:'';
   const wait=o.QUEUE==='waiting'&&o.waitSince?`<span class="chg wait" title="On the To review list from the ${escapeHtml(ukDate(o.waitSince))} run and nobody on this filter has done it yet — it stays until it is answered, opened in Keepa or marked Done">not done since ${escapeHtml(o.waitSince.slice(8,10))}/${escapeHtml(o.waitSince.slice(5,7))}</span>`:'';   /* b233 */
-  const proof=o.proof?`<span class="chg proof ${o.proof[0]==='+'?'up':'cap'}" title="${o.proof[0]==='+'?'Amazon confirms 100+ sales a month and other FBA sellers are already selling it — 5 added to the score':'Under 50 CONFIRMED sales a month — the score cannot go above 60 until Amazon confirms 50+ a month (Jack, 4 Oct)'}">${escapeHtml(o.proof)}</span>`:'';
+  /* b283: one hover that explains every part of the note — proof points, the only-Amazon take-off, you sold it, the 60 cap */
+  const proofTip=o=>{const p=String(o.proof||''),t=[];if(/max 60/.test(p))t.push('Under 50 CONFIRMED sales a month — the score cannot go above 60 until Amazon confirms 50+ a month (Jack, 4 Oct)');
+    if(/others sell it/.test(p))t.push((o.proofWhy||'Other sellers have sold it')+' — we know it sells: FBA +4, FBM +2, 100+ a month +1 (never past 90)');
+    if(/only Amazon/.test(p))t.push(o.proofWhy||'Nobody but Amazon has sold it — less sure we can sell it: −3');
+    if(/you sold it/.test(p))t.push('You have sold this exact ASIN before (your Replen storefront list) — +3 on a lead that is already 70+');return t.join('\n');};
+  const proof=o.proof?`<span class="chg proof ${o.proof[0]==='+'?'up':'cap'}" title="${escapeHtml(proofTip(o))}">${escapeHtml(o.proof)}</span>`:'';
   return sp+chg+since+wait+proof+low;}   /* b260: the reasons sit right under the pill they explain */
 function renderTable(){{const lt=$('#leads');if(lt){if(lt.style.minHeight)lt.style.minHeight='';const hb=lt.parentElement;if(hb&&hb.style.minHeight&&!view.q)hb.style.minHeight='';}}   /* b260 */
   paintLeadFilt();const all=visible();const pages=Math.max(1,Math.ceil(all.length/PAGEN()));if(view.page>pages)view.page=pages;
@@ -1816,7 +1860,7 @@ function renderTable(){{const lt=$('#leads');if(lt){if(lt.style.minHeight)lt.sty
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r demc">${o.SPM}<span class="sub">${o['SPM from']}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
       <td class="flagc">${typeof primeNote==='function'?primeNote(o):''}${(()=>{const oa=oaChip(o),fx=flagPick(fl.filter(f=>!/★ PRIME DEAL|^PREP FEE OFF/.test(f)));const fe=String(o['Fees from']||'').startsWith('ESTIMATED')?`<i class="ch feeest" title="Keepa has no fee figure for this product on Amazon UK (no FBA seller and no size on the listing yet), so the fees are worked out from the category and weight: ${o['Referral %']}% referral + £${(+o['FBA fee £']||0).toFixed(2)} FBA. The profit is an estimate — check it in SAS before buying.">fees estimated · check SAS</i>`:'';   /* b259 */
-        return`<span class="chips">${fe}${prepChip(o)}${oa}${fx.show.map(flagChip).join('')}${fx.rest.length?`<i class="ch more" title="${escapeHtml(fx.rest.join(' · '))}">+${fx.rest.length}</i>`:''}</span>`;})()}${pmRow(o)}</td></tr>`;RH.push(h.slice(s0));});}
+        return`<span class="chips">${fe}${prepChip(o)}${codeNote(o,1)}${oa}${fx.show.map(flagChip).join('')}${fx.rest.length?`<i class="ch more" title="${escapeHtml(fx.rest.join(' · '))}">+${fx.rest.length}</i>`:''}</span>`;})()}${pmRow(o)}</td></tr>`;RH.push(h.slice(s0));});}
   else{h=`<thead><tr><th></th><th>#</th><th>Score</th><th>Product</th><th>Verdict</th><th class="r">Buy £</th><th class="r">Sell £</th><th class="r">Profit £</th><th class="r">ROI</th><th class="r">Demand</th><th title="We cannot see other retailers' prices. These are the ones worth checking for this product — tick what you confirm.">OA check · you check</th></tr></thead><tbody>`;
     rows.forEach(o=>{const s0=h.length;if(H0<0)H0=s0;const pot=o['Potential score']>o.Score+5?o['Potential score']:0;const band=bandOf(Math.max(o.Score,pot));
       const fact=factGet(o.ASIN);const alt=[['Buy Box 90d',o['Buy Box 90d £']],['Buy Box 180d',o['Buy Box 180d £']],['FBA 90d',o['FBA 90d £']],['FBM 90d',o['FBM 90d £']],['Buy Box high',o['Buy Box high £']]].filter(x=>x[1]).map(x=>`${x[0]} ${gbp(x[1])}`).join(' · ');
@@ -1829,7 +1873,7 @@ function renderTable(){{const lt=$('#leads');if(lt){if(lt.style.minHeight)lt.sty
       <td class="num r sellc"><b>${gbp(o['Sell for £'])}</b><span class="sub conf-${o['Sell confidence']}" title="${escapeHtml(o['Sell from']+' — '+alt)}">${escapeHtml(shortSell(o['Sell from']))}</span><input class="ysell" data-asin="${o.ASIN}" type="number" step="0.01" placeholder="your £" value="${fact.sell||''}" title="What the graph says it really sells for — saved, and used for the refit">${lvlPicker(o.ASIN,o['Sell for £'])}</td>
       <td class="num r ${o['Profit £']>=0?'pos':'neg'}"><b>${gbp(o['Profit £'])}</b></td><td class="num r ${roiCls(o['ROI %'])}"><b>${pct(o['ROI %'])}</b></td>
       <td class="num r demc">${o['Sells /mo']}<span class="sub">/mo${o['Demand from']?' · '+escapeHtml(o['Demand from']):''}${o.Options?` · 1 of ${o.Options}`:''}</span></td>
-      <td class="pmc">${typeof primeNote==='function'?primeNote(o):''}${oaCell(o)}</td></tr>`;RH.push(h.slice(s0));});}
+      <td class="pmc">${typeof primeNote==='function'?primeNote(o):''}${codeNote(o,2)}${oaCell(o)}</td></tr>`;RH.push(h.slice(s0));});}
   const T0=h.length;h+=oaRowsHtml();   /* b247 */
   leadsPaint(h+'</tbody>',H0<0||RH.reduce((n,x)=>n+x.length,0)!==T0-H0?null:h.slice(0,H0),RH,h.slice(T0)+'</tbody>');   /* anything between the rows = draw it whole */
   const from=all.length?(view.page-1)*PAGEN()+1:0,to=Math.min(all.length,view.page*PAGEN());
@@ -1854,6 +1898,18 @@ function leadsPaint(full,head,rows,tail){const lt=$('#leads');if(!lt)return;cons
    "check OA", so those two flags are noise; the rest are ranked and only two show, the others sit behind "+n" on hover */
 const FLAG_RANK=[/PRIME DEAL/,/EU PLUG|PLUG CHECK/i,/tanked/i,/NOT A DROP/i,/no FBA seller/i,/LIMITED TIME/i,/AMAZON OWNS/i,/WIDE SELL/i,/volatile/i,/drops only/i,/not in a drop/i,/A2A->OA/i,/^0% VAT/i];
 /* b274: a lead that sells under £11 carries no £1 handling (Jack preps it himself) — say so on the row, because SAS will show £1 less */
+/* b280 (Jack, 6 Oct: "write in what a discount code would be — ROI, profit and score — show normal, then notes with x% off — remember we
+   said flat 5%ish"). The row stays at the normal price. The note is the same lead bought 5% under Amazon's normal UK price (a retailer
+   price-match + code). Only when that beats what the row already pays (a Prime or S&S price can be cheaper) and never on grocery. */
+const OA_FLAT=5;
+function codeNote(o,rule){if(!o)return'';let base,real,sell,spm,low,p,roi;
+  if(rule===1){base=+o['UK Amazon now £']||0;real=+o['Landed £']||0;sell=+o['Sell £ used']||0;spm=+o.SPM||0;if(/grocery/i.test(o.Category||''))return'';}
+  else{base=+o['Buy at £']||0;real=+o['After discount £']||base;sell=+o['Sell for £']||0;spm=+o['Sells /mo']||0;if(o['Category kind']==='grocery')return'';}
+  if(!base||!sell)return'';const c=Math.round(base*(1-OA_FLAT/100)*100)/100;if(c>=real-0.005)return'';low=sell<R2.LOW_TICKET;
+  if(rule===1){const kg=+o.kg||0,ref=(+o['Referral %']||15)/100,fba=+o['FBA fee £']||BR.DEF_FBA;[p,roi]=brProfit(sell,c,ref,fba,kg,zeroVatLead(o)?0:null,o.Category||'');}
+  else{const r=rawRowOf(o.ASIN)||{},ref=(kNum(r['Referral Fee %'])||R2.DEF_REF)/100,fba=kNum(r['FBA Pick&Pack Fee'])||R2.DEF_FBA,vat=o['VAT %']!=null&&o['VAT %']!==''?(+o['VAT %'])/100:R2.VAT;[p,roi]=r2prof(sell,c,ref,fba,vat);}
+  const sc=proofScore(Object.assign({},o,{Score:r2score(p,roi,spm,low),'Potential score':0}),rule).Score;
+  return`<i class="ch code" title="If a retailer price-matches Amazon's normal price (${gbp(base)}) and a ${OA_FLAT}% code goes on top — the flat ${OA_FLAT}% we work to. The row above is the normal buy; this is the same lead with the code.">${OA_FLAT}% code: ${gbp(c)} → ${gbp(p)} · ${pct(roi)} · score ${sc}</i>`;}
 function prepChip(o){return o&&o['Prep fee £']===0?`<i class="ch good" title="${escapeHtml((typeof SELF_PREP_NOTE!=='undefined'&&SELF_PREP_NOTE)||'')}">PREP OFF · +£1 vs SAS</i>`:'';}
 function flagPick(fl,max){max=max==null?2:max;const keep=(fl||[]).filter(f=>!/^worst case|^UK buy: check OA/i.test(f));
   const rank=f=>{const i=FLAG_RANK.findIndex(re=>re.test(f));return i<0?FLAG_RANK.length:i;};
@@ -1961,6 +2017,10 @@ function openInKeepa(){if(!result){toast('Nothing to open',true);return;}
 /* b233 (Jack, 1 Oct: "add a Done button next to Open in Keepa"). Marks the same leads Open in Keepa would open (ticked, or all, or this page) as done
    by you — for leads looked at without opening them from here, and for Jack, whose opens mark nothing (b142). Same stamp as a VA's open; undo = Put back. */
 function doneList(){const all=visible();return(view.sel.size?[...view.sel]:all.map(o=>o.ASIN)).filter(a=>!doneToday({ASIN:a}));}   /* b242: every lead shown, or the ticked ones */
+/* b284 (Jack, 7 Oct, with Buy from: UK on and the toast "0 marked looked at — 19 more in To review are hidden by your ticks or filters, so the
+   filter is not finished yet": "should be a quick click and be fine — marked as done"). ✓ Done on today's run finishes the WHOLE filter: what is
+   on screen (or ticked) plus every To review lead a country / deal chip, the search or the tab was hiding. */
+function doneAllList(){const L=doneList();if(!todayRun())return L;const s=new Set(L);result.out.forEach(o=>{if(o.QUEUE&&!doneToday(o))s.add(o.ASIN);});return[...s];}
 /* b248 (Jack, 4 Oct, after pressing the small "✓ All looked at" and finding the row still amber: "I pressed this button — why is it yellow?").
    Two buttons was one too many. There is ONE Done, next to Open in Keepa, as he first asked (b233): it marks the leads shown as looked at by you
    and stamps today's run finished — name, time, green row. With leads ticked, or a country / deal filter hiding some, it marks those and says
@@ -1985,8 +2045,9 @@ function paintDoneBtn(){{const de=$('#doneEmpty');if(de&&!de.hidden&&result)de.h
   const tot=(()=>{try{return visible().length;}catch(e){return 0;}})(),what=view.sel.size?`the ${n} ticked`:n===tot?`all ${tot}`:`the ${n} left of ${tot}`;
   if(!r){db.disabled=!n;db.textContent=n?`✓ Mark ${what} as looked at`:'✓ All looked at';db.title='Marks them as looked at by you. This is not today\'s run, so there is nothing to finish.';return;}
   db.disabled=fin;
-  db.textContent=fin?`✓ Done by ${r.done.who||''} · ${new Date(r.done.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:n?`✓ Done — marks ${what} as looked at`:'✓ Done';
-  db.title=fin?'This filter is finished for today':`Press when you have looked at ${n?'these '+n+' lead'+(n===1?'':'s'):'the leads'}: marks them looked at by ${me()||'you'} and this filter as DONE — your name and the time go on it, and the row turns green.`;}
+  const na=(()=>{try{return doneAllList().length;}catch(e){return n;}})(),hid=na-n;   /* b284: Done finishes the whole filter, hidden leads too */
+  db.textContent=fin?`✓ Done by ${r.done.who||''} · ${new Date(r.done.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:hid>0?`✓ Done — marks the ${na} left as looked at`:n?`✓ Done — marks ${what} as looked at`:'✓ Done';
+  db.title=fin?'This filter is finished for today':`Press when you have looked at ${na?'these '+na+' lead'+(na===1?'':'s'):'the leads'}${hid>0?` (${hid} of them are hidden by the Buy from / Deal chips, the search or the tab — Done marks those too)`:''}: marks them looked at by ${me()||'you'} and this filter as DONE — your name and the time go on it, and the row turns green.`;}
 /* b265: ✓ Done on an older run: nothing is marked — it takes you to where today's export goes */
 function doneNotYet(){const at=result&&result.past?result.past.at:(cur&&runLast(cur.key)||{}).at,when=at?ukDate(at):'an earlier day';
   const eu=cur&&(cur.markets||[]).some(m=>m!=='UK');
@@ -1999,12 +2060,13 @@ function doneNotYet(){const at=result&&result.past?result.past.at:(cur&&runLast(
     const z=$('#dropAny');if(z){z.scrollIntoView({behavior:'smooth',block:'center'});z.classList.add('flash');setTimeout(()=>z.classList.remove('flash'),1800);}});}
 function finishRun(){if(!result||!cur||!needMe())return;if($('#doneSel')&&$('#doneSel').classList.contains('notyet')){doneNotYet();return;}const r=todayRun();
   if(r&&typeof runStale==='function'&&runStale(r)){toast(`This run is over ${STALE_H} hours old — drop today's export to run it again`,true);return;}   /* b260 */
-  const list=doneList();if(list.length){const by={};result.out.forEach(o=>{by[o.ASIN]=o;});
+  const vis=new Set(visible().map(o=>o.ASIN)),list=doneAllList(),hid=list.filter(a=>!vis.has(a)).length;   /* b284: hidden To review leads too */
+  if(list.length){const by={};result.out.forEach(o=>{by[o.ASIN]=o;});
     seenStampMany(list.map(a=>({asin:a,v:{v:'Seen',reason:'',note:'marked done',source:cur.key,state:(by[a]||{}).state}})),'Done button');
     list.forEach(a=>{touched.add(a);const o=by[a];if(o)o.verdict=verdGet(a);});view.sel.clear();}
   const left=runDoneLeft();
   if(r&&!left){if(!(r.done&&!r.done.auto)){runSave(runDoneStamp(r,{who:me(),at:nowIso()}));if(typeof actLog==='function')actLog('done','Done pressed · '+cur.name+(list.length?' · '+list.length+' leads marked':''),cur.key);}
-    renderResults();paintNext();toast(`${cur.name} — DONE by ${me()}${list.length?` · ${list.length} lead${list.length===1?'':'s'} marked looked at`:''}`);return;}
+    renderResults();paintNext();toast(`${cur.name} — DONE by ${me()}${list.length?` · ${list.length} lead${list.length===1?'':'s'} marked looked at${hid?` (${hid} of them hidden by your filter)`:''}`:''}`);return;}
   renderResults();paintNext();
   toast(r?`${list.length} marked looked at — ${left} more in To review ${left===1?'is':'are'} hidden by your ticks or filters, so the filter is not finished yet`:`${list.length} marked looked at by ${me()}`,!!r);}
 function markDone(){if(!result||!cur||!needMe())return;const list=doneList();if(!list.length){toast('All of these are done already');return;}
@@ -2242,7 +2304,7 @@ function openHash(){let h=location.hash||'';
   if(/^#(runs|leads|history)\b/i.test(h)){const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b&&!b.classList.contains('active'))b.click();if(cur&&!$('#viewRun').hidden)backToList();showTab(/^#runs/i.test(h)?'runs':'leads');return;}const goBrands=()=>{const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b&&!b.classList.contains('active'))b.click();};
   if(m&&srcGet(m[1])){goBrands();openRun(m[1]);return;}
   if(/^#due/i.test(h)){goBrands();if(cur&&!$('#viewRun').hidden)backToList();const b=document.querySelector('#lSeg button[data-seg="due"]');if(b)b.click();}}
-function brandsInit(){if(typeof bbSeed==='function')bbSeed();if(typeof blSeed==='function')blSeed();paintJackOnly();renderList();renderLog();if(!me())whoGate(true);setTimeout(openHash,50);window.addEventListener('hashchange',openHash);paintTokens();setInterval(paintTokens,10*60*1000);
+function brandsInit(){if(typeof primeEndOnce==='function')primeEndOnce();   /* b285 */if(typeof bbSeed==='function')bbSeed();if(typeof blSeed==='function')blSeed();paintJackOnly();renderList();renderLog();if(!me())whoGate(true);setTimeout(openHash,50);window.addEventListener('hashchange',openHash);paintTokens();setInterval(paintTokens,10*60*1000);
   /* b30 (Jack: "still loads of dead space on ASUS"): the floors card lives under the run summary, so the two columns come out level */
   {const fr=$('#floorRow'),tc=document.querySelector('#viewRun .twocol');if(fr&&tc)tc.after(fr);}
   $('#brandTbl').addEventListener('click',onListClick);
@@ -2327,11 +2389,15 @@ function brandsInit(){if(typeof bbSeed==='function')bbSeed();if(typeof blSeed===
   $('#fSort').addEventListener('change',e=>{view.sort=e.target.value;view.page=1;renderTable();});
   {const fp=$('#fPer');if(fp)fp.addEventListener('change',e=>{view.per=parseInt(e.target.value);view.page=1;renderTable();});}
   /* b240: Buy from = tick countries (none = all; the ★ chip = the Prime countries — all five since b269, so it only shows when a run has a country without Prime); Deal = ★ Prime exclusive / on offer / normal price */
+  /* b282 (Jack, 7 Oct: "make this smoother — sometimes I want to look at 2 countries, sometimes just one"): a click shows JUST that country
+     (click it again = All); ⇧ Shift / ⌘ click adds or takes away one, for two or more. It used to add on every click, so going from
+     Germany to France took two clicks. Same on the Deal chips. */
+  const lfAdd=e=>!!(e&&(e.shiftKey||e.metaKey||e.ctrlKey));
   $('#fMarket').addEventListener('click',e=>{const b=e.target.closest('button[data-mk]');if(!b||!cur)return;const F=leadFilt();let m=new Set(F.mks);const k=b.dataset.mk;
-    if(k==='ALL')m=new Set();else if(k==='PRIME'){const p=typeof PRIME_MK!=='undefined'?PRIME_MK:MARKETS;m=(m.size===p.length&&p.every(x=>m.has(x)))?new Set():new Set(p);}else{m.has(k)?m.delete(k):m.add(k);}
+    if(k==='ALL')m=new Set();else if(k==='PRIME'){const p=typeof PRIME_MK!=='undefined'?PRIME_MK:MARKETS;m=(m.size===p.length&&p.every(x=>m.has(x)))?new Set():new Set(p);}else if(lfAdd(e)){m.has(k)?m.delete(k):m.add(k);}else{m=(m.size===1&&m.has(k))?new Set():new Set([k]);}
     leadFiltSet({mks:[...m],rest:false});view.page=1;renderTable();});
   $('#fDeal').addEventListener('click',e=>{const b=e.target.closest('button[data-deal]');if(!b||!cur)return;const F=leadFilt();let d=new Set(F.deals);const k=b.dataset.deal;
-    if(k==='ALL')d=new Set();else{d.has(k)?d.delete(k):d.add(k);}leadFiltSet({deals:[...d],deal:null,rest:false});view.page=1;renderTable();});
+    if(k==='ALL')d=new Set();else if(lfAdd(e)){d.has(k)?d.delete(k):d.add(k);}else{d=(d.size===1&&d.has(k))?new Set():new Set([k]);}leadFiltSet({deals:[...d],deal:null,rest:false});view.page=1;renderTable();});
   $('#lfNote').addEventListener('click',e=>{const b=e.target.closest('[data-lf]');if(!b||!cur)return;
     if(b.dataset.lf==='all')leadFiltSet({mks:[],deals:[],deal:null,rest:false});else leadFiltSet({rest:!leadFilt().rest});view.page=1;renderTable();});
   $('#floorRow').addEventListener('input',onFloorInput);

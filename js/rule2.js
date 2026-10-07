@@ -30,12 +30,33 @@ const R2={
     'vax':10,'wahl':15,'e.l.f.':20,'elf':20},
   /* generic UK retailers that price-match Amazon and then discount on top */
   RETAIL:[['Argos',6],['Currys',5],['John Lewis',4]],
+  HIGH:{p:20,roi:20,spm:50,base:80,money:2000,world:{roi:30,spm:100,money:8000},banger:{roi:20,spm:300,money:3000},unreal:{roi:25,money:6000}},   /* b280 / b281 / b283 */
   DEFAULT_ALLOW:10, MIN_SCORE:35, MIN_ROI_LOW:10   /* b45 (Jack): "I won't buy anything under 10% ROI on the lower-ticket side" — own price or with a code */   /* b41 (Jack, 15 Sep: "the shit shouldn't be on her thing to look at") — a row must score 35, on its own or with a code, to be a lead */
 };
 function r2sat(x,h){return x>0?x/(x+h):0;}
 function r2score(p,roi,spm,low){if(p<=0||roi<=0)return 1;const S=low?R2.SAT_LOW:R2.SAT,P=low?(R2.POW_LOW||R2.POW):R2.POW;
   const v=100*Math.pow(Math.pow(r2sat(p*spm,S.money),P.money)*Math.pow(r2sat(roi,S.roi),P.roi)*Math.pow(r2sat(p,S.profit),P.profit),P.all);
-  return Math.max(1,Math.min(100,Math.round(v)));}
+  return Math.max(1,Math.min(100,Math.round(Math.max(v,r2high(p,roi,spm)))));}
+/* b280 (Jack, 6 Oct, at the Lenovo 32" monitor — £35 profit, 35% ROI, 50 a month, scored 49: "at a high profit and above 20% ROI and over
+   50 spm I'd score it pretty high — it makes a lot of profit, so why would it be 50–65?"). The money-a-month part wanted ~£6,000 a month
+   before a big-ticket lead scored well. Now £20+ a unit, 20%+ ROI and 50+ a month is 80 or more, climbing with profit and ROI (to 95);
+   just under the line gets most of the way there, so there is no cliff at £19.99. The proof rule still caps unconfirmed sales at 60. */
+/* b281 (Jack, 6 Oct: "anything over 85 needs to be a BANGER — I'm going to buy 100% … 95–100 are rare, a 10/10 world-class lead where I buy
+   as many and as much as I possibly can — high, medium or low ticket"; the Philips shaver at 70 — "really good lead, happy with a 70").
+   80 = the line (£20 / 20% / 50 a month). Above it the score climbs with ROI and with the profit a month (profit × sales) — 85+ needs real
+   money a month. 95+ = world class at ANY ticket: 30%+ ROI, 100+ a month and ~£8,000+ a month of profit on the table. */
+function r2high(p,roi,spm){const H=R2.HIGH;spm=spm||0;const money=p*spm;let s=0;
+  const f=Math.min(1,p/H.p)*Math.min(1,roi/H.roi)*Math.min(1,spm/H.spm);
+  /* b283 (Jack, 7 Oct: "anything over 90 needs to be an unreal lead — no need to over score for the sake of it"): a banger tops out at 90;
+     91–94 only with real scale behind it — ~£6,000+ a month and 25%+ ROI */
+  const unreal=money>=H.unreal.money&&roi>=H.unreal.roi,top=unreal?94:90;
+  if(f<1)s=H.base*f;else s=Math.min(top,H.base+4*Math.min(1,(roi-H.roi)/20)+Math.max(0,3*Math.log2(money/H.money)));
+  /* b283 (Jack, 7 Oct, the two Galaxy Fit3 watches — £6.48 / 21% / 500 and 2,000 a month, FBA and FBM sellers on both: "bangers"): a fast
+     seller with decent ROI and real money a month is a banger at ANY ticket — 20%+ ROI, 300+ a month, £3,000+ a month starts at 85. */
+  /* the faster it sells, the lower the ROI he is happy with (b119): 20% at 300 a month, sliding to 15% at 1,000+ (the black Fit3, 2,000 a month at 15.5%) */
+  const B=H.banger,bRoi=spm>=1000?15:B.roi-5*Math.max(0,spm-B.spm)/700;if(roi>=bRoi&&spm>=B.spm&&money>=B.money)s=Math.max(s,Math.min(top,85+2*Math.log2(money/B.money)));
+  const W=H.world;if(roi>=W.roi&&spm>=W.spm&&money>=W.money)s=Math.max(s,Math.min(99,95+2*Math.log2(money/W.money)));
+  return s;}
 function r2selfPrep(sale){return sale>0&&sale<R2.SELF_PREP_UNDER;}
 const SELF_PREP_NOTE="PREP FEE OFF — sells under £11, so Jack preps it himself: the profit here is £1 more than SAS shows";
 function r2fees(sale,ref,fba){const r=sale*ref;return r+fba+(r2selfPrep(sale)?0:R2.PREP_MISC)+(r+fba)*R2.DST;}

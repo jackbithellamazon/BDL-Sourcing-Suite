@@ -1,6 +1,51 @@
-BUILD b278 — 6 Oct 2026 — push THIS one (it replaces b277 — b274 → b277 are in it too)
+BUILD b285 — 7 Oct 2026 — push THIS one
 
-Live is b273. This folder adds b274 → b278 on top.
+Live is b278. This folder adds b279 → b285 on top.
+
+WHAT'S NEW IN b285 — PRIME EVENT OVER, BACK TO NORMAL
+• Prime is OFF for everyone — you, Mera and Suz. No ★ Prime boxes on the runs, no Prime prices in the maths, no ★ Prime notes,
+  no "Prime event — do these first" group.
+• The three Prime-only filters (Prime deals · UK, Prime deals · DE + FR, Prime deals · IT + ES) are off the list, the counts
+  and Next due. Their old runs and leads stay in Runs / History.
+• Nobody has to do anything: the VAs' old "on" from 1 Oct no longer counts, and your own switch goes off the first time you open this build.
+• Next Prime event: press "★ Prime event" (top of a run, only you see it) and everything comes back for everyone.
+
+WHAT'S NEW IN b284 (still in this folder) — ✓ DONE IS ONE CLICK
+• Done now finishes the whole filter in one press. Before, with "Buy from: UK" (or a Deal chip, or a search) on, Done only marked
+  the leads on screen — the 19 in DE / FR / IT / ES stayed in To review and the row stayed amber NOT FINISHED.
+  Now it marks everything left in To review as looked at, hidden or not, and the row goes green DONE TODAY with your name.
+• The button says how many it will mark: "✓ Done — marks the 19 left as looked at".
+
+WHAT'S NEW IN b283 (still in this folder) — SCORES, TWEAKED
+• What the scores mean: 70 good · 80–84 good, high profit · 85–90 BANGER (100% buy) · 91–94 UNREAL (needs ~£6,000+ a month
+  and 25%+ ROI) · 95–99 WORLD CLASS (rare). Nothing gets pushed over 90 for the sake of it.
+• "Others sell it": FBA sellers in the last 90 days +4, FBM +2, 100+ a month +1. "Only Amazon" (nobody else has ever sold it) −3.
+• A fast seller with decent ROI (20%+, down to 15% when it sells 1,000+ a month; 300+ a month; £3,000+ a month) is a banger
+  at any price — both Galaxy Fit3 watches 77/78 → 90.
+• "You sold it" +3 — only on a lead that is already 70+. The list = everything your seller account has sold: it fills itself
+  the next time you run Replen (your storefront export) and is shared with Mera and Suz. Restricted ones (like the S26+) still show.
+
+WHAT'S NEW IN b282 (still in this folder) — SMOOTHER
+• Dropping a big file (like the UK Viewer) now shows a loading card: each file being read with its product count, then
+  "Pricing, scoring and drawing your leads — about a second", and it finishes on "✓ 131 leads ready". No more silent freeze.
+• Buy from (UK / DE / FR / IT / ES) and Deal buttons: one click = just that one (Germany → France is one click now).
+  ⇧ Shift-click (or ⌘-click) adds another, for two or more. Click the only one again = back to All.
+
+WHAT'S NEW IN b281 (still in this folder) — SCORES THAT MEAN WHAT YOU SAID
+• 80–84 = good lead · 85–94 = BANGER, 100% buy · 95–99 = WORLD CLASS, buy as much as you can (rare — any ticket size).
+  World class needs 30%+ ROI, 100+ a month and roughly £8,000+ a month of profit on the table.
+  The +5 "proven" bonus can make a banger, never a world-class lead on its own.
+  Yours: Lenovo 32" monitor 83 · Skullcandy Crusher ANC 2 92 · Philips head shaver 70 · Philips PerfectCare Compact 98.
+  Prime UK 5 Oct: 6 world class, 18 bangers out of 327.
+
+WHAT'S NEW IN b280 (still in this folder) — THE 5% CODE NOTE
+• Every UK lead a code would help gets a note: "5% code: £94.99 → £39.44 · 42% · score 84" (the Lenovo monitor). The row stays at the normal price.
+
+WHAT'S NEW IN b279 (still in this folder) — YOUR DROP & CHECK NOTES
+• Davidoff and Le Creuset: banned brands everywhere (you can't sell them).
+• Can't buy from the EU: sports nutrition (protein etc.), nappies and household cleaning (dishwasher / laundry) are priced from
+  Amazon UK only on every brand run and Drop & check. If it still makes money from the UK the lead says "UK ONLY".
+  Bulk Whey now prices at the UK £42.11 and loses money, so it's cut.
 
 WHAT'S NEW IN b278 — THE STUCK DROP & CHECK
 • UK Product Finder + EU Viewers (all of them UK products) said "all priced from your UK file — no Viewer needed", hid the
@@ -34,7 +79,7 @@ HOW TO PUSH (same as always)
 1. Open github.com → BDL-Sourcing-Suite → Add file → Upload files.
 2. Drag EVERYTHING inside this folder (index.html, css, js, tests, README-DEPLOY.txt) onto the page. Not the folder itself.
 3. Commit changes. Wait about a minute.
-4. Open https://jackbithellamazon.github.io/BDL-Sourcing-Suite/ and hard refresh (Cmd+Shift+R). Top right should say b278.
+4. Open https://jackbithellamazon.github.io/BDL-Sourcing-Suite/ and hard refresh (Cmd+Shift+R). Top right should say b283.
 5. Tell Mera and Suz: before opening a Prime link for Germany / France / Italy / Spain, set Keepa to THAT country first
    (the flag top-left in Keepa). The link carries no country — the app pops up a reminder too.
 

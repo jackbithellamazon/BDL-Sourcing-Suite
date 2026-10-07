@@ -81,7 +81,7 @@ async function cloudPull(){if(!cloudEnabled()||cloud.pulling)return false;cloud.
     if(st.vat0)lsSet(VAT0_KEY,st.vat0);else cloudQueue('src_settings','upsert',[settingRow('vat0',vat0Words())]);
     if(st.catBlock)lsSet(CAT_KEY,st.catBlock);else cloudQueue('src_settings','upsert',[settingRow('catBlock',catWords())]);
     /* b158: the audit's inventory list and archived rivals follow Jack to any browser */
-    if(st['audit-mine'])lsSet('bdl-sourcing-audit-mine',st['audit-mine']);
+    if(st['audit-mine'])lsSet('bdl-sourcing-audit-mine',st['audit-mine']);if(st['sold-before']&&typeof SOLD_KEY!=='undefined'){lsSet(SOLD_KEY,st['sold-before']);SOLD_C=null;}   /* b283 */
     if(st['audit-archived'])lsSet('bdl-sourcing-audit-archived',st['audit-archived']);
     if(st['audit-jointdays']!=null)lsSet('bdl-sourcing-audit-jointdays',st['audit-jointdays']);
     if(st['prime-event'])lsSet('bdl-sourcing-prime-event',st['prime-event']);   /* b217: Jack's Prime event switch → the Prime line in every note */

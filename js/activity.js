@@ -88,7 +88,7 @@ async function renderActivity(){const el=$('#actBody');if(!el)return;if(!isJack(
     const c=k=>ev.filter(e=>e.k===k).length;const opened=[...new Set(ev.filter(e=>e.k==='click'&&/Run|Join|Start|Next due/i.test(e.d)||e.k==='list').map(e=>e.s).filter(Boolean))];
     const inKeepa=[...new Set(ev.filter(e=>e.k==='keepa').map(e=>e.s).filter(Boolean))];
     const ran=runsDay.filter(x=>x.who===who);
-    const mine=srcAll().filter(s=>s.status!=='paused'&&(s.owner===who||s.owner==='VAs')&&!isListed(s));
+    const mine=srcAll().filter(s=>s.status!=='paused'&&(!primeHidden(s)||ran.some(x=>(x.source||x.source_key)===s.key))&&(s.owner===who||s.owner==='VAs')&&!isListed(s));   /* b285: a Prime-only filter counts only on a day it was run */
     const due=mine.filter(s=>dueState(s).due||ran.some(x=>(x.source||x.source_key)===s.key));
     const untouched=due.filter(s=>!inKeepa.includes(s.key)&&!ran.some(x=>(x.source||x.source_key)===s.key)&&!ev.some(e=>e.s===s.key));
     const kd={keepa:'🔵',verdict:'✅',lead:'🔗',page:'📄',list:'📋',away:'💤',back:'↩️',drop:'📥',click:'·'};

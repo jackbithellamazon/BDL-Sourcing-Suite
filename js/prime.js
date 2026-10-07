@@ -108,10 +108,10 @@ function paintPrime(){const host=$('#primeGrid'),vr=$('#viewRun');if(!host||!vr)
   h+=`<p class="pnote">${cur.noPrime?'★ This filter needs the normal box for each flag only — no ★ Prime boxes. Prime prices are read from the normal files':cur.primeOnly?'★ A Prime-only filter — just the ★ box for each flag':'★ Prime deals are on until Jack turns them off — do the normal box AND the ★ Prime box for each flag'} · ${r1multi?(cur.noPrime||cur.primeOnly?'every file goes into the one UK Viewer':'every country has a ★ Prime box now — Italy and Spain too · every file goes into the one UK Viewer'):'both files join into one run'} · buy price = the Prime price when it is lower, plus any S&amp;S or coupon the export shows.</p>`;
   host.innerHTML=h;}
 function paintPrimeSwitch(){const b=$('#primeTog');if(!b)return;const j=typeof isJack==='function'&&isJack();b.hidden=!j;if(!j)return;
-  const on=!!lsGet(PRIME_KEY,true);b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');
+  const on=primeEventOn();b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');
   b.innerHTML=`<i class="ptog"></i>★ Prime event${on?' on':''}`;
   b.title=on?'Prime event mode is on — for everyone: Suz and Mera get the ★ Prime boxes too, and every export needs the Prime price column. Press to switch it off.':'Switch on for the Prime event: every run gets a ★ Prime deals box for every country — for you, Suz and Mera.';}   /* b260: it has been shared since b218 */
-function primeToggle(){if(!isJack())return;const on=!lsGet(PRIME_KEY,true);lsSet(PRIME_KEY,on);primeApply();
+function primeToggle(){if(!isJack())return;const on=!primeEventOn();lsSet(PRIME_KEY,on);primeApply();
   lsSet(PRIME_EVENT_KEY,{on,at:nowIso()});if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('prime-event',{on,at:nowIso()})]);   /* b217: the VAs' notes follow */
   if(typeof renderList==='function')renderList();if(cur&&typeof paintRunHead==='function')paintRunHead();
   if(typeof paintSlots==='function'&&cur)paintSlots();paintPrime();if(cur&&typeof run==='function')run();
@@ -120,7 +120,13 @@ function primeToggle(){if(!isJack())return;const on=!lsGet(PRIME_KEY,true);lsSet
    so — for everyone. Jack's switch drives it and travels to the VAs as one src_settings row ('prime-event'); no row yet = on, because the
    early Prime deals are already live. Off = the line disappears everywhere on the VAs' next sync. */
 const PRIME_EVENT_KEY='bdl-sourcing-prime-event';
-function primeEventOn(){if(typeof isJack==='function'&&isJack())return!!lsGet(PRIME_KEY,true);const v=lsGet(PRIME_EVENT_KEY,null);return v==null?true:!!(v&&v.on);}
+/* b285 (Jack, 7 Oct 2026, after Prime Big Deal Days: "take all prime exclusive down now, hide it — the Prime event is over, back to normal").
+   OFF is the default now, for everyone. The shared 'prime-event' row only counts when it was switched on AFTER this event ended (PRIME_END),
+   so the VAs go back to normal without anyone touching it; Jack's own switch goes off once (PRIME_OFF_KEY). Next event: Jack presses
+   ★ Prime event and it is on again for everyone, exactly as before. */
+const PRIME_END='2026-10-07T21:30:00.000Z',PRIME_OFF_KEY='bdl-sourcing-prime-off-2026-10';
+function primeEndOnce(){if(lsGet(PRIME_OFF_KEY,false))return;lsSet(PRIME_OFF_KEY,true);lsSet(PRIME_KEY,false);}
+function primeEventOn(){if(typeof isJack==='function'&&isJack())return!!lsGet(PRIME_KEY,false);const v=lsGet(PRIME_EVENT_KEY,null);return!!(v&&v.on&&String(v.at||'')>PRIME_END);}
 const PRIME_NOTE_SHORT='★ Prime: Keepa & SAS show normal price';
 /* b240 (Jack, 3 Oct: "improve the notes and what is Prime exclusive too") */
 const PRIME_WHAT='What is Prime exclusive? During a Prime event (Prime Big Deal Days, Prime Day) Amazon sells some products cheaper to Prime members only. We buy on Prime accounts, so we pay that price. It is on Amazon UK, Germany, France, Italy and Spain. Keepa keeps it in its own column ("New, Prime exclusive"): Keepa\'s main price, its Europe box and SAS all show the normal price, so a Prime deal looks worse there than it really is.';
