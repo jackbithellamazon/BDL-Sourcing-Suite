@@ -3125,3 +3125,201 @@ html[data-theme="light"]{--prime:#0a86b8;--prime-txt:#075f84;--prime-fill:rgba(1
 @media (prefers-reduced-motion:reduce){.busycard .bbar i,.bspin{animation-duration:2.4s}}
 /* b282: Buy from hint */
 .mkpick .lfhint{font-size:11.5px;color:var(--faint);margin-left:6px}
+/* b288: VA storefront audit — OLD DATA chip, Jack's Mera & Suz section, the VA's steps */
+.p-old{color:#9AA4B5;background:rgba(154,164,181,.10);border-color:rgba(154,164,181,.38);letter-spacing:.05em;font-size:10.5px}
+.auva{margin-bottom:14px}
+.auvagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:4px 0 12px}
+.auvap{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:rgba(255,255,255,.02);min-width:0}
+.auvah{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.auvah b{font-size:14px}
+.auvabar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);margin:10px 0 6px;overflow:hidden}.auvabar i{display:block;height:100%;background:var(--jade);border-radius:3px}
+.auvan2{font-size:12.5px;color:var(--muted);margin-bottom:8px}.auvan2 b{color:var(--text)}
+.auvap .aucounts span{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:12px;border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:600}
+.auvap .aucounts span i{width:9px;height:9px;border-radius:3px}.auvap .aucounts b{color:var(--text)}
+.auvawhy{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px;font-size:12.5px}.auvawhy>b{margin-right:4px}
+.auvaw{display:inline-flex;gap:5px;align-items:center;height:24px;padding:0 10px;border-radius:12px;background:rgba(244,114,182,.10);border:1px solid rgba(244,114,182,.35);color:#F9A8D4;font-weight:600}
+.auvaw b{color:#fff}
+.auvach{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:11px;font-size:12px;font-weight:650;color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent);max-width:260px}
+.auvach .sq{width:8px;height:8px;border-radius:2px;background:var(--c);flex:none}.auvach em{font-style:normal;font-weight:500;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.auvan{color:var(--faint)}
+.auvat tr.differ td{background:rgba(255,178,36,.05)}.auvat td{vertical-align:top}.auvat a{color:var(--text);text-decoration:none}.auvat a:hover{text-decoration:underline}
+.auvashelves{margin-top:12px}.auvashelves summary{cursor:pointer;font-weight:650;font-size:13px;color:var(--muted)}
+.auvalist{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.auvarow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.auvarow .ssub{margin-right:auto}
+.auvaadd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 8px}
+.auvasteps{margin:4px 0 14px 18px;padding:0;display:grid;gap:4px;font-size:13px;color:var(--muted)}.auvasteps b{color:var(--text)}
+.auvach{overflow:hidden;max-width:220px}.auvach em{min-width:0}
+.auvat td.lsrc{min-width:220px;max-width:320px}.auvat td.lsrc .chg{white-space:nowrap}
+/* b290: ✓ Done reaching the cloud (VA HQ reads it) */
+.donesync{font-size:12px;font-weight:650;margin-left:8px;align-self:center}
+.donesync.ok{color:var(--jade)}
+.donesync.warn{color:var(--amber);display:inline-block;max-width:520px;line-height:1.35}
+.vafold td{padding:8px 12px!important}.vafold .linkbtn{font-weight:650;color:var(--jade)}
+/* b291: OLD DATA count on a VA storefront's card (Jack's page) */
+.auold{color:#9AA4B5;font-weight:650;letter-spacing:.02em}
+/* b292: written up (lead sheet) on a run row */
+.wup{color:var(--jade);font-weight:700}
+/* b297: which of our filters had it */
+.ofl{display:inline-flex;align-items:center;gap:5px;height:23px;padding:0 9px;border-radius:12px;font:650 11.5px var(--sans);border:1px solid;white-space:nowrap;max-width:420px;overflow:hidden;text-overflow:ellipsis}
+.ofl.kept{color:var(--jade);border-color:rgba(54,214,164,.4);background:rgba(54,214,164,.08)}
+.ofl.cut{color:#FDBA74;border-color:rgba(253,186,116,.4);background:rgba(253,186,116,.08)}
+.ofl.never{color:#FCA5A5;border-color:rgba(252,165,165,.4);background:rgba(252,165,165,.08)}
+/* b299: the Our filters chip is a button on Jack's page; the panel list */
+button.ofl{cursor:pointer;font:650 11.5px var(--sans)}button.ofl:hover{filter:brightness(1.15)}button.ofl.on{outline:1px solid currentColor}
+.ofl .trcar{margin-left:4px;opacity:.7}
+.trdrop.inpanel{margin:0;padding:0;border:0;background:none;max-height:260px;overflow:auto}
+.auhistl{display:flex;min-height:0;margin-top:5px}.auhistl:empty{display:none}
+.auhistl .ofl{max-width:100%}
+/* b300: still a lead now (UK) + the EU price people's exports saw */
+.auhistl{flex-wrap:wrap;gap:6px}
+.ofl.now{color:#9AA4B5;border-color:rgba(154,164,181,.35);background:rgba(154,164,181,.06)}
+.ofl.now.lead{color:#FBBF24;border-color:rgba(251,191,36,.55);background:rgba(251,191,36,.12);font-weight:750}
+.ofl.eu{color:#93C5FD;border-color:rgba(147,197,253,.4);background:rgba(147,197,253,.07)}
+.ofl.eu.lead{color:#60A5FA;border-color:rgba(96,165,250,.6);background:rgba(96,165,250,.12);font-weight:750}
+.trtl li.listed .trdot{background:#F472B6}
+.trhist{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:5px}
+.trhist span{font:600 11px var(--mono,ui-monospace,monospace);color:var(--muted);padding:1px 6px;border-radius:6px;background:rgba(154,164,181,.1);font-variant-numeric:tabular-nums}
+.trhist span.k{color:var(--jade);background:rgba(54,214,164,.12)}
+.auhistl .ofl{white-space:normal;height:auto;min-height:23px;padding:3px 9px;line-height:1.35;text-overflow:clip}
+/* ===== b301 · Jack, 14 Oct: "I can't read it at all" — the Our filters line gets the full width of the row and plain text ===== */
+.aurow>.auhistl{grid-column:2/-1;margin:0;min-width:0;display:flex;flex-wrap:wrap;gap:6px 8px}
+#page-audit .aulist .aurow > .auhistl{grid-area:hist;align-self:start}
+#page-audit .aulist .aurow:has(> .auhistl:not(:empty)){grid-template-areas:"chk img main links" "chk img hist hist" "chk img btn btn"}
+@media (max-width:1100px){#page-audit .aulist .aurow:has(> .auhistl:not(:empty)){grid-template-areas:"chk img main" "chk img links" "chk img hist" "btn btn btn"}}
+.auhistl .ofl{display:inline-flex;align-items:center;gap:8px;height:auto;min-height:28px;padding:4px 11px 4px 4px;border-radius:8px;white-space:normal;max-width:100%;
+  font:500 13px/1.4 var(--sans);color:var(--text);background:var(--ink);border:1px solid var(--line2);text-align:left}
+.auhistl button.ofl{font:500 13px/1.4 var(--sans)}
+.auhistl .ofl .oft{flex:none;font:800 10.5px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;padding:5px 7px;border-radius:5px;color:#0B0E16;background:#9AA4B5}
+.auhistl .ofl .ofx{min-width:0;font-variant-numeric:tabular-nums}
+.auhistl .ofl.kept .oft{background:var(--jade)}
+.auhistl .ofl.cut .oft{background:#FDBA74}
+.auhistl .ofl.never .oft{background:#FCA5A5}
+.auhistl .ofl.now .oft{background:#9AA4B5}
+.auhistl .ofl.now.lead{border-color:rgba(251,191,36,.6);background:rgba(251,191,36,.08)}
+.auhistl .ofl.now.lead .oft{background:#FBBF24}
+.auhistl .ofl.eu .oft{background:#93C5FD}
+.auhistl .ofl.eu.lead{border-color:rgba(96,165,250,.6);background:rgba(96,165,250,.08)}
+.auhistl .ofl.eu.lead .oft{background:#60A5FA}
+.auhistl .ofl .trcar{color:var(--muted)}
+.auhistl button.ofl:hover{border-color:var(--iris);filter:none}
+.ofl .oft{font-weight:800;margin-right:3px}
+/* b301: the Our filters summary over the list */
+.auofsum{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 10px;padding:9px 12px;border-radius:12px;background:var(--surface2);border:1px solid var(--line)}
+.auofsum .l{font-size:11.5px;color:var(--faint);font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-right:4px}
+.ofsb{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--line2);background:var(--ink);color:var(--text);font:600 13px var(--sans);cursor:pointer;font-variant-numeric:tabular-nums}
+.ofsb b{font-weight:800}
+.ofsb.kept b{color:var(--jade)}.ofsb.cut b{color:#FDBA74}.ofsb.never b{color:#FCA5A5}.ofsb.now{border-color:rgba(251,191,36,.55)}.ofsb.now b{color:#FBBF24}
+.ofsb:hover{border-color:var(--iris)}
+.ofsb.on{border-color:var(--text);background:var(--surface);box-shadow:0 0 0 1px var(--text) inset}
+.ofsubs{display:inline-flex;gap:4px;margin-left:-2px}
+.ofsb.sub{height:26px;padding:0 8px;font-size:12px;color:var(--muted);font-weight:600}
+.ofsw{font-size:12px;color:var(--muted)}
+/* b302: the last export, at the bottom of an empty run screen */
+.lastexp{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0 4px;padding:12px 16px;border-radius:12px;border:1px dashed var(--line2);background:var(--surface2);color:var(--muted);font-size:13px}
+.lastexp .lxt{flex:1 1 320px;min-width:0}
+.lastexp b{color:var(--text)}
+.lastexp.on{border-style:solid;border-color:rgba(251,191,36,.55);background:rgba(251,191,36,.07)}
+/* ===== b303 · Light theme (Suz works in it — her video, 14 Oct): these were near-white on white, the four link buttons under every lead showed as blank boxes ===== */
+html[data-theme="light"] .prod .rowacts a{color:#3730a3;background:rgba(99,102,241,.10);border-color:rgba(99,102,241,.45)}
+html[data-theme="light"] .prod .rowacts a:hover{color:#fff;background:#4f46e5;border-color:#4f46e5}
+html[data-theme="light"] .ltbl .ch.info{color:#4338ca}
+html[data-theme="light"] #story .s4>b,html[data-theme="light"] #story .s4 .bg i b{color:#047857}
+html[data-theme="light"] #story .s4 .bg i{color:#334155}
+html[data-theme="light"] #story .s4 .bg em{color:#b45309}
+html[data-theme="light"] #story .s4 .more{color:#4338ca}
+html[data-theme="light"] .spill.new,html[data-theme="light"] .spill.new b{color:#047857}
+/* b303: good news in the file box (both exports in) */
+#warnRun .okl{color:var(--jade);font-weight:600}
+#warnRun.okonly{border-color:rgba(54,214,164,.35);background:rgba(54,214,164,.08)}
+html[data-theme="light"] #warnRun .okl{color:#047857}
+html[data-theme="light"] #warnRun.okonly{border-color:rgba(4,120,87,.3);background:rgba(4,120,87,.07)}
+/* b303: Google Shopping button + Amazon Business bulk prices link */
+.pms .gshop{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;color:#93C5FD;border:1px solid rgba(147,197,253,.45);background:rgba(147,197,253,.08)}
+.pms .gshop:hover{background:rgba(147,197,253,.18)}
+html[data-theme="light"] .pms .gshop{color:#1d4ed8;border-color:rgba(29,78,216,.4);background:rgba(29,78,216,.06)}
+.buyc .bulk{display:block;margin-top:3px;font-size:11px;font-weight:700;color:#FBBF24;text-decoration:none}
+.buyc .bulk:hover{text-decoration:underline}
+html[data-theme="light"] .buyc .bulk{color:#b45309}
+/* b304: the checklist inside the "only N products" question */
+.uibody .uiol{margin:6px 0 0 18px;padding:0;display:grid;gap:4px;font-size:13px}
+/* b311: the 'usually has N products' line above the 0-results question */
+.uibody .uiwarnline{margin:0 0 8px;padding:8px 10px;border-radius:8px;background:var(--amber-dim);border-left:3px solid var(--amber);font-size:13px;line-height:1.45}
+.uibody .uiwarnline b{color:var(--amber)}
+/* ===== b305 · drawings of Keepa's own screen inside the popups (fixed Keepa colours — it is a picture of Keepa) ===== */
+.kpwrap{margin-top:8px;display:grid;gap:8px}
+.kp{border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.25);background:#f3f3f3;color:#333;font:12px/1.35 -apple-system,Segoe UI,Roboto,sans-serif;max-width:560px}
+.kp .hl{outline:2px solid #ff4d5e;outline-offset:1px;border-radius:5px;background:#fff3f4;color:#111;font-weight:700}
+.kp .kpn{display:inline-grid;place-items:center;width:17px;height:17px;margin-right:5px;border-radius:50%;background:#ff4d5e;color:#fff;font-size:10.5px;font-weight:800;vertical-align:1px}
+.kp-top{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#3b3b3b;color:#eee;flex-wrap:wrap}
+.kp-logo{font-weight:800;color:#fff}.kp-nav{opacity:.7;font-size:10.5px;letter-spacing:.04em}
+.kp-search{margin-left:auto;padding:3px 10px;border-radius:12px;background:#4a4a4a;color:#bbb;font-size:11px}
+.kp-top .kp-flag{padding:2px 7px;color:#111}.kp-user{opacity:.7}
+.kp-menu{margin:0 10px 10px auto;width:max-content;max-width:100%;padding:6px;border-radius:8px;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.18);display:grid;gap:2px}
+.kp-mh{font-size:10px;color:#888;letter-spacing:.06em;padding:2px 6px}.kp-mi{padding:3px 8px;border-radius:5px}.kp-mi i{color:#999;font-style:normal;margin-left:6px;font-size:10.5px}
+.kp-sub{padding:6px 10px;border-bottom:1px solid #ddd;background:#fff;font-size:11.5px;color:#555}
+.kp-tools{display:flex;align-items:flex-start;gap:14px;padding:8px 10px;flex-wrap:wrap;color:#444}
+.kp-rows{position:relative;padding:2px 6px}.kp-dd{display:flex;gap:4px;margin-top:5px;font-weight:400}.kp-dd i{font-style:normal;padding:1px 6px;border-radius:4px;background:#fff;border:1px solid #ddd}
+.kp-dd i.hl{border-color:transparent}.kp-exp{padding:2px 6px}
+.kp-note{padding:0 10px 8px;color:#666;font-size:11px}
+.kp-dlg{padding:10px 12px;display:grid;gap:5px;background:#fff}.kp-dlg>b{font-size:13px}.kp-dlg i{color:#888}
+.kp-btn{justify-self:start;padding:4px 14px;border-radius:6px;background:#2f7de1;color:#fff;font-weight:700}
+.kp-dlg .hl{padding:1px 5px}
+.kpfiles{display:grid;gap:4px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
+.kpfiles div{padding:5px 9px;border-radius:7px;border:1px solid}.kpfiles i{font:11.5px var(--sans);opacity:.8;margin-left:6px}
+.kpfiles .ok{color:#0f9f75;border-color:rgba(15,159,117,.45);background:rgba(15,159,117,.08)}
+.kpfiles .bad{color:#e5484d;border-color:rgba(229,72,77,.45);background:rgba(229,72,77,.07)}
+.kpsteps{margin:6px 0 2px 18px;padding:0;display:grid;gap:3px;font-size:12.5px}
+.kpwrap .kpsteps li{display:list-item;list-style:decimal;padding:0;margin:0;background:none;border:0;box-shadow:none;min-height:0;font-size:12.5px;line-height:1.45;color:inherit;grid-template-columns:none}
+.kpwrap .kpsteps li::before{content:none}
+.kpwrap .kpsteps li b{display:inline;font-size:inherit;margin:0;color:inherit}
+.kp-tools{padding-bottom:40px;flex-wrap:nowrap;align-items:center}
+.kp-rows{position:relative}
+.kp-dd{position:absolute;top:calc(100% + 4px);left:0;margin:0;white-space:nowrap}
+/* b306: one live tab · Done waits for the Keepa look */
+.tabcover{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:16px;background:rgba(8,11,17,.82);backdrop-filter:blur(3px)}
+.tabcard{max-width:440px;padding:22px 24px;border-radius:16px;background:var(--surface);border:1px solid var(--line2);box-shadow:0 20px 60px rgba(0,0,0,.45);display:grid;gap:10px;color:var(--text);text-align:left}
+.tabcard h3{margin:0;font-size:18px}.tabcard p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.5}.tabcard .tabsmall{font-size:12px}
+.tabic{font-size:26px;color:var(--iris)}
+#doneSel.held{opacity:.75;border-style:dashed}
+/* b308: Amazon Business filter — A2A only, no OA checks */
+.a2acell{font-size:12px;line-height:1.45;color:var(--muted)}.a2acell b{color:var(--text)}.a2acell .bulk{display:inline-block;margin-top:2px}
+/* b311 · Filter check (Jack's page) */
+.fcsums{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin:0 0 12px}
+.fcsum{display:flex;align-items:center;gap:14px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface2);flex-wrap:wrap}
+.fcsum .fcsh{display:flex;flex-direction:column;gap:3px;min-width:70px}
+.fcsum .fcsh span{font-size:11.5px;color:var(--muted)}
+.fcsum .fcsn{display:flex;flex-direction:column;gap:1px}
+.fcsum .fcsn b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text)}
+.fcsum .fcsn small{font-size:11px;color:var(--muted)}
+.fcsum b.jade,.fctbl b.jade{color:var(--jade)}.fcsum b.amber{color:var(--amber)}.fcsum b.coral,.fctbl b.coral,.fctbl .coral{color:var(--coral)}
+.fcst{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.fcst.ok{background:var(--jade-dim);color:var(--jade)}.fcst.mid{background:var(--amber-dim);color:var(--amber)}.fcst.bad{background:var(--coral-dim);color:var(--coral)}.fcst.off{background:var(--surface2);color:var(--faint)}
+.fcbar{height:4px;border-radius:3px;background:var(--line);margin:4px 0 0 auto;overflow:hidden;width:70px}
+.fcbar i{display:block;height:100%}.fcbar i.ok{background:var(--jade)}.fcbar i.mid{background:var(--amber)}.fcbar i.bad{background:var(--coral)}.fcbar i.off{background:var(--faint)}
+.fctbl th[data-fcs]{cursor:pointer;user-select:none}.fctbl th.on{color:var(--text)}
+.fctbl td select.inl{max-width:130px}
+.fctbl td select.inl+select.inl{margin-left:4px}
+.fctbl tr.fc-fake td:first-child,.fctbl tr.fc-none td:first-child,.fctbl tr.fc-bad td:first-child{box-shadow:inset 3px 0 0 var(--coral)}
+.fctbl tr.fc-behind td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
+.fctbl .linkbtn.fcopen{padding:0;border:0;background:none;cursor:pointer;text-align:left;color:inherit;font:inherit}
+.fctbl .linkbtn.fcopen:hover b{text-decoration:underline}
+.fcnote{font-size:12px;color:var(--muted);line-height:1.5;margin:10px 2px 0;max-width:110ch}
+#cardFc .cardhead .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* b311: Filter check uses the Brands list's in-row selects (they were plain white boxes) */
+.fctbl select.inl{appearance:none;-webkit-appearance:none;font:inherit;font-size:12.5px;color:var(--text);background:transparent;border:1px solid transparent;border-radius:7px;padding:3px 18px 3px 6px;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,var(--faint) 50%),linear-gradient(135deg,var(--faint) 50%,transparent 50%);background-position:calc(100% - 10px) 55%,calc(100% - 6px) 55%;background-size:4px 4px,4px 4px;background-repeat:no-repeat}
+.fctbl select.inl:hover{border-color:var(--line2);background-color:var(--ink)}
+.fctbl select.inl.cadsel{font-size:11px;color:var(--muted);padding:1px 16px 1px 4px;margin-top:2px;display:block}
+.fctbl select.inl option{background:var(--surface2);color:var(--text)}
+.fctbl select.inl.ownsel,.fctbl select.inl.stsel{font-weight:700;font-size:12.5px;padding:3px 20px 3px 9px;border-radius:9px;border-width:1px;border-style:solid}
+.fctbl select.inl.ownsel:hover,.fctbl select.inl.stsel:hover{filter:brightness(1.15)}
+.fctbl select.inl.stsel{display:inline-block;margin-bottom:2px}
+.fctbl select.inl.stsel.s-active{color:var(--jade);background-color:var(--jade-dim);border-color:rgba(54,214,164,.35)}
+.fctbl select.inl.stsel.s-testing{color:var(--amber);background-color:var(--amber-dim);border-color:rgba(251,191,36,.35)}
+.fctbl select.inl.stsel.s-paused{color:var(--muted);background-color:var(--ink);border-color:var(--line2)}
+.fctbl select.inl.ownsel{border-style:solid;border-width:1px}
+.fctbl select.inl.ownsel.o-jack,.fctbl select.inl.ownsel.o-suz,.fctbl select.inl.ownsel.o-mera,.fctbl select.inl.ownsel.o-vas{color:var(--pc);background-color:color-mix(in srgb,var(--pc) 14%,transparent);border-color:color-mix(in srgb,var(--pc) 34%,transparent)}
+.fctbl select.inl.ownsel.o-none{color:var(--muted);background-color:transparent;border-color:var(--line2);border-style:dashed}
+.fctbl select.inl.stsel{border-color:transparent}
+.fctbl select.inl.cadsel{color:var(--faint);font-size:11.5px;font-weight:500;margin-top:3px}
+.fctbl select.inl.cadsel:hover{color:var(--text)}
+.fctbl select.inl.cadsel{display:inline-block;margin-top:0}

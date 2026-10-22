@@ -73,7 +73,27 @@ function bigLoad(){if(BIG_LOAD)return BIG_LOAD;BIG_LOAD=(async()=>{
   /* one-time move out of the 5 MB pot: what is there wins over an older big-store copy, then it leaves the pot */
   BIG_KEYS.forEach(k=>{let v=null;try{v=localStorage.getItem(k);}catch(e){}if(v!=null){BIG[k]=v;bigPut(k);try{localStorage.removeItem(k);}catch(e){}}});
   BIG_READY=true;BIG_HOOKS.splice(0).forEach(f=>{try{f();}catch(e){}});})();return BIG_LOAD;}
-function bigPut(k){clearTimeout(BIG_T[k]);BIG_T[k]=setTimeout(()=>{bigIdb('readwrite',s=>Object.prototype.hasOwnProperty.call(BIG,k)?s.put(BIG[k],k):s.delete(k)).catch(()=>{});},250);}
+function bigPut(k){if(window.TAB_PAUSED)return;   /* b306: a paused (older) tab never saves its old copy over the live tab's */
+  clearTimeout(BIG_T[k]);BIG_T[k]=setTimeout(()=>{bigIdb('readwrite',s=>Object.prototype.hasOwnProperty.call(BIG,k)?s.put(BIG[k],k):s.delete(k)).catch(()=>{});},250);}
+/* b306 (Mera's video, 15 Oct: 13 Sourcing tabs open; Jack: "if you can come up with a fix internally that is great"). Every tab keeps its own
+   copy of the big stores (runs, answers, products) and saves the WHOLE copy back — an hour-old tab could put its old copy over the newer one,
+   and all of them kept working in the background. Now the tab opened last is the live one: when a newer tab opens, the older ones cover
+   themselves ("open in another tab") and stop saving and sending. "Use this tab instead" reloads it with fresh data and it becomes the live one. */
+const TAB={id:Math.random().toString(36).slice(2),born:Date.now(),paused:false,ch:null};
+function tabPause(why){if(TAB.paused)return;TAB.paused=true;window.TAB_PAUSED=true;
+  const paint=()=>{if(document.getElementById('tabCover'))return;const d=document.createElement('div');d.id='tabCover';d.className='tabcover';
+    d.innerHTML=`<div class="tabcard" role="dialog" aria-modal="true" aria-labelledby="tabT"><div class="tabic">⧉</div><h3 id="tabT">BDL Sourcing is open in another tab</h3>
+      <p>This tab is paused, so your work is saved in one place only. Use the tab you opened last — or press below to work here instead (the other tab pauses).</p>
+      <button type="button" class="btn primary" id="tabTake">Use this tab instead</button><p class="tabsmall">Tip: keep one Sourcing tab open. Opening a filter from VA HQ in a new tab moves you to that tab.</p></div>`;
+    document.body.appendChild(d);document.getElementById('tabTake').addEventListener('click',()=>{try{TAB.ch&&TAB.ch.postMessage({t:'take',id:TAB.id});}catch(e){}location.reload();});};
+  if(document.body)paint();else document.addEventListener('DOMContentLoaded',paint);}
+function tabResume(){TAB.paused=false;window.TAB_PAUSED=false;const c=document.getElementById('tabCover');if(c)c.remove();}   /* the checks only */
+function tabInit(){if(typeof BroadcastChannel!=='function'||TAB.ch)return;try{TAB.ch=new BroadcastChannel('bdl-sourcing-tab');}catch(e){return;}
+  TAB.ch.onmessage=e=>{const m=e.data||{};if(!m||m.id===TAB.id)return;
+    if(m.t==='hello'&&(m.born>TAB.born||(m.born===TAB.born&&m.id>TAB.id)))tabPause('newer');   /* a newer tab opened */
+    if(m.t==='take')tabPause('take');};
+  TAB.ch.postMessage({t:'hello',id:TAB.id,born:TAB.born});}
+if(!/[?&]checks\b/.test(location.search))tabInit();   /* the checks page runs alone and tests it directly */
 function bigOnReady(f){if(BIG_READY)setTimeout(f,0);else BIG_HOOKS.push(f);}   /* never inside another file's parse */
 /* raw access that knows both stores — everything that used to touch localStorage by key goes through these */
 function lsRaw(k){if(isBig(k))return Object.prototype.hasOwnProperty.call(BIG,k)?BIG[k]:null;if(Object.prototype.hasOwnProperty.call(LS_MEM,k))return LS_MEM[k];try{return localStorage.getItem(k);}catch(e){return null;}}
@@ -81,6 +101,14 @@ function lsRawSet(k,s){if(isBig(k)){BIG[k]=String(s);bigPut(k);return true;}try{
 function lsRemove(k){if(isBig(k)){delete BIG[k];bigPut(k);return;}delete LS_MEM[k];try{localStorage.removeItem(k);}catch(e){}}
 function lsKeys(){const out=new Set();try{Object.keys(localStorage).forEach(k=>out.add(k));}catch(e){}Object.keys(LS_MEM).forEach(k=>out.add(k));Object.keys(BIG).forEach(k=>out.add(k));return[...out];}
 function lsGet(k,fb){try{const raw=lsRaw(k);const v=JSON.parse(raw);return v==null?fb:v;}catch(e){return fb;}}
+/* b304 (Mera's video, 15 Oct: Chrome's "Page Unresponsive" on a 543-row drop). verdGet / runLast look at ONE product or ONE filter, but each
+   call parsed the whole store again — a 250-lead table asked ~5,900 times, and the saved answers are ~1 MB on a VA's browser: 12.5 s on a fast
+   Mac, the freeze on hers. lsView parses a key once and hands back the same object until the key is written. READ ONLY — the callers below
+   copy what they return, so nothing outside can change the shared copy. */
+const LS_VIEW={};
+function lsView(k,fb){const raw=lsRaw(k);if(raw==null)return fb;const c=LS_VIEW[k];if(c&&c.raw===raw)return c.v==null?fb:c.v;
+  let v;try{v=JSON.parse(raw);}catch(e){return fb;}LS_VIEW[k]={raw,v};return v==null?fb:v;}
+const lsCopy=x=>x==null?x:(typeof structuredClone==='function'?structuredClone(x):JSON.parse(JSON.stringify(x)));
 function lsSet(k,v){let s;try{s=JSON.stringify(v);}catch(e){return false;}
   if(isBig(k)){BIG[k]=s;bigPut(k);return true;}
   try{localStorage.setItem(k,s);delete LS_MEM[k];return true;}catch(e){}

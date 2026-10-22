@@ -1,5 +1,5 @@
 /* BDL Sourcing — boot. Bump BUILD every ship. */
-const BUILD={version:'1.2',date:'2026-10-07',n:285};
+const BUILD={version:'1.2',date:'2026-10-23',n:312};
 const THEME_KEY='sourcing-suite-theme';
 function setTheme(theme){const mode=theme==='dark'?'dark':'light';document.documentElement.dataset.theme=mode;
   $('#themeLabel').textContent=mode==='dark'?'Dark':'Light';
@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
      closing any open run, back on the brand list, at the top of the page, with the address cleared. */
   $('#homeBtn').addEventListener('click',e=>{e.preventDefault();goHome();});
   leadToolsInit();brandsInit();cloudInit();
+  /* b307 (Suz's video, 15 Oct: she closed the app between filters and it reopened on Lead tools every time) — a VA opens on her list */
+  if(!location.hash&&!location.search.includes('checks')&&typeof me==='function'&&me()&&!(typeof isJack==='function'&&isJack())){const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b&&!b.classList.contains('active'))b.click();}
   if(location.search.includes('checks')){const s=document.createElement('script');s.src='tests/checks.js?t='+Date.now();   /* b269: never a cached copy of the checks */s.onload=()=>SourcingChecks.run();document.head.appendChild(s);}
 });
 function goHome(){const b=document.querySelector('.pagebtn[data-page="page-brands"]');if(b)b.click();

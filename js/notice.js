@@ -41,14 +41,51 @@ function vneedCheck(force){const who=typeof me==='function'?me():'';if(!who||(ty
   if(typeof actLog==='function')actLog('click','Viewer columns popup shown');
   return true;}
 
+/* ---- b305: little drawings of Keepa's own screen, so a VA sees exactly where to click (Jack, 15 Oct: "help her — better and more
+   detailed instructions"). Drawn from Mera's and Suz's screen videos: the country button sits top right next to the search box and shows
+   the site (.co.uk / .it…); the rows button is in the toolbar ABOVE the table ("100 rows"), next to Export. ---- */
+const KP_SITE={UK:['.co.uk','United Kingdom'],DE:['.de','Germany'],FR:['.fr','France'],IT:['.it','Italy'],ES:['.es','Spain']};
+function kpPic(kind,o){o=o||{};const F=m=>(typeof FLAG!=='undefined'&&FLAG[m])||m,num=n=>`<span class="kpn">${n}</span>`;
+  if(kind==='flag'){const to=o.to||'UK',from=o.from&&o.from!==to?o.from:null,cur=from||'??';
+    return`<div class="kp"><div class="kp-top"><span class="kp-logo">◆ Keepa</span><span class="kp-nav">DEALS · TRACK · APPS · PRO</span><span class="kp-search">Search for products</span><span class="kp-flag hl">${num(1)}${from?F(from)+' '+KP_SITE[from][0]:'the flag'} ▾</span><span class="kp-user">👤</span></div>
+      <div class="kp-menu"><div class="kp-mh">EUROPE</div>${['UK','DE','FR','IT','ES'].map(m=>`<div class="kp-mi${m===to?' hl':''}">${m===to?num(2):''}${F(m)} ${KP_SITE[m][1]} <i>${KP_SITE[m][0]}</i></div>`).join('')}</div></div>`;}
+  if(kind==='rows')return`<div class="kp"><div class="kp-sub"><b>Product Finder</b> · Product Viewer · Product Best Sellers</div>
+      <div class="kp-tools"><span>☰ Configure Columns</span><span>🔍 Jump to column</span><span class="kp-rows hl">${num(1)}≡ 100 rows ▾<span class="kp-dd"><i>5</i><i>20</i><i>100</i><i>…</i><i class="hl">${num(2)}5000</i></span></span><span class="kp-exp${o.exp?' hl':''}">${o.exp?num(3):''}⤓ Export</span></div>
+      <div class="kp-note">Keepa opens every filter on <b>100 rows</b> — and it only exports the rows on screen.</div></div>`;
+  if(kind==='export')return`<div class="kp kp-dlg"><b>Export Data</b><div>What to export? <span class="hl">${num(4)}● All active columns</span> ○ Only ASINs</div><div>Format: ○ Excel (.xlsx) <span class="hl">${num(5)}● CSV</span></div><div>☐ Include currency symbols <i>(leave it off)</i></div><span class="kp-btn">${num(6)}Export</span></div>`;
+  if(kind==='files')return`<div class="kpfiles"><div class="ok">✓ KeepaExport-…-<b>ProductFinder</b>.csv <i>from “the filter” — today’s search</i></div><div class="bad">✗ KeepaExport-…-<b>ProductViewer</b>.csv <i>from “Open all in Keepa” — only your leads</i></div></div>`;
+  return'';}
+
 /* ---- why a dropped file was not taken ---- */
 const REFUSE_WHY={
   empty:{short:'empty export (0 products)',head:'This export has no products in it',
     body:'Keepa found <b>0 products</b> for this filter today, so the file has nothing in it. That is not a mistake on your side.',
-    todo:'Nothing to export today. Press <b>✓ Keepa showed 0 results? Mark this done for today</b> (under the Keepa buttons) so the filter shows as done — then go to the next one.'},
+    todo:'Check the flag first, then mark it done — steps below.',
+    pic:()=>'<ol class="kpsteps"><li>Was Keepa still loading? An export made before the table fills is empty — wait until the products show and the number of results stops changing, then export again</li><li>Look at Keepa\u2019s message: it must say <b>No results found for Amazon.co.uk</b>. If it says <b>.it / .de / .fr / .es</b>, Keepa is on the wrong country — click the flag top right → <b>United Kingdom</b> → press the filter again</li><li>Right country and still 0? Press <b>✓ Keepa showed 0 results? Mark this done for today</b> (under the Keepa buttons) — then go to the next filter</li></ol>'+kpPic('flag',{to:'UK'})},
+  /* b311 (Jack, 22 Oct: "how are we improving it"): Mera's £95+ came back empty 6 times on 16–19 Oct — it usually has about 550 products, and
+     each file was dropped 18–63 s after Keepa opened. The b309 answer ("not a mistake — mark it done") would have marked a real search done with 0. */
+  'empty-big':{short:r=>`empty export — Keepa still loading (usually ~${r.usual})`,head:r=>`Keepa had not finished loading — this filter usually has about ${Number(r.usual).toLocaleString()} products`,
+    body:r=>`The file has <b>0 products</b>, but this search normally finds about <b>${Number(r.usual).toLocaleString()}</b>. That means Keepa was still loading when Export was pressed${r.secs!=null?` — this file came in <b>${r.secs} seconds</b> after Keepa was opened`:''}. Big searches can take a minute or two.`,
+    todo:'Wait for Keepa, then export again — steps below. Do not mark it done.',
+    pic:()=>'<ol class="kpsteps"><li>Go to the Keepa tab with this filter and <b>wait</b>: the products must show in the table and the number of results at the top must stop changing</li><li>The flag top right must say <b>.co.uk</b></li><li><b>100 rows</b> button above the table → <b>5000</b></li><li><b>Export</b> → All active columns → CSV → drop the new file</li><li>Still empty after two minutes? Press <b>the filter</b> here once more. Still 0 → tell Jack the filter may need fixing (don\u2019t mark it done)</li></ol>'+kpPic('rows',{exp:true})+kpPic('export')},
+  /* b311: on a brand with EU countries the UK Viewer is made from the Finder files, so it can only come last */
+  'viewer-first':{short:r=>`Viewer with no country files (${r.n} products)`,head:'The UK Viewer comes last — drop the country files first',
+    body:r=>`A <b>Product Viewer</b> file with ${r.n} products, and no country files in yet. On a brand with EU countries the run needs today\u2019s <b>Product Finder</b> export from each flag button first — the app then makes the UK Viewer list from them. A Viewer on its own is the page of leads you already had (from <b>Open all in Keepa</b>), so the brand would not really be run.`,
+    todo:'Follow the steps below — the same order as the steps on this page.',
+    pic:()=>kpPic('files')+'<ol class="kpsteps"><li>For each flag button here (UK, DE, FR, IT, ES): set that flag in Keepa first, then press the button</li><li>In Keepa: <b>100 rows</b> → 5000 → <b>Export</b> → All active columns → CSV → drop the <b>ProductFinder</b> file here</li><li>When every country is in, press <b>Open UK Product Viewer</b> here → wait for the table → Export → drop that Viewer file last</li></ol>'+kpPic('rows',{exp:true})},
+  /* b311: the same file dropped on a second filter */
+  twice:{short:r=>`same file as ${r.on} today`,head:r=>`This file already ran ${r.on} today`,
+    body:r=>`It has the same name and the same <b>${Number(r.n).toLocaleString()} products</b> as the file ${escapeHtml(r.on)} ran on today — so it is that filter\u2019s export. Every filter has its own Keepa search, so this one would not really be run.`,
+    todo:'Get this filter\u2019s own export — steps below.',
+    pic:()=>'<ol class="kpsteps"><li>Here, press <b>the filter</b> (step 1 at the top) — Keepa opens this filter\u2019s own search</li><li>Wait for the table to fill · <b>100 rows</b> → <b>5000</b></li><li><b>Export</b> → All active columns → CSV → Export</li><li>Drop the <b>newest</b> file in Downloads — it has a new number at the end, like <b>ProductFinder (13).csv</b></li></ol>'+kpPic('rows',{exp:true})+kpPic('export')},
+  'page':{short:'exactly 100 rows (one Keepa page)',head:'Exactly 100 rows — one Keepa page, not the whole search',
+    body:'Keepa opens every search on <b>100 rows</b> per page and exports only the page on screen, so the rest of the search was left out.',
+    todo:'Set 5000 rows and export again — steps below.',
+    pic:()=>'<ol class="kpsteps"><li>In Keepa, the <b>100 rows</b> button above the table → <b>5000</b></li><li>Check the flag top right is the country of the button you pressed</li><li><b>Export</b> → All active columns → CSV → drop the new file</li></ol>'+kpPic('rows',{exp:true})+kpPic('export')},
   'prime-col':{short:'no Prime price column',head:'Prime price column not ticked',
     body:'Prime deals are on, so every export needs Keepa\'s Prime price — without it a Prime-only deal would be priced at Amazon\'s normal price.',
-    todo:'In Keepa press <b>Configure Columns</b> and tick <b>New, Prime exclusive → Current</b> (once — Keepa remembers). Export again and drop the new file.'},
+    todo:'Tick one column in Keepa (once — Keepa remembers) — steps below.',
+    pic:()=>'<ol class="kpsteps"><li>In Keepa, press <b>Configure Columns</b> (top left, above the table)</li><li>In its search box type <b>Prime</b></li><li>Tick <b>New, Prime exclusive → Current</b> and close the box</li><li><b>100 rows</b> → 5000 → <b>Export</b> → All active columns → CSV → drop the new file</li></ol>'+kpPic('rows',{exp:true})},
   'prime-market':{short:'Prime file for another country on a UK-only filter',head:'Prime deals file for the wrong country',
     body:'This filter is UK only — it takes the UK ★ Prime file, not another country\'s.',
     todo:'Use the normal export for that country (or the UK one), and drop that instead.'},
@@ -56,7 +93,21 @@ const REFUSE_WHY={
   /* b266 (Jack, 5 Oct: "make sure she's putting a fresh export in"): Keepa names every export with the day it was made */
   old:{short:r=>`old export (${typeof ukDate==='function'?ukDate(r.day):r.day})`,head:'This export is not from today',
     body:r=>`Keepa made this file on <b>${escapeHtml(typeof ukDate==='function'?ukDate(r.day):r.day)}</b> — it says so in the file name. Prices change every day, so an old export gives wrong leads.`,
-    todo:'In Keepa press <b>Export → All active columns → CSV</b> again now, and drop the new file. Find it at the top of Downloads (newest first).'}};
+    todo:'Export it again now — steps below.',
+    pic:r=>'<ol class="kpsteps"><li>Go to the Keepa tab with this filter (or press <b>the filter</b> here again)</li><li><b>100 rows</b> button above the table → <b>5000</b></li><li><b>Export</b> → All active columns → CSV → Export</li><li>In Downloads take the <b>newest</b> file — its name has today\u2019s date: <b>KeepaExport-'+(typeof today==='function'?today():'')+'-…</b> — and drop it here</li></ol>'+kpPic('rows',{exp:true})+kpPic('export')},
+  /* b304 (two weeks of runs, 15 Oct: 50 of 121 filter-days were run on the wrong file) */
+  'viewer-finder':{short:r=>`Viewer file, not the filter (${r.n} products)`,head:'This is your leads\u2019 Viewer page — not today\u2019s search',
+    pic:()=>kpPic('files')+'<ol class="kpsteps"><li>Back here, press <b>the filter</b> (step 1 at the top) — Keepa opens <b>Product Finder</b></li><li>In Keepa, the <b>100 rows</b> button above the table → <b>5000</b></li><li><b>Export</b> → All active columns → CSV → Export</li><li>Drop the new file here — its name says <b>ProductFinder</b></li></ol>'+kpPic('rows',{exp:true})+kpPic('export'),
+    body:r=>`A <b>Product Viewer</b> file with ${r.n} products: the Keepa page that <b>Open all in Keepa</b> opens. It only has the leads you already had, so the filter would not really be run.`,
+    todo:'Follow the 4 steps below — the pictures show where to click in Keepa.'},
+  country:{short:r=>`from Amazon ${r.mk}, not UK`,head:r=>`This export is from Amazon ${r.mk} — Keepa was on the wrong flag`,
+    pic:r=>'<ol class="kpsteps"><li>Go to your Keepa tab. Top right, next to the search box, click the flag — it says <b>'+((KP_SITE[r.mk]||[''])[0])+'</b></li><li>In the list click <b>United Kingdom</b></li><li>Back here, press <b>the filter</b> again → rows <b>5000</b> → Export → drop the new file</li></ol>'+kpPic('flag',{from:r.mk,to:'UK'}),
+    body:'A Keepa filter runs on whatever country Keepa is set to. This one is UK only, so another country\u2019s prices would give wrong leads.',
+    todo:'Follow the 3 steps below — the picture shows where the flag is in Keepa.'},
+  small:{short:r=>`only ${r.n} products (usually ~${r.usual})`,head:r=>`Only ${r.n} products — this filter usually has about ${Number(r.usual).toLocaleString()}`,
+    pic:()=>'<ol class="kpsteps"><li>In Keepa, the <b>100 rows</b> button above the table → <b>5000</b> (Keepa resets it to 100 on every filter)</li><li>Check the flag top right says <b>.co.uk</b></li><li><b>Export</b> → All active columns → CSV → Export, drop the new file</li></ol>'+kpPic('rows',{exp:true})+kpPic('export'),
+    body:'You chose to export again — good. Most often Keepa was still on 100 rows per page, or on another country\u2019s flag.',
+    todo:'Follow the 3 steps below — the pictures show where to click in Keepa.'}};
 /* "KeepaExport-2026-10-05-ProductFinder (3).csv" → "2026-10-05"; a renamed file gives null and is never refused for its date */
 function exportDay(name){const m=String(name||'').match(/KeepaExport-(\d{4}-\d{2}-\d{2})-/i);return m?m[1]:null;}
 /* the earliest day that still counts as today: the browser's own date or the UTC date, whichever is earlier — so a VA in another
@@ -71,7 +122,7 @@ function refusedPop(list){const L=(list||[]).filter(r=>r.why!=='cols');if(!L.len
   d.innerHTML=`<div class="lvcard" role="dialog" aria-modal="true" aria-labelledby="refTitle">
     <div class="lvhead"><span class="lvwarn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4.5M12 17.6v.2"/></svg></span>
       <div><h3 id="refTitle">${L.length===1?'This file was not taken':L.length+' files were not taken'}</h3><p>Here is why, and what to do.</p></div></div>
-    <ol class="lvsteps refsteps">${L.map(r=>{const w=REFUSE_WHY[r.why]||{};const fx=v=>typeof v==='function'?v(r):(v||'');return`<li class="now"><span class="lvt"><b>${e(w.head||r.why)}</b><small class="reffile">${e(r.f)}</small><small>${fx(w.body)}</small><small class="reftodo"><b>Do this:</b> ${fx(w.todo)}</small></span></li>`;}).join('')}</ol>
+    <ol class="lvsteps refsteps">${L.map(r=>{const w=REFUSE_WHY[r.why]||{};const fx=v=>typeof v==='function'?v(r):(v||'');return`<li class="now"><span class="lvt"><b>${e(typeof w.head==='function'?w.head(r):(w.head||r.why))}</b><small class="reffile">${e(r.f)}</small><small>${fx(w.body)}</small><small class="reftodo"><b>Do this:</b> ${fx(w.todo)}</small>${w.pic?`<div class="kpwrap">${fx(w.pic)}</div>`:''}</span></li>`;}).join('')}</ol>
     <div class="lvbtns"><button type="button" class="btn primary" id="refOk">OK</button></div></div>`;
   document.body.appendChild(d);const close=()=>d.remove();$('#refOk').addEventListener('click',close);d.addEventListener('click',ev=>{if(ev.target===d)close();});
   document.addEventListener('keydown',function k(ev){if(ev.key==='Escape'){close();document.removeEventListener('keydown',k);}});
@@ -86,27 +137,36 @@ document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{if(typeof clou
    products instead of 1,155. So a VA who presses a Germany / France / Italy / Spain filter button is asked first, every time: set the flag,
    then open it. Jack is not asked. Viewer links are not touched — they carry their own country. */
 const MK_SITE={DE:['Germany','amazon.de'],FR:['France','amazon.fr'],IT:['Italy','amazon.it'],ES:['Spain','amazon.es']};
+/* b304 (Mera's video, 15 Oct: after Logitech's Italy file she opened her UK £60+ filter and Keepa said "No results found for Amazon.it").
+   Keepa stays on the last flag. The app remembers the last country a VA set it to; a UK filter opened after an EU one asks first. */
+const MK_ANY=Object.assign({UK:['the UK','amazon.co.uk']},MK_SITE),KFLAG_KEY='bdl-sourcing-kflag';
+function kflagSet(m){try{lsSet(KFLAG_KEY,{mk:m,at:Date.now()});}catch(e){}}
+function kflagLast(){const x=lsGet(KFLAG_KEY,null);return x&&x.mk&&Date.now()-(+x.at||0)<16*3600e3?x.mk:null;}
 let flagPass=false;
 /* the country a press needs Keepa set to, or null (UK, Viewer links, Jack) */
 function flagNeed(a){if(!a||(typeof isJack==='function'&&isJack()))return null;if(!/#!finder\//.test(a.getAttribute('href')||''))return null;
-  const m=a.closest('#keepaRow')?a.dataset.mk:String(a.dataset.pkey||'').split('|')[0];return MK_SITE[m]?m:null;}
-function flagPop(a,m){const [name,site]=MK_SITE[m],F=(typeof FLAG!=='undefined'&&FLAG[m])||'';const old=$('#flagPop');if(old)old.remove();
+  const m=a.closest('#keepaRow')?(a.dataset.mk||'UK'):String(a.dataset.pkey||'').split('|')[0];if(MK_SITE[m])return m;
+  if(m==='UK'){const l=kflagLast();return l&&l!=='UK'?'UK':null;}   /* b304: back to the UK after an EU filter */
+  return null;}
+function flagPop(a,m){const [name,site]=MK_ANY[m],F=(typeof FLAG!=='undefined'&&FLAG[m])||'';const was=m==='UK'?kflagLast():null,wasN=was&&MK_ANY[was]?MK_ANY[was][0]:'';const old=$('#flagPop');if(old)old.remove();
   const d=document.createElement('div');d.id='flagPop';d.className='lvpop';
   d.innerHTML=`<div class="lvcard flagcard" role="dialog" aria-modal="true" aria-labelledby="flagTitle">
     <div class="lvhead"><span class="lvwarn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4.5M12 17.6v.2"/></svg></span>
-      <div><h3 id="flagTitle">Is Keepa set to ${F} ${name}?</h3><p>Set it <b>before</b> the filter opens. If Keepa is on another country, it drops "sold by Amazon" and you get thousands of the wrong products.</p></div></div>
+      <div><h3 id="flagTitle">${was?`Is Keepa back on ${F} ${name}?`:`Is Keepa set to ${F} ${name}?`}</h3><p>${was?`Your last filter had Keepa on <b>${(typeof FLAG!=='undefined'&&FLAG[was])||''} ${wasN}</b> — Keepa stays on that flag until you change it. A UK filter opened on ${wasN} shows <b>No results</b> or the wrong products.`:'Set it <b>before</b> the filter opens. If Keepa is on another country, it drops "sold by Amazon" and you get thousands of the wrong products.'}</p></div></div>
     <ol class="lvsteps flagsteps">
-      <li class="now"><span class="lvi">1</span><span class="lvt"><b>In Keepa: the flag at the top right → ${F} ${name} (${site})</b><small>Already on ${name}? Go to step 2.</small></span></li>
-      <li class="now"><span class="lvi">2</span><span class="lvt"><b>Then open the filter</b><small>Changed the flag after it opened? Close that Keepa tab and open it again from here.</small></span></li></ol>
-    <div class="lvbtns"><button type="button" class="btn primary" id="flagGo">Keepa is on ${name} — open the filter ↗</button><button type="button" class="btn ghost" id="flagNo">Cancel</button></div></div>`;
+      <li class="now"><span class="lvi">1</span><span class="lvt"><b>Go to your Keepa tab. Top right, next to the search box, click the flag${was?` — it says <u>${KP_SITE[was][0]}</u>`:''}</b><small>It shows which Amazon Keepa is on: .co.uk = UK, .de = Germany, .fr = France, .it = Italy, .es = Spain.</small></span></li>
+      <li class="now"><span class="lvi">2</span><span class="lvt"><b>In the list, click ${F} ${KP_SITE[m][1]} (${site})</b><small>Already on ${KP_SITE[m][0]}? Nothing to change — go to step 3.</small></span></li>
+      <li class="now"><span class="lvi">3</span><span class="lvt"><b>Come back here and press the blue button — the filter opens on ${m==='UK'?'the UK':name}</b><small>Opened it before changing the flag? Close that Keepa tab and press the filter again here.</small></span></li></ol>
+    <div class="kpwrap">${kpPic('flag',{from:was||null,to:m})}</div>
+    <div class="lvbtns"><button type="button" class="btn primary" id="flagGo">Keepa is on ${m==='UK'?'UK':name} — open the filter ↗</button><button type="button" class="btn ghost" id="flagNo">Cancel</button></div></div>`;
   document.body.appendChild(d);const close=()=>{d.remove();document.removeEventListener('keydown',esc);};function esc(ev){if(ev.key==='Escape')close();}
   document.addEventListener('keydown',esc);d.addEventListener('click',ev=>{if(ev.target===d)close();});$('#flagNo').addEventListener('click',close);
   $('#flagGo').addEventListener('click',()=>{close();
-    const live=a.isConnected?a:document.querySelector(a.dataset.pkey?`#primeGrid a[data-pkey="${a.dataset.pkey}"]`:`#keepaRow a[data-mk="${a.dataset.mk}"]`);
-    if(typeof actLog==='function')actLog('click',`Keepa flag check · ${m} · "Keepa is on ${name}"`);
+    const live=a.isConnected?a:document.querySelector(a.dataset.pkey?`#primeGrid a[data-pkey="${a.dataset.pkey}"]`:a.dataset.mk?`#keepaRow a[data-mk="${a.dataset.mk}"]`:'#keepaRow a[href*="#!finder/"]');
+    if(typeof actLog==='function')actLog('click',`Keepa flag check · ${m} · "Keepa is on ${name}"`);kflagSet(m);   /* b304 */
     if(live){flagPass=true;try{live.click();}finally{flagPass=false;}}else window.open(a.href,'_blank','noopener');});
   return true;}
-document.addEventListener('click',e=>{if(flagPass)return;const a=e.target.closest&&e.target.closest('#keepaRow a[data-mk],#primeGrid a[data-pkey]');const m=flagNeed(a);if(!m)return;
+document.addEventListener('click',e=>{if(flagPass)return;const a=e.target.closest&&e.target.closest('#keepaRow a[data-mk],#keepaRow a[href*="#!finder/"],#primeGrid a[data-pkey]');const m=flagNeed(a);if(!m)return;
   e.preventDefault();e.stopImmediatePropagation();flagPop(a,m);},true);
 
 /* ---- the app's own dialogs (b266) ----

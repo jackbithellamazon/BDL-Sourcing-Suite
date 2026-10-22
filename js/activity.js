@@ -115,11 +115,11 @@ const LSM_KEY='bdl-sourcing-leadsheet-at';
 /* b210 (Jack, 29 Sep: "I don't wanna see leads by whether they're on a sheet or not"): the sheet no longer writes verdicts (they hid and sank
    leads). It only keeps a marker — ASIN → which run, who, when — for the "★ leads this week" count. Any verdict b208 wrote ("lead sheet") is removed. */
 const SHEET_KEY='bdl-sourcing-sheetmatch';
-async function leadSheetMatch(force){if(!isJack()||typeof cloudReadable!=='function'||!cloudReadable())return 0;
-  {const V=verdAll();const bad=Object.keys(V).filter(a=>V[a]&&V[a].note==='lead sheet');if(bad.length&&typeof verdDelMany==='function')verdDelMany(bad);}
+async function leadSheetMatch(force){const vaMe=typeof audIsVA==='function'&&audIsVA()?me():'';if((!isJack()&&!vaMe)||typeof cloudReadable!=='function'||!cloudReadable())return 0;   /* b292: a VA reads her own sheet rows only */
+  if(isJack()){const V=verdAll();const bad=Object.keys(V).filter(a=>V[a]&&V[a].note==='lead sheet');if(bad.length&&typeof verdDelMany==='function')verdDelMany(bad);}   /* b292: Jack's clean-up only */
   const last=+lsGet(LSM_KEY,0)||0;if(!force&&Date.now()-last<30*60e3)return 0;lsSet(LSM_KEY,Date.now());
   let rows;const since=new Date(Date.now()-14*864e5).toISOString().slice(0,10);
-  try{rows=await cloudGetAll('leads','select=asin,va,date,created_at,superseded&date=gte.'+since);}catch(e){return 0;}
+  try{rows=await cloudGetAll('leads','select=asin,va,date,created_at,superseded&date=gte.'+since+(vaMe?'&va=eq.'+encodeURIComponent(vaMe):''));}catch(e){return 0;}
   const LA=leadAll(),M={};let n=0;
   rows.forEach(l=>{const asin=(l.asin||'').trim();if(!/^B[0-9A-Z]{9}$/.test(asin)||l.superseded||!l.va)return;
     const d=Date.parse(l.date||String(l.created_at).slice(0,10));if(!d)return;
@@ -128,10 +128,14 @@ async function leadSheetMatch(force){if(!isJack()||typeof cloudReadable!=='funct
     if(best){M[asin]={src:best.src,who:l.va,at:l.created_at||nowIso()};n++;}});
   lsSet(SHEET_KEY,M);if(typeof renderList==='function'&&!($('#viewList')||{}).hidden)renderList();return n;}
 function sheetMark(asin){return(lsGet(SHEET_KEY,{})||{})[asin]||null;}
+/* b292 (VA HQ handover S3, Jack: yes): of what a run's rules kept, how many reached the lead sheet from THIS filter — her screen and Jack's
+   agree, and VA HQ counts it the same way (run asins ∩ the leads table). A VA only ever reads her own sheet rows. */
+function writtenUp(run){if(!run||!run.asins||!run.asins.length)return null;const M=lsGet(SHEET_KEY,{})||{};const who=new Set();let n=0;
+  run.asins.forEach(a=>{const m=M[a];if(m&&m.src===run.source){n++;if(m.who)who.add(m.who);}});return{n,who:[...who]};}
 /* Yes verdicts on a source in the last 7 days — the row's "★ 3 leads this week" */
 /* b211 (Jack: "fuck is this" at "★ 2 leads this week"): the badge says what it is — how many of this filter's products went on the lead sheet
    (or got a Yes) in the last 7 days, and by whom */
-function weekLeads(key){const V=verdAll(),M=lsGet(SHEET_KEY,{})||{},cut=Date.now()-7*864e5;const set=new Set(),who=new Set();
+function weekLeads(key){const V=lsView(VERD_KEY,{}),M=lsView(SHEET_KEY,{})||{},   /* b304: read-only, one parse per change */cut=Date.now()-7*864e5;const set=new Set(),who=new Set();
   for(const a in V){const v=V[a];if(v&&v.v==='Yes'&&v.note!=='lead sheet'&&v.source===key&&Date.parse(v.at)>=cut){set.add(a);if(v.who)who.add(v.who);}}
   for(const a in M){const m=M[a];if(m&&m.src===key&&Date.parse(m.at)>=cut){set.add(a);if(m.who)who.add(m.who);}}return{n:set.size,who:[...who],asins:[...set]};}
 function yesThisWeek(key){return weekLeads(key).n;}

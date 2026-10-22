@@ -40,19 +40,27 @@ function missingTables(e){if(!e)return false;const b=e.body||'';
 function outbox(){return lsGet(OUTBOX_KEY,[]);}
 /* op 'upsert' → payload = rows[] · op 'delete' → payload = {col, vals[]} */
 function cloudQueue(table,op,payload){if(!cloudEnabled())return;if(op==='upsert'&&!payload.length)return;if(op==='delete'&&!payload.vals.length)return;
-  const q=outbox();q.push({t:Date.now(),table,op,payload,tries:0});lsSet(OUTBOX_KEY,q);paintCloud();cloudFlush();}
+  let q=outbox();const item={t:Date.now(),id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),table,op,payload,tries:0};
+  /* b290 (VA HQ handover S2, 8 Oct: VA HQ now stops a VA ending her shift on an unfinished run, so a ✓ Done must reach Supabase within
+     seconds). A run row jumps the queue — nothing older can hold it back — and any older copy of the same run still waiting is dropped,
+     since this one carries everything that one did. */
+  if(table==='src_runs'&&op==='upsert'){const ids=new Set(payload.map(r=>r.id));q=q.filter(x=>!(x.table==='src_runs'&&x.op==='upsert'&&(x.payload||[]).every(r=>ids.has(r.id))));q.unshift(item);}
+  else q.push(item);
+  lsSet(OUTBOX_KEY,q);paintCloud();cloudFlush();}
+/* b290: the item a flush sent is taken out by identity — a run row may have jumped in front of it while it was on its way */
+function outboxDrop(it){const q=outbox();const i=q.findIndex(x=>it.id?x.id===it.id:(x.t===it.t&&x.table===it.table));if(i>=0)q.splice(i,1);lsSet(OUTBOX_KEY,q);return q;}
 let flushTimer=null;
-async function cloudFlush(){if(!cloudEnabled()||cloud.busy)return;if(!outbox().length){paintCloud();return;}cloud.busy=true;paintCloud();
+async function cloudFlush(){if(!cloudEnabled()||cloud.busy||window.TAB_PAUSED)return;   /* b306 */if(!outbox().length){paintCloud();return;}cloud.busy=true;paintCloud();
   try{while(true){const q=outbox();if(!q.length)break;const it=q[0];
       try{
         if(it.op==='upsert'){for(let i=0;i<it.payload.length;i+=200)await cloudReq('POST',it.table,it.payload.slice(i,i+200),'resolution=merge-duplicates,return=minimal');}
         else if(it.op==='delete'){const vals=it.payload.vals;for(let i=0;i<vals.length;i+=200)await cloudReq('DELETE',it.table+'?'+it.payload.col+'=in.('+vals.slice(i,i+200).map(v=>'"'+encodeURIComponent(v)+'"').join(',')+')',null,'return=minimal');}
-        const q2=outbox();q2.shift();lsSet(OUTBOX_KEY,q2);cloud.last=Date.now();cloud.err='';cloud.tables=true;
+        outboxDrop(it);cloud.last=Date.now();cloud.err='';cloud.tables=true;
       }catch(e){
         if(missingTables(e)){cloud.tables=false;cloud.err='shared tables not created yet';throw e;}
         /* a row the server refuses (400/409/422) must not block everything behind it — three tries then drop it, loudly */
-        if(e.status&&e.status>=400&&e.status<500&&e.status!==429){const q2=outbox();q2[0].tries=(q2[0].tries||0)+1;
-          if(q2[0].tries>=3){console.warn('BDL Sourcing: dropped an unsendable change',q2[0],e.message);q2.shift();}lsSet(OUTBOX_KEY,q2);cloud.err=e.message;if(q2.length&&q2[0].tries>=1&&q2[0].tries<3)throw e;continue;}
+        if(e.status&&e.status>=400&&e.status<500&&e.status!==429){const q2=outbox();const i=q2.findIndex(x=>it.id?x.id===it.id:(x.t===it.t&&x.table===it.table));const x=q2[i>=0?i:0];if(!x)continue;x.tries=(x.tries||0)+1;
+          if(x.tries>=3){console.warn('BDL Sourcing: dropped an unsendable change',x,e.message);q2.splice(i>=0?i:0,1);}lsSet(OUTBOX_KEY,q2);cloud.err=e.message;if(x.tries>=1&&x.tries<3)throw e;continue;}
         throw e;}}
   }catch(e){cloud.err=cloud.err||e.message;clearTimeout(flushTimer);flushTimer=setTimeout(cloudFlush,cloud.tables?20000:120000);}
   cloud.busy=false;paintCloud();}
@@ -84,7 +92,13 @@ async function cloudPull(){if(!cloudEnabled()||cloud.pulling)return false;cloud.
     if(st['audit-mine'])lsSet('bdl-sourcing-audit-mine',st['audit-mine']);if(st['sold-before']&&typeof SOLD_KEY!=='undefined'){lsSet(SOLD_KEY,st['sold-before']);SOLD_C=null;}   /* b283 */
     if(st['audit-archived'])lsSet('bdl-sourcing-audit-archived',st['audit-archived']);
     if(st['audit-jointdays']!=null)lsSet('bdl-sourcing-audit-jointdays',st['audit-jointdays']);
+    if(st['audit-va'])lsSet('bdl-sourcing-audit-va',st['audit-va']);   /* b288: which storefronts Mera and Suz audit */
     if(st['prime-event'])lsSet('bdl-sourcing-prime-event',st['prime-event']);   /* b217: Jack's Prime event switch → the Prime line in every note */
+    /* b290 (VA HQ handover S1, Jack: yes): the switch is data — one shared row that says on or off. The event ended with no row saying
+       off (b285 did it with a date), so Jack's first pull on this build writes {on:false}; every switch after that writes its own row. */
+    if(typeof isJack==='function'&&isJack()&&!lsGet('bdl-sourcing-prime-row-b290',false)&&typeof PRIME_END!=='undefined'){const v=st['prime-event'];
+      if(!(v&&v.on&&String(v.at||'')>PRIME_END)&&!(v&&v.on===false)){const row={on:false,at:nowIso()};lsSet('bdl-sourcing-prime-event',row);cloudQueue('src_settings','upsert',[settingRow('prime-event',row)]);}
+      lsSet('bdl-sourcing-prime-row-b290',true);}
     /* b153: who is who, who has signed in, and whether the door is locked */
     if(st.team&&typeof TEAM_KEY!=='undefined')lsSet(TEAM_KEY,st.team);
     if(typeof SIGNIN_KEY!=='undefined'){const si={};Object.keys(st).filter(k=>k.startsWith('signin:')).forEach(k=>si[k.slice(7)]=st[k]);if(Object.keys(si).length)lsSet(SIGNIN_KEY,Object.assign(lsGet(SIGNIN_KEY,{})||{},si));}
