@@ -56,13 +56,17 @@ async function eupFetch(asins,markets,onStep,rate){
   let done=0;
   for(const mk of markets){
     const dom=EUP_DOMAIN[mk];if(!dom)continue;
+    /* b322: the shared Keepa cache first. It is a BUY price, so another app's answer counts only under 2 hours old (the
+       shared rule for today's prices); 0 tokens. Its age counts from when Keepa sent it, so the 12-hour reuse below still holds. */
+    if(typeof kcGet==='function'&&miss[mk].length){const kc=await kcGet(dom,miss[mk],'stats',typeof KC_NOW_H!=='undefined'?KC_NOW_H:2);const hit=miss[mk].filter(a=>kc[a]);
+      if(hit.length){hit.forEach(a=>{cache[mk+'|'+a]={at:new Date(kc[a].at).getTime(),cents:eupCents(kc[a].p)};});miss[mk]=miss[mk].filter(a=>!kc[a]);need-=hit.length;}}
     for(let i=0;i<miss[mk].length;i+=EUP_BATCH){
       const part=miss[mk].slice(i,i+EUP_BATCH);
       if(onStep)onStep(done,need,mk);
       let js=null;
       try{const r=await fetch(WORKER+'/keepa?path=product&domain='+dom+'&stats=90&history=0&asin='+part.join(','));
         js=await r.json();}catch(e){js=null;}
-      const got=(js&&js.products)||[];
+      const got=(js&&js.products)||[];if(got.length&&typeof kcPut==='function')kcPut(dom,got,'stats');   /* b322: saved for every app */
       /* Keepa answers in the order asked, but never trust that — match on the ASIN it sends back. */
       const byAsin={};got.forEach(p=>{if(p&&p.asin)byAsin[p.asin]=p;});
       part.forEach(a=>{cache[mk+'|'+a]={at:Date.now(),cents:eupCents(byAsin[a])};});

@@ -33,7 +33,7 @@ async function audVaPreload(force){if(!isJack()||audIsVA()||AUD_VA_PRE.busy||(!f
     if(need.length&&audAuto()){const left=await audTokensLeft();const n=left==null?0:Math.max(0,Math.min(AUD_AUTO_CAP,left-AUD_TOKEN_FLOOR));if(n)got=await audLoadDetails(need.slice(0,n),true);}}
   catch(e){}finally{AUD_VA_PRE.busy=false;}return got;}
 /* Jack's section, top of Storefront audits */
-function auVaCard(){if(!isJack()||audIsVA())return'';setTimeout(()=>{audVaPreload();},0);   /* b298 */const pr=audType('prime'),on=!!pr&&(!pr.until||today()<=pr.until);
+function auVaCard(){if(!isJack()||audIsVA()||!AUD_VA.ON)return'';   /* b314: switched off — Jack only */setTimeout(()=>{audVaPreload();},0);   /* b298 */const pr=audType('prime'),on=!!pr&&(!pr.until||today()<=pr.until);
   const P=AUD_VAS.map(auVaWork),J=audAllOf(null);
   const why={};const add=(r,who)=>{if(!r||!['prime','missed'].includes(r.verdict)||String(r.at).slice(0,10)<AUD_VA.START)return;
     const k=(r.verdict==='prime'?'★ ':'Missed it · ')+(r.reason||'no reason picked yet');(why[k]=why[k]||{n:0,who:{}}).n++;why[k].who[who]=(why[k].who[who]||0)+1;};

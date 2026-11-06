@@ -55,7 +55,7 @@ function whoPaint(){['#whoSel','#meIn'].forEach(id=>{const el=$(id);if(el&&el.va
    and if one of them is somehow on either page they are moved to Brands / Filters. */
 function paintJackOnly(){document.querySelectorAll('.jackonly').forEach(el=>{el.hidden=!isJack();});
   /* b288: Mera and Suz get Storefront audits for their own Prime event audit — the same page, their storefronts only */
-  const va=typeof audIsVA==='function'&&audIsVA(),ab=document.querySelector('.pagebtn[data-page="page-audit"]');
+  const va=typeof audIsVA==='function'&&audIsVA()&&typeof AUD_VA!=='undefined'&&AUD_VA.ON,ab=document.querySelector('.pagebtn[data-page="page-audit"]');   /* b314: off — the audit is Jack's again */
   if(ab){if(va)ab.hidden=false;const po=ab.querySelector('.ponly'),ps=ab.querySelector('.ps');if(ps&&!ps.dataset.jack)ps.dataset.jack=ps.textContent;
     if(po)po.hidden=va;if(ps)ps.textContent=va?'Your Prime event audit · your storefronts':ps.dataset.jack;}
   if(!isJack()){if(['#page-audit','#page-settings'].some(id=>{const p=$(id);return p&&p.classList.contains('active')&&!(va&&id==='#page-audit');})){document.querySelector('.pagebtn[data-page="page-brands"]').click();}}}
@@ -151,7 +151,9 @@ function renderYourDay(){const el=$('#yourDay');if(!el)return;const m=me();if(!m
   const mine=srcAll().filter(s=>s.status!=='paused'&&!primeHidden(s)&&ownsIt(s,m));const due=mine.filter(s=>dueState(s).due);const what=m==='Jack'?'brands & filters':'filters';
   const tr=mine.reduce((n,s)=>n+toReviewCount(runLast(s.key)),0);const nx=nextDue(null);
   const dueAny=srcAll().filter(s=>s.status!=='paused'&&!primeHidden(s)&&dueState(s).due).length;
-  el.innerHTML=`<div class="yd"><span class="ydn">${whoChip(m)}</span><span class="ydt">${mine.length?(due.length?`<b>${due.length}</b> of your ${mine.length} ${what} ${due.length===1?'is':'are'} due${(()=>{const l=due.filter(s=>dueState(s).kind==='late').length;return l?` · <b class="ydlate">${l} late</b>`:'';})()}`:`all ${mine.length} of your ${what} are done for today ✓`):`nothing is assigned to you yet`}${tr?` · <b>${tr.toLocaleString()}</b> lead${tr===1?'':'s'} waiting for a look`:''}${!due.length&&dueAny?` · ${dueAny} due for others`:''}</span>
+  const late=m!=='Jack'&&typeof runLateOk==='function'?lateRuns(m):[];   /* b314 */
+  const lateH=late.length?`<div class="ydlatebox"><div class="ydlh">Not finished — you didn't press ✓ Done on ${late.length===1?'this run':'these runs'}, so ${late.length===1?'it does':'they do'} not count yet</div>${late.map(({s,r})=>`<div class="ydl"><span class="ydlt"><b>${escapeHtml(s.name)}</b> · ${escapeHtml(ukDate(r.at))} · ${(+r.leads||0).toLocaleString()} leads</span><button class="btn primary xs" type="button" data-latedone="${escapeHtml(s.key)}">✓ I looked at them — mark it done</button><button class="btn ghost xs" type="button" data-start="${escapeHtml(s.key)}">Run it again</button></div>`).join('')}</div>`:'';
+  el.innerHTML=lateH+`<div class="yd"><span class="ydn">${whoChip(m)}</span><span class="ydt">${mine.length?(due.length?`<b>${due.length}</b> of your ${mine.length} ${what} ${due.length===1?'is':'are'} due${(()=>{const l=due.filter(s=>dueState(s).kind==='late').length;return l?` · <b class="ydlate">${l} late</b>`:'';})()}`:`all ${mine.length} of your ${what} are done for today ✓`):`nothing is assigned to you yet`}${tr?` · <b>${tr.toLocaleString()}</b> lead${tr===1?'':'s'} waiting for a look`:''}${!due.length&&dueAny?` · ${dueAny} due for others`:''}</span>
     ${nx?`<button class="btn primary sm" type="button" data-start="${nx.key}">${ICONS.run}Start with ${escapeHtml(nx.name)}${!ownsIt(nx,m)?' ('+((!nx.owner||nx.owner===NO_OWNER)?'unassigned':(nx.owner==='VAs'?'VAs':escapeHtml(nx.owner)+"'s"))+')':''}</button>`:''}</div>`;el.hidden=false;}
 const HOWTO_KEY='bdl-sourcing-howto-hidden';
 function renderHowTo(){const el=$('#howTo');if(!el)return;el.hidden=!!lsGet(HOWTO_KEY,false);}
@@ -196,7 +198,7 @@ function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay()
   const primeF=filters.filter(primeFirst).sort((a,b)=>((b.markets||[]).includes('UK')-(a.markets||[]).includes('UK'))||a.name.localeCompare(b.name)),restF=filters.filter(s=>!primeFirst(s));   /* b260 */
   /* b290 (VA HQ handover S7): a VA's list is in VA HQ's order — a run she started and never finished at the very top, then late (most late
      first), due today, first runs, the rest, one-offs; what she finished today folds into one line at the bottom. Same shape on both screens. */
-  if(!isJack()&&me()){const part=s=>{const l=runLast(s.key);return!!(l&&l.needDone&&!l.done&&!runStale(l)&&(l.day||String(l.at).slice(0,10))===today());};
+  if(!isJack()&&me()){const part=s=>{const l=runLast(s.key);return!!(l&&l.needDone&&!l.done&&!runStale(l)&&runOpenNow(l));};   /* b314: a run started before midnight still sits at the top */
     const fin=s=>dueState(s).cls==='done'&&!part(s);const all=primeF.concat(restF,brands);
     const open=all.filter(s=>!fin(s)).sort((a,b)=>((part(b)?1:0)-(part(a)?1:0))||(dueRank(a)-dueRank(b))||a.name.localeCompare(b.name)),doneL=all.filter(fin);
     const fold=doneL.length?`<tr class="grp vafold"><td colspan="8"><button type="button" class="linkbtn" id="vaDoneFold">✓ ${doneL.length} done today${lview.vaDone?' · hide':' · show'}</button></td></tr>`+(lview.vaDone?doneL.map(rowHtml).join(''):''):'';
@@ -205,10 +207,19 @@ function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay()
 document.addEventListener('click',e=>{if(e.target&&e.target.closest&&e.target.closest('#vaDoneFold')){lview.vaDone=!lview.vaDone;renderList();}});   /* b290 */
 /* b241: the Done? cell — one big word, who and when underneath, then what comes next */
 /* b248 (Jack, 4 Oct: "add a better last done by X and date/time on the rows"): the last run that was FINISHED — who, the full date and time, how long ago */
-function lastDoneOf(key){const R=runsFor(key);for(let i=R.length-1;i>=0;i--){const r=R[i];if(!r.needDone||r.done){const at=(r.done&&r.done.at)||r.at,who=(r.done&&r.done.who)||r.who||'';return{who,at,auto:!!(r.done&&r.done.auto)};}}return null;}
+function lastDoneOf(key){const R=runsFor(key);for(let i=R.length-1;i>=0;i--){const r=R[i];if(!r.needDone||r.done){const late=!!(r.done&&r.done.late),at=late?r.at:((r.done&&r.done.at)||r.at),who=(r.done&&r.done.who)||r.who||'';return{who,at,auto:!!(r.done&&r.done.auto),late,lateAt:late?r.done.at:''};}}return null;}   /* b314: a late Done counts on the run's own day */
 function lastDoneHtml(key,lab){const x=lastDoneOf(key);if(!x)return'';const d=new Date(x.at),days=Math.floor((new Date(today())-new Date(stamp(d).slice(0,10)))/864e5);
   const dt=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-  return`<span class="dlast">${lab||'Last done'} by ${x.who?whoChip(x.who):'—'} <b>${escapeHtml(dt)}</b><i>${days<=0?'today':days===1?'yesterday':days+' days ago'}</i></span>`;}
+  return`<span class="dlast">${lab||'Last done'} by ${x.who?whoChip(x.who):'—'} <b>${escapeHtml(dt)}</b><i>${days<=0?'today':days===1?'yesterday':days+' days ago'}</i>${x.late?`<i class="dlate" title="✓ Done was pressed late, on ${escapeHtml(ukDate(x.lateAt))} — she said she had looked at them">✓ pressed late</i>`:''}</span>`;}
+/* b314: the runs this person started and never finished that can still be finished late — and finishing one */
+function lateRuns(who){return srcAll().filter(s=>s.status!=='paused').map(s=>({s,r:runLast(s.key)})).filter(x=>x.r&&runLateOk(x.r)&&x.r.who===who);}
+async function lateDone(key){const r=runLast(key);if(!r||!runLateOk(r)||!needMe())return;const s=srcGet(key)||{name:key},q=(r.queue||[]).filter(a=>{const v=verdGet(a);return!(v&&v.v);});
+  const ok=await uiDialog({tone:'info',title:`Did you look at ${s.name}'s leads?`,ok:'Yes — I looked at them · mark it done',cancel:'No — I\u2019ll run it again',
+    body:`<p>You ran <b>${escapeHtml(s.name)}</b> on <b>${escapeHtml(ukDate(r.at))}</b> — ${(+r.leads||0).toLocaleString()} leads${q.length?`, ${q.length} still in To review`:''} — and ✓ Done was never pressed, so it is not counted.</p><p>If you looked at them in Keepa (and put the good ones on the lead sheet), press <b>Yes</b>: it is saved as done on ${escapeHtml(ukDate(r.at))}, under your name, marked <b>pressed late</b>.</p>`});
+  if(!ok){openRun(key);return;}
+  if(q.length)seenStampMany(q.map(a=>({asin:a,v:{v:'Seen',reason:'',note:'marked done late',source:key}})),'Done late');
+  runSave(runDoneStamp(r,{who:me(),at:nowIso(),late:true}));if(typeof actLog==='function')actLog('done',`Done pressed late · ${s.name} (run ${ukDate(r.at)})`,key);
+  toast(`${s.name} — DONE (pressed late) by ${me()} · the ${ukDate(r.at)} run counts`);renderList();}
 function dstateHtml(s,d,last,stK,kp,op){const when=last?fmtWhen(last.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase()):'';
   const by=last&&last.who?`by ${whoChip(last.who)} · ${escapeHtml(when)}`:last?escapeHtml(when):'';
   const ic={done:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>',
@@ -220,7 +231,7 @@ function dstateHtml(s,d,last,stK,kp,op){const when=last?fmtWhen(last.at).replace
       return`<span class="dlast">Last done by ${who?whoChip(who):'—'} <b>${escapeHtml(dd.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+' · '+dd.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))}</b></span>`;})();
     return`<div class="dstate part" title="The files are in, but nobody has pressed ✓ Done on this filter"><span class="dbig">◐ NOT FINISHED</span><span class="dsub">files in ${by}</span><span class="dnext">${tr?`<b>${tr}</b> to review left · `:''}<b>✓ Done not pressed</b> (next to Open in Keepa)</span>${prevDone}${runsTodayHtml(last)}</div>`;}
   if(stK==='done'&&last&&last.done&&last.done.who){const dw=fmtWhen(last.done.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase());
-    return`<div class="dstate done" title="${last.done.auto?'0 leads — nothing to do':'Done pressed by '+escapeHtml(last.done.who)}"><span class="dbig">${ic.done}${d.cls==='done'?'DONE TODAY':'DONE'}</span><span class="dsub">by ${whoChip(last.done.who)} · ${escapeHtml(dw)}${last.done.auto?' · 0 leads':''}${last.done.secs?` · <b title="Time on the run screen, open to ✓ Done">${rtNice(last.done.secs)}</b>`:''}</span><span class="dnext">next ${escapeHtml(d.cls==='done'?String(d.sub||'').replace(/^next /,''):d.label+(d.sub?' · '+d.sub:''))}</span>${runsTodayHtml(last)}</div>`;}
+    return`<div class="dstate done" title="${last.done.auto?'0 leads — nothing to do':'Done pressed by '+escapeHtml(last.done.who)}"><span class="dbig">${ic.done}${d.cls==='done'?'DONE TODAY':'DONE'}</span><span class="dsub">by ${whoChip(last.done.who)} · ${escapeHtml(dw)}${last.done.auto?' · 0 leads':''}${last.done.secs?` · <b title="From the files going in to ✓ Done${last.done.activeSecs?' · '+rtNice(last.done.activeSecs)+' of it with the Sourcing tab in front':''}">${rtNice(last.done.secs)}</b>`:''}</span><span class="dnext">next ${escapeHtml(d.cls==='done'?String(d.sub||'').replace(/^next /,''):d.label+(d.sub?' · '+d.sub:''))}</span>${runsTodayHtml(last)}</div>`;}
   if(stK==='done')return`<div class="dstate done" title="Run inside its cadence${d.sub?' · '+escapeHtml(d.sub):''}"><span class="dbig">${ic.done}${d.cls==='done'?'DONE TODAY':'DONE'}</span><span class="dsub">${by}</span><span class="dnext">next ${escapeHtml(d.cls==='done'?String(d.sub||'').replace(/^next /,''):d.label+(d.sub?' · '+d.sub:''))}</span></div>`;
   /* b260: two short lines that wrap — it was one long line running under the Run button */
   const stl=d.stale?`not finished within ${STALE_H} hours`:'',stl2=d.stale?`<span class="dnext stale2">files in ${escapeHtml(fmtWhen(d.stale.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase()))}${d.stale.who?' · '+whoChip(d.stale.who):''} · <b>run it again</b></span>`:'';
@@ -369,6 +380,10 @@ function rtStop(){rtFlush();RT.key=null;}
 function rtSecs(key,day){if(RT.key===key){rtFlush();if(!document.hidden)RT.t=Date.now();}return(lsGet(RT_KEY,{})||{})[key+'|'+day]||0;}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)rtFlush();else if(RT.key)RT.t=Date.now();});
 window.addEventListener('pagehide',rtFlush);
+/* b316 (VA HQ S9, 6 Nov: "done.secs under-counts about 10x"): the work happens in Keepa, in another tab, so the seconds the Suite was in front
+   were a fraction of the run (Suz's S&S, 4 Nov: 88 s counted, 51 min from file-in to Done). The run's time is now the wall clock from the first
+   file in to ✓ Done, capped at 4 hours; the in-front seconds stay as done.activeSecs. */
+function runWallSecs(r){const L=runsOfDay(r),f=(L[L.length-1]&&L[L.length-1].at)||r.at,s=Math.round((Date.now()-new Date(f).getTime())/1000);return s>0?Math.min(s,4*3600):0;}
 function rtNice(s){s=+s||0;if(s<60)return s+' s';const m=Math.round(s/60);return m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min';}
 function backToList(){rtStop();if(cur&&ownLock(cur))srcUnlock(cur);pillOff();$('#viewRun').hidden=true;$('#viewList').hidden=false;renderList();}
 /* b223 (Jack, 1 Oct: "it should also tick the countries"): on Drop & check the flags tick as each country's file lands */
@@ -1277,7 +1292,7 @@ function storedRows(key,rule){const m=leadMap(key)||{};const rows=[];let last=''
    to look at the past export before they do today's"). She opened Amazon coupons and Business discount and both showed the 12 / 13 Oct run —
    step 2 "Judge the leads" lit, yesterday's leads under it — before today's file was in. Now the saved run only stands in when it IS today's
    (a reload, or Jack after a VA the same day), on a one-off, or when someone presses "Look at the last export" at the bottom. */
-function storedToday(){const r=cur&&runLast(cur.key);return!!r&&(r.day||String(r.at||'').slice(0,10))===today();}
+function storedToday(){const r=cur&&runLast(cur.key);return!!r&&runOpenNow(r);}   /* b314: an unfinished run from before midnight stays on screen */
 function storedShowOk(){return!!cur&&(!!cur.drop||storedToday()||view.lastFor===cur.key);}
 function paintLastExp(){let el=$('#lastExp');const host=$('#viewRun');if(!host)return;
   if(!el){el=document.createElement('div');el.id='lastExp';el.className='lastexp';host.appendChild(el);
@@ -2129,7 +2144,7 @@ const OPEN_ALL_MAX=3000;   /* b242: Keepa's Viewer takes about 3,000 in one link
    "they have to do all Keepa first then come back to it and say done — give it 2 seconds per ASIN, that is the time they should be coming
    back at the earliest". The app remembers when a VA first opened this filter's leads today and how many; ✓ Done unlocks 2 s per lead later. */
 const KOPEN_KEY='bdl-sourcing-kopen',KOPEN_SECS=2,KOPEN_MAX=300;   /* b307 (Jack: "cap it at 5") — never more than 5 minutes */
-function kopenId(){return cur?cur.key+'|'+today():'';}
+function kopenId(){if(!cur)return'';const r=runLast(cur.key);return cur.key+'|'+(r&&runOpenNow(r)?(r.day||String(r.at).slice(0,10)):today());}   /* b314: the Keepa opens belong to the run, not the calendar day */
 function kopenGet(){const m=lsGet(KOPEN_KEY,{})||{};return m[kopenId()]||null;}
 function kopenAdd(asins){if(!cur||!asins||!asins.length)return;const m=lsGet(KOPEN_KEY,{})||{},id=kopenId(),cut=new Date(Date.now()-3*864e5).toISOString().slice(0,10);
   Object.keys(m).forEach(k=>{if(k.split('|').pop()<cut)delete m[k];});const x=m[id]||{first:Date.now(),a:[]};const S=new Set(x.a);asins.forEach(a=>S.add(a));x.a=[...S];m[id]=x;lsSet(KOPEN_KEY,m);}
@@ -2170,7 +2185,7 @@ function doneAllList(){const L=doneList();if(!todayRun())return L;const s=new Se
    how many are still left; the stamp lands when nothing in To review is left. The button on the right is only "Next due →" again. */
 /* b251 (Jack, 3 Oct, on a Drop & check run with only "Done — back to Brands / Filters" far right: "want the done next to open pls"):
    a one-off gets the same ONE Done next to Open all — it marks the leads looked at and stamps the check done; the button on the right is only the way back. */
-function todayRun(){if(!cur||!result||result.past||result.apiLook)return null;const r=runLast(cur.key);return r&&(r.day||String(r.at).slice(0,10))===today()?r:null;}
+function todayRun(){if(!cur||!result||result.past||result.apiLook)return null;const r=runLast(cur.key);return r&&runOpenNow(r)?r:null;}   /* b314: + a run that crossed midnight */
 function paintDoneBtn(){{const de=$('#doneEmpty');if(de&&!de.hidden&&result)de.hidden=true;}   /* b260: "Keepa showed 0 results" goes as soon as there are leads */
   const db=$('#doneSel');if(!db)return;if(!result){db.hidden=true;db.classList.remove('notyet');return;}
   /* b265 (Mera, 5 Oct: "do I need to tick Done here? I can't see where the button is" — on the 14 Sep run of a filter she had not exported today;
@@ -2219,7 +2234,7 @@ function finishRun(){if(!result||!cur||!needMe())return;if($('#doneSel')&&$('#do
     seenStampMany(list.map(a=>({asin:a,v:{v:'Seen',reason:'',note:'marked done',source:cur.key,state:(by[a]||{}).state}})),'Done button');
     list.forEach(a=>{touched.add(a);const o=by[a];if(o)o.verdict=verdGet(a);});view.sel.clear();}
   const left=runDoneLeft();
-  if(r&&!left){if(!(r.done&&!r.done.auto)){runSave(runDoneStamp(r,{who:me(),at:nowIso(),secs:rtSecs(cur.key,r.day||String(r.at).slice(0,10))}));if(typeof actLog==='function')actLog('done','Done pressed · '+cur.name+(list.length?' · '+list.length+' leads marked':''),cur.key);doneSyncWatch(cur.key+'|'+(r.day||String(r.at).slice(0,10)));}
+  if(r&&!left){if(!(r.done&&!r.done.auto)){runSave(runDoneStamp(r,{who:me(),at:nowIso(),secs:runWallSecs(r),activeSecs:rtSecs(cur.key,r.day||String(r.at).slice(0,10))}));if(typeof actLog==='function')actLog('done','Done pressed · '+cur.name+(list.length?' · '+list.length+' leads marked':''),cur.key);doneSyncWatch(cur.key+'|'+(r.day||String(r.at).slice(0,10)));}
     renderResults();paintNext();toast(`${cur.name} — DONE by ${me()}${list.length?` · ${list.length} lead${list.length===1?'':'s'} marked looked at${hid?` (${hid} of them hidden by your filter)`:''}`:''}`);return;}
   renderResults();paintNext();
   toast(r?`${list.length} marked looked at — ${left} more in To review ${left===1?'is':'are'} hidden by your ticks or filters, so the filter is not finished yet`:`${list.length} marked looked at by ${me()}`,!!r);}
@@ -2467,7 +2482,7 @@ function showTab(tab,quiet){if(!['brands','runs','leads','act','fc'].includes(ta
   const cf=$('#cardFc');if(cf)cf.hidden=tab!=='fc';if(tab==='fc'&&typeof renderFc==='function')renderFc();
   if(tab==='runs')renderLog();if(tab==='leads'&&typeof renderHistory==='function')renderHistory();}
 function openHash(){let h=location.hash||'';
-  if(/^#audit/i.test(h)&&typeof auHash==='function'&&(isJack()||(typeof audIsVA==='function'&&audIsVA()))){auHash();return;}   /* b290: the VAs' Prime audit too */
+  if(/^#audit/i.test(h)&&typeof auHash==='function'&&(isJack()||(typeof audIsVA==='function'&&audIsVA()&&AUD_VA.ON))){auHash();return;}   /* b290: the VAs' Prime audit too · b314: off */
   /* b61: AVM HQ links carry the VA's name (#run=key&who=Suz) so the who-are-you gate never appears */
   /* b290 (VA HQ handover S6): never switch person silently. A link for Suz on a browser that is Mera's (signed in, or just picked) says so
      and asks; only an empty browser takes the name straight away. */
@@ -2488,7 +2503,8 @@ function openHash(){let h=location.hash||'';
       body:`<p>${s?`<b>${escapeHtml(s.name)}</b> is no longer one of your filters${s.status==='paused'?' — Jack has paused it':''}.`:'That filter is not there any more.'}</p>`})
       .then(go=>{if(go){location.hash='#due';const b=document.querySelector('#lSeg button[data-seg="due"]');if(b)b.click();}});
     return;}}
-  if(m&&srcGet(m[1])){goBrands();openRun(m[1]);return;}
+  if(m&&srcGet(m[1])){goBrands();if(cur&&cur.key===m[1]&&!$('#viewRun').hidden)return;   /* already on it */
+    if(typeof runSwitchGuard==='function'&&!location.search.includes('checks'))runSwitchGuard(m[1],()=>{if(cur&&!$('#viewRun').hidden&&cur.key!==m[1])backToList();openRun(m[1]);});else openRun(m[1]);return;}   /* b316: a VA HQ link mid-run gets the same "finish it first" as the Run button */
   if(/^#due/i.test(h)){goBrands();if(cur&&!$('#viewRun').hidden)backToList();const b=document.querySelector('#lSeg button[data-seg="due"]');if(b)b.click();}}
 function brandsInit(){if(typeof primeEndOnce==='function')primeEndOnce();   /* b285 */if(typeof bbSeed==='function')bbSeed();if(typeof blSeed==='function')blSeed();paintJackOnly();renderList();renderLog();if(!me())whoGate(true);setTimeout(openHash,50);window.addEventListener('hashchange',openHash);paintTokens();setInterval(paintTokens,10*60*1000);
   /* b30 (Jack: "still loads of dead space on ASUS"): the floors card lives under the run summary, so the two columns come out level */
@@ -2567,7 +2583,7 @@ function brandsInit(){if(typeof primeEndOnce==='function')primeEndOnce();   /* b
   ['#runNext','#runNext2'].forEach(id=>$(id).addEventListener('click',e=>{const k=e.currentTarget.dataset.key;
     if(k&&srcGet(k)){backToList();openRun(k);window.scrollTo({top:0,behavior:'smooth'});}
     else if(cur&&cur.drop){backToList();window.scrollTo({top:0,behavior:'smooth'});}}));   /* b223 */
-  $('#yourDay').addEventListener('click',e=>{const b=e.target.closest('button[data-start]');if(b)openRun(b.dataset.start);});
+  $('#yourDay').addEventListener('click',e=>{const l=e.target.closest('button[data-latedone]');if(l){lateDone(l.dataset.latedone);return;}const b=e.target.closest('button[data-start]');if(b)openRun(b.dataset.start);});   /* b314: + mark a late run done */
   $('#howToHide').addEventListener('click',()=>{lsSet(HOWTO_KEY,true);renderHowTo();});$('#howToShow').addEventListener('click',()=>{lsSet(HOWTO_KEY,false);renderHowTo();$('#howTo').scrollIntoView({behavior:'smooth',block:'center'});});
   $('#runStrip').addEventListener('click',e=>{const d=e.target.closest('[data-run]');if(d&&cur){openPastRun(d.dataset.run);return;}if(e.target.closest('[data-look]')&&cur){openApiLook();return;}if(e.target.closest('[data-act="hist"]')&&cur)openHistory(cur);});
   $('#runCopyLink').addEventListener('click',e=>{if(!cur)return;const w=USERS.includes(cur.owner)?'&who='+cur.owner:'';copy(location.origin+location.pathname+'#run='+cur.key+w,'Link copied — paste it into the AVM HQ task'+(w?' (opens as '+cur.owner+', no name prompt)':''),e.currentTarget,'Copied');});

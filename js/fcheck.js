@@ -17,12 +17,18 @@ function fcKind(r,s,usual){const f=(r.files||[]).map(String);
   if(vw&&!fin)return'viewer';
   if(fcOneSearch(s)&&+r.rowsIn===100)return'page';
   return'real';}
+/* b313: the last day a filter was really run — for the audit's "hasn't really run since" (one pass over the runs, kept until they change) */
+let fcLrMemo={sig:'',m:{}};
+function fcLastReal(key){const R=lsView(RUN_KEY,[]),sig=R.length+'|'+((R[R.length-1]||{}).at||'');if(fcLrMemo.sig!==sig)fcLrMemo={sig,m:{}};
+  if(key in fcLrMemo.m)return fcLrMemo.m[key];const s=typeof srcGet==='function'?srcGet(key):null;if(!s)return fcLrMemo.m[key]=null;
+  const all=R.filter(r=>r.source===key),sz=all.filter(r=>!r.empty&&fcKind(r,s,0)==='real').map(r=>+r.rowsIn||0).filter(n=>n>0).sort((a,b)=>a-b),u=sz.length?sz[Math.floor(sz.length/2)]:0;
+  const d=all.filter(r=>fcKind(r,s,u)==='real').map(r=>String(r.day||r.at).slice(0,10)).sort().pop()||null;return fcLrMemo.m[key]=d;}
 const FC_KIND={viewer:'Viewer file only',page:'exactly 100 rows (one Keepa page)',zero:'marked 0 results'};
 /* the lead sheet since the window opened, with BOUGHT / NOT — Jack's browser, read only, kept 30 minutes */
 async function fcSheet(since,force){if(typeof cloudReadable!=='function'||!cloudReadable())return null;
   if(!force&&FC.sheet&&FC.sheet.since<=since&&Date.now()-FC.sheetAt<30*60e3)return FC.sheet;if(FC.busy)return FC.busy;
   FC.busy=(async()=>{try{const rows=await cloudGetAll('leads','select=asin,va,status,created_at,superseded&created_at=gte.'+since+'T00:00:00Z');   /* created_at: some sheet dates are read the wrong way round */
-      FC.sheet={since,rows:rows.filter(l=>!l.superseded&&/^B[0-9A-Z]{9}$/.test(String(l.asin||'').trim().toUpperCase())).map(l=>({a:String(l.asin).trim().toUpperCase(),va:typeof trVa==='function'?trVa(l.va):l.va,st:String(l.status||'').toUpperCase(),d:String(l.created_at).slice(0,10)}))};FC.sheetAt=Date.now();}
+      FC.sheet={since,rows:rows.filter(l=>!l.superseded&&/^B[0-9A-Z]{9}$/.test(String(l.asin||'').trim().toUpperCase())).map(l=>({a:String(l.asin).trim().toUpperCase(),va:typeof trVa==='function'?trVa(l.va):l.va,st:String(l.status||'').toUpperCase(),d:new Date(new Date(l.created_at).getTime()+8*3600e3).toISOString().slice(0,10)}))};   /* b314: the VAs' own (Philippines) day, like their runs */FC.sheetAt=Date.now();}
     catch(e){}FC.busy=null;return FC.sheet;})();
   return FC.busy;}
 function fcRows(sheet){const t=today(),from=fcDayAdd(t,-(FC.days-1)),wd=fcWorkdays(from,t);
@@ -42,9 +48,18 @@ function fcRows(sheet){const t=today(),from=fcDayAdd(t,-(FC.days-1)),wd=fcWorkda
     const o=sh[s.key]||{n:0,b:0,who:{}};
     return{s,usual,due,days,runs:win.length,wrong,lastReal,since,late:cw&&since!=null&&since>cw*2,leads:lr.length?Math.round(lr.reduce((a,b)=>a+b,0)/lr.length):null,
       sheet:o.n,bought:o.b,sheetWho:o.who,st,who:s.owner||'VAs',rank:{fake:0,none:1,bad:2,behind:3,ok:4,oneoff:5,off:6}[st]};});}
+/* b314 (Jack, 5 Nov: "I want to see them using it"): each VA's last 10 working days, one square a day — filters really run in the Suite,
+   ✓ Done pressed, and leads put on the lead sheet. A day with lead-sheet leads but nothing run in the Suite = worked outside it. */
+function fcDays(w,sheet,n){n=n||10;const t=today(),days=[];for(let d=t;days.length<n;d=fcDayAdd(d,-1)){const wd=new Date(d+'T12:00:00Z').getUTCDay();if(wd&&wd<6)days.unshift(d);}
+  const S={};srcAll().forEach(s=>S[s.key]=s);const R=lsView(RUN_KEY,[]).filter(r=>r.who===w&&S[r.source]),real={},done={};
+  R.forEach(r=>{const d=String(r.day||r.at).slice(0,10);if(!days.includes(d))return;if(fcKind(r,S[r.source],0)==='real'){real[d]=(real[d]||0)+1;if(r.done&&!r.done.auto)done[d]=(done[d]||0)+1;}});
+  const sh={};((sheet&&sheet.rows)||[]).forEach(l=>{if(l.va===w&&days.includes(l.d))sh[l.d]=(sh[l.d]||0)+1;});
+  const cells=days.map(d=>{const r=real[d]||0,k=done[d]||0,l=sh[d]||0,cls=r>=3?'ok':r?'mid':l?'out':'none',lab=new Date(d+'T12:00:00Z').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',timeZone:'UTC'});
+    return`<span class="fcday ${cls}" title="${escapeHtml(`${lab}: ${r} filter${r===1?'':'s'} really run in the Suite · ${k} ✓ Done · ${l} on the lead sheet${!r&&l?' — worked outside the Suite':''}`)}"><b>${r}</b><i>${l?l+' sheet':''}</i><small>${escapeHtml(lab)}</small></span>`;}).join('');
+  return`<div class="fcdays" title="Each square is a working day: the big number = filters really run in the Suite, under it = leads on the lead sheet. Red = lead-sheet leads but nothing run in the Suite.">${cells}</div>`;}
 const FC_ST={ok:['On track','ok'],behind:['Behind','mid'],bad:['Way behind','bad'],fake:['Not really run','bad'],none:['Not run','bad'],oneoff:['One-off','off'],off:['Paused','off']};
 async function renderFc(force){const el=$('#fcBody');if(!el)return;if(!isJack()){el.innerHTML='<div class="empty">Only Jack sees this.</div>';return;}
-  const t=today(),from=fcDayAdd(t,-(FC.days-1));
+  const t=today(),from=fcDayAdd(t,-(FC.days-1)),sFrom=fcDayAdd(t,-(Math.max(FC.days,14)-1));   /* b314: the day strip needs 10 working days of the sheet */
   const paint=sheet=>{let L=fcRows(sheet);if(FC.who!=='all')L=L.filter(x=>x.who===FC.who);
     const v=(x,k)=>k==='status'?x.rank*1000+(x.due?x.days/x.due:1)*100:k==='name'?x.s.name.toLowerCase():k==='who'?x.who:k==='real'?(x.due?x.days/x.due:9):k==='wrong'?-x.wrong.length:k==='last'?(x.since==null?-1e9:-x.since):k==='size'?-x.usual:k==='leads'?-(x.leads||0):k==='sheet'?-x.sheet:k==='bought'?-x.bought:0;
     L.sort((a,b)=>{const p=v(a,FC.sort),q=v(b,FC.sort);return(p<q?-1:p>q?1:a.s.name.localeCompare(b.s.name))*FC.dir;});
@@ -66,12 +81,13 @@ async function renderFc(force){const el=$('#fcBody');if(!el)return;if(!isJack())
         <td class="num">${x.leads!=null?`<b>${x.leads.toLocaleString()}</b>`:'<span class="cutn">—</span>'}</td>
         <td class="num" title="${escapeHtml(sw)}">${x.sheet?`<b>${x.sheet}</b>`:'<span class="cutn">0</span>'}</td>
         <td class="num">${x.bought?`<b class="jade">${x.bought}</b>`:'<span class="cutn">0</span>'}</td></tr>`;}).join('');
-    el.innerHTML=`<div class="fcsums">${sum}</div>${sheet?'':`<p class="fcnote">The lead sheet could not be read here, so Lead sheet and Bought show 0.</p>`}
+    const daysH=['Mera','Suz'].filter(w=>FC.who==='all'||FC.who===w||FC.who==='VAs').map(w=>`<div class="fcdrow">${whoChip(w)}${fcDays(w,sheet)}</div>`).join('');
+    el.innerHTML=`<div class="fcsums">${sum}</div><div class="fcdaysbox"><div class="fcdh">Using the Suite · last 10 working days <span>big number = filters really run in the Suite · under it = leads on the lead sheet · red = lead-sheet leads but nothing run in the Suite</span></div>${daysH}</div>${sheet?'':`<p class="fcnote">The lead sheet could not be read here, so Lead sheet and Bought show 0.</p>`}
       <div class="tablewrap show"><div class="tablescroll"><table class="logtbl fctbl"><thead><tr>${th('name','Filter')}${th('who','Who')}<th>How often</th>${th('status','Status')}${th('real','Really run','r')}${th('wrong','Wrong file','r')}${th('last','Last real run')}${th('size','Products / export','r')}${th('leads','Leads / run','r')}${th('sheet','Lead sheet','r')}${th('bought','Bought','r')}</tr></thead>
       <tbody>${body||'<tr><td colspan="11" class="more">No filters for this person.</td></tr>'}</tbody></table></div></div>
       <p class="fcnote"><b>Really run</b> = days with a run on that day’s Product Finder export, out of the runs due in the last ${FC.days} days (working days, Mon–Fri). <b>Wrong file</b> = a run on a Viewer file only, exactly 100 rows (one Keepa page), or marked “0 results” on a search that usually has 20+ — it counted as done but searched nothing; from b311 those files are refused, so this column should fall to 0. <b>Products / export</b> = a normal real export. <b>Lead sheet</b> = leads that went on the sheet within 7 days of being a lead on this filter (any VA; hover to see who). Who, how often and on/off save for everyone as soon as you change them.</p>`;};
-  paint(FC.sheet&&FC.sheet.since<=from?FC.sheet:null);
-  const sh=await fcSheet(from,force);if($('#fcBody')===el&&!$('#cardFc').hidden)paint(sh);}
+  paint(FC.sheet&&FC.sheet.since<=sFrom?FC.sheet:null);
+  const sh=await fcSheet(sFrom,force);if($('#fcBody')===el&&!$('#cardFc').hidden)paint(sh);}
 document.addEventListener('DOMContentLoaded',()=>{const c=$('#cardFc');if(!c)return;
   c.addEventListener('click',e=>{const b=e.target.closest('[data-fcd]');if(b){FC.days=+b.dataset.fcd;c.querySelectorAll('[data-fcd]').forEach(x=>x.classList.toggle('on',x===b));renderFc();return;}
     const w=e.target.closest('[data-fcw]');if(w){FC.who=w.dataset.fcw;c.querySelectorAll('[data-fcw]').forEach(x=>x.classList.toggle('on',x===w));renderFc();return;}

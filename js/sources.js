@@ -447,6 +447,15 @@ function runLast(key){const R=lsView(RUN_KEY,[]);for(let i=R.length-1;i>=0;i--)i
    the last run that WAS finished, so it goes back to NOT DONE / due and has to be run again with fresh files. Runs saved before b244 never needed the press. */
 const STALE_H=12;
 function runStale(r){return!!(r&&r.needDone&&!r.done&&Date.now()-new Date(r.at).getTime()>STALE_H*3600e3);}
+/* b314 (Jack, 5 Nov: "woah is this not being done at all?" — Mera, 28 Oct: started £60+ at 23:52 her time, dropped the same export again at 00:48,
+   and ✓ Done answered "drop today's export first" every time — the run was dated the day before, so there was no way to finish it). The run
+   you are on is today's run, OR one you started under 12 hours ago and have not finished — midnight on the VA's clock no longer cuts it off. */
+/* b314 (Jack, 5 Nov: "yes" — when a VA comes back to a run she never pressed ✓ Done on, ask "did you look at them?" and count it). Mera, 30 Oct:
+   385 leads opened in Keepa, 13 on the lead sheet, ✓ Done never pressed — after 12 hours the run stopped counting. A run she started and never
+   finished (over 12 hours, up to 7 days, until the filter runs again) can still be finished: "I looked at them" saves ✓ Done with late:true. */
+const LATE_DAYS=7;
+function runLateOk(r){return!!(r&&r.needDone&&!r.done&&runStale(r)&&Date.now()-new Date(r.at).getTime()<LATE_DAYS*864e5);}
+function runOpenNow(r){if(!r)return false;if((r.day||String(r.at||'').slice(0,10))===today())return true;return!!(r.needDone&&!r.done&&!runStale(r)&&Date.now()-new Date(r.at).getTime()>=0);}
 function runLastOk(key){const R=lsView(RUN_KEY,[]);for(let i=R.length-1;i>=0;i--){if(R[i]&&R[i].source===key&&!runStale(R[i]))return lsCopy(R[i]);}return null;}   /* b304 */
 function runSave(run){const runs=runsAll().filter(r=>!(r.source===run.source&&(r.day||r.at.slice(0,10))===run.day));runs.push(run);lsSet(RUN_KEY,runs);
   cloudQueue('src_runs','upsert',[{id:run.source+'|'+run.day,source_key:run.source,day:run.day,at:run.at,who:run.who||'',data:run}]);}
@@ -473,8 +482,10 @@ function dueState(src){if(src.status==='paused')return{label:'Paused',cls:'pause
   /* b154 (Jack, 25 Sep: "improve font and UI UX design of due now and overdue"): plain words, and the latest runs come first.
      kind = late / today / first, so the pill, the row and the counts can tell them apart; rank −days puts 9 days late above 1 day late */
   if(!last)return out({label:stale?'Run it again':'First run',cls:'due first',kind:'first',due:true,rank:2,sub:stale?'not finished within '+STALE_H+' hours':'never run yet'});
-  const lastDay=String(last.at).slice(0,10),t=today();
-  const nx=new Date(last.at);nx.setDate(nx.getDate()+(days||0));nx.setHours(7,0,0,0);const nxDay=nx.toISOString().slice(0,10);
+  /* b316 (VA HQ S12 + the live log, 6 Nov): the run's day and the next-due day came off the UTC clock while "today" came off hers — in Manila a
+     daily filter turned "1 day late" at her midnight (mid-shift for Mera), and one finished after midnight still said "Due today". One clock now. */
+  const lastDay=stamp(new Date(last.at)).slice(0,10),t=today();
+  const nx=new Date(last.at);nx.setDate(nx.getDate()+(days||0));nx.setHours(7,0,0,0);const nxDay=stamp(nx).slice(0,10);   /* b316: her clock, not UTC */
   const nice=nx.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
   if(lastDay===t)return out({label:'Done today',cls:'done',due:false,rank:8000,sub:days?'next '+nice:'one-off'});
   if(!days)return out({label:'One-off',cls:'',due:false,rank:5000});

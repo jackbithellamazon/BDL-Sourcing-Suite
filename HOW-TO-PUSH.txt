@@ -1,14 +1,137 @@
-BUILD b312 — 23 Oct 2026 — push THIS one (it replaces b311 and b310 — it has everything in both)
+BUILD b322 — 6 Nov 2026 — push THIS one (it replaces b321 — it has everything since b285)
 
-Live is STILL b285 — checked 22 Oct 23:58: GitHub's last upload to BDL-Sourcing-Suite was 7 Oct, so last night's upload did not go in.
-HOW: GitHub → BDL-Sourcing-Suite → Add file → Upload files → drag EVERYTHING inside this folder (index.html, README-DEPLOY.txt,
-     HOW-TO-PUSH.txt, css, js, tests) → wait until every file has finished uploading → press the green "Commit changes" at the bottom.
-     New files since b285: js/auditva.js and js/fcheck.js — they must be in the upload.
-     1–2 minutes later the app's header says b312.
+Live is b312 (your upload of 22 Oct 23:15). b313–b321 were never uploaded — they are all inside this one.
+HOW: GitHub → BDL-Sourcing-Suite → Add file → Upload files → drag EVERYTHING inside this folder → wait until every file has finished
+     uploading → green "Commit changes". 1–2 minutes later the header says b322. NEW file: js/oashop.js (with js/kcache.js, js/auditva.js, js/fcheck.js).
 
-ONE EXTRA STEP (2 minutes, once — NOT done yet, checked 22 Oct): run ~/Downloads/2026-10-13-BDL-SOURCING-PRICE-LOG-SUPABASE.sql in Supabase
-  (SQL Editor → New query → paste all of it → Run). It only ADDS three columns. It should end with 3 rows: hist, mk, sell.
-  Without it the storefront lines still work, but only with each filter's LAST day — not every day's price and who.
+WHAT'S NEW IN b322
+• Speed: b321's OA line re-read its saved shop prices once per row — on a 500-row rival about 1.6 seconds every repaint. Now read once:
+  1,000 rows take 0.002 seconds.
+• EU prices (a run with no EU files) look in the shared Keepa cache first — another app's answer under 2 hours old is free — and
+  save what they buy for every app. The Keepa trackers will add about 28 EU rows a day.
+• Checks: 492 of 492 green (the sandbox, cloud off).
+
+TWO SQL FILES TO RUN ONCE in Supabase (SQL Editor → New query → paste all of it → Run), in this order — same two as b320, still not run:
+  1. ~/Downloads/2026-10-13-BDL-SOURCING-PRICE-LOG-SUPABASE.sql   (ends with 3 rows: hist, mk, sell)
+  2. ~/Downloads/2026-11-06-SHARED-KEEPA-CACHE-SUPABASE.sql      (the shared Keepa cache; ends with "rows_in_keepa_cache 0")
+
+THEN: paste ~/Downloads/FOR KEEPA DISCORD CHAT - shared Keepa cache - 6 Nov 2026.md into the "Keepa discord" chat.
+
+OPTIONAL, WHEN YOU WANT THE SHOP PRICES AUTOMATIC (the free OA line works without this):
+  1. serper.dev → sign up (2,500 free searches to start) → copy your API key. Never paste it into a chat.
+  2. Cloudflare → Workers & Pages → bdl-sourcing → Settings → Variables and Secrets → Add → Type: Secret →
+     Name: SERPER_API_KEY → Value: the key → Save.
+  3. Same Worker → Edit code → select everything → paste ~/Downloads/2026-11-06-BDL-SOURCING-WORKER-v3.js (open in TextEdit) → Deploy.
+     It is v2 plus one /shop route — your Keepa key stays where it is.
+  4. Check: https://bdl-sourcing.jackbithellbusiness.workers.dev/shop?ping=1 should say {"ok":true,"shop":true}.
+
+WHAT'S NEW IN b321 — THE OA CHECK ON YOUR STOREFRONT AUDIT
+• A rival product that is not a lead on Amazon UK, but would be under £X, gets an OA line:
+    – free, straight away: "buy under £59.52 · shelf price up to Ninja Kitchen £65.40 · Argos £63.31 · Currys £62.65 …" — the most each
+      shop on your discount list (Settings) can charge and still make 10% once your code is off — and Google ↗, which searches the
+      barcode, so it is the exact product.
+    – automatic, once the Worker has the key: the "★ still a lead today?" button also reads Google Shopping for those rows (or press
+      "🛒 shop prices for N"). Real UK shops only — no eBay, OnBuy, Amazon or refurbished. It takes your codes off and says:
+        ★ OA LEAD  Currys £139.00 − 5% = £132.05 → £38.08 profit · 28.8% ROI   (suggests Missed it, Enter accepts)
+        OA LEAD?   a shop with no code on your list, or not sure it is the same model — check it
+        OA         cheapest UK shop: John Lewis £149.00 − 4% = £143.04 — £47.05 over the £95.99 it needs
+• "🛒 N OA leads at a shop" on the summary line filters the list to them.
+• Cost: one Google search a product (two when the barcode finds nothing), only when you press a button, reused for 24 hours,
+  and the month's count is on the button. No Keepa tokens — it uses the numbers the still-a-lead check already has.
+• Checks: 491 of 491 green at b321.
+
+WHAT'S NEW IN b320 — YOUR STOREFRONT AUDIT
+• FIXED a false "✗ NEVER": the furReal panda was a lead in your own Drop & check on 7 Oct (£19.85 landed DE), but the line said NEVER —
+  a filter run several times in a day keeps only its last run's leads, so the line now also reads the export log. It says ✓ Lead.
+• The lead-sheet tile says the day: "SUZ LEAD SHEET · 19 Oct".
+• Every row says when they listed it: "added 28 Oct · 9 days ago" (Day-1 stock: "on their shelf before we tracked them").
+• A rival with 0 left to judge folds into "✓ N rivals up to date" under the list — it comes back up by itself when they list something new.
+• For the Keepa Worker (its reply): rows the Suite saves with live offers now carry the lowest live FBA offer (bdlFba3p), so the trackers
+  can reuse them too.
+• Checks: 490 of 490 green (the sandbox, cloud off).
+
+WHAT'S NEW IN b319 — THE SHARED KEEPA CACHE
+• Every Keepa product the Suite pays for is saved in one shared table, and the Suite looks there before it asks Keepa:
+    – your storefront audit: titles / pictures any of our apps fetched in the last 7 days cost 0 tokens
+    – "★ still a lead today?": a Buy Box answer under 2 hours old = 0 tokens; under 3 days = 1 token (only today's price is bought)
+    – a filter's Keepa API run: a full answer under 24 hours = free, under 3 days = a 1-token top-up
+• Once the Keepa Worker does the same, the trackers' data is free for the Suite and the Suite's is free for the trackers.
+• It never gets in the VAs' way: it runs only in your browser, outside the save queue, and switches itself off if the table is missing.
+• Rows older than 7 days are deleted once a day.
+• Checks: 488 of 488 green (the sandbox, cloud off).
+
+WHAT'S NEW IN b318 — SUGGESTED ANSWERS ON YOUR AUDIT (your "happy yeah")
+• Every row still to judge gets the answer its facts point to — that button has a ring and ↵ instead of its number:
+    on Mera's / Suz's lead sheet → LOS          our lead, nobody took it → Missed it
+    still a lead today → Missed it             not a lead on Amazon UK today → Not lead
+    no filter of ours had it → Missed it        our rules cut it → Not lead
+• ENTER takes it and moves to the next row. Your number keys still work for anything else. Tick several and Enter gives each its own.
+• Missed it saves the reason by itself ("No filter had it", "Our rules cut it", "Our lead — not taken (Suz)").
+• Checks: 487 of 487 green (the sandbox, cloud off).
+
+WHAT'S NEW IN b317 — YOUR STOREFRONT AUDIT
+• "★ still a lead today?" ACTUALLY WORKS NOW. It asked Keepa without the Buy Box, so it could price almost nothing — it spent a token and
+  showed nothing (Razer Goliathus: "can't price"; with the Buy Box: buy £9.99 → sell £10.35, loses £4.04). It now asks for the Buy Box
+  (about 3 tokens a product — the button says how many), and a row that is not a lead today says what it would have to cost:
+      Today · not a lead on Amazon UK — buy £9.99 → sell £10.35: loses £4.04 · −40% ROI · a lead if you can buy it under £4.10
+      ★ Still a lead today · £9.50 profit · 47% ROI · score 88
+• CACHED (your "we should be caching a lot more"). The check reuses the average prices the Suite already paid for in the last 72 hours —
+  its own earlier checks or a filter's Keepa API run — so a re-check costs 1 token (today's Amazon price only); only a product with
+  nothing cached pays the ~3 for the Buy Box. The button adds up the real cost before you press it. Averages barely move in 3 days;
+  a current price is never reused.
+• EVERY RIVAL = THE LAST 30 DAYS (your "yes"). On every rival, only what they listed in the last 30 days is there to judge; older
+  listings and Day-1 stock are OLD DATA (out of "left to judge" and the counts, still in the Old data tab). Your active backlog drops
+  from about 1,857 to about 962 (SGT 727 → 334).
+• BRING BACK = THE LAST 30 DAYS ONLY. On an archived rival the button now says "Bring back · last 30 days (N)". Only what they listed in
+  the last 30 days comes back to judge; older listings (and Day-1 stock) are OLD DATA — out of "left to judge" and the counts, still in
+  the Old data tab.
+• Checks: 486 of 486 green (the sandbox, cloud off).
+
+WHAT'S NEW IN b316 (from VA HQ's 6 Nov note + Mera's log of 6 Nov)
+• BUG FIX — a VA HQ link skipped "finish it first". Mera, 6 Nov: Gtech's file in, its 1 lead opened, ✓ Done never pressed → a VA HQ link
+  took her to MSI → Gtech left NOT FINISHED (Skullcandy the same). Now every way into another filter — the Run button or a VA HQ link —
+  asks "Finish Gtech first, Mera" → [Take me to Gtech] [Start MSI anyway]. "File in, ✓ Done not pressed" now counts as unfinished.
+• BUG FIX — one clock. "Done" and "due" were worked out on two clocks (UTC vs hers): in Manila a daily filter turned "1 day late" at her
+  midnight (mid-shift for Mera) and one finished after midnight still said "Due today".
+• The run time on the green DONE row is now files-in → ✓ Done (it only counted while the Sourcing tab was in front: Suz's S&S 4 Nov showed
+  88 s for a 51-minute run).
+• Checks: 484 of 484 green (the sandbox, cloud off).
+
+WHAT'S NEW IN b315
+• FINISH A RUN LATE (your "yes"). A run a VA started and never pressed ✓ Done on (over 12 hours, up to 7 days, until the filter runs
+  again) sits at the TOP of her list: "Not finished — you didn't press ✓ Done on this run, so it does not count yet"
+    Mera · chosen categories £60+ · Fri 30 Oct · 385 leads   [✓ I looked at them — mark it done]   [Run it again]
+  It asks "Did you look at them?" first. Yes = Done on the run's own day, under her name, marked "✓ pressed late" on your list.
+• SEE THEM USING IT (Filter check → "Using the Suite · last 10 working days"): one square a day for Mera and one for Suz —
+  big number = filters really run in the Suite, under it = leads on the lead sheet. RED = lead-sheet leads but nothing run in the
+  Suite that day (working outside it).
+• Checks: 483 of 483 green (the sandbox, cloud off).
+
+WHAT'S NEW IN b314
+• BUG FIX — ✓ Done across midnight. Mera, 28 Oct: started £60+ at 23:52 her time, dropped the same export again at 00:48 and ✓ Done
+  said "drop today's export first" every time — the run was dated the day before and the same file is not a new run, so there was no
+  way out (no run was saved). Now the run you are on is today's, OR one started under 12 hours ago and not finished: ✓ Done finishes
+  it, it stays on screen, it stays at the top of her list, and her Keepa opens still count.
+• The VAs' storefront audit is switched OFF (your words: "back to just me"): no Storefront audits page or link for Mera and Suz, no
+  "Mera & Suz · Prime event audit" card on your page. Their answers stay saved; nothing deleted.
+• Checks: 482 of 482 green (the sandbox, cloud off).
+
+WHAT'S NEW IN b313 — YOUR AUDIT SAYS HOW AND WHY WE MISSED IT
+• Every product on your storefront audit gets ONE plain line, full width, worked out by itself (no Keepa tokens):
+    FOUND       On Mera's lead sheet 5 Oct — said NOT, 17 days before they listed
+    NOT TAKEN   Mera + Suz both had it as a lead — Philips had it 20 Oct (Mera's export) · nobody opened it in Keepa — not on any lead sheet
+    RULES CUT   In our export, the rules cut it — Ninja / Shark had it 7 Oct (your export) at £252.00: loses money at the UK price (−14.4% ROI)
+    NO FILTER   None of our filters ever had it — no filter of ours covers BaByliss
+    OUR BLOCK   None of our filters had it — Bose is blocked in our Mera · anything £95+ filter
+  + "<filter> hasn't really run since <day>" when that filter only ran on wrong files after.
+  Click the line for every day (who ran each export, prices, the lead sheet).
+• "Why we missed these" over the list: our lead not taken (Mera / Suz / both) · our rules cut · no filter had it · found · filter not
+  really run — each number shows just those rows.
+• Missed it saves the WHY by itself (the reason + the line as the note) — no typing.
+• Rival cards (and the list view): "N in our exports, no lead" · "N on Mera's sheet · not joint" · "N on Suz's sheet · not joint"
+  (Joint = you sell it too).
+• The audit uses the whole window now — no dead space on the left — and the list gets more of it on a wide screen.
+• Checks: 480 of 480 green (the sandbox, cloud off).
 
 WHAT'S NEW IN b312 — STOREFRONTS: WHOSE EXPORT, AND THE LEAD SHEET
 • Your storefront audit's "Our filters" line now says WHOSE export it was, and when both VAs had it:

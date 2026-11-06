@@ -91,6 +91,7 @@ async function cloudPull(){if(!cloudEnabled()||cloud.pulling)return false;cloud.
     /* b158: the audit's inventory list and archived rivals follow Jack to any browser */
     if(st['audit-mine'])lsSet('bdl-sourcing-audit-mine',st['audit-mine']);if(st['sold-before']&&typeof SOLD_KEY!=='undefined'){lsSet(SOLD_KEY,st['sold-before']);SOLD_C=null;}   /* b283 */
     if(st['audit-archived'])lsSet('bdl-sourcing-audit-archived',st['audit-archived']);
+    if(st['audit-from'])lsSet('bdl-sourcing-audit-from',st['audit-from']);   /* b317: rivals brought back with the last 30 days only */
     if(st['audit-jointdays']!=null)lsSet('bdl-sourcing-audit-jointdays',st['audit-jointdays']);
     if(st['audit-va'])lsSet('bdl-sourcing-audit-va',st['audit-va']);   /* b288: which storefronts Mera and Suz audit */
     if(st['prime-event'])lsSet('bdl-sourcing-prime-event',st['prime-event']);   /* b217: Jack's Prime event switch → the Prime line in every note */

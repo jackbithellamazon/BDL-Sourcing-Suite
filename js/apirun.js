@@ -153,6 +153,9 @@ function apiRow(p,domain){if(!p||!p.asin)return null;const st=p.stats||{},cur=st
 function apiCache(){return lsGet(API_CACHE_KEY,{});}
 /* rows for these ASINs: free from cache, 1 token to refresh what moves, 6 only when we have nothing */
 async function apiRows(asins,domain,onStep){const cache=apiCache(),now=Date.now(),out=[];
+  /* b319: the shared Keepa cache — a full answer another of our apps paid for in the last 24 h is free here, one under 72 h tops up for 1 token */
+  if(typeof kcGet==='function'){const miss=(asins||[]).filter(a=>apiCostFor(cache,domain,a,now)>0);const kc=miss.length?await kcGet(domain,miss,'offers',API_STABLE_H):{};
+    Object.keys(kc).forEach(a=>{const row=apiRow(kc[a].p,domain);if(!row)return;const t=new Date(kc[a].at).getTime(),key=domain+'|'+a,c=cache[key];if(!c||t>(c.fresh||c.at))cache[key]={at:t,fresh:t,row};});}
   const plan=apiPlan(cache,domain,asins,now);
   plan.free.forEach(a=>out.push(cache[domain+'|'+a].row));
   let spent=0,done=0;const need=plan.topUp.length+plan.full.length;
@@ -160,7 +163,7 @@ async function apiRows(asins,domain,onStep){const cache=apiCache(),now=Date.now(
     for(let i=0;i<list.length;i+=100){const part=list.slice(i,i+100);if(onStep)onStep(done,need);
       const q='path=product&domain='+domain+'&stats=90&history=0'+(cheap?'':'&offers=20&rating=1')+'&asin='+part.join(',');
       const r=await fetch(WORKER+'/keepa?'+q);const j=await r.json();
-      if(j.error)throw new Error(j.error.message||'Keepa refused');spent+=j.tokensConsumed||0;
+      if(j.error)throw new Error(j.error.message||'Keepa refused');spent+=j.tokensConsumed||0;if(typeof kcPut==='function')kcPut(domain,j.products,cheap?'stats':'offers');   /* b319: saved for every app */
       (j.products||[]).forEach(p=>{let row=apiRow(p,domain);if(!row)return;const key=domain+'|'+p.asin;
         if(cheap){const held=(cache[key]||{}).row||{};
           /* the averages we already paid for; the 1-token call left these empty */
@@ -178,7 +181,7 @@ async function apiRows(asins,domain,onStep){const cache=apiCache(),now=Date.now(
 async function apiConfirm(asins,domain,onStep){const cache=apiCache(),now=Date.now(),out=[];let spent=0;
   for(let i=0;i<asins.length;i+=100){const part=asins.slice(i,i+100);if(onStep)onStep(i,asins.length);
     const r=await fetch(WORKER+'/keepa?path=product&domain='+domain+'&stats=90&history=0&offers=20&rating=1&asin='+part.join(','));const j=await r.json();
-    if(j.error)throw new Error(j.error.message||'Keepa refused');spent+=j.tokensConsumed||0;
+    if(j.error)throw new Error(j.error.message||'Keepa refused');spent+=j.tokensConsumed||0;if(typeof kcPut==='function')kcPut(domain,j.products,'offers');   /* b322: the 6-token confirms are saved for every app too */
     (j.products||[]).forEach(p=>{const row=apiRow(p,domain);if(!row)return;cache[domain+'|'+p.asin]={at:now,fresh:now,row};out.push(row);});}
   lsSet(API_CACHE_KEY,apiTrim(cache));return{rows:out,spent};}
 /* every ASIN a saved filter finds today */

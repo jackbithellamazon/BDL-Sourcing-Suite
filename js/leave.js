@@ -92,6 +92,24 @@ function leaveAsk(st,proceed){leaveClose();const e=escapeHtml;
 function unfinishedMine(skipKey){if(!me()||isJack()||typeof keepaSinceRun!=='function')return[];const t=new Date().toDateString(),w=me();
   return visibleSources().filter(s=>s.key!==skipKey&&s.status!=='paused'&&!s.drop&&!primeHidden(s)).map(s=>({s,kp:keepaSinceRun(s)}))
     .filter(x=>x.kp&&x.kp.who===w&&new Date(x.kp.at).toDateString()===t).sort((a,b)=>new Date(a.kp.at)-new Date(b.kp.at));}
+/* b316 (the live log, 6 Nov — Mera: Gtech's file in, its 1 lead opened in Keepa, ✓ Done never pressed — then MSI, then Skullcandy left the same
+   way): a filter with its files in TODAY and ✓ Done not pressed is unfinished too. Starting another one asks her to finish it first. */
+function unfinishedDone(skipKey){if(!me()||isJack()||typeof runLast!=='function')return[];const w=me();
+  return visibleSources().filter(s=>s.key!==skipKey&&s.status!=='paused'&&!s.drop&&!primeHidden(s)).map(s=>({s,r:runLast(s.key)}))
+    .filter(x=>x.r&&x.r.needDone&&!x.r.done&&x.r.who===w&&typeof runOpenNow==='function'&&runOpenNow(x.r)).sort((a,b)=>new Date(a.r.at)-new Date(b.r.at));}
+function doneFirstAsk(list,target,proceed){const first=list[0],n=+first.r.leads||0,more=list.length>1?` (and ${list.length-1} more)`:'';
+  if(typeof actLog==='function')actLog('click',`Asked to finish ${first.s.name} first (files in, ✓ Done not pressed)`+(target?' before '+target.name:''),target?target.key:'');
+  return uiDialog({tone:'warn',title:`Finish ${first.s.name} first, ${me()}`,ok:`Take me to ${first.s.name}`,cancel:target?`Start ${target.name} anyway`:'Leave it',
+    body:`<p><b>${escapeHtml(first.s.name)}</b>${escapeHtml(more)} has its file in${n?` (${n} lead${n===1?'':'s'})`:''} but <b>✓ Done was never pressed</b> — it still shows <b>NOT FINISHED</b> for everyone.</p><ol class="uisteps"><li><span>Go back to it — the button below takes you there</span></li><li><span>Look at the leads in Keepa (<b>Open all in Keepa</b>), good ones on the lead sheet</span></li><li><span>Press <b>✓ Done</b> — next to Open all in Keepa</span></li></ol><p>One filter at a time — then the next.</p>`})
+  .then(go=>{if(go){if(typeof cur!=='undefined'&&cur&&!$('#viewRun').hidden&&typeof backToList==='function'&&cur.key!==first.s.key)backToList();if(!(typeof cur!=='undefined'&&cur&&cur.key===first.s.key&&!$('#viewRun').hidden)&&typeof openRun==='function')openRun(first.s.key);return;}
+    if(typeof actLog==='function')actLog('leave',`Started ${target?target.name:'another'} anyway — ${first.s.name} not finished`,target?target.key:'');if(proceed)proceed();});}
+/* b316: every way into another filter goes through here — the list's Run button and a VA HQ link (#run=…), which used to skip both checks */
+function runSwitchGuard(key,proceed){if(!me()||isJack()){proceed();return;}
+  let st=null;try{st=typeof cur!=='undefined'&&cur&&cur.key!==key?leaveState():null;}catch(x){st=null;}
+  if(st){leaveAsk(st,proceed);return;}
+  let L=[];try{L=unfinishedMine(key);}catch(x){L=[];}if(L.length){oneAtATimeAsk(L,srcGet(key),proceed);return;}
+  let D=[];try{D=unfinishedDone(key);}catch(x){D=[];}if(D.length){doneFirstAsk(D,srcGet(key),proceed);return;}
+  proceed();}
 function oneAtATimeAsk(list,target,proceed){leaveClose();const e=escapeHtml,first=list[0],hm=x=>new Date(x.kp.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
   const d=document.createElement('div');d.id='leavePop';d.className='lvpop';d.dataset.key=first.s.key;d.dataset.first='one-at-a-time';
   d.innerHTML=`<div class="lvcard" role="dialog" aria-modal="true" aria-labelledby="lvTitle">
@@ -110,9 +128,9 @@ function oneAtATimeAsk(list,target,proceed){leaveClose();const e=escapeHtml,firs
   document.addEventListener('keydown',leaveKey,true);const b=d.querySelector('#lvStay');if(b)b.focus();}
 document.addEventListener('click',e=>{if(!e.isTrusted||leaveBypass||!e.target.closest)return;
   const b=e.target.closest('#brandTbl button[data-act="run"]');if(!b)return;const tr=b.closest('tr'),key=tr&&tr.dataset.key;if(!key)return;
-  let list=[];try{list=unfinishedMine(key);}catch(x){list=[];}if(!list.length)return;
-  e.preventDefault();e.stopImmediatePropagation();
-  oneAtATimeAsk(list,srcGet(key),()=>{leaveBypass=true;try{b.click();}finally{leaveBypass=false;}});},true);
+  let list=[];try{list=unfinishedMine(key);}catch(x){list=[];}let done=[];if(!list.length){try{done=unfinishedDone(key);}catch(x){done=[];}}if(!list.length&&!done.length)return;
+  e.preventDefault();e.stopImmediatePropagation();const go=()=>{leaveBypass=true;try{b.click();}finally{leaveBypass=false;}};
+  if(list.length)oneAtATimeAsk(list,srcGet(key),go);else doneFirstAsk(done,srcGet(key),go);},true);   /* b316: + files in, ✓ Done not pressed */
 
 /* real clicks only: the buttons that take you out of a run. A scripted click (the checks, the app's own navigation, "Leave anyway") passes. */
 let leaveBypass=false;

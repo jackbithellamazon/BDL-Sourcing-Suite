@@ -65,7 +65,10 @@ function auKey(n){return n===9?0:n+1;}   /* b294: the 10th answer is key 0 */
 /* b288 (Jack, 8 Oct: Mera and Suz each audit a few storefronts after Prime — "I want their individual opinions"). Their answers live
    apart from Jack's — his page never shows a VA's answer as his — and apart from each other (a VA never sees the other's work). Their
    list is only what a storefront listed from AUD_VA.START (Jack's OA Overview push): everything before it is OLD DATA. */
-const AUD_VAS=['Mera','Suz'],AUD_VA={START:'2026-10-07',   /* b293 (Jack, 12 Oct: "remember — stuff since 7th October only should show for the VAs") — was 8 Oct */KEY:'bdl-sourcing-audit-va',NEW_SHELF:'2026-10-07T21:30'};
+/* b314 (Jack, 5 Nov: "get rid of the VAs' storefront audit now — back to just me"): ON:false takes it away — no Storefront audits page for Mera
+   and Suz, no #audit link for them, no "Mera & Suz · Prime event audit" card on Jack's page. Their answers stay in the cloud; nothing is deleted.
+   The OLD DATA split on the two storefronts that were theirs (Chris FBA, CJS) stays as it is on Jack's page. */
+const AUD_VAS=['Mera','Suz'],AUD_VA={ON:false,START:'2026-10-07',   /* b293 (Jack, 12 Oct: "remember — stuff since 7th October only should show for the VAs") — was 8 Oct */KEY:'bdl-sourcing-audit-va',NEW_SHELF:'2026-10-07T21:30'};
 function audIsVA(){const m=typeof me==='function'?me():'';return!!m&&AUD_VAS.includes(m)&&!(typeof isJack==='function'&&isJack());}
 function audKeyFor(who){return who&&AUD_VAS.includes(who)?AUD.V+'-'+who.toLowerCase():AUD.V;}
 function audAllOf(who){return lsGet(audKeyFor(who),{})||{};}
@@ -76,7 +79,18 @@ function audVaFor(id){const m=audVaMap();if(Array.isArray(m[id]))return m[id];co
 /* b291 (Jack, 11 Oct, at Chris FBA — 158 products, 118 left to judge — on his own page: "what did I say about these — most of it until x
    date should be n/a"). On a storefront given to the VAs, what was on it before 7 Oct is OLD DATA on Jack's page too: out of "left to
    judge", out of the counts and the token loader, in its own Old data tab. The rest of his rivals are untouched. */
-function audIsOld(it,sh){if(!it||!sh||sh.kind!=='rival'||audIsVA())return false;if(!audVaFor(sh.seller||sh.id).length)return false;return!!it.base||String(it.first||'')<AUD_VA.START;}
+/* b317 (Jack, 6 Nov: "any I bring back — I just want to bring back 30 days worth of data, I don't want to judge 6-months-old ASINs"). Bringing a
+   rival back from the archive stamps a "judge from" day (30 days back) on it; what it listed before that is OLD DATA — out of "left to judge" and
+   the counts, still in its Old data tab. Saved for everyone (src_settings 'audit-from'). */
+const AUD_FROM='bdl-sourcing-audit-from',AUD_FROM_DAYS=30;
+function audFromMap(){const v=lsGet(AUD_FROM,null);return(v&&v.map)||{};}
+function audFromFor(id){return audFromMap()[id]||'';}
+function audFromSet(id,day){const v=Object.assign({map:{}},lsGet(AUD_FROM,null)||{});v.map=Object.assign({},v.map);if(day)v.map[id]=day;else delete v.map[id];v.at=nowIso();v.who=me();lsSet(AUD_FROM,v);
+  if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('audit-from',v)]);return v;}
+function audFromDay(){const d=new Date();d.setDate(d.getDate()-AUD_FROM_DAYS);return stamp(d).slice(0,10);}
+function audOldWhy(sh){const f=[sh?audFromFor(sh.seller||sh.id):'',audFromDay()].sort().pop();return'listed more than '+AUD_FROM_DAYS+' days ago (before '+ukDate(f)+') or already on their shelf when we started tracking them';}
+function audIsOld(it,sh){if(!it||!sh||sh.kind!=='rival'||audIsVA())return false;
+  {const f=[audFromFor(sh.seller||sh.id),audFromDay()].sort().pop();if(it.base)return true;if(it.first&&String(it.first)<f)return true;}   /* b317: Jack, 6 Nov: "yes" — every rival, only what it listed in the last 30 days */if(!audVaFor(sh.seller||sh.id).length)return false;return!!it.base||String(it.first||'')<AUD_VA.START;}
 function audVaSet(id,list){const v=Object.assign({map:{}},lsGet(AUD_VA.KEY,null)||{});v.map=Object.assign({},v.map,{[id]:list});v.at=nowIso();v.who=me();lsSet(AUD_VA.KEY,v);
   if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('audit-va',v)]);return v;}
 const AU_ICON={sheet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',star:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>',x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>',
@@ -129,13 +143,15 @@ function audFromKeepa(p){if(!p||!p.asin)return null;const st=(p.stats&&p.stats.c
 const AUD_NOW='bdl-sourcing-audit-now';let AUD_NOW_C=null;
 function audNowAll(){if(!AUD_NOW_C)AUD_NOW_C=lsGet(AUD_NOW,{})||{};return AUD_NOW_C;}
 function audNowSave(m){let e=Object.entries(m);if(e.length>3000)e=e.sort((x,y)=>String(y[1].at).localeCompare(String(x[1].at))).slice(0,3000);AUD_NOW_C=Object.fromEntries(e);lsSet(AUD_NOW,AUD_NOW_C);}
-function audNowFresh(a){const r=audNowAll()[a];return!!r&&Date.now()-new Date(r.at).getTime()<3*864e5;}
+function audNowFresh(a){const r=audNowAll()[a];return!!r&&!r.none&&Date.now()-new Date(r.at).getTime()<3*864e5;}   /* b317: "could not price it" is not a check */
 function audNowRow(row){try{if(typeof rule2Compute!=='function'||!row||!row.ASIN)return null;const a=String(row.ASIN).trim();
     const R=rule2Compute([Object.assign({},row)],typeof factsAll==='function'?factsAll():{},{vatFor:typeof vatFor==='function'?vatFor:undefined,rule:2});
     const kept=(R.out||[]).find(x=>x.ASIN===a),o=kept||(R.all||[]).find(x=>x.ASIN===a);
     const ref=(kNum(row['Referral Fee %'])||15)/100,fba=kNum(row['FBA Pick&Pack Fee'])||null,kg=(kNum(row['Package: Weight (g)'])||kNum(row['Item: Weight (g)'])||0)/1000;
     if(!o)return{at:nowIso(),lead:false,none:true,ref,fba,kg};const q=Object.assign({},o);if(kept&&typeof proofScore==='function')proofScore(q,2);
-    return{at:nowIso(),lead:!!kept,buy:+o['After discount £']||+o['Buy at £']||null,disc:o['Discount applied']||'',sell:+o['Sell for £']||null,p:o['Profit £']!=null?+o['Profit £']:null,roi:o['ROI %']!=null?+o['ROI %']:null,sc:+(q.Score||o.Score||0),ref,fba,kg};}
+    /* b317 (Jack, 6 Nov: "to make my life easier to see if it's a lead or not"): at today's sell price, the most it can cost anywhere (a shop, OA) to make 10% */
+    const sell=+o['Sell for £']||null;let max10=null;if(sell&&fba!=null&&typeof brProfit==='function'){let lo=0.01,hi=sell;for(let i=0;i<40;i++){const mid=(lo+hi)/2;if(brProfit(sell,mid,ref,fba,kg,null,'')[1]>=10)lo=mid;else hi=mid;}max10=brProfit(sell,lo,ref,fba,kg,null,'')[1]>=10?Math.floor(lo*100)/100:null;}
+    return{at:nowIso(),lead:!!kept,root:String(row['Categories: Root']||'').slice(0,60),buy:+o['After discount £']||+o['Buy at £']||null,disc:o['Discount applied']||'',sell,p:o['Profit £']!=null?+o['Profit £']:null,roi:o['ROI %']!=null?+o['ROI %']:null,sc:+(q.Score||o.Score||0),ref,fba,kg,max10};}
   catch(e){return null;}}
 function audNowRecord(rows){if(!(typeof isJack==='function'&&isJack())||audIsVA())return 0;const m=Object.assign({},audNowAll());let n=0;
   (rows||[]).forEach(r=>{const x=audNowRow(r);if(x){m[String(r.ASIN).trim()]=x;n++;}});if(n)audNowSave(m);return n;}
@@ -164,10 +180,11 @@ function audNowChips(a){if(!(typeof isJack==='function'&&isJack())||audIsVA())re
   const pf=v=>v<0?'loses '+gbp(-v):gbp(v);
   if(r&&!r.none&&r.p!=null){const tip=`Checked ${d(r.at)} — buy ${gbp(r.buy)}${r.disc?' ('+r.disc+')':''} on Amazon UK → sell ${gbp(r.sell)}: the same maths as your filters`;
     h+=r.lead?`<span class="ofl now lead" title="${e(tip)}"><b class="oft">★ Still a lead today</b><span class="ofx">${gbp(r.p)} profit · ${r.roi}% ROI · score ${r.sc}</span></span>`
-      :`<span class="ofl now" title="${e(tip+' — the rules would not keep it today')}"><b class="oft">Today</b><span class="ofx">UK ${r.p<0?pf(r.p):gbp(r.p)+' profit'} · ${r.roi}% ROI · not a lead</span></span>`;}
+      :`<span class="ofl now" title="${e(tip+' — the rules would not keep it today'+(r.max10?`. At today's sell (${gbp(r.sell)}) it has to cost under ${gbp(r.max10)} anywhere to make 10%`:''))}"><b class="oft">Today</b><span class="ofx">not a lead on Amazon UK — buy ${gbp(r.buy)} → sell ${gbp(r.sell)}: ${r.p<0?pf(r.p):gbp(r.p)+' profit'} · ${r.roi}% ROI${r.max10?` · <b>a lead if you can buy it under ${gbp(r.max10)}</b>`:''}</span></span>`;}
   const eu=audEuSeen(a);if(eu){let pr=null;if(r&&r.sell&&r.fba&&typeof brProfit==='function'){try{pr=brProfit(r.sell,eu.buy,r.ref,r.fba,r.kg||0,null,'');}catch(x){pr=null;}}
     const good=pr&&pr[0]>0&&pr[1]>=10;
     h+=`<span class="ofl eu${good?' lead':''}" title="${e('From '+eu.src+'\u2019s export on '+d(eu.day)+(eu.mk?' — cheapest country '+eu.mk:'')+': '+gbp(eu.buy)+' landed'+(pr?' · at today\u2019s UK sell '+gbp(r.sell)+' that is '+gbp(pr[0])+' profit, '+pr[1]+'% ROI':' · today\u2019s UK sell is not checked yet'))}"><b class="oft">EU</b><span class="ofx">${eu.mk?e(eu.mk)+' ':''}${gbp(eu.buy)} landed on ${e(d(eu.day))}${pr?' → '+(pr[0]<0?pf(pr[0]):gbp(pr[0])+' profit')+' · '+pr[1]+'% ROI at today\u2019s sell':''}</span></span>`;}
+  if(typeof oaLine==='function')h+=oaLine(a);   /* b321: not an Amazon UK lead — is it an OA one? */
   return h;}
 /* a Keepa CSV export row → the same shape, free */
 function audFromCsv(r){const a=(r.ASIN||'').trim();if(!/^B[0-9A-Z]{9}$/.test(a))return null;
@@ -292,10 +309,42 @@ function audFillFromOurs(asins){const LA=leadAll();const have=new Set(asins);con
   return add.length;}
 async function audTokensLeft(){try{const r=await fetch(WORKER+'/health');const j=await r.json();return j&&j.tokensLeft!=null?j.tokensLeft:null;}catch(e){return null;}}
 /* returns how many it loaded. quiet:true = no confirm, used by the automatic pass */
+/* b317 (Jack, 6 Nov: "we should be caching a lot more — we use Keepa for multiple apps"). The still-a-lead check reuses the averages the Suite
+   already paid for in the last 72 hours — its own earlier checks, or a filter's Keepa API run — and then only needs today's Amazon price (1 token,
+   stats only). Only a product with nothing cached pays for the Buy Box (about 3). Averages barely move in 3 days; a current price is never reused. */
+const AUD_AVG='bdl-sourcing-audit-avg';
+function audAvgCols(){return typeof API_FROM_CACHE!=='undefined'?API_FROM_CACHE:['Buy Box: 30 days avg.','Buy Box: 90 days avg.','Buy Box: 180 days avg.','Buy Box: Highest'];}
+function audAvgGet(a){const now=Date.now(),H=(typeof API_STABLE_H!=='undefined'?API_STABLE_H:72)*3600e3,x=(lsGet(AUD_AVG,{})||{})[a];if(x&&now-x.at<H)return x.avg;
+  const c=(typeof apiCache==='function'?apiCache():{})['2|'+a];if(c&&c.row&&now-c.at<H&&c.row['Buy Box: 90 days avg.'])return Object.fromEntries(audAvgCols().map(k=>[k,c.row[k]]));return null;}
+function audAvgSave(rows,kc){const m=lsGet(AUD_AVG,{})||{},now=Date.now(),H=(typeof API_STABLE_H!=='undefined'?API_STABLE_H:72)*3600e3;let n=0;
+  rows.forEach(r=>{if(r&&r.ASIN&&r['Buy Box: 90 days avg.']){const t=kc&&kc[r.ASIN]?new Date(kc[r.ASIN].at).getTime():now;if(m[r.ASIN]&&m[r.ASIN].at>t)return;m[r.ASIN]={at:t,avg:Object.fromEntries(audAvgCols().map(k=>[k,r[k]]))};n++;}});   /* b319: a shared-cache row keeps its own age */
+  Object.keys(m).forEach(k=>{if(now-m[k].at>H)delete m[k];});if(n)lsSet(AUD_AVG,m);}
+function audNowCost(asins){return asins.reduce((t,a)=>t+(audAvgGet(a)?1:3),0);}
 async function audLoadDetails(asins,quiet,onBatch,again){const need=again?asins.slice():asins.filter(a=>!audState.prod[a]||audState.prod[a].source==='ours'||!audState.prod[a].asked);   /* b300: again = Jack's still-a-lead button */
   if(!need.length)return 0;let got=0;
   for(let i=0;i<need.length;i+=100){const part=need.slice(i,i+100);
-    try{const r=await fetch(WORKER+'/keepa?path=product&domain=2&stats=90&asin='+part.join(','));const j=await r.json();   /* b300: 90-day stats — still 1 token */
+    /* b317: on the still-a-lead check, a product with cached averages goes in the 1-token batch, the rest ask for the Buy Box too */
+    if(again){let n2=0;
+      /* b319: the shared Keepa cache first — a Buy Box answer under 2 hours old from any of our apps is used as it is (0 tokens);
+         an older one (under 72 h) still gives the averages, so today's price is the only thing bought (1 token) */
+      const kc=typeof kcGet==='function'?await kcGet(2,part,'bb',KC_AVG_H):{};if(typeof oaIdsSave==='function')oaIdsSave(Object.values(kc).map(x=>x.p));   /* b321: barcode + model for the OA check */
+      const now0=part.filter(a=>kc[a]&&kcAge(kc[a])<=KC_NOW_H);
+      if(now0.length){const rows=now0.map(a=>apiRow(kc[a].p,2)).filter(Boolean);audAvgSave(rows,kc);audNowRecord(rows);n2+=rows.length;}
+      const rest=part.filter(a=>!now0.includes(a));audAvgSave(rest.filter(a=>kc[a]).map(a=>apiRow(kc[a].p,2)).filter(Boolean),kc);
+      const cheap=rest.filter(a=>audAvgGet(a)),dear=rest.filter(a=>!audAvgGet(a));
+      for(const [L,bb] of [[cheap,false],[dear,true]]){if(!L.length)continue;
+        try{const j=await (await fetch(WORKER+'/keepa?path=product&domain=2&stats=90&history=0'+(bb?'&buybox=1':'')+'&asin='+L.join(','))).json();if(typeof kcPut==='function')kcPut(2,j.products,bb?'bb':'stats');if(typeof oaIdsSave==='function')oaIdsSave(j.products);   /* b319: saved for every app */
+          const rows=(j.products||[]).map(p=>{const row=typeof apiRow==='function'?apiRow(p,2):null;if(row&&!bb){const av=audAvgGet(p.asin)||{};Object.keys(av).forEach(k=>{if((row[k]==null||row[k]==='')&&av[k]!=null&&av[k]!=='')row[k]=av[k];});}return row;}).filter(Boolean);
+          if(bb)audAvgSave(rows);audNowRecord(rows);
+          const det=(j.products||[]).map(audFromKeepa).filter(Boolean);if(det.length){audSaveProducts(det);}n2+=(j.products||[]).length;if(j.error)break;}
+        catch(e){break;}}
+      got+=n2;if(onBatch)onBatch(got,need.length,part);continue;}
+    /* b319: titles, pictures and rank another of our apps fetched in the last 7 days come from the shared cache — 0 tokens */
+    {const kcI=typeof kcGet==='function'?await kcGet(2,part,'stats',KC_INFO_H):{};if(typeof oaIdsSave==='function')oaIdsSave(Object.values(kcI).map(x=>x.p));const hit=part.filter(a=>kcI[a]);
+      if(hit.length){const det=hit.map(a=>audFromKeepa(kcI[a].p)).filter(Boolean);if(det.length){audSaveProducts(det);got+=det.length;if(onBatch)onBatch(got,need.length,det.map(r=>r.asin));}
+        audNowRecord(hit.filter(a=>kcAge(kcI[a])<=KC_NOW_H).map(a=>apiRow(kcI[a].p,2)).filter(Boolean));}
+      const miss=part.filter(a=>!kcI[a]);if(!miss.length)continue;part.length=0;part.push(...miss);}
+    try{const r=await fetch(WORKER+'/keepa?path=product&domain=2&stats=90&history=0&asin='+part.join(','));const j=await r.json();if(typeof kcPut==='function')kcPut(2,j.products,'stats');if(typeof oaIdsSave==='function')oaIdsSave(j.products);   /* b300: 90-day stats — 1 token (titles, pictures) · b319: saved for every app */
       const rows=(j.products||[]).map(audFromKeepa).filter(Boolean);
       if(typeof apiRow==='function')audNowRecord((j.products||[]).map(p=>apiRow(p,2)).filter(Boolean));   /* b300: is it a lead today */
       if(rows.length){audSaveProducts(rows);got+=rows.length;if(onBatch)onBatch(got,need.length,rows.map(r=>r.asin));}   /* b168: which rows, so the screen repaints only those */
@@ -325,6 +374,10 @@ function audShelfList(){const out=[];const va=audIsVA()?me():null;
     items:(s.asins||[]).map(a=>({a,first:pulled?String(s.at||'').slice(0,10):'',base:!pulled}))});});
   return out;}
 function audShelf(id){return audShelfList().find(s=>s.id===id)||null;}
+/* b313: the open shelf's listing for an ASIN (its first-seen day is "the day they listed it") — one map per shelf, rebuilt when the shelf changes */
+let auItemMemo={k:'',m:null};
+function auItemOf(a){const id=auView.shelf;if(!id)return null;const items=(audState.shelf||{})[id];const k=id+'|'+(items?items.length:'l');
+  if(auItemMemo.k!==k){const sh=audShelf(id);auItemMemo={k,m:new Map((sh?sh.items:[]).map(it=>[it.a,it]))};}return auItemMemo.m.get(a)||null;}
 /* b158 (Jack, 26 Sep: "how are you storing my ASINs — there is stuff I'm selling that hasn't been auto done as joint").
    It never had a list of Jack's catalogue. It borrowed OA Overview's overlap for THAT rival, latest day only — and that comes
    from Keepa's list of Lavarion's storefront, which drops a listing Keepa hasn't seen for about a week (out of stock between
@@ -379,7 +432,9 @@ function audJudge(asins,code,sellerId,reason){if(!needMe())return;const who=me()
   asins.forEach(a=>{const cur=m[a]||null;const p=audPress(a,cur,code,who,sellerId,now);
     if(p.same){if(!reason||(cur&&cur.reason===reason))return;
       const row=Object.assign({},cur,{reason,at:now});batch.push({asin:a,prev:Object.assign({},cur),row});m[a]=row;return;}
-    const row=reason?Object.assign({},p.row,{reason}):p.row;
+    let row=reason?Object.assign({},p.row,{reason}):p.row;
+    /* b313: Jack's Missed it saves WHY by itself — the line on the row (our lead not taken · rules cut · no filter · found) — no typing */
+    if(code==='missed'&&!reason&&!audIsVA()&&typeof audWhyInfo==='function'&&row.verdict==='missed'){const it=auItemOf(a),w=audWhyInfo(a,it&&!it.base?it.first||'':'');if(w)row=Object.assign({},row,{reason:w.reason,note:row.note||w.txt.slice(0,200)});}
     batch.push({asin:a,prev:cur?Object.assign({},cur):null,row});m[a]=row;});
   if(!batch.length)return;
   audSave(m);audUndoStack.push(batch);if(cloudEnabled())audQueue({op:'up',table:'src_audit_verdicts',rows:batch.map(b=>b.row)});
@@ -416,11 +471,14 @@ function auShelfFresh(sh){if(sh.kind!=='rival')return'';const d=(audState.seller
   return when?`<div class="aufresh ${fresh?'ok':'old'}" title="When OA Overview last checked this rival's shelf${add?' · newest line it added: '+auWhenFull(add):''}"><i></i>Shelf checked ${when}${nt?` · <b>+${nt} new today</b>`:''}</div>`:'';}
 function auAgo(d){const n=auDays(d);return n<=0?'today':n===1?'yesterday':n+' days ago';}
 function auOurs(){if(!auView._ours||auView._oursAt!==runsAll().length+'|'+Object.keys(verdAll()).length){auView._ours=audOurIndex(runsAll(),leadAll(),verdAll());auView._oursAt=runsAll().length+'|'+Object.keys(verdAll()).length;}return auView._ours;}
-function auCounts(sh){const V=audAll();const c={todo:0,all:sh.items.length,had:0,sell:0,judged:0,byHand:0,auto:0,old:0};audTypes().forEach(t=>c[t.code]=0);const O=auOurs();
+function auCounts(sh){const V=audAll();const c={todo:0,all:sh.items.length,had:0,sell:0,judged:0,byHand:0,auto:0,old:0,cutx:0,mera:0,suz:0};audTypes().forEach(t=>c[t.code]=0);const O=auOurs();
   sh.items.forEach(it=>{if(audIsOld(it,sh)){c.old++;c.all--;return;}   /* b291: OLD DATA is not part of this audit */
     const sells=audSells(sh.id,it.a);const st=audStatus(V[it.a],sells);
     if(st==='todo')c.todo++;else{c.judged++;if(st==='jointauto'){c.joint++;c.auto++;}else{if(V[it.a]&&V[it.a].who==='auto')c.auto++;else c.byHand++;if(c[st]!=null)c[st]++;}}
-    if(sells)c.sell++;if(O[it.a])c.had++;});return c;}
+    if(sells)c.sell++;if(O[it.a])c.had++;
+    /* b313 (Jack, 23 Oct: "x many were in exports but no lead · x on Mera's sheet but not joint · x on Suz's sheet but not joint") — Jack's page */
+    if(!audIsVA()&&typeof trState!=='undefined'){const S=(trState.sheet||{})[it.a]||[];if(!O[it.a]&&(trState.seen[it.a]||[]).length&&!(trState.seen[it.a]||[]).some(s=>s.ever_kept))c.cutx++;
+      if(!sells){if(S.some(x=>x.va==='Mera'))c.mera++;if(S.some(x=>x.va==='Suz'))c.suz++;}}});return c;}
 function auLastAudit(sh){let at='';const V=audAll();sh.items.forEach(it=>{const v=V[it.a];if(v&&v.seller_id===sh.seller&&v.at>at)at=v.at;});return at?at.slice(0,10):'';}
 function auNewSince(sh){const la=auLastAudit(sh);if(!la)return 0;const V=audAll();return sh.items.filter(it=>!it.base&&it.first>la&&!audIsOld(it,sh)&&audStatus(V[it.a],audSells(sh.id,it.a))==='todo').length;}
 function auAv(name){const cs=['#A78BFA','#22D3EE','#2CE38B','#FFB224','#FF8A3D','#8C95FF','#F472B6'];let h=0;for(const ch of String(name))h=(h*31+ch.charCodeAt(0))>>>0;return cs[h%cs.length];}
@@ -551,11 +609,14 @@ function auToggleSel(asin,i,range){const sh=audShelf(auView.shelf);if(!sh)return
   auView.lastSel=i;auRefresh(touched);}
 function renderAudit(){const host=$('#page-audit');if(!host)return;audMineBust();
   document.body.classList.toggle('auditing',auView.mode==='audit');
-  if(!isJack()&&!audIsVA()){auView._listHtml=null;host.innerHTML=`<div class="card"><div class="empty"><span>The storefront audit is Jack's. Pick your name top right if this is you.</span></div></div>`;return;}
+  if(!isJack()&&!(audIsVA()&&AUD_VA.ON)){auView._listHtml=null;host.innerHTML=`<div class="card"><div class="empty"><span>The storefront audit is Jack's. Pick your name top right if this is you.</span></div></div>`;return;}
   if(auView.mode==='audit'&&auView.shelf&&audShelf(auView.shelf))auRenderOne();else auRenderList();
   if(auView.mode!=='audit'&&typeof trMount==='function')trMount(host);   /* b239: ASIN audit box, top of the landing page */
   /* b240: CUT chips — the shelf's cut rows load once, then the rows redraw */
   if(auView.mode==='audit'&&auView.shelf&&typeof trSeenLoad==='function'){const sh=audShelf(auView.shelf);if(sh)trSeenLoad(sh.items.map(it=>it.a)).then(got=>{if(got&&auView.mode==='audit'&&auView.shelf===sh.id)renderAudit();}).catch(()=>{});}
+  /* b313: on Jack's rival list the cards count "in our exports, no lead" — every rival's export log loads once (80 ASINs a request), then the cards redraw */
+  if(auView.mode!=='audit'&&!audIsVA()&&typeof trSeenLoad==='function'&&cloudReadable()){const all=[...new Set(audShelfList().filter(s=>s.kind==='rival').flatMap(s=>s.items.map(it=>it.a)))];
+    trSeenLoad(all).then(got=>{if(got&&auView.mode!=='audit'&&$('#page-audit').classList.contains('active'))renderAudit();}).catch(()=>{});}
   if(!audIsVA()&&typeof trSheetLoad==='function'&&!trState.sheet&&!trState.sheetBusy&&cloudReadable())trSheetLoad().then(m=>{if(m&&Object.keys(m).length&&$('#page-audit').classList.contains('active'))renderAudit();});
   if(typeof auPaintBulk==='function')auPaintBulk();}
 /* b69 (Jack: "highest % of products I sell too") — the rival you overlap with most is the one worth auditing,
@@ -596,7 +657,10 @@ function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);
   const archRows=auRankRivals(allShelves.filter(sh=>arch.has(sh.id)).map(sh=>({sh,c:auCounts(sh),la:auLastAudit(sh),nw:auNewSince(sh)})));
   const mineN=[...new Set([...audState.mineEver,...audState.mineNow,...audMineList()])].filter(a=>{const w=audMineWhy(a);return w&&w!=='before';}).length,mineList=audMineList().size;
   if(auView.cards===null)auView.cards=shelves.length<=8;   /* a few rivals read better as cards, 39 do not */const V=audAll();const O=auOurs();
-  const rows=auRankRivals(shelves.map(sh=>({sh,c:auCounts(sh),la:auLastAudit(sh),nw:auNewSince(sh)})));
+  const rowsAll=auRankRivals(shelves.map(sh=>({sh,c:auCounts(sh),la:auLastAudit(sh),nw:auNewSince(sh)})));
+  /* b320 (Jack, 6 Nov, at CJS Enterprise UK — 0 left: "if this has 0 should it go elsewhere"): a rival with nothing left to judge folds into
+     "Up to date" under the list; it comes back up by itself the day they list something new */
+  const doneRows=rowsAll.filter(x=>x.la&&!x.c.todo),rows=rowsAll.filter(x=>!doneRows.includes(x));
   const seen=new Set();let todo=0,had=0,sell=0,missed=0;
   shelves.forEach(sh=>sh.items.forEach(it=>{if(seen.has(it.a)||audIsOld(it,sh))return;seen.add(it.a);const st=audStatus(V[it.a],audSells(sh.id,it.a));
     if(st==='todo')todo++;if(st==='missed')missed++;if(audSells(sh.id,it.a))sell++;const o=O[it.a];if(o&&o.said!=='Yes')had++;}));
@@ -630,20 +694,24 @@ function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);
     ${shelves.length?(auView.cards?`<div class="aucards">${rows.map(x=>`<button class="aucard" type="button" data-open="${escapeHtml(x.sh.id)}">
       <span class="auarch" role="button" tabindex="0" data-arch="${escapeHtml(x.sh.id)}" title="Archive ${escapeHtml(x.sh.name)} — hide it from the audit (one click brings it back)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg></span>
       <div><div class="top"><span class="auav" style="background:${auAv(x.sh.name)}">${auIni(x.sh.name)}</span>
-        <div><div class="nm">${escapeHtml(x.sh.name)}</div><div class="meta">${x.c.all.toLocaleString()} products${x.c.old?` · <span class="auold" title="On their shelf before 7 Oct — OLD DATA, not part of the audit">${x.c.old.toLocaleString()} OLD DATA</span>`:''} · ${x.la?'last audited '+auUk(x.la)+' ('+auAgo(x.la)+')':'not audited yet'}</div>${auShelfFresh(x.sh)}</div></div>
-        <div class="facts">${stat(x)}${x.c.sell?`<span class="aupill p-joint">${Math.round(auOverlap(x.c)*100)}% you sell too · ${x.c.sell}</span>`:''}${x.c.had?`<span class="aupill p-had">${x.c.had} were our leads</span>`:''}</div>
+        <div><div class="nm">${escapeHtml(x.sh.name)}</div><div class="meta">${x.c.all.toLocaleString()} products${x.c.old?` · <span class="auold" title="${escapeHtml(audOldWhy(x.sh).replace(/^./,c=>c.toUpperCase()))} — OLD DATA, not part of the audit">${x.c.old.toLocaleString()} OLD DATA</span>`:''} · ${x.la?'last audited '+auUk(x.la)+' ('+auAgo(x.la)+')':'not audited yet'}</div>${auShelfFresh(x.sh)}</div></div>
+        <div class="facts">${stat(x)}${x.c.sell?`<span class="aupill p-joint">${Math.round(auOverlap(x.c)*100)}% you sell too · ${x.c.sell}</span>`:''}${x.c.had?`<span class="aupill p-had">${x.c.had} were our leads</span>`:''}${x.c.cutx?`<span class="aupill p-cutx" title="In one of our exports, never a lead — our rules cut it">${x.c.cutx} in our exports, no lead</span>`:''}${x.c.mera?`<span class="aupill p-mera" title="On Mera's lead sheet, and you don't sell it (not joint)">${x.c.mera} on Mera's sheet · not joint</span>`:''}${x.c.suz?`<span class="aupill p-suz" title="On Suz's lead sheet, and you don't sell it (not joint)">${x.c.suz} on Suz's sheet · not joint</span>`:''}</div>
         <div class="prog"><b>${x.c.todo.toLocaleString()}</b> left to judge${x.c.byHand?` · ${x.c.byHand.toLocaleString()} you judged`:''}${x.c.auto?` · ${x.c.auto.toLocaleString()} marked for you`:''}</div></div>${auDonut(x.c)}</button>`).join('')}</div>`
-      :`<div class="tablewrap show"><div class="tablescroll"><table class="logtbl autbl"><thead><tr><th>Rival</th><th class="r">You sell too</th><th class="r">Were our leads</th><th class="r">Left to judge</th><th class="r">Products</th><th>Last audited</th><th></th></tr></thead><tbody>
+      :`<div class="tablewrap show"><div class="tablescroll"><table class="logtbl autbl"><thead><tr><th>Rival</th><th class="r">You sell too</th><th class="r">Were our leads</th><th class="r">In exports, no lead</th><th class="r">Mera sheet · not joint</th><th class="r">Suz sheet · not joint</th><th class="r">Left to judge</th><th class="r">Products</th><th>Last audited</th><th></th></tr></thead><tbody>
         ${rows.map(x=>`<tr data-open="${escapeHtml(x.sh.id)}"><td class="lsrc"><div class="lrow"><span class="auav sm" style="background:${auAv(x.sh.name)}">${auIni(x.sh.name)}</span><div><b>${escapeHtml(x.sh.name)}</b><div class="chg">${x.la?'audited '+auUk(x.la):'never audited'}${x.nw?' · '+x.nw+' new since':''}</div></div></div></td>
         <td class="num"><b class="${auOverlap(x.c)>=0.15?'jade':''}">${Math.round(auOverlap(x.c)*100)}%</b><div class="chg">${x.c.sell}</div></td>
         <td class="num"><b class="${x.c.had?'amber':''}">${x.c.had}</b></td>
+        <td class="num">${x.c.cutx||'<span class="cutn">0</span>'}</td><td class="num">${x.c.mera?`<b class="aumera">${x.c.mera}</b>`:'<span class="cutn">0</span>'}</td><td class="num">${x.c.suz?`<b class="ausuz">${x.c.suz}</b>`:'<span class="cutn">0</span>'}</td>
         <td class="num"><b>${x.c.todo.toLocaleString()}</b>${x.c.byHand?`<div class="chg">${x.c.byHand} judged</div>`:''}</td>
         <td class="num">${x.c.all.toLocaleString()}</td>
         <td class="lwhen">${x.la?auAgo(x.la):'—'}</td>
         <td class="num"><span class="auarch inl" role="button" tabindex="0" data-arch="${escapeHtml(x.sh.id)}" title="Archive — hide it from the audit">Archive</span> <span class="btn primary xs">Audit →</span></td></tr>`).join('')}</tbody></table></div></div>`)
       :`<div class="empty"><span>${cloudEnabled()?'No shelves yet. OA Overview saves each rival’s shelf on its next fetch, or add a list below.':'Cloud is off in the sandbox, so OA Overview’s rival shelves are not here. Paste a list of ASINs below to try the screen.'}</span></div>`}
+    ${doneRows.length?`<div class="auarchbar audonebar"><span>✓ ${doneRows.length} rival${doneRows.length===1?'':'s'} up to date — nothing left to judge · back up here by themselves when they list something new</span><button class="btn ghost sm" id="auShowDone" type="button">${auView.showDone?'Hide them':'Show them'}</button></div>
+      ${auView.showDone?`<div class="auarchlist">${doneRows.map(x=>`<div class="auarchrow"><span class="auav sm" style="background:${auAv(x.sh.name)}">${auIni(x.sh.name)}</span><b>${escapeHtml(x.sh.name)}</b><span class="ssub">${x.c.all.toLocaleString()} products · last audited ${escapeHtml(auUk(x.la))}</span><button class="btn ghost sm" type="button" data-open="${escapeHtml(x.sh.id)}">Open →</button></div>`).join('')}</div>`:''}`:''}
     ${archRows.length?`<div class="auarchbar"><span>${archRows.length} rival${archRows.length===1?'':'s'} archived — not in the counts or "carry on"</span><button class="btn ghost sm" id="auShowArch" type="button">${auView.showArch?'Hide them':'Show them'}</button></div>
-      ${auView.showArch?`<div class="auarchlist">${archRows.map(x=>`<div class="auarchrow"><span class="auav sm" style="background:${auAv(x.sh.name)}">${auIni(x.sh.name)}</span><b>${escapeHtml(x.sh.name)}</b><span class="ssub">${x.sh.items.length.toLocaleString()} products · ${x.c.todo.toLocaleString()} left to judge</span><button class="btn ghost sm" type="button" data-unarch="${escapeHtml(x.sh.id)}">Bring back</button></div>`).join('')}</div>`:''}`:''}
+      ${auView.showArch?`<div class="auarchlist">${archRows.map(x=>{const cut=audFromDay(),n=x.sh.items.filter(it=>!it.base&&String(it.first||'')>=cut).length;   /* b317: what coming back would bring */
+        return`<div class="auarchrow"><span class="auav sm" style="background:${auAv(x.sh.name)}">${auIni(x.sh.name)}</span><b>${escapeHtml(x.sh.name)}</b><span class="ssub">${x.sh.items.length.toLocaleString()} products · <b>${n.toLocaleString()}</b> listed in the last ${AUD_FROM_DAYS} days</span><button class="btn ghost sm" type="button" data-unarch="${escapeHtml(x.sh.id)}" title="Back in the audit with only what they listed since ${escapeHtml(ukDate(cut))} — everything older is OLD DATA">Bring back · last ${AUD_FROM_DAYS} days (${n.toLocaleString()})</button></div>`;}).join('')}</div>`:''}`:''}
     <details class="auadd"><summary>Add a shelf that is not on the list</summary>
     <div class="ausplit">
       <div class="aubox"><h3>Pull any storefront</h3><p class="ssub">A seller who is not on OA Overview's list. Keepa returns their whole shelf through your Worker.</p>
@@ -699,21 +767,34 @@ function auVisible(sh){const V=audAll();const q=auView.q.toLowerCase();const tab
    least I know"). One line over the list: of what is showing, how many our filters had as a lead, had and cut (money / blacklisted brand /
    other), never had at all, and are still a lead today. Each number filters the list; pressing it again shows everything. Jack's page only. */
 function auOflWhy(w){w=String(w||'');return/blacklist/i.test(w)?'black':/ROI|profit|under the £|% off|scored \d+|bar:/i.test(w)?'money':'other';}
-function auOflKeep(a,f){if(f==='now')return!!(audNowAll()[a]||{}).lead;const h=typeof audHistInfo==='function'?audHistInfo(a):null;
+function auOflKeep(a,f){if(f==='now')return!!(audNowAll()[a]||{}).lead;if(f==='oa'){const v=typeof oaVerdict==='function'?oaVerdict(a):null;return!!v&&(v.k==='lead'||v.k==='maybe');}   /* b321 */
+  if(/^why-/.test(f)){const it=auItemOf(a),w=typeof audWhyInfo==='function'?audWhyInfo(a,it&&!it.base?it.first||'':''):null;if(!w)return false;const k=f.slice(4);   /* b313 */
+    if(k==='mera'||k==='suz')return w.k==='person'&&w.who.length===1&&w.who[0]===(k==='mera'?'Mera':'Suz');if(k==='both')return w.k==='person'&&w.who.includes('Mera')&&w.who.includes('Suz');
+    if(k==='stale')return/really run since/.test(w.txt);if(k==='none')return w.k==='none'||w.k==='block';return w.k===k;}const h=typeof audHistInfo==='function'?audHistInfo(a):null;
   if(f==='wait')return!h;if(!h)return false;if(f==='cut-money'||f==='cut-black'||f==='cut-other')return h.k==='cut'&&'cut-'+auOflWhy(h.why)===f;
   if(f==='never-bl')return h.k==='never'&&!!audNeverWhy(a);   /* b310 */
   return h.k===f;}
 function auOflSum(sh){if(audIsVA()||!(typeof isJack==='function'&&isJack())||typeof audHistInfo!=='function')return'';
   const was=auView.ofl;auView.ofl='0';const L=auVisible(sh);auView.ofl=was;if(!L.length)return'';
-  const c={kept:0,cut:0,never:0,wait:0,now:0,'cut-money':0,'cut-black':0,'cut-other':0,'never-bl':0},N=audNowAll();
-  L.forEach(it=>{const h=audHistInfo(it.a);if(!h)c.wait++;else{c[h.k]++;if(h.k==='cut')c['cut-'+auOflWhy(h.why)]++;if(h.k==='never'&&audNeverWhy(it.a))c['never-bl']++;}if((N[it.a]||{}).lead)c.now++;});
+  const c={kept:0,cut:0,never:0,wait:0,now:0,oa:0,'cut-money':0,'cut-black':0,'cut-other':0,'never-bl':0},N=audNowAll();
+  L.forEach(it=>{const h=audHistInfo(it.a);if(!h)c.wait++;else{c[h.k]++;if(h.k==='cut')c['cut-'+auOflWhy(h.why)]++;if(h.k==='never'&&audNeverWhy(it.a))c['never-bl']++;}if((N[it.a]||{}).lead)c.now++;const ov=typeof oaVerdict==='function'&&oaWants(it.a)?oaVerdict(it.a):null;if(ov&&(ov.k==='lead'||ov.k==='maybe'))c.oa++;});
   const b=(f,cls,txt,tip)=>`<button type="button" class="ofsb ${cls}${auView.ofl===f?' on':''}" data-ofl="${f}" title="${escapeHtml(tip+(auView.ofl===f?' · press again to show everything':' · press to show only these'))}">${txt}</button>`;
   const sub=[c['cut-money']?b('cut-money','cut sub',`${c['cut-money']} on money`,'Cut because the money did not work that day (ROI / profit too low)'):'',c['cut-black']?b('cut-black','cut sub',`${c['cut-black']} blacklisted brand`,'Cut because the brand is on our blacklist'):'',c['cut-other']?b('cut-other','cut sub',`${c['cut-other']} other`,'Cut for another reason — sales, category, plug, no sell price'):''].filter(Boolean).join('');
-  return`<div class="auofsum"><span class="l">Our filters on these ${L.length.toLocaleString()}</span>
+  /* b313: why we missed them — the same buttons, by the plain reason (Jack: "how and why did we miss this") */
+  const W={found:0,person:0,mera:0,suz:0,both:0,rules:0,none:0,stale:0};L.forEach(it=>{const w=audWhyInfo(it.a,it.base?'':it.first||'');if(!w)return;W[w.k==='block'?'none':w.k]++;
+    if(w.k==='person'){const m=w.who.includes('Mera'),s=w.who.includes('Suz');if(m&&s)W.both++;else if(m)W.mera++;else if(s)W.suz++;}if(/really run since/.test(w.txt))W.stale++;});
+  const whyRow=`<div class="auofsum auwhysum"><span class="l">Why we missed these</span>
+    ${b('why-person','w-person',`<b>${W.person}</b> our lead, not taken`,'One of our filters had it as a lead and nobody put it on the lead sheet')}${W.person?`<span class="ofsubs">${W.mera?b('why-mera','w-person sub',`Mera ${W.mera}`,'Mera\u2019s lead only'):''}${W.suz?b('why-suz','w-person sub',`Suz ${W.suz}`,'Suz\u2019s lead only'):''}${W.both?b('why-both','w-person sub',`both ${W.both}`,'Mera and Suz both had it as a lead'):''}</span>`:''}
+    ${b('why-rules','w-rules',`<b>${W.rules}</b> our rules cut`,'In our export, the rules cut it')}
+    ${b('why-none','w-none',`<b>${W.none}</b> no filter had it`,'None of our filters ever had it')}
+    ${b('why-found','w-found',`<b>${W.found}</b> found — on a lead sheet`,'On Mera\u2019s or Suz\u2019s lead sheet')}
+    ${W.stale?b('why-stale','w-stale',`<b>${W.stale}</b> filter not really run`,'The filter that had it has only run on wrong files since'):''}</div>`;
+  return whyRow+`<div class="auofsum"><span class="l">Our filters on these ${L.length.toLocaleString()}</span>
     ${b('kept','kept',`<b>${c.kept}</b> were our leads`,'One of our filters kept it as a lead')}
     ${b('cut','cut',`<b>${c.cut}</b> we had and cut`,'In one of our exports, cut by the rules')}${sub?`<span class="ofsubs">${sub}</span>`:''}
     ${b('never','never',`<b>${c.never}</b> never in our exports`,'None of our filter or brand exports had it')}${c['never-bl']?`<span class="ofsubs">${b('never-bl','never sub',`${c['never-bl']} our own brand blocks`,'Never exported because the brand is on our blacklist or blocked in our Keepa filters')}</span>`:''}
     ${c.now?b('now','now',`<b>★ ${c.now}</b> still a lead today`,'Your filter maths on today\u2019s Keepa numbers says it is a lead now'):''}
+    ${c.oa?b('oa','oa',`<b>🛒 ${c.oa}</b> OA lead${c.oa===1?'':'s'} at a shop`,'Not a lead on Amazon UK, but a UK shop on Google Shopping has it cheap enough once your code is off'):''}
     ${c.wait?`<span class="ofsw" title="Our export records for these are still loading (or the cloud is off here)">${c.wait} still checking…</span>`:''}</div>`;}
 const AU_LINK_ICON={amazon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h2l2.4 10.5a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 9H7"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>',
   keepa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 4-6 5 4"/><path d="M3 21h18"/></svg>',
@@ -763,11 +844,12 @@ function auRow(it,i,sh){const V=audAll();let v=V[it.a];const vOld=audExpired(v)?
   const elsewhere=v&&v.seller_id&&sh.seller&&v.seller_id!==sh.seller;
   const fromShelf=elsewhere?((audShelf(v.seller_id)||{}).name||v.seller_id):'';
   const why=audMineWhy(it.a,sh.id);
-  const btns=audPick().map((x,n)=>{const auto=st==='jointauto'&&x.code==='joint';const on=auto||(v&&v.verdict===x.code);
+  const sug=!v&&st==='todo'&&typeof audSuggest==='function'?audSuggest(it):null;   /* b318: the answer the facts point to — Enter takes it */
+  const btns=audPick().map((x,n)=>{const auto=st==='jointauto'&&x.code==='joint';const on=auto||(v&&v.verdict===x.code);const sg=!!(sug&&sug.code===x.code);
     const tip=auto?({now:'On your storefront now',list:'On the inventory list you pasted',recent:'Your storefront last had it on '+audMineLastNice(it.a)+(audAddedNice(sh.id,it.a)?'; '+sh.name+' added it on '+audAddedNice(sh.id,it.a):'')+' — inside your '+audJointDays()+' days, so it is Joint'}[why]||'On OA Overview’s overlap for this rival')
       :on?x.label+' · '+(v.who==='auto'?'marked for you':v.who+' · '+auUk(v.at))+(v.reason?' · '+v.reason:'')+(v.note?' · '+v.note:'')+' · press again to change'
-      :x.label+' · key '+auKey(n);
-    return`<button type="button" class="aub${on?' on':''}${auto?' auto':''}" style="--c:${x.hex}" data-v="${x.code}" data-a="${it.a}" title="${escapeHtml(tip)}"><kbd>${auKey(n)}</kbd>${AU_ICON[x.icon]||''}<span class="lab">${escapeHtml(x.short||x.label)}</span></button>`;}).join('');
+      :sg?`Suggested — ${sug.why} · press Enter (or key ${auKey(n)})`:x.label+' · key '+auKey(n);
+    return`<button type="button" class="aub${on?' on':''}${auto?' auto':''}${sg?' sug':''}" style="--c:${x.hex}" data-v="${x.code}" data-a="${it.a}" title="${escapeHtml(tip)}"><kbd>${sg?'↵':auKey(n)}</kbd>${AU_ICON[x.icon]||''}<span class="lab">${escapeHtml(x.short||x.label)}</span></button>`;}).join('');
   /* b141: the reason chips take the buttons' place instead of opening a new line under them, so the row keeps its height */
   const reasons=v&&audType(v.verdict)&&audType(v.verdict).reasons&&!v.reason
     ?`<div class="aureasons" style="--c:${audType(v.verdict).hex}">${audType(v.verdict).prompt||'Why?'}${audType(v.verdict).reasons.map((x,n)=>`<button type="button" class="aurs ${v.reason===x?'on':''}" data-r="${escapeHtml(x)}" data-a="${it.a}"><kbd>${AU_RKEYS[n].toUpperCase()}</kbd>${escapeHtml(x)}</button>`).join('')}</div>`:'';
@@ -791,9 +873,11 @@ function auRow(it,i,sh){const V=audAll();let v=V[it.a];const vOld=audExpired(v)?
   /* b239 (Jack, 3 Oct: "EXPORTED ×3 — click it for which exports, date, filter, buy, score, whose · a very obvious SUZ / MERA LEAD SHEET tile") */
   /* b288: a VA sees our-filter chips only for her own runs (never the other VA's work); Jack's answers from before 8 Oct say OLD DATA */
   const vv=v||vOld,oldData=!audIsVA()&&vv&&vv.who!=='auto'&&vv.at&&String(vv.at).slice(0,10)<AUD_VA.START?'<span class="aupill p-old" title="Answered before the Prime event audit started on 7 Oct — old data, not part of the new audit">OLD DATA</span>':'';
-  const oldStock=audIsOld(it,sh)?'<span class="aupill p-old" title="On their shelf before 7 Oct — OLD DATA, not part of the audit">OLD DATA</span>':'';
-  const hist=typeof audHistChip==='function'?audHistChip(it.a,it.base?'':it.first||''):'';   /* b300: + the day they listed it */   /* b297: which of our filters had it */
-  const chips=oldStock+again+sellChip+old+(audIsVA()?'':(typeof trChips==='function'?trChips(it.a,{sheetOnly:true}):ourChip))+oldData;   /* b299: the Our filters chip has its own line */
+  const oldStock=audIsOld(it,sh)?`<span class="aupill p-old" title="${escapeHtml(audOldWhy(sh).replace(/^./,c=>c.toUpperCase()))} — OLD DATA, not part of the audit">OLD DATA</span>`:'';   /* b317: says which cut-off */
+  /* b313: on Jack's page the "why we missed it" line says it all (export, whose, lead sheet) — it replaces the Our filters chip and the sheet tile */
+  const whyL=typeof audWhyLine==='function'&&!audIsVA()?audWhyLine(it.a,it.base?'':it.first||''):'';
+  const hist=whyL||(typeof audHistChip==='function'?audHistChip(it.a,it.base?'':it.first||''):'');   /* b300: + the day they listed it */   /* b297: which of our filters had it */
+  const chips=oldStock+again+sellChip+old+(audIsVA()||whyL?'':(typeof trChips==='function'?trChips(it.a,{sheetOnly:true}):ourChip))+oldData;   /* b299: the Our filters chip has its own line */
   return`<div class="aurow ${i===auView.focus?'focus':''} ${auView.sel.has(it.a)?'sel':''} ${st!=='todo'?'judged':''}${reasons?' reasoning':''}${elsewhere?' elsewhere':''}${landed}" data-i="${i}" data-a="${it.a}" style="--edge:${st==='todo'?'var(--iris)':(t?t.hex:(st==='jointauto'?'#2CE38B':'var(--line2)'))}">
     <button type="button" class="ausel" data-sel="${it.a}" data-i="${i}" aria-label="Select ${it.a}" title="Tick to judge several at once · shift-click ticks a run · drag down the ticks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></button>
     <div class="auimg" title="Click the picture to tick it">${p.image?`<img loading="lazy" src="${escapeHtml(p.image)}" alt="">`:escapeHtml(it.a.slice(0,2))}</div>
@@ -802,7 +886,8 @@ function auRow(it,i,sh){const V=audAll();let v=V[it.a];const vOld=audExpired(v)?
       <div class="aufacts">
         <button type="button" class="auasin" data-copy="${it.a}" title="Copy ${it.a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>${it.a}</button>
         ${money?`<span class="aumoney">${money}</span>`:''}
-        ${newShelf?`<span class="new">new · ${auDays(it.first)}d</span>`:''}
+        ${(()=>{if(it.base)return`<span class="auadded old" title="It was already on their shelf when we started tracking them — we do not know the day they listed it">on their shelf before we tracked them</span>`;if(!it.first)return'';const n=auDays(it.first);   /* b320 (Jack, 6 Nov: "date it was added on storefront and how many days ago") */
+          return`<span class="auadded${newShelf?' new':''}" title="The day OA Overview first saw it on their storefront">added ${escapeHtml(auUk(it.first))} · ${n<=0?'today':n===1?'yesterday':n+' days ago'}</span>`;})()}
         ${chips?`<span class="auchips">${chips}</span>`:''}
       </div></div>
     <div class="aulinks">${links}</div>
@@ -831,7 +916,7 @@ function auRenderOne(){auView._listHtml=null;const sh=audShelf(auView.shelf);con
         <button class="btn ghost sm" id="auRest" type="button">Mark the rest Not lead</button>${(()=>{const n=auNextShelf(sh.id);return n?`<button class="btn primary sm" type="button" data-open="${escapeHtml(n.id)}" title="${escapeHtml(n.name)} · ${auCounts(n).todo} to do">Next rival →</button>`:'';})()}</div></div>
     <div class="auprog"><div class="aubar">${audTypes().map(t=>c[t.code]?`<i style="width:${c[t.code]/c.all*100}%;background:${t.hex}" title="${c[t.code]} ${escapeHtml(t.label)}"></i>`:'').join('')}</div>
       <div class="aupline"><b>${c.todo.toLocaleString()} left of ${c.all.toLocaleString()}</b><span>${c.todo?`about ${Math.max(1,Math.round(c.todo*secs/60))} min · ${c.byHand.toLocaleString()} judged${c.auto?` · ${c.auto.toLocaleString()} marked for you`:''}`:'all done'}</span>
-        <span class="audet">${loaded} of ${sh.items.length} have pictures${loaded<sh.items.length?` · <button type="button" class="linkbtn" id="auViewer">Keepa Viewer (free)</button>${audIsVA()?'':' · <button type="button" class="linkbtn" id="auTokens">load with tokens</button>'}`:''}${(()=>{const n=auNowNeed(sh).length;return n?` · <button type="button" class="linkbtn" id="auNowChk" title="Runs your filter maths (UK buy → UK sell) on today's Keepa numbers. Free instead: Keepa Viewer → Export → drop the file on this page">★ still a lead today? check ${n} to do · about ${n} token${n===1?'':'s'}</button>`:'';})()}</span></div></div>
+        <span class="audet">${loaded} of ${sh.items.length} have pictures${loaded<sh.items.length?` · <button type="button" class="linkbtn" id="auViewer">Keepa Viewer (free)</button>${audIsVA()?'':' · <button type="button" class="linkbtn" id="auTokens">load with tokens</button>'}`:''}${(()=>{const n=auNowNeed(sh).length;return n?` · <button type="button" class="linkbtn" id="auNowChk" title="Runs your filter maths (UK buy → UK sell) on today's Keepa numbers. Free instead: Keepa Viewer → Export → drop the file on this page">★ still a lead today? check ${n} to do · up to ${audNowCost(auNowNeed(sh))} tokens${typeof OA!=='undefined'&&OA.ready?' + shop prices':''}</button>`:'';})()}${typeof oaBtn==='function'?oaBtn(sh):''}</span></div></div>
     <div class="aunote" id="auNote2">${auView.noteHtml||''}</div>
     <div class="autabs">${tb('todo','To do',c.todo,'var(--iris)')}${c.old?tb('old','Old data',c.old,'#9AA4B5'):''}<i class="sep"></i>${tb('had','We had it',c.had,'#93A3BC',1)}${tb('sell','You sell',c.sell,'#2CE38B',1)}<i class="sep"></i>${audPick().map((t,n)=>tb(t.code,t.short||t.label,c[t.code],t.hex,1,auKey(n))).join('')}<i class="sep"></i>${tb('all','All',c.all)}
       <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="auQ" placeholder="Search title or ASIN" value="${escapeHtml(auView.q)}" autocomplete="off"><kbd>/</kbd></label></div>
@@ -966,8 +1051,12 @@ function auNowNeed(sh){if(!sh||!(typeof isJack==='function'&&isJack())||audIsVA(
 async function auNowCheck(id){const sh=audShelf(id);const list=auNowNeed(sh);if(!list.length){toast('Every to-do row was checked in the last 3 days');return;}
   auNote(`Is it still a lead today? Checking ${list.length} on Keepa · 0 of ${list.length}`,0);
   const got=await audLoadDetails(list,true,(n,t)=>auNote(`Is it still a lead today? Checking on Keepa · ${n} of ${t}`,n/t*100),true);
-  const N=audNowAll(),lead=list.filter(a=>N[a]&&N[a].lead).length;auNote('');if(auView.shelf===id)renderAudit();
-  toast(got?`${got} checked · ${lead} still a lead today (gold chip)`:'Keepa did not answer — try again in a minute',!got);}
+  const N=audNowAll(),lead=list.filter(a=>N[a]&&N[a].lead).length;
+  /* b321 (Jack, 6 Nov: "automate it as much as humanly possible"): the same press reads Google Shopping for the rows that are not a lead on Amazon UK */
+  let oa=null;if(got&&typeof oaCheck==='function'&&oaNeed(list).length&&await oaReady()){const n0=oaNeed(list).length;auNote(`Shop prices on Google · 0 of ${n0}`,0);
+    oa=await oaCheck(list,(n,t)=>auNote(`Shop prices on Google · ${n} of ${t}`,n/t*100));}
+  auNote('');if(auView.shelf===id)renderAudit();
+  toast(got?`${got} checked · ${lead} still a lead today (gold chip)${oa&&oa.n?` · ${oa.lead} OA lead${oa.lead===1?'':'s'} (green)`:''}`:'Keepa did not answer — try again in a minute',!got);}
 async function auTrickle(id,force){clearTimeout(AU_TRICKLE.t);const sh=audShelf(id);if(!sh||auView.shelf!==id||auView.mode!=='audit'||AU_TRICKLE.busy)return;
   const need=auNeed(sh);if(!need.length){auNote('');return;}
   const rest=`<button type="button" class="linkbtn" id="auLoadRest">load the rest now · about ${need.length} tokens</button>`;
@@ -1101,6 +1190,7 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     const mo=t.closest('[data-more]');if(mo){auExtend(mo.dataset.more);return;}
     if(t.closest('#auLoadRest')){auTrickle(auView.shelf,true);return;}
     if(t.closest('#auNowChk')){auNowCheck(auView.shelf);return;}   /* b300 */
+    if(t.closest('#auShopChk')){if(typeof OA!=='undefined'&&!OA.busy)oaRun(auView.shelf);return;}   /* b321 */
     const ofb=t.closest('[data-ofl]');if(ofb){auView.ofl=auView.ofl===ofb.dataset.ofl?'0':ofb.dataset.ofl;auView.order=null;auView.focus=0;auView.limit=0;auSave();renderAudit();return;}   /* b301 */
     /* b159: tick all shown / clear, from the filter bar */
     if(t.closest('[data-tall]')){const sh=audShelf(auView.shelf);if(sh){auView.sel=new Set(auVisible(sh).map(it=>it.a));auRefresh();}return;}
@@ -1108,8 +1198,9 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     /* b158: archive / bring back a rival, your inventory list */
     const ar=t.closest('[data-arch]');if(ar){e.stopPropagation();const sh=audShelf(ar.dataset.arch);audArchSet(ar.dataset.arch,true);renderAudit();
       toast((sh?sh.name:'Rival')+' archived',false,{label:'Undo',fn:()=>{audArchSet(ar.dataset.arch,false);renderAudit();}});return;}
-    const un=t.closest('[data-unarch]');if(un){audArchSet(un.dataset.unarch,false);renderAudit();toast('Back in the audit');return;}
+    const un=t.closest('[data-unarch]');if(un){const id=un.dataset.unarch,cut=audFromDay();audArchSet(id,false);audFromSet(id,cut);renderAudit();toast(`Back in the audit — only what they listed since ${ukDate(cut)}; older ones are OLD DATA`);return;}   /* b317 */
     if(t.closest('#auShowArch')){auView.showArch=!auView.showArch;auSave();renderAudit();return;}
+    if(t.closest('#auShowDone')){auView.showDone=!auView.showDone;renderAudit();return;}   /* b320 */
     if(t.closest('#auMineSave')){const a=audAsinsIn($('#auMineIn').value);const msg=$('#auMineMsg');
       if(!a.length){msg.textContent='No ASINs found in that — paste the export or a list of ASINs.';return;}
       const n=audMineSave([...audMineList(),...a]);renderAudit();toast(n.toLocaleString()+' products on your inventory list — they are marked You sell this everywhere');return;}
@@ -1168,6 +1259,11 @@ function auInit(){const host=$('#page-audit');if(!host)return;
       /* b159: moving no longer wipes the ticks (tick six with the mouse, press ↓, all six were gone). Esc clears. */
       if(e.shiftKey){if(it)auView.sel.add(it.a);if(vis[nf])auView.sel.add(vis[nf].a);}
       auView.focus=nf;auRefresh(e.shiftKey?null:[]);auFollow();return;}
+    /* b318 (Jack, 6 Nov: "happy yeah"): Enter takes the suggested answer — the row you are on, or each ticked row's own */
+    if(e.key==='Enter'&&!e.metaKey&&!e.ctrlKey&&typeof audSuggest==='function'&&(it||auView.sel.size)){const V0=audAll();
+      const L=(auView.sel.size?[...auView.sel].map(a=>vis.find(x=>x.a===a)).filter(Boolean):[it]).filter(x=>!V0[x.a]);const by={};
+      L.forEach(x=>{const s=audSuggest(x);if(s)(by[s.code]=by[s.code]||[]).push(x.a);});const codes=Object.keys(by);
+      if(codes.length){e.preventDefault();codes.forEach(c=>auJudgeNow(by[c],c));if(auView.sel.size){auView.sel=new Set();auView.lastSel=null;}return;}}
     const types=audPick();const n=e.key==='0'?10:parseInt(e.key,10);   /* b294: 0 = the 10th answer (Old) */
     if(n>=1&&n<=types.length&&it){e.preventDefault();auJudgeNow(auView.sel.size?[...auView.sel]:[it.a],types[n-1].code);return;}
     const rk=AU_RKEYS.indexOf(String(e.key).toLowerCase());
