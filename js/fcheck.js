@@ -67,7 +67,23 @@ async function renderFc(force){const el=$('#fcBody');if(!el)return;if(!isJack())
       return`<div class="fcsum ${ownCls(w)}"><div class="fcsh">${whoChip(w)}<span>${M.length} filter${M.length===1?'':'s'}</span></div><div class="fcsn"><b class="${due&&rd/due>=0.8?'jade':due&&rd/due>=0.4?'amber':'coral'}">${due?Math.round(rd/due*100):'—'}%</b><small>really run · ${rd} of ${due} due</small></div><div class="fcsn"><b class="${wr?'coral':'jade'}">${wr}</b><small>wrong-file runs</small></div><div class="fcsn"><b>${sl}</b><small>on the lead sheet · ${bt} bought</small></div></div>`;}).join('');
     const th=(k,l,c)=>`<th class="${c||''}${FC.sort===k?' on':''}" data-fcs="${k}">${l}${FC.sort===k?(FC.dir>0?' ↓':' ↑'):''}</th>`;
     const sel=(cls,key,opts,val)=>`<select class="inl ${cls}" data-key="${key}">${opts.map(([k,l])=>`<option value="${k}"${val===k?' selected':''}>${l}</option>`).join('')}</select>`;
-    const body=L.map(x=>{const s=x.s,[stl,stc]=FC_ST[x.st];const pct=x.due?Math.min(100,Math.round(x.days/x.due*100)):0;
+    /* b330: automated filters get their own list above (the keepa Worker pulls them); the table below is the Manual list */
+    const LA=typeof autoOn==='function'?L.filter(x=>autoOn(x.s)):[],LM=typeof autoOn==='function'?L.filter(x=>!autoOn(x.s)):L;
+    const autoCell=s=>{if(typeof autoWhyNot!=='function')return'';const w=autoWhyNot(s);
+      return w?`<span class="cutn" title="${escapeHtml('Can’t be automated: '+w)}">—</span>`:`<button type="button" class="btn ghost sm fcautobtn" data-autoset="1" data-key="${s.key}" title="The keepa Worker pulls it Sunday–Thursday nights from 00:05 UK; the VA uses last night’s list instead of exporting">🌙 Automate</button>`;};
+    const autoBox=typeof autoOn!=='function'?'':(()=>{const rows=LA.slice().sort((a,b)=>((a.s.auto.rank||99)-(b.s.auto.rank||99))).map(x=>{const s=x.s,c=AUTO.cache[s.key],p=c&&c.row;
+        const night=p?ukDate(String(p.night)).replace(/ · .*$/,''):'';const fr=p&&typeof autoFresh==='function'&&autoFresh(p);
+        const stc={done:'ok',partial:'mid',capped:'mid',listing:'off',fetching:'off','too-big':'bad',stale:'bad',error:'bad'}[p&&p.status]||'off';
+        return`<tr data-key="${s.key}"><td class="num"><b>${s.auto.rank||'—'}</b></td><td class="lsrc"><div class="lrow">${avatar(s)}<div><button type="button" class="linkbtn fcopen" data-key="${s.key}"><b>${escapeHtml(s.name)}</b></button><div class="chg">${autoStale(s)?'<span class="coral">link changed — re-saving</span>':`search saved ${ukDate(s.auto.savedAt).replace(/ · .*$/,'')}`}</div></div></div></td>
+          <td>${whoChip(s.owner||'VAs')}</td>
+          <td>${p?`${night}${p.finished_at?` · <b>${autoHM(p.finished_at)}</b> UK`:''}`:'<span class="cutn">not pulled yet</span>'}</td>
+          <td class="num">${p?(+p.total||0).toLocaleString():'—'}</td><td class="num">${p?(+p.done_n||0).toLocaleString():'—'}</td><td class="num">${p?(+p.tokens||0).toLocaleString():'—'}</td>
+          <td>${p?`<span class="fcst ${stc}">${escapeHtml(p.status||'')}</span>${fr?' <span class="jade">· VAs see it</span>':''}${p.note?`<div class="chg">${escapeHtml(String(p.note).slice(0,90))}</div>`:''}`:'<span class="cutn">—</span>'}</td>
+          <td><button type="button" class="btn ghost sm fcautobtn" data-autoset="0" data-key="${s.key}" title="Back to Manual — the VA exports from Keepa again. The saved search is kept.">Manual</button></td></tr>`;}).join('');
+      return`<div class="fcautobox"><div class="fcdh">🌙 Automated <span>the keepa Worker pulls these Sunday–Thursday nights from 00:05 UK · the VA opens the filter and presses <b>Use last night’s list</b> — no export · 0 tokens for her</span></div>
+        ${LA.length?`<div class="tablescroll"><table class="logtbl fctbl fcauto"><thead><tr><th class="r">Order</th><th>Filter</th><th>Who</th><th>Last night</th><th class="r">Products</th><th class="r">Fully priced</th><th class="r">Tokens</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`:'<p class="fcnote">Nothing automated yet — press <b>🌙 Automate</b> on a filter below.</p>'}</div>
+        <div class="fcdh fcmanh">Manual <span>the VAs export these from Keepa as usual</span></div>`;})();
+    const body=LM.map(x=>{const s=x.s,[stl,stc]=FC_ST[x.st];const pct=x.due?Math.min(100,Math.round(x.days/x.due*100)):0;
       const wt=x.wrong.map(w=>`${ukDate(w.d).replace(/ · .*$/,'')}: ${FC_KIND[w.k]}${w.r.who?' ('+w.r.who+')':''}`).join('\n');
       const sw=Object.entries(x.sheetWho).map(([w,n])=>`${w} ${n}`).join(' · ');
       return`<tr class="fc-${x.st}" data-key="${s.key}"><td class="lsrc"><div class="lrow">${avatar(s)}<div><button type="button" class="linkbtn fcopen" data-key="${s.key}"><b>${escapeHtml(s.name)}</b></button><div class="chg"><span class="rl r${s.rule}">Rule ${s.rule}</span> ${(s.markets||[]).map(m=>FLAG[m]).join('')}</div></div></div></td>
@@ -80,19 +96,25 @@ async function renderFc(force){const el=$('#fcBody');if(!el)return;if(!isJack())
         <td class="num">${x.usual?x.usual.toLocaleString():'<span class="cutn">—</span>'}</td>
         <td class="num">${x.leads!=null?`<b>${x.leads.toLocaleString()}</b>`:'<span class="cutn">—</span>'}</td>
         <td class="num" title="${escapeHtml(sw)}">${x.sheet?`<b>${x.sheet}</b>`:'<span class="cutn">0</span>'}</td>
-        <td class="num">${x.bought?`<b class="jade">${x.bought}</b>`:'<span class="cutn">0</span>'}</td></tr>`;}).join('');
+        <td class="num">${x.bought?`<b class="jade">${x.bought}</b>`:'<span class="cutn">0</span>'}</td>
+        <td class="fcautoc">${autoCell(s)}</td></tr>`;}).join('');
     const daysH=['Mera','Suz'].filter(w=>FC.who==='all'||FC.who===w||FC.who==='VAs').map(w=>`<div class="fcdrow">${whoChip(w)}${fcDays(w,sheet)}</div>`).join('');
     el.innerHTML=`<div class="fcsums">${sum}</div><div class="fcdaysbox"><div class="fcdh">Using the Suite · last 10 working days <span>big number = filters really run in the Suite · under it = leads on the lead sheet · red = lead-sheet leads but nothing run in the Suite</span></div>${daysH}</div>${sheet?'':`<p class="fcnote">The lead sheet could not be read here, so Lead sheet and Bought show 0.</p>`}
-      <div class="tablewrap show"><div class="tablescroll"><table class="logtbl fctbl"><thead><tr>${th('name','Filter')}${th('who','Who')}<th>How often</th>${th('status','Status')}${th('real','Really run','r')}${th('wrong','Wrong file','r')}${th('last','Last real run')}${th('size','Products / export','r')}${th('leads','Leads / run','r')}${th('sheet','Lead sheet','r')}${th('bought','Bought','r')}</tr></thead>
-      <tbody>${body||'<tr><td colspan="11" class="more">No filters for this person.</td></tr>'}</tbody></table></div></div>
+      ${autoBox}<div class="tablewrap show"><div class="tablescroll"><table class="logtbl fctbl"><thead><tr>${th('name','Filter')}${th('who','Who')}<th>How often</th>${th('status','Status')}${th('real','Really run','r')}${th('wrong','Wrong file','r')}${th('last','Last real run')}${th('size','Products / export','r')}${th('leads','Leads / run','r')}${th('sheet','Lead sheet','r')}${th('bought','Bought','r')}<th>🌙</th></tr></thead>
+      <tbody>${body||'<tr><td colspan="12" class="more">No manual filters for this person.</td></tr>'}</tbody></table></div></div>
       <p class="fcnote"><b>Really run</b> = days with a run on that day’s Product Finder export, out of the runs due in the last ${FC.days} days (working days, Mon–Fri). <b>Wrong file</b> = a run on a Viewer file only, exactly 100 rows (one Keepa page), or marked “0 results” on a search that usually has 20+ — it counted as done but searched nothing; from b311 those files are refused, so this column should fall to 0. <b>Products / export</b> = a normal real export. <b>Lead sheet</b> = leads that went on the sheet within 7 days of being a lead on this filter (any VA; hover to see who). Who, how often and on/off save for everyone as soon as you change them.</p>`;};
   paint(FC.sheet&&FC.sheet.since<=sFrom?FC.sheet:null);
-  const sh=await fcSheet(sFrom,force);if($('#fcBody')===el&&!$('#cardFc').hidden)paint(sh);}
+  const sh=await fcSheet(sFrom,force);if($('#fcBody')===el&&!$('#cardFc').hidden)paint(sh);
+  /* b330: the automated filters' last nights — Jack's browser re-saves any search whose link changed */
+  if(typeof autoResave==='function')autoResave();
+  if(typeof autoLoadAll==='function'){const ch=await autoLoadAll(force);if(ch&&$('#fcBody')===el&&!$('#cardFc').hidden)paint(sh);}}
 document.addEventListener('DOMContentLoaded',()=>{const c=$('#cardFc');if(!c)return;
   c.addEventListener('click',e=>{const b=e.target.closest('[data-fcd]');if(b){FC.days=+b.dataset.fcd;c.querySelectorAll('[data-fcd]').forEach(x=>x.classList.toggle('on',x===b));renderFc();return;}
     const w=e.target.closest('[data-fcw]');if(w){FC.who=w.dataset.fcw;c.querySelectorAll('[data-fcw]').forEach(x=>x.classList.toggle('on',x===w));renderFc();return;}
     const h=e.target.closest('th[data-fcs]');if(h){const k=h.dataset.fcs;FC.dir=FC.sort===k?-FC.dir:1;FC.sort=k;renderFc();return;}
     const o=e.target.closest('.fcopen');if(o&&typeof openRun==='function'){openRun(o.dataset.key);return;}
+    {const ab=e.target.closest('[data-autoset]');if(ab&&typeof autoSet==='function'){const on=ab.dataset.autoset==='1',s0=srcGet(ab.dataset.key);
+      if(autoSet(ab.dataset.key,on)){toast(`${s0?s0.name:'Filter'}: ${on?'Automated — the keepa Worker pulls it from the next Sunday–Thursday night (00:05 UK)':'back to Manual — the VA exports from Keepa again'} — saved for everyone`);if(typeof renderList==='function')renderList();renderFc(true);}return;}}   /* b330 */
     if(e.target.closest('#fcRefresh'))renderFc(true);});
   c.addEventListener('change',e=>{if(e.target.id==='fcPaused'){FC.paused=e.target.checked;renderFc();return;}
     const sel=e.target.closest('select.inl');if(!sel)return;const s=srcGet(sel.dataset.key);if(!s)return;

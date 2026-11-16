@@ -66,7 +66,7 @@ function dropNudgeOff(){awaitDrop=null;const box=$('#dropAny');if(!box)return;bo
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&awaitDrop)setTimeout(dropNudge,250);});
 window.addEventListener('focus',()=>{if(awaitDrop&&Date.now()-awaitDrop.at>1500)setTimeout(dropNudge,250);});   /* back from another window, not just another tab */
 function actStampKeepa(key,m){awaitDrop={slot:m==='UK Viewer'||m==='UK'?'viewer':m,at:Date.now(),key:key||(typeof cur!=='undefined'&&cur?cur.key:'')};   /* b260: the press belongs to a filter */if(!key||typeof srcGet!=='function')return;const s=(typeof cur!=='undefined'&&cur&&cur.key===key)?cur:srcGet(key);if(!s)return;   /* the open run's own object, or leaving the run re-saves a copy without the stamp */
-  s.keepa=[{who:me(),at:nowIso(),mk:m}].concat((s.keepa||[]).filter(o=>o&&o.at)).slice(0,30);srcSave(s);}
+  s.keepa=[{who:me(),at:nowIso(),mk:m}].concat((s.keepa||[]).filter(o=>o&&o.at)).slice(0,30);srcSave(s,false,['keepa']);}   /* b332: a stamp, not the whole filter */
 /* the newest Keepa press that no run has caught up with */
 function keepaSinceRun(s){const o=(s&&s.keepa||[])[0];if(!o)return null;const last=runLast(s.key);
   if(last&&new Date(last.at).toDateString()===new Date(o.at).toDateString())return null;   /* b250: a run saved that day covers the press — the file did come back */

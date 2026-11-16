@@ -116,6 +116,24 @@ window.SourcingChecks=(function(){
       ok('R3 Suz Business · first lead',BZ.out[0]&&BZ.out[0].ASIN,EXPECT.biz.first);
       const lg=BZ.all.find(o=>o.ASIN==='B0FQWKWKLV');
       ok('R3 Suz Business · LG monitor B0FQWKWKLV (Business 5% = the 12-unit price)',lg?[lg.Score,lg['After discount £'],lg['Sell for £'],lg['ROI %']]:null,EXPECT.biz.lg);
+      /* b331 (Jack, 14 Nov: Wellman Max "doesn't have the business 40% off … just 6 with 15% sub and save" · "keep it scored high tho and let va's
+         check manually"): Keepa's Business % stays in the score; the row says so and what it is without it. Wellman's 13 Sep S&S row at
+         today's £7.06, with and without Keepa's 40% — and at £13.50, where it only makes money with it. */
+      {const WR=(await csv('suz-sns-2026-09-13.csv')).rows.find(r=>(r.ASIN||'').trim()==='B00UI3O5BE');
+        const mk=(amz,bdp)=>Object.assign({},WR,{'Amazon: Current':String(amz),'Business Discount: Percentage':bdp==null?'':String(bdp)});
+        const one=row=>rule2Compute([row],{},{vatFor}).all.find(o=>o.ASIN==='B00UI3O5BE');
+        const bc=o=>((o&&o.chips)||[]).find(c=>/^BUSINESS \d+% FROM KEEPA/.test(c[0]));
+        const A=one(mk(7.06,40)),B=one(mk(7.06,null)),C=one(mk(13.5,40)),D=one(mk(13.5,null));
+        ok('b331 · Keepa Business % stays in the score: Wellman £7.06 × 60% × S&S 85% = £3.60, and the score is the full one',
+          A?[A['After discount £'],A['Business % (Keepa)'],A.Score>B.Score,A.kept]:null,[3.6,40,true,true]);
+        ok('b331 · …and the row says what it is without it — the same score, profit and buy as the row with no Business % at all',
+          A&&B?[A['Score without Business'],A['Profit without Business £'],A['Buy without Business £'],bc(A)&&bc(A)[0],bc(A)&&bc(A)[1]]:null,
+          B?[B.Score,B['Profit £'],B['After discount £'],`BUSINESS 40% FROM KEEPA · CHECK THE BUSINESS ACCOUNT · WITHOUT IT ${B.Score} · £${B['Profit £'].toFixed(2)}`,'warn']:null);
+        ok('b331 · no Business % → no chip and blank fields',B?[!!bc(B),B['Business % (Keepa)'],B['Score without Business'],B['Profit without Business £']]:null,[false,'','','']);
+        ok('b331 · at £13.50 it only makes money with the Business price → still scored with it, the chip says LOSES £X without it',
+          C&&D?[C.Score>1,D['Profit £']<=0,bc(C)&&bc(C)[0]]:null,[true,true,`BUSINESS 40% FROM KEEPA · CHECK THE BUSINESS ACCOUNT · WITHOUT IT LOSES £${D?(-D['Profit £']).toFixed(2):''}`]);
+        const bzN=BZ.all.filter(o=>o['Business % (Keepa)']!=='').length,bzC=BZ.all.filter(o=>bc(o)).length;
+        ok('b331 · Suz Business 13 Sep: every row with a Business % carries the chip (and the counts above did not move)',[bzN>0,bzN===bzC],[true,true]);}
       /* never-sell categories */
       ok('cat · Fashion root blocked',catBlockReason('Fashion › Women | Nike Air Max Trainers'),'fashion');
       ok('cat · wine blocked',catBlockReason('Grocery › Wine | Oxford Landing Sauvignon Blanc 75cl'),'wine');
@@ -693,7 +711,7 @@ window.SourcingChecks=(function(){
       ok('Logitech · the promo lives on the brand site, so the row sends them there',[discPromoSite('Logitech'),discPromoSite('Bosch'),BR.PROMO_FLOOR_ROI],['logitech.com','',-5]);
       ok('Filters · no saved filter blocks Amazfit any more',SRC_SEED.filter(s=>/amazfit/i.test(s.link||'')).map(s=>s.key),[]);
       ok('Filters · the other brand blocks survived the edit',(()=>{const b=s=>{try{const j=JSON.parse(decodeURIComponent((s.link||'').split('#!finder/')[1]));const x=(j.f||{}).brand;return x&&x.type==='isNoneOf'?String(x.filter).split('###').length:0;}catch(e){return -1;}};
-        return [b(SRC_SEED.find(z=>z.key==='mera-150plus')),b(SRC_SEED.find(z=>z.key==='suz-deep-drops'))];})(),[46,39]);   /* b254 / b255: + RingConn, Swarovski, Lumie, RING — categories cover the rest */
+        return [b(SRC_SEED.find(z=>z.key==='mera-150plus')),b(SRC_SEED.find(z=>z.key==='suz-deep-drops'))];})(),[45,39]);   /* b254 / b255: + RingConn, Swarovski, Lumie, RING — categories cover the rest */
       /* b136 (ShiftTrack, 21 Sep): a brand Jack has already given to a person must survive the "all brands unassigned" migration */
       ok('Owners · assigning a brand sticks; only the seeded pool is cleared',(()=>{
         const rows=[{key:'msi',type:'brand',owner:'Mera'},{key:'gtech',type:'brand',owner:'Mera'},{key:'bialetti',type:'brand',owner:'Suz'},
@@ -1262,7 +1280,11 @@ window.SourcingChecks=(function(){
         ok('Keepa flag · a VA who presses a Germany / France filter button is asked first — "Is Keepa set to Germany? (amazon.de)" — and Keepa only opens after "Keepa is on Germany" (Jack, 4 Oct: "tell them when they do it"; opened on the UK flag Germany lost "sold by Amazon": 3,861 instead of 1,155); UK buttons, Viewer links and Jack are never stopped',
           got,['DE',null,null,true,true,true,true,true,null]);}
       /* b266 — Jack, 5 Oct: "popups nicely UI / UX designed, not Google Chrome ones" + "make sure she's putting a fresh export in" */
-      {const src=(await Promise.all(['brands','audit','guest','notice','sources','prime','leave','activity','cloud','core'].map(f=>fetch('../js/'+f+'.js?t='+Date.now()).then(r=>r.text())))).join('\n').replace(/\/\*[\s\S]*?\*\//g,'');
+      {/* b332: the page is app/index.html, so the files are at js/ — '../js/' was a 404 and the check read ten error pages (it could never fail) */
+        const parts=await Promise.all(['brands','audit','guest','notice','sources','prime','leave','activity','cloud','core'].map(f=>fetch('js/'+f+'.js?t='+Date.now()).then(r=>r.ok?r.text():'').catch(()=>'')));
+        ok('Popups · the no-grey-boxes check really reads the ten files it judges (b332: it looked in the wrong folder, got ten "not found" pages and could never fail)',
+          [parts.filter(t=>t.length>2000&&/function /.test(t)).length,/function toast\(/.test(parts[9]),/function uiConfirm\(|function uiDialog\(/.test(parts.join('\n'))],[10,true,true]);
+        const src=parts.join('\n').replace(/\/\*[\s\S]*?\*\//g,'');
         const native=(src.match(/(?<![\w.$])(confirm|prompt|alert)\(/g)||[]).length;
         window.__uiAnswer=undefined;const p=uiConfirm('Delete X for everyone?\n\nIt goes off the list.',{ok:'Delete X',tone:'danger'});await new Promise(r=>setTimeout(r,60));
         const dlg=$('#uiDlg'),okB=$('#uiOk'),look=[!!dlg,dlg&&/Delete X for everyone\?/.test(dlg.querySelector('h3').textContent),okB&&okB.textContent,!!(dlg&&dlg.querySelector('.uicard.t-danger')),document.activeElement===okB];
@@ -1883,11 +1905,11 @@ window.SourcingChecks=(function(){
           const a=srcGet('mera-150plus');mig=[a.name,a.link===sd.link,a.noBrands,(a.noCats||[]).includes('helmets'),(a.noCats||[]).some(w=>/rings/.test(w)),a.migM];
           const v2=srcAll().map(x=>Object.assign({},x));const k=v2.findIndex(x=>x.key==='mera-150plus');v2[k]=Object.assign({},v2[k],{name:'Mera BIG STUFF',migM:0});lsSet(SRC_KEY,v2);kept=srcGet('mera-150plus').name;}
         finally{if(keepS==null)lsRemove(SRC_KEY);else lsRawSet(SRC_KEY,keepS);}
-        ok('Mera · anything £95+ · Jack\'s new link (4 Oct): Buy Box 90-day average £95+ with no top end, Amazon down 9%+, 9+ rank drops. Out by CATEGORY ("some categories are better than brands … we only have 50 to use"): motorbike helmets and clothing, cycling helmets, envelopes, curtains, rugs, mobility aids, Moses baskets, alcohol, electric guitars + Books; e-readers, mattresses (b255), ski helmets, car seats, pushchairs, swings, perfume, guitar gear (b256; 50 nodes = Keepa\'s cap); smart rings stay — only the RingConn brand goes, with Swarovski, Lumie and RING (46 brands, 4 free; Amazfit not blocked; Blake / Yard / AGV not spent on); the app drops the same categories by name; a saved copy is updated once and a name Jack chose is kept',
+        ok('Mera · anything £95+ · Jack\'s new link (4 Oct): Buy Box 90-day average £95+ with no top end, Amazon down 9%+, 9+ rank drops. Out by CATEGORY ("some categories are better than brands … we only have 50 to use"): motorbike helmets and clothing, cycling helmets, envelopes, curtains, rugs, mobility aids, Moses baskets, alcohol, electric guitars + Books; e-readers, mattresses (b255), ski helmets, car seats, pushchairs, swings, perfume, guitar gear (b256; 50 nodes = Keepa\'s cap); smart rings stay — only the RingConn brand goes, with Swarovski, Lumie and RING (45 brands since b323 — Bose taken out, Jack 6 Nov — 5 free; Amazfit not blocked; Blake / Yard / AGV not spent on); the app drops the same categories by name; a saved copy is updated once and a name Jack chose is kept',
           [f.BUY_BOX_SHIPPING_avg90.filter,!!f.BUY_BOX_SHIPPING_current,f.AMAZON_deltaPercent90.filter,f.salesRankDrops30.filter,br.length,['ringconn','swarovski','lumie','ring'].every(b=>br.includes(b)),['amazfit','blake','yard','agv','poc','shima','the rugs'].some(b=>br.includes(b)),roots.includes('266239'),ce.length,
             ['303875031','2491855031','303877031','3764946031','201082031','3028602031','358583031','2826313031','2826394031','3028553031','60586031','407763031','1345934031','1840488031','2850828031','3076787031','60049031','60256031','60294031','118457031','406550031','406551031'].every(n=>ce.includes(n)),ce.includes('51346572031'),
             sd.name,sd.noBrands,sd.noCats.length,sd.noCats.includes('electric guitars'),sd.noCats.some(w=>/rings/.test(w)),sd.link.includes("'"),mig,kept],
-          [95,false,9,9,46,true,false,true,50,true,false,'Mera · anything £95+',['ringconn','swarovski','lumie','ring'],20,true,false,false,['Mera · anything £95+',true,['ringconn','swarovski','lumie','ring'],true,false,4],'Mera BIG STUFF']);}
+          [95,false,9,9,45,true,false,true,50,true,false,'Mera · anything £95+',['ringconn','swarovski','lumie','ring'],20,true,false,false,['Mera · anything £95+',true,['ringconn','swarovski','lumie','ring'],true,false,4],'Mera BIG STUFF']);}
       {const meWas=me(),keep={r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),s:lsRaw(SRC_KEY),v:lsRaw(VERD_KEY),p:lsRaw(PRIME_KEY)};
         try{lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,false);backToList();await openRun('mera-150plus');clearRun();
           const t=await(await fetch('../fixtures/mera60-1003-normal.csv')).text(),F=()=>[new File([t],'KeepaExport-2026-10-03-ProductFinder (8).csv')];
@@ -2363,7 +2385,7 @@ window.SourcingChecks=(function(){
             {at:'2026-10-20T09:00:00.000Z',day:'2026-10-20',source:'philips',name:'Philips',rule:1,rowsIn:900,leads:40,asins:['B0WHYBTH01'],queue:[],who:'Mera',files:['KeepaExport-x-ProductFinder.csv','KeepaExport-x-ProductViewer.csv']}]));
           audState.prod=Object.assign({},audState.prod,{B0WHYNON01:{asin:'B0WHYNON01',brand:'Nobody Blocks Brandco',asked:true}});   /* not Bose — our £95+ link really does leave Bose out (that is OUR BLOCK) */
           const W=A.map(a=>audWhyInfo(a,'2026-10-22'));got.push(W.map(w=>w&&w.k));
-          got.push([/Mera’s lead sheet 5 Oct — said NOT/.test(W[0].txt),/^Suz had it as a lead/.test(W[1].txt),/nobody opened it in Keepa/.test(W[1].txt),/Mera \+ Suz both had it as a lead/.test(W[4].txt),/rules cut it — Ninja \/ Shark had it 7 Oct \(your export\) at £252\.00/.test(W[2].txt),/covers Nobody Blocks Brandco/.test(W[3].txt),W[1].reason,W[2].reason]);
+          got.push([/^Found by Mera — on the lead sheet 5 Oct — said NOT/.test(W[0].txt),   /* b333: who found it comes first *//^Suz had it as a lead/.test(W[1].txt),/nobody opened it in Keepa/.test(W[1].txt),/Mera \+ Suz both had it as a lead/.test(W[4].txt),/rules cut it — Ninja \/ Shark had it 7 Oct \(your export\) at £252\.00/.test(W[2].txt),/we have no brand run for Nobody Blocks Brandco/.test(W[3].txt),W[1].reason,W[2].reason]);
           /* Missed it saves the why by itself */
           lsSet(AUD.V,{});audState.sellers=[{seller_id:'RWHY',name:'R'}];audState.shelf={RWHY:A.map(a=>({a,first:'2026-10-22'}))};audState.shared={RWHY:new Set()};auView.shelf='RWHY';auItemMemo={k:'',m:null};
           audJudge(['B0WHYCUT01'],'missed','RWHY');const v=audAll().B0WHYCUT01;got.push([v&&v.verdict,v&&v.reason,!!(v&&/Ninja/.test(v.note||''))]);
@@ -2519,12 +2541,12 @@ window.SourcingChecks=(function(){
           got.push(oaHits(A,items).map(h=>h.s+':'+h.c+(h.chk?'?':'')).join(','));
           /* Worker v2 has no /shop — nothing is searched */
           let calls=[];window.fetch=async u=>{u=String(u);calls.push(u);if(/ping=1/.test(u))return{json:async()=>({ok:true,service:'bdl-sourcing'})};return{json:async()=>({ok:false})};};
-          OA.ready=null;const off=await oaCheck([A]);got.push([!!off.off,calls.filter(u=>/shop\?q=/.test(u)).length]);
+          OA.ready=null;const off=await oaCheck([A]);got.push([!!off.off,calls.filter(u=>/shop\?(?:app=sourcing&)?q=/.test(u)).length]);
           /* Worker v3 with the key: the barcode first; it finds nothing, so once more by the title */
-          calls=[];OA.ready=null;window.fetch=async u=>{u=String(u);calls.push(u);if(/ping=1/.test(u))return{json:async()=>({ok:true,shop:true})};if(/q=5055825012345/.test(u))return{json:async()=>({ok:true,items:[]})};if(/\/shop\?q=/.test(u))return{json:async()=>({ok:true,items})};return{json:async()=>({ok:false})};};
+          calls=[];OA.ready=null;window.fetch=async u=>{u=String(u);calls.push(u);if(/ping=1/.test(u))return{json:async()=>({ok:true,shop:true})};if(/q=5055825012345/.test(u))return{json:async()=>({ok:true,items:[]})};if(/\/shop\?(?:app=sourcing&)?q=/.test(u))return{json:async()=>({ok:true,items})};return{json:async()=>({ok:false})};};
           const use0=oaUseGet(),R2=await oaCheck([A]);const v=oaVerdict(A),t2=trTx(oaLine(A));
           got.push([R2.n,R2.s,oaUseGet()-use0,oaShopAll()[A].by,v&&v.k,v&&v.h.s,/★ OA lead/.test(t2),/Currys £79\.00 − 5% = £75\.05 → £[\d.]+ profit · [\d.]+% ROI/.test(t2)]);
-          calls=[];await oaCheck([A]);got.push(calls.filter(u=>/shop\?q=/.test(u)).length);   /* checked in the last 24 h — no new search */
+          calls=[];await oaCheck([A]);got.push(calls.filter(u=>/shop\?(?:app=sourcing&)?q=/.test(u)).length);   /* checked in the last 24 h — no new search */
           const sg=audSuggest({a:A,first:today()});got.push(sg&&sg.code,!!sg&&/OA lead today at Currys/.test(sg.why));
           /* only a dearer shop → not a lead, and by how much */
           lsSet(OA_SHOP,{[A]:{at:nowIso(),by:'ean',q:'x',hits:oaHits(A,[{title:'Ninja KT200UK Kettle',source:'Argos',price:'£149.99'}])}});const t3=trTx(oaLine(A));
@@ -2533,6 +2555,111 @@ window.SourcingChecks=(function(){
         finally{window.fetch=o.fetch;OA.ready=o.ready;lsSet(ME_KEY,meWas||'Jack');[[AUD_NOW,keep.now],[OA_IDS,keep.ids],[OA_SHOP,keep.shop],[OA_USE,keep.use]].forEach(([k,x])=>{if(x==null)lsRemove(k);else lsRawSet(k,x);});AUD_NOW_C=null;if(prod0)audState.prod[A]=prod0;else delete audState.prod[A];}
         ok('b321 · OA check on a rival that is not an Amazon UK lead: the most each shop on the discount list can charge (% off, full-price-only, £ off a minimum spend, £ cap), Google ↗ by barcode; with the Worker\'s Google Shopping key the button searches the barcode then the title, keeps real UK shops only (no eBay / Amazon / refurbished), takes the code off and says ★ OA lead (suggests Missed it), or how far over the cheapest shop is; Worker v2 searches nothing; 24 h reuse; never a VA',
           got,[[89.57,100,305,200,44.44,105],'Currys|AO|John Lewis|Ninja Kitchen||',[true,true,true,true],['',true],'Currys:75.05,Argos:93.99,Very:70?',[true,0],[1,2,2,'title','lead','Currys',true,true],0,'missed',true,['no',true],'']);}
+      /* b330 — automated filters on the keepa Worker (Keepa Discord md "final decisions", 10 Nov). (1) the Worker's exact copy of the
+         1-token cut + link signature, on real products (Jack's exports / Keepa answers), and locked to Rule 2 itself */
+      {const KM=(y,m,d)=>Math.round(Date.UTC(y,m-1,d)/60000)-21564000,NOW=Date.UTC(2026,10,10);
+        const A2A=apiSelection(srcGet('suz-deep-drops')).after,SEV=apiSelection(srcGet('mera-7day-20-all')).after;
+        const P=(asin,brand,amz,sold,hist,drops,extra)=>Object.assign({asin,brand,rootCategory:340831031,binding:null,productGroup:null,monthlySold:sold,monthlySoldHistory:hist,stats:{current:[amz],salesRankDrops30:drops}},extra||{});
+        const C=[
+          [P('B0B8H4B2QJ','Acer',34999,50,[8243163,50],59),null,[true,'',50,'bought']],
+          [P('B0F4RB98Z9','Acer',59999,null,null,42),null,[true,'',42,'drops']],
+          [P('B09JWLLX3T','Ninja',13499,300,null,56),null,[true,'',300,'bought']],
+          [P('B0H2D96W4M','Samsung',4399,null,[KM(2026,8,21),50],0),null,[true,'',50,'last known']],
+          [P('B0D4F8SMQ7','Samsung',3900,null,[KM(2026,8,10),50],0),null,[false,'demand 0/mo (drops) under 9',0,'drops']],
+          [P('B0FB3R28MD','Samsung',79700,null,[KM(2026,7,2),50],33),null,[true,'',33,'drops']],
+          [P('B0H2DBYMQ8','Samsung',3740,null,null,0),null,[false,'demand 0/mo (drops) under 9',0,'drops']],
+          [P('B0B8YWBWL9','Acer',-1,null,null,23),null,[false,'no Amazon price',0,'']],
+          [P('B0DLHD8HP8','Apple',-1,null,null,23),A2A,[false,'brand excluded',0,'']],
+          [P('B0B8H4B2QJ','Acer',34999,50,[8243163,50],59,{productGroup:'Apparel'}),SEV,[false,'product group excluded',0,'']],
+          [P('EDGE90DAYS','x',1000,0,[Math.round((NOW-90*864e5)/60000)-21564000,12],2),null,[true,'',12,'last known']],
+          [P('EDGE90DAYS','x',1000,0,[Math.round((NOW-90*864e5)/60000)-21564000-1,12],2),null,[false,'demand 2/mo (drops) under 9',2,'drops']]];
+        const got=C.map(([p,a])=>{const r=autoCut(p,a,NOW);return[r.keep,r.why,r.spm,r.from];});
+        ok('b330 · the 1-token cut the keepa Worker copies (autoCut): 12 cases from real products — bought, last known (90-day edge), drops, no Amazon price, brand / product-group exclusions',got,C.map(c=>c[2]));
+        /* the same answer Rule 2 gives that product as an API row — the copy can never be stricter than the Suite */
+        const now=Date.now(),mk=d=>Math.round((now-d*864e5)/60000)-21564000;
+        const Q=[P('PAR0000001','x',2500,0,[mk(80),40],1),P('PAR0000002','x',2500,0,[mk(100),40],1),P('PAR0000003','x',2500,0,null,12),P('PAR0000004','x',2500,0,null,8),
+          P('PAR0000005','x',2500,9,null,0),P('PAR0000006','x',-1,500,null,90),P('PAR0000007','x',2500,0,[mk(89),9],0),P('PAR0000008','x',2500,0,[mk(91),60],3)];
+        const par=Q.map(p=>{p.stats.avg90=[];p.stats.avg90[18]=3000;const row=apiRow(p,2);const R=rule2Compute([row],{},{noGraph:true});return[autoCut(p,null,now).keep,R.st.demand===1];});
+        ok('b330 · autoCut keeps exactly the products Rule 2 lets past "Amazon price" and "demand" on an API row (8 cases incl. both sides of the 90-day Last Known rule); its constants are Rule 2’s',
+          [par.every(([a,b])=>a===b),par.map(x=>x[0]),AUTOCUT.MIN_SPM===R2.MIN_SPM,AUTOCUT.LAST_KNOWN_DAYS===RECENT_CONFIRMED_DAYS],[true,[true,false,true,false,true,false,true,false],true,true]);
+        ok('b330 · linkSig (FNV-1a 32-bit over link + newline + link2): fixed values, the second link counts, any change shows',
+          [linkSig('',''),linkSig('a',''),linkSig('a','b'),linkSig('b','a'),/^[0-9a-f]{8}$/.test(linkSig(LINKS['suz-sns'])),linkSig(LINKS['suz-sns'])===linkSig(LINKS['suz-sns'],''),linkSig(LINKS['suz-sns'])!==linkSig(LINKS['suz-sns']+'x')],
+          ['0f0c6cdd','2524c6d2','28e4c710','86c0edd4',true,true,true]);
+        window.__autoCases={C:C.map(([p,a,e])=>({p,after:a,expect:e})),NOW,sigs:{empty:linkSig('',''),a:linkSig('a',''),ab:linkSig('a','b'),ba:linkSig('b','a')}};}
+      /* (2) Jack switches a filter to Automated: data.auto v1 is the Suite's own search, re-saved when the link changes; Business / Prime /
+         brand lists can't be switched; a fake night shows on the run screen (first thing, 0 tokens), the Brands list and Filter check */
+      {const meWas=me(),keepSrc=JSON.parse(JSON.stringify(lsGet(SRC_KEY,null))),o={kcGet:window.kcGet,cloudGetAll:window.cloudGetAll,cloudReadable:window.cloudReadable};   /* a real copy — lsGet hands back the live object */let got=[];
+        try{lsSet(ME_KEY,'Jack');AUTO.cache={};AUTO.allAt=0;
+          const strip=x=>{const s=Object.assign({},x.selection);delete s.perPage;delete s.page;return s;};
+          const k7='mera-7day-20-all',kA='suz-deep-drops';
+          [k7,kA].forEach(k=>{const s=srcGet(k);delete s.auto;srcSave(s);});
+          const on7=autoSet(k7,true),onA=autoSet(kA,true);const s7=srcGet(k7),sA=srcGet(kA);
+          got.push([on7,onA,s7.auto.v,s7.auto.on,s7.auto.market,s7.auto.links.length,s7.auto.rank,sA.auto.rank,s7.auto.links[0].domain,
+            JSON.stringify(s7.auto.links[0].selection)===JSON.stringify(strip(apiSelection(s7))),JSON.stringify(sA.auto.links[0].selection)===JSON.stringify(strip(apiSelection(sA))),
+            s7.auto.links[0].after.groupNot,s7.auto.linkSig===linkSig(s7.link,s7.link2),'perPage' in s7.auto.links[0].selection,s7.auto.links[0].skipped.includes('rank month (website only)')]);
+          /* the link changes → stale → Jack's browser re-saves it, same order */
+          const was=s7.link;s7.link=was.replace('%22filter%22%3A20','%22filter%22%3A21');srcSave(s7);const st1=autoStale(srcGet(k7));const n=autoResave();const s7b=srcGet(k7);
+          got.push([st1,n,autoStale(s7b),s7b.auto.rank,s7b.auto.linkSig===linkSig(s7b.link)]);s7b.link=was;srcSave(s7b);autoResave();
+          got.push(['suz-business-uk','prime-uk','asus','ninja-shark','amz-coupons','mera-150plus'].map(k=>autoEligible(srcGet(k))),/Business %/.test(autoWhyNot(srcGet('suz-business-uk'))),autoSet('suz-business-uk',true));
+          /* a fake night: 3 products — one priced (full answer 2 days old + tonight's 1-token look), one cut by brand, one with no full answer yet */
+          const night={source_key:k7,night:today(),status:'done',total:3,done_n:1,tokens:21,started_at:new Date(Date.now()-3*3600e3).toISOString(),finished_at:new Date(Date.now()-3600e3).toISOString(),updated_at:nowIso(),links:[{n:0,asins:['B0TEST0001','B0TEST0002','B0TEST0003'],total:3}]};
+          const J=await (await fetch('/fixtures/api-sample-2026-09-21.json')).json();const full=Object.assign({},J.products[0],{asin:'B0TEST0001',offers:undefined});
+          const stats1=Object.assign({},full,{stats:Object.assign({},full.stats,{avg90:[],avg30:[],avg180:[]}),buyBoxEligibleOfferCounts:undefined});
+          const old=new Date(Date.now()-48*3600e3).toISOString(),fresh=new Date(Date.now()-3600e3).toISOString();
+          window.cloudReadable=()=>true;window.cloudGetAll=async t=>t==='src_autopull'?[night]:[];   /* nothing reaches the network */
+          window.kcGet=async(d,asins,kind)=>{const out={};if(kind==='offers')out.B0TEST0001={p:full,at:old,kind:'offers'};
+            else{out.B0TEST0001={p:stats1,at:fresh,kind:'stats'};out.B0TEST0002={p:Object.assign({},stats1,{asin:'B0TEST0002',brand:'Amazon Basics'}),at:fresh,kind:'stats'};out.B0TEST0003={p:Object.assign({},stats1,{asin:'B0TEST0003'}),at:fresh,kind:'stats'};}return out;};
+          const R=await autoRows(night,srcGet(k7));const r1=R.rows[0]||{};
+          got.push([R.rows.length,R.excluded,R.notPriced,R.missing,r1['Buy Box: 90 days avg.']!=='',r1['Buy Box Eligible Offer Counts: New FBA']!=='']);
+          backToList();await openRun(k7);await autoLoad(k7,true);autoPaint();const el=$('#autoPull');const first=!!(el&&$('#dropAny')&&$('#keepaRow')&&(el.compareDocumentPosition($('#dropAny'))&Node.DOCUMENT_POSITION_FOLLOWING)&&(el.compareDocumentPosition($('#keepaRow'))&Node.DOCUMENT_POSITION_FOLLOWING));
+          got.push([!el.hidden,/Last night’s list is ready/.test(el.textContent),!!$('#autoUse'),new RegExp(autoHM(night.finished_at)+' UK · 3 products').test(el.textContent),first]);
+          await autoUse();got.push([!!(files.one&&files.one.auto),files.one?files.one.rows.length:0,/Using last night’s list/.test($('#autoPull').textContent)]);
+          backToList();AUTO.allAt=0;await autoLoadAll(true);got.push(/Ready .* no export/.test(autoBadge(srcGet(k7))),autoBadge(srcGet('suz-tea-coffee'))==='');
+          night.finished_at=new Date(Date.now()-30*3600e3).toISOString();AUTO.cache={};clearRun();await openRun(k7);await autoLoad(k7,true);autoPaint();got.push(/export from Keepa as usual/.test($('#autoPull').textContent),!$('#autoUse'));backToList();
+          night.finished_at=fresh;window.cloudReadable=o.cloudReadable;window.cloudGetAll=o.cloudGetAll;AUTO.cache={[k7]:{t:Date.now(),row:night,full:true}};AUTO.allAt=0;
+          const card=$('#cardFc');const hid=card.hidden;card.hidden=false;await renderFc(true);const box=$('#fcBody .fcautobox');
+          got.push([!!box&&/Mera · 7-Day/.test(box.textContent)&&/21/.test(box.textContent)&&/done/.test(box.textContent),!!box&&/A2A £7–60/.test(box.textContent),
+            [...$('#fcBody').querySelectorAll('table:not(.fcauto) tbody tr')].some(tr=>tr.dataset.key===k7),!!$('#fcBody [data-autoset="1"][data-key="suz-tea-coffee"]')]);card.hidden=hid;}
+        finally{Object.assign(window,o);lsSet(ME_KEY,meWas||'Jack');lsSet(SRC_KEY,keepSrc);AUTO.cache={};AUTO.allAt=0;window.__autoLeft=srcAll().filter(x=>x.auto).length;try{clearRun();backToList();}catch(e){}}
+        ok('b330 · Automated: data.auto v1 = the Suite’s own search (paging off, product group in after), order 1 · 2; a changed link is re-saved; Business / Prime / brand lists can’t be switched',
+          got.slice(0,5),[[true,true,1,true,'UK',1,1,2,2,true,true,['apparel','shoes','sports'],true,false,true],[true,1,false,1,true],[false,false,false,false,true,true],true,false]);
+        ok('b330 · a fake night: priced from the cache (averages + seller counts from the full answer), brand-excluded and not-yet-priced left out; the run screen shows the ready list FIRST, loads it at 0 tokens; READY badge; an old pull says export as usual; Filter check lists it as Automated, not Manual',
+          got.slice(5),[[1,1,1,0,true,true],[true,true,true,true,true],[true,1,true],true,true,true,true,[true,true,false,true]]);}
+      /* b329 — Keepa Discord md, 9 Nov ("make b328 push-clean"): (1) the FINAL shared-cache SQL adds kind 'none' (Keepa says the ASIN does not exist) —
+         a 'none' row has no stats, so the cache reader must never hand it out as an answer; (2) the overnight pulls (b325) are out of the build until
+         Jack and the Keepa chat decide who runs them — parked in the harness */
+      {const o={kcOn:window.kcOn,cloudGetAll:window.cloudGetAll};let got=[];const now=new Date().toISOString();
+        try{window.kcOn=()=>true;window.cloudGetAll=async()=>[{asin:'B0NONE0001',kind:'none',product:{asin:'B0NONE0001'},fetched_at:now},
+            {asin:'B0BOTH0001',kind:'none',product:{asin:'B0BOTH0001'},fetched_at:now},{asin:'B0BOTH0001',kind:'stats',product:{asin:'B0BOTH0001',stats:{}},fetched_at:new Date(Date.now()-3600e3).toISOString()},
+            {asin:'B0OFFR0001',kind:'offers',product:{asin:'B0OFFR0001',stats:{}},fetched_at:now}];
+          const st=await kcGet(2,['B0NONE0001','B0BOTH0001','B0OFFR0001'],'stats',72),of=await kcGet(2,['B0NONE0001','B0BOTH0001','B0OFFR0001'],'offers',72);
+          got=[Object.keys(st).sort(),st.B0BOTH0001&&st.B0BOTH0001.kind,Object.keys(of)];}
+        finally{Object.assign(window,o);}
+        const ov=await fetch('tools/overnight.mjs?t='+Date.now());
+        ok("b329 · the cache reader skips Keepa's 'none' rows (no such ASIN) and never serves one as an answer; the GitHub overnight job stays out of the build (b330 brings the Suite side back, run by the keepa Worker)",
+          [got,ov.status,typeof fcAutoCell],[[['B0BOTH0001','B0OFFR0001'],'stats',['B0OFFR0001']],404,'undefined']);}
+      /* b328 — Keepa Discord md, 9 Nov: bdl-sourcing merged into the keepa Worker; the Suite calls its /src box. The old address must be
+         gone from every file, because once Jack deletes bdl-sourcing anything still pointing at it just errors */
+      {const F=['core','parse','rule2','export','queue','sources','cloud','leadtools','keepaconsole','euprice','kcache','apirun','brands','history','audit','auditva','trace','oashop','kcjudge','fcheck','boot'];
+        const old=[];for(const f of F){const t=await(await fetch('js/'+f+'.js?t='+Date.now())).text();if(/bdl-sourcing\.jackbithellbusiness/.test(t))old.push(f);}
+        ok('b328 · the Suite calls the keepa Worker\'s /src box; the old bdl-sourcing address is in no file',
+          [WORKER,old],['https://keepa.jackbithellbusiness.workers.dev/src',[]]);}
+      /* b327 — the 7-day Keepa token audit (Keepa Discord md, 9 Nov): every call to our Worker says who it is — app=sourcing from the pages — so the Worker's log can tell the Suite from the other apps on bdl-sourcing */
+      {const F=['core','parse','rule2','export','queue','sources','cloud','leadtools','keepaconsole','euprice','kcache','apirun','brands','history','audit','auditva','trace','oashop','kcjudge','fcheck','boot'];
+        let n=0;const bad=[];for(const f of F){const t=await(await fetch('js/'+f+'.js?t='+Date.now())).text();(t.match(/\/keepa\?[^'`]{0,20}/g)||[]).forEach(m=>{n++;if(!/^\/keepa\?app=sourcing&/.test(m))bad.push(f+': '+m);});
+          (t.match(/\/shop\?q=/g)||[]).forEach(()=>bad.push(f+': /shop untagged'));}
+        ok('b327 · every Keepa call to the Worker is tagged app=sourcing, for the token audit',
+          [n>=9,bad],[true,[]]);}
+      /* b326 — Jack, 7 Nov: S&S UK tightened ("maybe 15% then if it loses no bangers" · "change sub and save to this now") */
+      {const f=l=>{const j=JSON.parse(decodeURIComponent(String(l).split('#!finder/')[1]));return[j.f.AMAZON_deltaPercent90.filter,j.f.srAvgMonth.filter,Object.keys(j.f).length,j.f.monthlySold.filter,j.f.BUY_BOX_SHIPPING_avg90.filter,j.f.couponSNSPercent.filter];};const s=srcGet('suz-sns-uk');
+        ok('b326 · Suz · Subscribe & Save UK: Amazon down 15%+ (was 1%) and rank month October, everything else as before — the seed and the saved filter (once); the note says 15%',
+          [f(LINKS['suz-sns']),f(s.link),s.migSns15,/Amazon down 15%\+/.test(s.note||'')],[[15,'202610',10,50,6,1],[15,'202610',10,50,6,1],1,true]);}
+      /* b323 — Jack, 6 Nov: "remove bose as blocked please" (Mera · anything £95+) */
+      {const dec=l=>{const b=JSON.parse(decodeURIComponent(String(l).split('#!finder/')[1])).f.brand;return b.type+':'+String(b.filter).split('###').length+':'+String(b.filter).split('###').includes('bose')+':'+String(b.filter).split('###').includes('panasonic');};
+        const old=LINKS['mera-150'].replace('%23%23%23cozyla','%23%23%23bose%23%23%23cozyla');
+        ok('b323 · Bose is no longer excluded from the £95+ link (seed and the saved filter, once); Panasonic and the other brands stay excluded; a link without Bose is left exactly as it is',
+          [dec(LINKS['mera-150']),dec(srcGet('mera-150plus').link),srcGet('mera-150plus').migBose,dec(old),linkDropBrand(old,'bose')===LINKS['mera-150'],linkDropBrand(LINKS['mera-150'],'bose')===LINKS['mera-150']],
+          ['isNoneOf:45:false:true','isNoneOf:45:false:true',1,'isNoneOf:46:true:true',true,true]);}
       /* b322 — the EU price lookup reads and fills the shared Keepa cache (the Keepa trackers will write EU rows into it) */
       {const o={kcGet:window.kcGet,kcPut:window.kcPut,fetch:window.fetch},keep=lsRaw(EUP_KEY);let got=[];const calls=[],puts=[];
         try{lsRemove(EUP_KEY);
@@ -2599,7 +2726,7 @@ window.SourcingChecks=(function(){
           got.push([audVaFor('SOLDSHELF1').join('+'),audVaFor('NEWSHELF01').join('+'),audVaFor('NEWSHELF02').join('+')]);
           lsSet(ME_KEY,'Mera');got.push([audIsVA(),audAuto(),audShelfList().map(x=>x.id+':'+x.items.map(i=>i.a).join(',')).join(' | ')]);
           audJudge(['B0NEWNEW01'],'prime','NEWSHELF01','Prime-only price — Keepa / filter didn’t show it');{const mm=audAllOf('Mera');mm.B0NEWNEW01.at='2026-10-09T10:00:00.000Z';lsSet(audKeyFor('Mera'),mm);}   /* the checks' clock sits on 24 Sep */
-          got.push([Object.keys(audAllOf('Mera')).join(','),audAllOf('Mera').B0NEWNEW01&&audAllOf('Mera').B0NEWNEW01.who,Object.keys(audAllOf(null)).join(','),Object.keys(audAllOf('Suz')).length,audAutoMissed(audShelfList()[0])]);
+          got.push([Object.keys(audAllOf('Mera')).join(','),audAllOf('Mera').B0NEWNEW01&&audAllOf('Mera').B0NEWNEW01.who,Object.keys(audAllOf(null)).join(','),Object.keys(audAllOf('Suz')).length,typeof audAutoMissed==='function'?1:0]);   /* b333: the automatic Missed it is gone */
           lsSet(ME_KEY,'Suz');got.push([Object.keys(audAll()).length,audShelfList().length]);
           lsSet(ME_KEY,'Jack');audVaSet('SOLDSHELF1',['Suz']);got.push([audVaFor('SOLDSHELF1').join('+'),audIsVA(),audShelfList().filter(x=>x.kind==='rival').length]);
           const card=auVaCard();got.push([/Mera &amp; Suz · Prime event audit/.test(card),/answers differ|Prime-only price/.test(card),/Why we missed it/.test(card),/data-vafor="SOLDSHELF1"/.test(card)]);
@@ -2641,6 +2768,198 @@ window.SourcingChecks=(function(){
         vatFor({Title:'Yorkshire Tea Caramelised Biscuit Brew, 160 Tea Bags'}).rate,vatFor({Title:'illy Classico Coffee Beans, 100% Arabica, Ideal for Moka Pot and Espresso Machine, 250g'}).rate,
         vatFor({Title:"De'Longhi Dedica Espresso Coffee Machine, Stainless Steel"}).rate,vatFor({Title:'Coffee Machine Descaler 500g Powder'}).rate,vatFor({Title:'Tassimo Kenco Americano XL Coffee Pods x16 T-Discs'}).rate],[0,0,0,0,0.2,0.2,0]);
       ok('Sources · four ShiftTrack rows stay retired, the fifth is live again',hist.map(k=>{const s=SRC_SEED.find(z=>z.key===k);return s?[s.status,s.owner,!!(s.link&&s.link.startsWith('https://keepa.com/#!finder/')&&!s.link.includes("'"))]:null;}),EXPECT.hist);
+      /* ============================ b332 — the 16 Nov 2026 audit's bug fixes ============================ */
+      /* bug 1 — Runs tab: a VA sees only the runs of filters she can see (rows, "Ran by", By person, the export); Jack sees everything */
+      {const meWas=me(),runsWas=lsRaw(RUN_KEY),srcWas=lsRaw(SRC_KEY);let got=[];
+        try{const T=(k,owner)=>({key:'zz332-'+k,name:'T '+k,owner,rule:2,status:'active',cadence:'weekly'});
+          lsSet(SRC_KEY,srcAll().filter(s=>!/^zz332-/.test(s.key)).concat([T('mera','Mera'),T('suz','Suz'),T('both','VAs'),T('none','Jack')]));
+          const run=(k,who,at,runs)=>({source:'zz332-'+k,name:'T '+k,rule:2,at:'2026-09-24T'+at+':00.000Z',who,asins:[],files:[],rowsIn:10,leads:2,runs});
+          lsSet(RUN_KEY,[run('mera','Mera','09:00'),run('suz','Suz','09:05'),run('both','Suz','09:10',[{who:'Suz',at:'2026-09-24T09:10:00.000Z'},{who:'Mera',at:'2026-09-24T09:40:00.000Z'}]),run('none','Jack','09:15'),run('deleted','Suz','09:20')]);
+          const seen=()=>runsVisible().map(r=>r.source.replace('zz332-','')).join(',');
+          lsSet(ME_KEY,'Mera');got.push(seen(),runsWhoNames([runsVisible()[0]],false).join(','),runsWhoNames(runsVisible(),false).join(','),runRows().length);
+          lsSet(ME_KEY,'Suz');got.push(seen(),runRows().length);
+          lsSet(ME_KEY,'Jack');got.push(seen(),runsWhoNames(runsVisible(),true).join(','),runRows().length);
+          got.push(/runsVisible\(\)/.test(String(runRows)),/canSee\(srcGet\(tr\.dataset\.key\)\)\)openRun/.test(String(runsLogInit)),/const runs=runsVisible\(\)/.test(String(exportLog)));
+        }finally{runsWas==null?lsRemove(RUN_KEY):lsRawSet(RUN_KEY,runsWas);srcWas==null?lsRemove(SRC_KEY):lsRawSet(SRC_KEY,srcWas);lsSet(ME_KEY,meWas||'Jack');}
+        ok('b332 · Runs: Mera sees her own filter\'s runs and the shared one — never Suz\'s, one of Jack\'s own or a deleted filter\'s; Suz the same the other way; "Ran by" only offers names on runs she can see; Jack sees all five; opening a row and the export use the same rule',
+          got,['mera,both','Mera','Mera,Suz',2,'suz,both',2,'mera,suz,both,none,deleted','Jack,Mera,Suz',5,true,true,true]);}
+      /* bug 2 — a VA's old copy of a filter can no longer put back what Jack changed (the link, 🌙 Automate…) */
+      {const meWas=me(),srcWas=lsRaw(SRC_KEY);let got=[];
+        try{const jackRow={key:'zz332-f',name:'F',owner:'Mera',rule:2,status:'active',link:'NEW-LINK',auto:{on:true,rank:1},updatedAt:'2026-09-24T08:00:00.000Z',updatedBy:'Jack'};
+          const stale={key:'zz332-f',name:'F',owner:'Mera',rule:2,status:'active',link:'OLD-LINK',inProgress:{who:'Mera',at:'2026-09-24T09:00:00.000Z'},opens:[{who:'Mera',at:'2026-09-24T09:00:00.000Z'}],_sf:[1,2],updatedAt:'2026-09-24T09:00:00.000Z',updatedBy:'Mera'};
+          const p=srcPick(jackRow,stale,['inProgress','opens']);
+          got.push(p.link,!!(p.auto&&p.auto.on),p.inProgress.who,p.opens.length,'_sf' in p,p.updatedBy);
+          const st2=Object.assign({},stale);delete st2.inProgress;const p2=srcPick(Object.assign({},jackRow,{inProgress:{who:'Mera'}}),st2,['inProgress']);got.push('inProgress' in p2,p2.link);   /* leaving: her stamp comes off, nothing else moves */
+          got.push(srcPick(jackRow,stale,undefined).link);   /* no field list = the whole row, as before */
+          const asked=[];const fr=await srcFreshen([{key:'zz332-f',data:stale,updated_at:'u',updated_by:'Mera'},{key:'zz332-new',data:{key:'zz332-new',link:'MINE'}}],['inProgress','opens'],async keys=>{asked.push(keys.join(','));return[{key:'zz332-f',data:jackRow}];});
+          got.push(asked.join('|'),fr[0].data.link,!!(fr[0].data.auto&&fr[0].data.auto.on),fr[0].data.inProgress.who,fr[0].updated_by,fr[1].data.link);
+          got.push((await srcFreshen([{key:'a',data:stale}],undefined,async()=>{throw new Error('must not be asked');}))[0].data.link);
+          lsSet(SRC_KEY,srcAll().filter(s=>s.key!=='zz332-f').concat([jackRow]));
+          lsSet(ME_KEY,'Mera');srcSave(Object.assign({},stale),false,['inProgress','opens']);let g=srcGet('zz332-f');got.push(g.link,!!(g.auto&&g.auto.on),g.inProgress.who,g.updatedBy);
+          srcSave(Object.assign({},stale,{note:'her note'}),false,['note']);g=srcGet('zz332-f');got.push(g.link,g.note,!!(g.auto&&g.auto.on));   /* the form: only what she changed */
+          lsSet(ME_KEY,'Jack');srcSave(Object.assign({},stale,{link:'JACK-LINK'}),false,['inProgress']);g=srcGet('zz332-f');got.push(g.link,'auto' in g);   /* Jack saves the whole row, as before */
+          got.push(srcPatchPath('a b','2026-09-24T08:00:00.000Z'),srcPatchPath('k',''));
+          got.push(/srcFreshen\(it\.payload,it\.meta\.fields\)/.test(String(cloudFlush)),/srcSave\(s,false,\['inProgress','opens'\]\)/.test(String(srcLock)),/srcSave\(s,direct,\['inProgress'\]\)/.test(String(srcUnlock)),/srcSave\(s,false,\['keepa'\]\)/.test(String(actStampKeepa)));
+        }finally{srcWas==null?lsRemove(SRC_KEY):lsRawSet(SRC_KEY,srcWas);lsSet(ME_KEY,meWas||'Jack');}
+        ok('b332 · Filters: a VA\'s "I am on this" stamp saved from an old copy keeps Jack\'s newer link and 🌙 Automate — in this browser and on the row sent to the server (laid onto the server\'s own copy); a brand-new filter goes up whole; her form save moves only what she changed; Jack still saves the whole row; the page-leave save only lands on the row she last saw',
+          got,['NEW-LINK',true,'Mera',1,false,'Mera',false,'NEW-LINK','OLD-LINK','zz332-f,zz332-new','NEW-LINK',true,'Mera','Mera','MINE','OLD-LINK','NEW-LINK',true,'Mera','Mera','NEW-LINK','her note',true,'JACK-LINK',false,
+            'src_sources?key=eq.a%20b&data->>updatedAt=eq.2026-09-24T08%3A00%3A00.000Z','src_sources?key=eq.k&data->>updatedAt=is.null',true,true,true,true]);}
+      /* bug 3 — a busy server no longer signs a VA out */
+      ok('b332 · Sign-in: only a real refusal (400 / 401 / 403) signs out — a busy or broken server (429, 500, 503) or no answer keeps the sign-in and tries again next time',
+        [authRefused(400),authRefused(401),authRefused(403),authRefused(429),authRefused(500),authRefused(503),authRefused(0),/if\(authRefused\(r\.status\)\)\{authClear\(\);return false;\}return true;/.test(String(authRefresh))],[true,true,true,false,false,false,false,true]);
+      /* bug 4 — audit answers: never dropped silently, never "Saved for everyone" while something is unsent, one sender at a time */
+      {const outWas=lsRaw(AUD.OUT),heldWas=lsRaw(AUD_HELD),tabWas=audState.tables;let got=[];const E=(status,msg)=>{const e=new Error(msg||'x');e.status=status;return e;};
+        const cw=console.warn;console.warn=()=>{};
+        try{lsRemove(AUD_HELD);const A=q=>({qid:q,table:'src_audit',op:'up',rows:[1]});
+          lsSet(AUD.OUT,[A('a')]);const sent=[];
+          let r=await audFlushRun(async it=>{sent.push(it.qid);if(it.qid==='a'){const q=audOut();q.unshift(A('z'));lsSet(AUD.OUT,q);}});got.push(r.state,sent.join(','),audOut().length);   /* takes out the one it sent, not "the first" */
+          lsSet(AUD.OUT,[A('a')]);
+          r=await audFlushRun(async()=>{throw E(503);});got.push(r.state,audOut().length,audOut()[0].tries||0);
+          r=await audFlushRun(async()=>{throw E(0);});got.push(r.state,audOut()[0].tries||0);
+          r=await audFlushRun(async()=>{throw E(400,'bad row');});got.push(r.state,r.held,audOut()[0].tries);
+          r=await audFlushRun(async()=>{throw E(400,'bad row');});r=await audFlushRun(async()=>{throw E(400,'bad row');});
+          got.push(r.state,r.held,audOut().length,audHeld().length,audHeld()[0].qid,audHeld()[0].why);
+          lsRemove(AUD_HELD);lsSet(AUD.OUT,[{qid:'p',table:'src_products',op:'up',rows:[1]}]);
+          for(let i=0;i<3;i++)r=await audFlushRun(async()=>{throw E(400);});got.push(r.letGo,audOut().length,audHeld().length);
+          got.push(/Saved for everyone/.test(auSyncText(0,0)),/NOT saved for everyone/.test(auSyncText(0,1))&&!/>Saved for everyone/.test(auSyncText(0,1)),/2 answers NOT saved.*3 more to send/.test(auSyncText(3,2)),/2 answers to send/.test(auSyncText(2,0)),
+            /if\(audState\.flushing\)\{audState\.again=true;return;\}/.test(String(audFlush)),/auSyncText\(n,audHeld\(\)\.length\)/.test(String(auSyncNote)));
+        }finally{console.warn=cw;audState.tables=tabWas;outWas==null?lsRemove(AUD.OUT):lsRawSet(AUD.OUT,outWas);heldWas==null?lsRemove(AUD_HELD):lsRawSet(AUD_HELD,heldWas);}
+        ok('b332 · Audit answers: the sender takes out exactly the answer it sent; a busy server or no internet costs no strike; an answer refused three times is HELD in the browser (not thrown away) and the page says NOT saved; product details are still let go; only one sender runs at a time',
+          got,['done','a,z',0,'later',1,0,'later',0,'later',0,1,'done',1,0,1,'a','bad row',1,0,0,true,true,true,true,true,true]);}
+      /* bug 5 — files dropped one after another: yesterday's record survives the day, and a lead that really left still leaves */
+      {const S=n=>({score:n}),d1='2026-11-15_0900',day='2026-11-16';
+        const lm1=nextLeadMap([{ASIN:'A',state:S(1)},{ASIN:'B',state:S(2)}],null,{},d1);
+        const base1=dayBaseline(lm1,null,day);
+        const nm=nextLeadMap([{ASIN:'A',state:S(3)}],null,lm1,'2026-11-16_1000',null);          /* today's first file: only A */
+        const keep=nextLeadKeep(base1,nm,day);
+        const base2=dayBaseline(nm,keep,day),old2=baselineOf(nm,day);                             /* today's second file brings B back */
+        const nm2=nextLeadMap([{ASIN:'A',state:S(3)},{ASIN:'B',state:S(2)}],null,nm,'2026-11-16_1100',keep);
+        const keep2=nextLeadKeep(base2,nm2,day);
+        const base3=dayBaseline(nm,keep,'2026-11-17');                                           /* B never came back today: tomorrow it is gone for real */
+        const nm3=nextLeadMap([{ASIN:'B',state:S(2)}],null,nm,'2026-11-17_0900',keep);
+        const plain=nextLeadMap([{ASIN:'A',state:S(3)}],null,lm1,'2026-11-16_1000');
+        ok('b332 · Leads: a lead missing from today\'s first file but in the second is NOT new — yesterday\'s record is kept for the day (it used to be wiped); the next day the keep is ignored, so a lead that really went away comes back as new; with no keep the lead map is exactly what it was',
+          [Object.keys(base1).join(','),JSON.stringify(keep),'B' in old2,JSON.stringify(base2.B),JSON.stringify(base2.A),JSON.stringify(nm2.B.prev),JSON.stringify(nm2.A.prev),Object.keys(keep2.map).length,
+            'B' in base3,JSON.stringify(base3.A),nm3.B.prev,JSON.stringify(plain)===JSON.stringify(nm),/dayBaseline\(leadMap\(cur\.key\),leadKeep\(cur\.key\)\)/.test(String(window.run)),/leadKeepSave\(cur\.key,nextLeadKeep\(/.test(String(logRun))],
+          ['A,B','{"day":"2026-11-16","map":{"B":{"state":{"score":2},"stamp":"2026-11-15_0900"}}}',false,'{"state":{"score":2},"stamp":"2026-11-15_0900"}','{"state":{"score":1},"stamp":"2026-11-15_0900"}',
+            '{"state":{"score":2},"stamp":"2026-11-15_0900"}','{"state":{"score":1},"stamp":"2026-11-15_0900"}',0,false,'{"state":{"score":3},"stamp":"2026-11-16_1000"}',null,true,true,true]);}
+      /* bug 6 — yesterday's file left in an open tab is taken out, not mixed in; on the same day the newer row wins */
+      {const T=(d,h,m)=>new Date(2026,10,d,h,m).getTime();
+        const M=mergeNewer([{ASIN:'A',p:1},{ASIN:'B',p:1}],[{ASIN:'B',p:2},{ASIN:'C',p:2}]);
+        ok('b332 · Files: a file loaded on an earlier day is replaced, never merged (3 hours\' grace so a run that crosses midnight still joins up); same-day parts still merge and the newer row wins for a product in both',
+          [filesStale(0,T(16,9,0)),filesStale(T(15,10,0),T(16,9,0)),filesStale(T(15,23,30),T(16,0,30)),filesStale(T(16,8,0),T(16,16,0)),filesStale(T(15,22,0),T(16,1,30)),filesStale(T(16,9,0),T(16,8,0)),
+            M.rows.map(r=>r.ASIN+r.p).join(','),M.add.length,mergeNewer([],[{ASIN:'A',p:1}]).rows.length,
+            /filesStale\(filesAt,Date\.now\(\)\)/.test(String(handleFilesRaw)),/mergeNewer\(files\.one\.rows,f\.rows\)/.test(String(handleFilesRaw)),/filesAt=0/.test(String(clearRun))],
+          [false,true,false,false,true,false,'A1,B2,C2',1,1,true,true,true]);}
+      /* bug 7 — an EU price call Keepa did not answer is "not checked", never remembered as "no Amazon offer" */
+      {const o={kcGet:window.kcGet,kcPut:window.kcPut,fetch:window.fetch},keep=lsRaw(EUP_KEY);let got=[];const puts=[];const two=['B0EUFAIL01','B0EUFAIL02'];
+        try{lsRemove(EUP_KEY);window.kcGet=async()=>({});window.kcPut=(dom,products)=>{puts.push((products||[]).length);};
+          window.fetch=async()=>({ok:false,status:429,json:async()=>({error:{message:'429'}})});
+          let R=await eupFetch(two,['DE'],null,0.86);got.push(R.DE.rows.length,R.DE.notChecked,eupNotChecked(R),/ · 2 not checked$/.test(R.DE.name),eupCost(two,['DE']),puts.length);
+          window.fetch=async()=>{throw new Error('offline');};
+          R=await eupFetch(two,['DE'],null,0.86);got.push(R.DE.notChecked,eupCost(two,['DE']));
+          window.fetch=async()=>({ok:true,json:async()=>({tokensLeft:0})});   /* an answer with no product list is not an answer */
+          R=await eupFetch(two,['DE'],null,0.86);got.push(R.DE.notChecked,eupCost(two,['DE']));
+          window.fetch=async()=>({ok:true,json:async()=>({products:[{asin:'B0EUFAIL01',stats:{current:[2999]}}]})});   /* a real answer: one priced, one truly not sold by Amazon */
+          R=await eupFetch(two,['DE'],null,0.86);got.push(R.DE.rows.length,R.DE.notChecked,/not checked/.test(R.DE.name),eupCost(two,['DE']));
+          got.push(eupAnswered(true,{products:[]}),eupAnswered(undefined,{products:[{}]}),eupAnswered(false,{products:[]}),eupAnswered(true,null),eupAnswered(true,{error:'x',products:[]}),eupAnswered(true,{tokensLeft:0}));}
+        finally{Object.assign(window,o);if(keep==null)lsRemove(EUP_KEY);else lsRawSet(EUP_KEY,keep);}
+        ok('b332 · EU prices: a refused call (429), no internet, or an answer with no product list leaves the products NOT CHECKED — nothing is cached, the file says "2 not checked", and pressing again asks again; a real answer is cached as before (priced, or truly no Amazon offer)',
+          got,[0,2,2,true,2,0,2,2,2,2,1,0,false,0,true,true,false,false,false,false]);}
+      /* bug 8 — Run via Keepa: the real list is priced exactly before it is bought, and no balance = no run */
+      ok('b332 · Run via Keepa: the exact cost of the real list (0 / 1 / 6 a product + missing EU prices) is checked against the 250 floor — when it does not fit, the first N that do are offered; a clearly higher cost than the box said is asked again; a balance that cannot be read stops the run; the box\'s wording no longer crashes the run',
+        [JSON.stringify(apiFit([6,6,1,0,6],1000,250)),JSON.stringify(apiFit([6,6,6,6],262,250)),JSON.stringify(apiFit([6,6],262,250)),JSON.stringify(apiFit([6],null,250)),JSON.stringify(apiFit([],500,250)),
+          apiOverQuote(700,600),apiOverQuote(640,600),apiOverQuote(20,1),apiOverQuote(600,600),
+          /const sample=c\.asinList\|\|\[\],plan=apiPlan\(cache,2,sample,now\)/.test(String(apiRunSource)),(String(apiRunSource).match(/if\(left==null\)\{toast\(API_BLIND,true\);return;\}/g)||[]).length,(String(apiRunStorefront).match(/if\(left==null\)\{toast\(API_BLIND,true\);return;\}/g)||[]).length,
+          /apiFit\(L\.asins\.map\(/.test(String(apiRunSource))&&String(apiRunSource).indexOf('apiFit(L.asins.map(')<String(apiRunSource).indexOf('await apiRows('),/left==null\|\|left-cost<API_FLOOR/.test(String(apiRunSource))],
+        ['{"cost":19,"n":5,"costN":19,"fits":true}','{"cost":24,"n":2,"costN":12,"fits":false}','{"cost":12,"n":2,"costN":12,"fits":true}','{"cost":6,"n":0,"costN":0,"fits":false}','{"cost":0,"n":0,"costN":0,"fits":true}',
+          true,false,false,false,true,1,1,true,true]);
+      /* bugs 9, 10, 11 */
+      ok('b332 · Storefront audit: "Still a lead today?" cannot be pressed twice while it is checking (it paid twice)',
+        [/if\(audState\.nowBusy\)return;/.test(String(auNowCheck)),/audState\.nowBusy=true;try\{/.test(String(auNowCheck)),/finally\{audState\.nowBusy=false;\}/.test(String(auNowCheck))],[true,true,true]);
+      {const fromWas=lsRaw(AUD_FROM);let got=[];
+        try{lsRemove(AUD_FROM);got.push(audFromDay(),audOldFrom({seller:'ZZ332X'}),audOldFrom(null));
+          lsSet(AUD_FROM,{map:{ZZ332X:'2026-09-10',ZZ332Y:'2026-08-01'}});got.push(audOldFrom({seller:'ZZ332X'}),audOldFrom({id:'ZZ332Y'}));
+          got.push(/OLD DATA \(before \$\{auUk\(audOldFrom\(sh\)\)\}\)/.test(String(auRenderOne)),/before 7 Oct/.test(String(auRenderOne)));
+        }finally{fromWas==null?lsRemove(AUD_FROM):lsRawSet(AUD_FROM,fromWas);}
+        ok('b332 · Storefront audit: the shelf header\'s "OLD DATA (before …)" shows the real cut-off — 30 days back, or that shelf\'s own start day when it is later — not a fixed "7 Oct"',
+          got,['2026-08-25','2026-08-25','2026-08-25','2026-09-10','2026-08-25',true,false]);}
+      ok('b332 · Shared storage: a change the server refuses three times is counted and shown in red (header pill + Settings line + a message) instead of only a console line',
+        [cloudDropText(1),cloudDropText(2),Array.isArray(cloud.dropped),/cloudDropNote\(x,e\.message\)/.test(String(cloudFlush)),/cloud\.dropped&&cloud\.dropped\.length\)\{cls='bad'/.test(String(paintCloud)),/cloud\.dropped\.push\(/.test(String(cloudDropNote))],
+        ['1 change NOT saved for everyone','2 changes NOT saved for everyone',true,true,true,true]);
+      /* ============ b333 (16 Nov) ============ */
+      /* L · N · S — the thin lines and the Today panel (pure parts) */
+      {const f1=foldWrite({},'Jack','kpis',true),f2=foldWrite(f1,'Mera','how',true),f3=foldWrite(f2,'Jack','kpis',false);
+        const items=[{key:'a',name:'A',due:true,kind:'today'},{key:'b',name:'B',due:true,kind:'late',late:3},{key:'c',name:'C',part:true},{key:'d',name:'D',due:true,kind:'first'},
+          {key:'e',name:'E',doneToday:true,doneAt:'2026-11-16T10:00:00Z'},{key:'f',name:'F',doneToday:true,doneAt:'2026-11-16T12:00:00Z',rev:4},{key:'g',name:'G',auto:'ready'}];
+        const M=todayModel(items,2);
+        ok('b333 L/N/S · a thin line opens per person and closed is the default; the week line and the run line read in plain numbers; Today lists started-not-finished first, then the latest, then today, then never run, shows the first few and counts the rest',
+          [foldRead({},'Jack','kpis'),foldRead(f1,'Jack','kpis'),foldRead(f1,'Mera','kpis'),f1.Jack===undefined?null:JSON.stringify(f1),JSON.stringify(f3),
+           weekLineText({rowsIn:1200,leads:1,hot:2,tr:5,due:3}),sumLineText(170,80,24),sumLineText(10,1,0),
+           M.due.n,M.due.show.map(x=>x.key),M.due.more,M.done.show.map(x=>x.key),M.review.show.map(x=>x.key),M.revTotal,M.lists.n],
+          [false,true,false,'{"Jack":{"kpis":1}}','{"Mera":{"how":1}}','1,200 through the rules · 1 lead · 2 bangers · 5 to review · 3 due','170 in · 80 leads · 24 to review','10 in · 1 lead',
+           4,['c','b'],2,['f','e'],['f'],4,1]);}
+      {const meWas=me();let got=[];
+        try{lsSet(ME_KEY,'Mera');const it=todayItems();renderToday();const tp=$('#todayPanel');
+          got.push([it.length>0,it.every(x=>!x.doneBy||x.doneBy==='Mera'),it.every(x=>!x.partBy||x.partBy==='Mera'),!!tp&&!/Suz/.test(tp.textContent),!!tp&&/your filters/.test(tp.textContent)]);
+          lsSet(ME_KEY,'Jack');renderToday();got.push([/everyone’s filters/.test($('#todayPanel').textContent),todayItems().length>=it.length]);}
+        finally{lsSet(ME_KEY,meWas||'Jack');renderToday();}
+        ok('b333 S · Today: a VA sees only the filters she may open and never another person’s name; Jack sees everyone’s',got,[[true,true,true,true,true],[true,true]]);}
+      /* audit 1–4: nothing stores a Missed it by itself any more; the put-back takes only the page’s own rows */
+      {const meWas=me();let got=[];
+        try{lsSet(ME_KEY,'Jack');const V={A1:{asin:'A1',id:'s|A1',who:'auto',verdict:'missed'},A2:{asin:'A2',id:'s|A2',who:'Jack',verdict:'missed'},A3:{asin:'A3',id:'s|A3',who:'auto',verdict:'missed'}};
+          const pl=audAutoBackPlan(V);got.push([typeof audAutoMissed,pl.rows.map(r=>r.asin),Object.keys(pl.left),pl.ops]);
+          lsSet(ME_KEY,'Mera');got.push([audAutoRows(),auAutoBackBar(),audAutoBack(),audAutoBackUndo()]);}
+        finally{lsSet(ME_KEY,meWas||'Jack');}
+        ok('b333 audit · the automatic Missed it is gone; "Put back" removes only the rows the page marked (who auto), a Jack row stays, one delete per 60 ids; a VA never gets the button or the action',
+          got,[['undefined',['A1','A3'],['A2'],[{op:'del',table:'src_audit_verdicts',ids:['s|A1','s|A3']}]],[[],'',null,0]]);}
+      /* VAT 5–7: baby feeding bottles 0%, their accessories 20%, the saved word list is added to the built-in one */
+      {const v0=lsRaw(VAT0_KEY);let got=[];
+        try{lsRemove(VAT0_KEY);const r=t=>vatFor({Title:t,Brand:'X'},null);const m=r('MAM Easy Start Anti-Colic Bottle 260ml, baby bottle');
+          got.push([m.rate,/baby bottle/.test(m.why),r('Tommee Tippee bottle warmer for baby bottles').rate,r('Chilly’s water bottle 500ml').rate,r('NUK spare teats for baby bottles').rate,r('Philips Avent Natural Response teat 2 pack').rate]);
+          got.push([vat0Union(['Tea','x '],['tea','coffee'])]);
+          const stored={zero:['tea'],not:['machine']};lsSet(VAT0_KEY,stored);const w=vat0Words();
+          got.push([w.zero.includes('baby bottle'),w.zero.includes('tea'),w.not.includes('syrup'),lsRaw(VAT0_KEY)===JSON.stringify(stored)]);
+          got.push([/r\.vat/.test(String(oaHits)),/vat/.test(String(audNowRow))]);}
+        finally{if(v0==null)lsRemove(VAT0_KEY);else lsRawSet(VAT0_KEY,v0);}
+        ok('b333 VAT · a baby feeding bottle is 0% (assumed, confirm on the row); a bottle warmer, a water bottle, spare teats and a "teat" stay 20%; a saved word list is ADDED to the built-in one and never rewritten; the audit and OA check work at the product’s own VAT',
+          got,[[0,true,0.2,0.2,0.2,0.2],[['tea','x','coffee']],[true,true,true,true],[true,true]]);}
+      /* 8 + 10 · Export for Claude / Drop Claude’s results (Jack only) */
+      {const meWas=me(),k0=lsRaw(CLAUDE_KEY),v0=lsRaw(AUD.V),ob0=outbox().length,cq0=window.cloudQueue;let got=[];
+        try{lsSet(ME_KEY,'Jack');const H=CLAUDE_HDR.join(',');
+          const txt=H+'\n'+['B0CLTEST01,OA lead,John Lewis,https://www.johnlewis.com/p/1,94,0,4%,90.24,140,21.97,24.3,2026-11-16T15:40:00Z,John Lewis,',
+            'B0CLTEST02,Too dear,John Lewis,,120,,,,,,,2026-11-16T15:41:00Z,,','B0CLTEST03,Not found,,,,,,,,,,2026-11-16T15:42:00Z,"Argos, Currys, Google Shopping",',
+            'B0CLTEST04,Check,Currys,,50,,,,,,,2026-11-16T15:43:00Z,,colour not sure','notanasin,OA lead,,,,,,,,,,,,'].join('\n');
+          const P=claudeParse('﻿'+txt),bad=claudeParse('ASIN,Result,Shop\nB0CLTEST01,OA lead,X');
+          got.push([P.ok,P.rows.length,P.skipped,P.rows[0].af,P.rows[0].roi,P.rows[2].w,bad.ok,/^That is not a Claude results file\. Its first row has to be exactly: ASIN,Result,Shop,Link/.test(bad.msg)]);
+          const old={B0CLTEST01:{r:'dear',at:'2026-11-17T09:00:00.000Z'}},mg=claudeMerge(old,P.rows),mg2=claudeMerge({B0CLTEST01:{r:'dear',at:'2026-11-15T09:00:00.000Z'}},P.rows);
+          got.push([mg.map.B0CLTEST01.r,mg2.map.B0CLTEST01.r,claudeToastText({n:37,lead:4,dear:21,none:10,check:2})]);
+          got.push([claudeLineText(P.rows[0]),claudeLineText(P.rows[1],104.16),claudeLineText(P.rows[2]),claudeLineText(P.rows[3]),claudeSugWhy(P.rows[0]),claudeSugWhy(P.rows[1])]);
+          /* the export: todo rows in, judged / joint / Old out, ticked = Claude-checked ones left out */
+          const sh=[{name:'R1',seller:'S1',items:[{a:'B0EXP00001',first:'2026-11-01'},{a:'B0EXP00002'},{a:'B0EXP00003'},{a:'B0EXP00004'},{a:'B0EXP00005'}]}];
+          const X={status:(s,it)=>it.a==='B0EXP00002'?'missed':it.a==='B0EXP00003'?'joint':'todo',old:it=>it.a==='B0EXP00004',prod:()=>({}),now:()=>null,ids:()=>({}),oa:()=>null,eu:()=>null,why:()=>null,sug:()=>null,claude:a=>a==='B0EXP00005'?{r:'dear',at:'2026-11-16T10:00:00.000Z'}:null};
+          const e1=claudeExportBuild(sh,X,{}),e2=claudeExportBuild(sh,X,{skipChecked:true}),csv=claudeCsv(e1.hdr,e1.rows);
+          got.push([e1.rows.map(r=>r[3]),e1.rows[1][24],e2.rows.map(r=>r[3]),e2.left,e1.noSell.length,e1.hdr.join(',')===CLAUDE_EXP_HDR.join(','),e1.hdr.length,e1.hdr.slice(-2),csv.slice(0,12),claudeFileName('Second Rival & Co','2026-11-16'),claudeFileName('','2026-11-16')]);
+          /* the drop: kept, shared as ONE settings row, never a verdict; the suggestion turns to Missed it only for an OA lead */
+          const Q=[];window.cloudQueue=(t,op,p)=>Q.push([t,op,p]);lsRemove(CLAUDE_KEY);CLAUDE_C=null;const va0=JSON.stringify(audAll());
+          claudeTakeText(txt);const s1=audSuggest({a:'B0CLTEST01',first:'2026-11-10'}),s2=audSuggest({a:'B0CLTEST02',first:'2026-11-10'});
+          got.push([Object.keys(claudeAll()).length,Q.length,Q[0]&&Q[0][0],Q[0]&&Q[0][1],Q[0]&&Q[0][2][0].key,JSON.stringify(audAll())===va0,outbox().length===ob0,s1&&s1.code,s1&&s1.why,!(s2&&/Claude/.test(s2.why||''))]);
+          /* a VA: nothing to see, nothing taken */
+          lsSet(ME_KEY,'Mera');CLAUDE_C=null;const kv=lsRaw(CLAUDE_KEY);
+          got.push([Object.keys(claudeAll()).length,claudeOf('B0CLTEST01'),claudeTakeText(txt),lsRaw(CLAUDE_KEY)===kv,Q.length,audSuggest({a:'B0CLTEST01'}),claudeRowLine('B0CLTEST01'),claudeHeadBtns()]);}
+        finally{window.cloudQueue=cq0;lsSet(ME_KEY,meWas||'Jack');if(k0==null)lsRemove(CLAUDE_KEY);else lsRawSet(CLAUDE_KEY,k0);CLAUDE_C=null;if(v0==null)lsRemove(AUD.V);else lsRawSet(AUD.V,v0);}
+        ok('b333 Claude · the results file must start with the fixed header (a wrong one is refused in plain words); newest wins per ASIN; the row line and toast read as agreed; the export holds only what is left to judge, one row per ASIN, and leaves out what Claude already checked when ticked; a drop stores no verdict, queues ONE settings row "claude-oa" and nothing else; only an OA lead turns the suggestion to Missed it; a VA sees and takes nothing',
+          got,[[true,4,1,90.24,24.3,'Argos, Currys, Google Shopping',false,true],['dear','lead','37 results in: 4 OA leads · 21 too dear · 10 not found · 2 check'],
+            ['CLAUDE · 16 Nov 15:40 · OA lead · John Lewis £94 → £90.24 after 4% · £21.97 · 24.3%','CLAUDE · 16 Nov · too dear — best John Lewis £120 (most you can pay £104.16)','CLAUDE · 16 Nov · not found — looked: Argos, Currys, Google Shopping','CLAUDE · 16 Nov · check — colour not sure','Claude found it at John Lewis £90.24 · 24.3%',''],
+            [['B0EXP00001','B0EXP00005'],'too dear',['B0EXP00001'],1,2,true,26,['Claude result','Claude checked at'],'﻿"Rival(s)",','SOURCING-SUITE-for-Claude-Second-Rival-Co-2026-11-16.csv','SOURCING-SUITE-for-Claude-all-rivals-2026-11-16.csv'],
+            [4,1,'src_settings','upsert','claude-oa',true,true,'missed','Claude found it at John Lewis £90.24 · 24.3%',true],
+            [0,null,false,true,1,null,'','']]);}
+      /* Q · nothing on Brands / Filters under 11 px outside the table cells */
+      {let got=[];try{document.querySelector('.pagebtn[data-page="page-brands"]').click();backToList();renderList();
+          const small=[...document.querySelectorAll('#page-brands *')].filter(el=>el.offsetParent&&!el.closest('td.ownc, td.stc, .flags')&&[...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())&&parseFloat(getComputedStyle(el).fontSize)<11);
+          const sizes=new Set([...document.querySelectorAll('#page-brands *')].filter(el=>el.offsetParent&&!el.closest('td')&&[...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())).map(el=>getComputedStyle(el).fontSize));
+          got=[small.length,sizes.size<=6];}catch(e){got=[String(e)];}
+        ok('b333 Q · Brands / Filters: no visible text under 11 px outside the table cells, and no more than six text sizes',got,[0,true]);}
     }catch(e){R.push({name:'checks crashed: '+e.message,pass:false,got:String(e.stack||e),want:''});}
     finally{unpin();}
     render(performance.now()-t0);return R;}

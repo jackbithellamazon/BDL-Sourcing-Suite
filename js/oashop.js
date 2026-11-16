@@ -4,7 +4,7 @@
    A rival product the still-a-lead check says is NOT a lead on Amazon UK, but would be under £X, gets an OA line. Jack's page only.
      · Free, always: the most each shop on the discount list (Settings) can charge and still make 10% once the code is off,
        plus Google ↗ — Google Shopping for the barcode when Keepa gave us one (the exact product), the title when not.
-     · Automatic, once the bdl-sourcing Worker has a Google Shopping key (Worker v3, secret SERPER_API_KEY): the still-a-lead
+     · Automatic, once the keepa Worker (its /src box, b328) has a Google Shopping key (secret SERPER_API_KEY): the still-a-lead
        button also reads Google Shopping for those rows, keeps real UK shops only (no eBay / OnBuy / Amazon, nothing used or
        refurbished), takes the codes off and says ★ OA lead, OA lead? (check it) or how far over the cheapest shop is.
        One search a product (two when the barcode finds nothing), only when Jack presses a button, reused for 24 hours.
@@ -79,7 +79,7 @@ function oaHits(a,items){const r=audNowAll()[a]||{},p=audState.prod[a]||{},ids=o
     const e=oaShopOf(src),del=oaPrice(x.delivery)||0,ct=oaCompact(t);
     const pct=e?Math.round((discRate(e,pr)||0)*10)/10:0,c=Math.round((pr*(1-pct/100)+del)*100)/100;
     const chk=!!((bw.length>=2&&!ct.includes(bw))||(models.length&&!models.some(m=>ct.includes(m))));
-    const pf=r.sell&&r.fba!=null&&typeof brProfit==='function'?brProfit(r.sell,c,r.ref,r.fba,r.kg||0,null,''):null;
+    const pf=r.sell&&r.fba!=null&&typeof brProfit==='function'?brProfit(r.sell,c,r.ref,r.fba,r.kg||0,r.vat==null?null:r.vat,''):null;   /* b333: the product's own VAT (saved on the row by audNowRow); older rows keep 20% */
     const h={s:e?e.name:src.slice(0,40),on:!!e,pr,d:del,pct,c,p:pf?pf[0]:null,roi:pf?pf[1]:null,chk,l:String(x.link||x.product_link||'').slice(0,300)};
     const k=h.s.toLowerCase(),o=by[k];if(!o||(o.chk&&!h.chk)||(o.chk===h.chk&&h.c<o.c))by[k]=h;});
   return Object.values(by).sort((x,y)=>(x.chk-y.chk)||(x.c-y.c)).slice(0,5).map((h,i)=>i<2?h:Object.assign({},h,{l:''}));}
@@ -97,7 +97,7 @@ function oaNeed(asins){return(asins||[]).filter(a=>oaWants(a)&&!oaFresh(a));}
 async function oaReady(){if(OA.ready!=null)return OA.ready;try{const j=await (await fetch(WORKER+'/shop?ping=1')).json();OA.ready=!!(j&&j.ok&&j.shop);}catch(e){OA.ready=false;}return OA.ready;}
 function oaPing(){if(OA.ready!=null||OA.pinging||!oaJack())return;OA.pinging=true;
   oaReady().then(v=>{OA.pinging=false;if(v&&typeof renderAudit==='function'&&typeof auView!=='undefined'&&auView.shelf)renderAudit();});}
-async function oaFetch(q){try{const j=await (await fetch(WORKER+'/shop?q='+encodeURIComponent(q))).json();if(!j||!j.ok)return null;return Array.isArray(j.items)?j.items:[];}catch(e){return null;}}
+async function oaFetch(q){try{const j=await (await fetch(WORKER+'/shop?app=sourcing&q='+encodeURIComponent(q))).json();if(!j||!j.ok)return null;return Array.isArray(j.items)?j.items:[];}catch(e){return null;}}
 async function oaCheck(asins,onStep){const list=oaNeed(asins);if(!list.length)return{n:0,s:0,lead:0};if(!oaJack()||!(await oaReady()))return{n:0,s:0,lead:0,off:true};
   OA.busy=true;let n=0,s=0,fail=0;const m=Object.assign({},oaShopAll());
   const one=async a=>{const ids=oaIdsAll()[a]||{},tq=oaTitleQ((audState.prod[a]||{}).title);let by=ids.e?'ean':'title',q=ids.e||tq;if(!q)return;

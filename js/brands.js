@@ -115,6 +115,7 @@ function renderKpis(){const all=listSources(),keys=new Set(visibleSources().map(
   const dueL=all.filter(s=>dueState(s).due),late=dueL.filter(s=>dueState(s).kind==='late').length,first=dueL.filter(s=>dueState(s).kind==='first').length,dToday=dueL.length-late-first;
   const wv=Object.values(V).filter(x=>x.at&&new Date(x.at).getTime()>=weekAgo());const yes=wv.filter(x=>x.v==='Yes').length,no=wv.filter(x=>x.v==='No').length,maybe=wv.filter(x=>x.v==='Maybe').length;
   const live=all.filter(s=>s.status!=='paused');const tr=live.reduce((n,s)=>n+toReviewCount(runLast(s.key)),0),trSrc=live.filter(s=>toReviewCount(runLast(s.key))>0).length;
+  window.KPI_NOW={rowsIn,leads:seen.size,hot,tr,due,runs:wk.length};   /* b333: the thin "This week" line above the list reads these — same counts as the tiles */
   const k=(v,l,sub,cls,ic)=>`<div class="kpi"><span class="ki ${cls||''}">${ic}</span><div><div class="kv">${v}</div><div class="kl">${l}</div>${sub?`<div class="ks">${sub}</div>`:''}</div></div>`;
   $('#bKpis').innerHTML=`<div class="kcap">This week · what actually happened</div>`
     +k(rowsIn.toLocaleString(),'ASINs put through the rules',`${wk.length} run${wk.length===1?'':'s'}`,'',ICONS.hist)
@@ -137,7 +138,7 @@ function listSorted(){const L=srcAll();const last=s=>runLast(s.key);const t=s=>{
 function segCounts(){const all=listSources();const c={due:0,mine:0,all:all.length,active:0,paused:0};
   all.forEach(s=>{if(dueState(s).due)c.due++;if(s.status==='paused')c.paused++;else c.active++;if(ownsIt(s,me())||(lockFresh(s)&&ownLock(s)))c.mine++;});
   document.querySelectorAll('#lSeg button').forEach(b=>{const n=b.querySelector('b');if(n)n.textContent=c[b.dataset.seg]||0;});
-  const nb=$('#lvnBrands'),nr=$('#lvnRuns'),nl=$('#lvnLeads');if(nb)nb.textContent=all.length;if(nr)nr.textContent=runsAll().length;
+  const nb=$('#lvnBrands'),nr=$('#lvnRuns'),nl=$('#lvnLeads');if(nb)nb.textContent=all.length;if(nr)nr.textContent=runsVisible().length;   /* b332 */
   if(nl){let n=0;const LA=leadAll();Object.values(LA).forEach(m=>n+=Object.keys(m||{}).length);nl.textContent=n.toLocaleString();}}
 /* b60 (Jack: "needs to be smooth and easy for my VAs"): the next thing to run, for whoever is signed in */
 /* b154: unowned is Jack's until he assigns it (the visibility rule), so on Jack's screen it counts as his — not "for others" */
@@ -156,8 +157,10 @@ function renderYourDay(){const el=$('#yourDay');if(!el)return;const m=me();if(!m
   el.innerHTML=lateH+`<div class="yd"><span class="ydn">${whoChip(m)}</span><span class="ydt">${mine.length?(due.length?`<b>${due.length}</b> of your ${mine.length} ${what} ${due.length===1?'is':'are'} due${(()=>{const l=due.filter(s=>dueState(s).kind==='late').length;return l?` · <b class="ydlate">${l} late</b>`:'';})()}`:`all ${mine.length} of your ${what} are done for today ✓`):`nothing is assigned to you yet`}${tr?` · <b>${tr.toLocaleString()}</b> lead${tr===1?'':'s'} waiting for a look`:''}${!due.length&&dueAny?` · ${dueAny} due for others`:''}</span>
     ${nx?`<button class="btn primary sm" type="button" data-start="${nx.key}">${ICONS.run}Start with ${escapeHtml(nx.name)}${!ownsIt(nx,m)?' ('+((!nx.owner||nx.owner===NO_OWNER)?'unassigned':(nx.owner==='VAs'?'VAs':escapeHtml(nx.owner)+"'s"))+')':''}</button>`:''}</div>`;el.hidden=false;}
 const HOWTO_KEY='bdl-sourcing-howto-hidden';
-function renderHowTo(){const el=$('#howTo');if(!el)return;el.hidden=!!lsGet(HOWTO_KEY,false);}
-function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay();renderHowTo();const q=lview.q.toLowerCase();
+/* b333 (Jack, 16 Nov: "L yes"): the guide and the week tiles fold into one thin line (today.js) — closed until that person opens them */
+function renderHowTo(){if(typeof renderListFold==='function'){renderListFold();return;}const el=$('#howTo');if(!el)return;el.hidden=!!lsGet(HOWTO_KEY,false);}
+function renderList(){if(typeof autoWarm==='function')autoWarm(renderList);   /* b330: automated filters — READY badge, Jack re-saves stale searches */
+  renderKpis();renderApprovals();segCounts();renderYourDay();renderHowTo();if(typeof renderToday==='function')renderToday();const q=lview.q.toLowerCase();
   const rows=listSorted().filter(s=>{
     if(!canSee(s))return false;   /* b132: a VA sees her own sources and nobody else's */
     if(s.drop)return false;   /* b273: a Drop & check is not a filter */
@@ -180,11 +183,11 @@ function renderList(){renderKpis();renderApprovals();segCounts();renderYourDay()
     const lastOk=typeof runLastOk==='function'?runLastOk(s.key):last,gone12=typeof runStale==='function'&&runStale(last);   /* b260: unfinished for over 12 hours = it does not count */
     const stK=stK0==='done'&&last.needDone&&!last.done&&!gone12?'part':stK0;   /* b244: run in, Done not pressed */
     return`<tr class="st-${stK} ${s.status==='paused'?'paused':(d.due?'isdue is'+d.kind:d.cls==='done'?'isdone':'')}${kpToday&&d.cls!=='done'?' inkeepa':opToday&&d.cls!=='done'?' isopened':''}" data-key="${s.key}">
-      <td class="namec"><div class="brandcell">${avatar(s)}<div class="ntext"><div class="nline"><span class="bname">${escapeHtml(s.name)}</span><span class="rl r${s.rule}" title="${RULE_LABEL[s.rule]||''}">Rule ${s.rule}</span></div><span class="note" title="${escapeHtml(s.note||'')}">${escapeHtml(s.note||(s.type==='filter'?'Saved Keepa filter':'Brand run · UK sell side'))}</span>${typeof primeNoteChip==='function'?primeNoteChip(s):''}</div></div></td>
+      <td class="namec"><div class="brandcell">${avatar(s)}<div class="ntext"><div class="nline"><span class="bname">${escapeHtml(s.name)}</span><span class="rl r${s.rule}" title="${RULE_LABEL[s.rule]||''}">Rule ${s.rule}</span></div><span class="note" title="${escapeHtml(s.note||'')}">${escapeHtml(s.note||(s.type==='filter'?'Saved Keepa filter':'Brand run · UK sell side'))}</span>${typeof autoBadge==='function'?autoBadge(s):''}</div></div></td>
       <td class="ownc">${isJack()?`<select class="inl ownsel ${ownCls(s.owner||NO_OWNER)}" data-key="${s.key}" title="Who runs this — saves straight away">${OWNER_OPTS.map(u=>`<option${(s.owner||'VAs')===u?' selected':''}>${u}</option>`).join('')}</select>`:whoChip(s.owner||'VAs')}</td>
       <td><div class="flags" title="${s.markets.join(' · ')}">${s.markets.map(m=>`<span class="f">${FLAG[m]}</span>`).join('')}</div></td>
       <td class="stc">${isJack()?`<select class="inl stsel s-${s.status}" data-key="${s.key}" title="Active runs on its cadence · Testing = trial · Paused = off the list — saves straight away">${Object.entries(STATUS_LABEL).map(([k,l])=>`<option value="${k}"${s.status===k?' selected':''}>${l}</option>`).join('')}</select><select class="inl cadsel" data-key="${s.key}" title="How often it should run — saves straight away">${Object.entries(CADENCE_LABEL).map(([k,l])=>`<option value="${k}"${s.cadence===k?' selected':''}>${l}</option>`).join('')}</select>`:`<span class="st ${s.status}"><i></i>${STATUS_LABEL[s.status]||s.status}</span><span class="l2">${CADENCE_LABEL[s.cadence]||s.cadence}</span>`}${lk?`<div class="inprog" title="${mine?'You have this open':escapeHtml(lk.who)+' opened this '+fmtWhen(lk.at)+' and is working through it'}"><i></i>${mine?'you':escapeHtml(lk.who)} on it · ${new Date(lk.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
-      <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` ${whoChip(last.who)}`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span>${(()=>{const w=typeof writtenUp==='function'?writtenUp(last):null;return w&&w.n?` · <b class="wup" title="${w.n} of this run's ${last.leads} leads are on ${escapeHtml(w.who.join(' / ')||'the')} lead sheet">${w.n} written up</b>`:'';})()}</span>${gone12?`<span class="opened kp stale" title="The files went in ${escapeHtml(fmtWhen(last.at))} but nobody pressed ✓ Done within ${STALE_H} hours, so this run does not count. Run the filter again with today's export.">✕ not finished within ${STALE_H} hours — <b>it does not count, run it again</b></span>`:''}`:`<span class="l1 dim">Not run yet</span>`}${(()=>{const w=isJack()&&typeof weekLeads==='function'?weekLeads(s.key):{n:0};   /* Jack only */return w.n?`<span class="wkleads" title="${w.n} product${w.n===1?'':'s'} this filter found went on the lead sheet (or got a Yes) in the last 7 days: ${escapeHtml(w.asins.join(', '))}">${w.n} on the lead sheet this week${w.who.length?' · '+escapeHtml(w.who.join(' + ')):''}</span>`:'';})()}${kp?(()=>{   /* b243 (Jack, 3 Oct: "what does In Keepa mean — are they both logged in?"): it is a PRESS of the Open in Keepa button, nothing more. Under 2 hours old it may still be in hand; after that it says what happened — she opened Keepa and no file came back. */
+      <td class="lastc" title="${last?`${last.leads} leads · ${last.new} new · ${last.better} better · ${last.worse} worse · ${last.gone} gone`:''}">${last?`<span class="l1">${fmtWhen(last.at)}${last.who?` ${whoChip(last.who)}`:''}</span><span class="l2">${last.leads} leads · <span class="tr ${tr?'':'zero'}">${tr?tr+' to review':'all reviewed'}</span>${(()=>{const w=typeof writtenUp==='function'?writtenUp(last):null;return w&&w.n?` · <b class="wup" title="${w.n} of this run's ${last.leads} leads are on ${escapeHtml(w.who.join(' / ')||'the')} lead sheet">${w.n} written up</b>`:'';})()}</span>${gone12?`<span class="opened kp stale" title="The files went in ${escapeHtml(fmtWhen(last.at))} but nobody pressed ✓ Done within ${STALE_H} hours, so this run does not count. Run the filter again with today's export.">✕ not finished within ${STALE_H} hours — <b>it does not count, run it again</b></span>`:''}`:`<span class="l1 dim" title="Not run yet">—</span>`}${(()=>{const w=isJack()&&typeof weekLeads==='function'?weekLeads(s.key):{n:0};   /* Jack only */return w.n?`<span class="wkleads" title="${w.n} product${w.n===1?'':'s'} this filter found went on the lead sheet (or got a Yes) in the last 7 days: ${escapeHtml(w.asins.join(', '))}">${w.n} on the lead sheet this week${w.who.length?' · '+escapeHtml(w.who.join(' + ')):''}</span>`:'';})()}${kp?(()=>{   /* b243 (Jack, 3 Oct: "what does In Keepa mean — are they both logged in?"): it is a PRESS of the Open in Keepa button, nothing more. Under 2 hours old it may still be in hand; after that it says what happened — she opened Keepa and no file came back. */
         const fresh=Date.now()-new Date(kp.at).getTime()<2*3600e3,when=fmtWhen(kp.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase());
         return fresh?`<span class="opened kp" title="${escapeHtml(kp.who)} pressed the Open in Keepa button (${escapeHtml(kp.mk||'')}) ${fmtWhen(kp.at)}. That is all this means — a button press, not a login. It goes green once the export is dropped back in."><i></i>${whoChip(kp.who)} pressed Open in Keepa ${when} · <b>${escapeHtml(kp.mk||'')}</b> · file not back yet</span>`
           :`<span class="opened kp stale" title="${escapeHtml(kp.who)} pressed the Open in Keepa button (${escapeHtml(kp.mk||'')}) ${fmtWhen(kp.at)} and never dropped the export back in — so no run was saved. Nobody is working on this now.">✕ ${whoChip(kp.who)} opened Keepa ${when} (<b>${escapeHtml(kp.mk||'')}</b>) — <b>no file came back</b></span>`;})():''}${op&&!kp?`<span class="opened" title="${escapeHtml(op.who)} opened this ${fmtWhen(op.at)} but no Keepa export has been dropped in since — so nothing is saved and the row stays late. Drop the export into the run to finish it."><i></i>Opened ${fmtWhen(op.at).replace(/^(Today|Yesterday)/,m=>m.toLowerCase())} · ${whoChip(op.who)} · <b>not run yet — no Keepa file dropped back in</b></span>`:''}</td>
@@ -329,7 +332,9 @@ function openEdit(s){const isNew=!s;s=s||{key:'',name:'',type:'brand',rule:1,mar
     const status=(document.querySelector('input[name=eStatus]:checked')||{}).value||'testing';
     const out=Object.assign({},s,{key,name,type,rule:r,markets,cadence:$('#eCad').value,owner:$('#eOwner').value||'VAs',note:$('#eNote').value.trim(),status,paused:status==='paused',
       brands:type==='brand'?$('#eBrands').value.split(',').map(x=>x.trim()).filter(Boolean):[],link:$('#eLink').value.trim(),link2:$('#eLink2').value.trim(),noBrands:$('#eNoBrands').value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean),noCats:$('#eNoCats').value.split(/\n|;/).map(x=>x.trim().toLowerCase()).filter(Boolean),vat0:type==='filter'&&$('#eVat0').checked});
-    srcSave(out);closeDrawer();renderList();toast(isNew?name+' added — everyone sees it':'Saved for everyone');if(cur&&cur.key===key){cur=out;paintRunHead();paintFloors();renderGuide();}});
+    /* b332: anyone but Jack saving an existing filter sends only what she changed on this form — never her older copy of the rest (Jack's 🌙 Automate, his link…) */
+    const changed=isNew?undefined:['name','type','rule','markets','cadence','owner','note','status','paused','brands','link','link2','noBrands','noCats','vat0'].filter(k=>JSON.stringify(out[k]===undefined?null:out[k])!==JSON.stringify(s[k]===undefined?null:s[k]));
+    srcSave(out,false,changed);closeDrawer();renderList();toast(isNew?name+' added — everyone sees it':'Saved for everyone');if(cur&&cur.key===key){cur=out;paintRunHead();paintFloors();renderGuide();}});
   paint();setTimeout(()=>$('#eName').focus(),50);}
 function openHistory(s){const runs=runsFor(s.key).slice().reverse(),V=verdAll();
   openDrawer(`<h3>${escapeHtml(s.name)} · history</h3><p class="dsub">${runs.length} run${runs.length===1?'':'s'} · shared</p>
@@ -573,6 +578,15 @@ function viewerPartsLeft(){const a=($('#asinBar')||{})._all||[];const P=viewerPa
 /* b215: a second file for the same slot that is mostly NEW products is another part (a Viewer part, or the storefront's 2/3 and 3/3
    buttons — those used to replace each other, so only the last part was ever priced). It joins the first, de-duplicated, the newer row
    winning. A file that is mostly the SAME products is a fresh export of the same list and replaces the old one, as before. */
+/* b332 (16 Nov audit, bug 6): yesterday's file left in an open tab. Today's export used to be merged UNDER it — the old row won for every
+   product in both, so the run was logged as today with yesterday's prices. (a) Files last loaded on an earlier day are taken out when a new
+   file is dropped (3 hours' grace, so a run that crosses midnight still gets its other parts). (b) On a same-day merge the NEWER row wins. */
+let filesAt=0;const FILE_STALE_MS=3*3600e3;
+function filesStale(at,now){return !!at&&now-at>FILE_STALE_MS&&stamp(new Date(at)).slice(0,10)!==stamp(new Date(now)).slice(0,10);}
+function filesLoadedNames(){const n=[];SLOTS.forEach(k=>{if(files[k]&&files[k].name&&!files[k].__alias)n.push(files[k].name);});if(files.one&&files.one.name)n.push(files.one.name);return n;}
+function mergeNewer(oldRows,newRows){const by=new Map();(newRows||[]).forEach(r=>{const a=(r.ASIN||'').trim();if(a)by.set(a,r);});
+  const seen=new Set();const rows=(oldRows||[]).map(r=>{const a=(r.ASIN||'').trim();seen.add(a);return a&&by.has(a)?by.get(a):r;});
+  const add=(newRows||[]).filter(r=>!seen.has((r.ASIN||'').trim()));return{rows:rows.concat(add),add};}
 function partMerge(old,f,notes){if(!old||old.name===f.name||old.fromKeepa||f.fromKeepa)return f;
   const had=new Set(old.rows.map(r=>(r.ASIN||'').trim()));const same=f.rows.filter(r=>had.has((r.ASIN||'').trim())).length;
   const again=same/Math.max(1,f.rows.length)>=0.5;
@@ -614,6 +628,11 @@ async function handleFilesRaw(list){const arr=[...list];if(!arr.length||!cur)ret
   if(!me()){pendingFiles=arr;needMe();toast('Pick your name first — the export is waiting',true);return;}
   const bigDrop=arr.reduce((n,f)=>n+(f.size||0),0)>=200000;if(bigDrop){busyOpen(arr.length);await busyPaint();}let bi=0;   /* b282 */
   const notes=[],accepted=[],refused=[];let colsPop=null;
+  /* b332: files from an earlier day still loaded in this tab come out before today's go in */
+  if(filesStale(filesAt,Date.now())){const was=filesLoadedNames(),day=stamp(new Date(filesAt)).slice(0,10);
+    if(was.length){clearRun();notes.push(`The file${was.length===1?'':'s'} loaded here on ${ukDate(day)} ${was.length===1?'was':'were'} taken out (${was.slice(0,3).join(' · ')}${was.length>3?' …':''}) — an old file is never mixed with today's. This run uses only what you drop now.`);
+      if(typeof actLog==='function')actLog('drop',`Files from ${day} were still loaded — taken out before today's`,cur.key);}
+    filesAt=0;}
   /* b311 (Jack, 22 Oct: "how are we improving that" — the week's audit: 12 of Mera's 15 wrong-file runs were on BRAND filters, which b304 never
      checked: Bosch ran on a Viewer file 4 times out of 5 (that is how an Olay cream became a "Bosch" lead) and on 12 Oct one Viewer file "ran"
      15 filters). On a brand with EU countries the Viewer is the LAST file — it is made from the Finder files — so a Viewer with no Finder file
@@ -681,8 +700,8 @@ async function handleFilesRaw(list){const arr=[...list];if(!arr.length||!cur)ret
     if(cur.rule!==1){
       /* b37 (Jack, 15 Sep: two variants of Suz's filter, 17 leads shared, 23 not) — a second UK export merges into the first, de-duped by ASIN.
          Clear files starts again. */
-      if(files.one&&files.one.name!==file.name){const seen=new Set(files.one.rows.map(r=>(r.ASIN||'').trim()));const add=f.rows.filter(r=>!seen.has((r.ASIN||'').trim()));
-        files.one={name:files.one.name+' + '+file.name,rows:files.one.rows.concat(add),hasFees:files.one.hasFees&&f.hasFees,asins:null,domain:f.domain,hasSince:files.one.hasSince&&f.hasSince,merged:(files.one.merged||1)+1};
+      if(files.one&&files.one.name!==file.name){const MG=mergeNewer(files.one.rows,f.rows),add=MG.add;   /* b332: a product in both takes the NEWER file's row */
+        files.one={name:files.one.name+' + '+file.name,rows:MG.rows,hasFees:files.one.hasFees&&f.hasFees,asins:null,domain:f.domain,hasSince:files.one.hasSince&&f.hasSince,merged:(files.one.merged||1)+1};
         /* b303 (Suz's video, 14 Oct): dropping both coupon exports is the normal way — it read "⚠ … 704 new ASINs merged in" in amber, like a fault */
         notes.push(`✓ ${files.one.merged===2?'Both':'All '+files.one.merged} exports in — ${files.one.rows.length.toLocaleString()} products (${add.length.toLocaleString()} added from ${file.name}${f.rows.length-add.length?', '+(f.rows.length-add.length).toLocaleString()+' were in both':''})`);continue;}
       files.one=f;continue;}
@@ -717,6 +736,7 @@ async function handleFilesRaw(list){const arr=[...list];if(!arr.length||!cur)ret
       notes.push(`This file looked like ${wf.name} (${wf.pctThat}% of its leads) — used because ${me()||'you'} said it is right`);}
     const n=files.one.rows.length,u=usualRows(cur.key),dd=exportDay((files.one.name||'').split(' + ').pop());
     notes.unshift(`✓ File check: ${n.toLocaleString()} products${u?` (usual ~${u.toLocaleString()})`:''} · Product Finder · UK${dd&&dd>=freshFloor()?' · today\u2019s export':''}${files.one.merged>1?' · '+files.one.merged+' exports merged':''}`);}
+  if(accepted.length)filesAt=Date.now();   /* b332 */
   touched.clear();paintSlots();warn(notes);if(typeof dropNudgeOff==='function')dropNudgeOff();
   /* b260 (Jack: "add in why — the log says why"): the reason for every refused file goes into the line Jack reads on the Activity page */
   if(typeof actLog==='function')actLog('drop',`${arr.length} file${arr.length===1?'':'s'} dropped · ${accepted.length} accepted${refused.length?' · NOT TAKEN: '+refused.map(r=>typeof refusedShort==='function'?refusedShort(r):r.why).join('; '):''}`,undefined,
@@ -753,6 +773,7 @@ async function euCheckLeads(){const sellF=cur?(cur.rule===1?files.viewer:files.o
   const was=b.textContent;b.disabled=true;
   try{
     const got=await eupFetch(asins,EU_MK,(done,total,mk)=>{b.textContent=`${mk} · ${done}/${total}`;},rate());
+    {const NC=eupNotChecked(got);if(NC)toast(`${NC.toLocaleString()} EU price${NC===1?'':'s'} could NOT be checked — Keepa did not answer. Press Check EU prices again.`,true,{label:'OK',fn:()=>{}});}   /* b332 */
     const set=new Set(asins);const sub={name:sellF.name,rows:sellF.rows.filter(r=>set.has((r.ASIN||'').trim())),hasFees:sellF.hasFees,asins,domain:'UK',hasSince:sellF.hasSince,missingAll:sellF.missingAll||[],missing:sellF.missing||[]};
     const NB=euNoBuy({viewer:sub,UK:null,DE:got.DE||null,FR:got.FR||null,IT:got.IT||null,ES:got.ES||null,plugOk:cur.plugOk||null});const R=rule1Compute(NB.F,cur.name,rate(),null);euNoBuyNote(R,NB);   /* b279 */
     euShow(R.out.filter(o=>o['Buy market']!=='UK'),asins.length);
@@ -833,7 +854,7 @@ function paintAuthBox(){const el=$('#authBox');if(!el||typeof authedName!=='func
       if(!await uiConfirm(`Switch the lock on?\n\nEvery browser that is not signed in will see only the sign-in screen.${missing.length?`\n\n${missing.join(' and ')} ${missing.length===1?'has':'have'} not signed in yet.`:''}`,{ok:'Switch the lock on',tone:'warn'}))return;}
     if(lockSet(on)){toast(on?'Locked — sign-in required for everyone':'Unlocked — anyone with the link can use it again');paintAuthBox();}});}
 /* b138: Run via Keepa API — Jack only. Counts first, prices it, asks, then builds the same files a drop would and runs the same rules. */
-function paintApiRun(){const row=$('#keepaRow');if(!row||!cur)return;let b=$('#apiRunBtn');
+function paintApiRun(){const row=$('#keepaRow');if(!row||!cur)return;if(typeof autoPaint==='function')autoPaint();   /* b330 */let b=$('#apiRunBtn');
   const ok=isJack()&&typeof apiSelection==='function'&&(isListed(cur)||!!finderLink(cur));
   if(!ok){if(b)b.hidden=true;return;}
   if(!b){b=document.createElement('button');b.id='apiRunBtn';b.type='button';b.className='btn ghost sm apirun';b.addEventListener('click',()=>cur&&isListed(cur)?apiRunStorefront():apiRunSource());row.appendChild(b);}
@@ -978,19 +999,34 @@ async function paintStorefrontRow(s){const row=$('#keepaRow');if(!row)return;
     return`<a href="${keepaLink(part,VIEWER_DOMAIN[m])}" data-mk="${m==='UK'?'viewer':m}" target="_blank" rel="noopener" title="Keepa Product Viewer on ${m} with ${part.length} of your products loaded — export all columns, drop the file here">${FLAG[m]} ${m}${batches>1?' '+(i+1)+'/'+batches:''}<span class="tick">✓</span>${ICONS.ext}</a>`;}).join('')).join('')
     +`<span class="apihint">or</span>`;
   paintApiRun();paintSlots();renderGuide();}
+/* b332 (16 Nov audit, bug 8). Two holes in "Run via Keepa", Jack's button only:
+   1. the estimate is a guess from the first 50 results, so a big list whose later pages are not on the shelf cost more than the box said and
+      could go under the floor. The real list is known after the listing step — apiFit prices it exactly (0 / 1 / 6 per product + each missing
+      EU price), and when it does not fit above the floor, or is clearly more than was quoted, Jack is asked again with the exact figure.
+   2. when the balance could not be read the floor check was skipped and the run went ahead blind. Now it stops and says so.
+   Also: `plan` and `sample` were used in the box's wording but never defined, so a filter run always stopped with "plan is not defined"
+   after paying for the count. They are defined now. */
+const API_BLIND='Could not read the Keepa balance, so the 250 floor cannot be checked — not running blind. Try again in a minute.';
+function apiFit(costs,left,floor){let cost=0;(costs||[]).forEach(c=>{cost+=c;});
+  if(left==null)return{cost,n:0,costN:0,fits:false};
+  const room=left-floor;let n=0,costN=0;for(const c of (costs||[])){if(costN+c>room)break;costN+=c;n++;}
+  return{cost,n,costN,fits:cost<=room};}
+function apiOverQuote(real,quoted){return real>quoted*1.1&&real-quoted>25;}
+function euNotCheckedNote(n){return `${n.toLocaleString()} EU price${n===1?'':'s'} could NOT be checked — Keepa did not answer. They are not counted as "no Amazon offer": use Get EU prices to check them again.`;}   /* b332 */
 async function apiRunStorefront(){if(!cur||!isJack())return;const b=$('#apiRunBtn');const eu=(cur.markets||[]).filter(m=>m!=='UK');
   b.disabled=true;b.textContent='Counting…';
   try{const asins=await sfAsins();if(!asins.length){toast('Your storefront list is empty — OA Overview has not saved it yet',true);return;}
     const left=await eupBalance();const cache=apiCache(),now=Date.now();let cached=0;asins.forEach(a=>{const k=cache['2|'+a];if(k&&now-k.at<API_CACHE_H*3600e3)cached++;});
     const est=(asins.length-cached)*API_PER_PRODUCT+cached+eupCost(asins,eu);
+    if(left==null){toast(API_BLIND,true);return;}   /* b332: no balance, no run — the floor cannot be checked blind */
     if(left!=null&&left-est<API_FLOOR){toast(`Balance ${left.toLocaleString()} is too low for your storefront (needs about ${est.toLocaleString()}, floor ${API_FLOOR}) — it refills 21 a minute. The Viewer buttons are free.`,true);return;}
     if(!await uiConfirm(`${cur.list==='adhoc'?'Price these through Keepa?':'Price your whole storefront through Keepa?'}\n\n${asins.length.toLocaleString()} products · UK today${eu.length?' plus '+eu.join(', '):''} · about ${est.toLocaleString()} tokens\nBalance ${left!=null?left.toLocaleString():'?'} → about ${left!=null?(left-est).toLocaleString():'?'}`,{ok:`Spend ~${est.toLocaleString()} tokens`,tone:'token'}))return;
     const R=await apiRows(asins,2,(n,tot)=>{b.textContent=`Fetching ${n}/${tot} products…`;});
     const stamp=new Date();const nm=`Keepa API · ${cur.list==='adhoc'?'check':'storefront'} · ${stamp.getDate()}/${String(stamp.getMonth()+1).padStart(2,'0')} ${String(stamp.getHours()).padStart(2,'0')}:${String(stamp.getMinutes()).padStart(2,'0')}`;
     const f={name:nm,rows:R.rows,hasFees:true,asins:R.rows.map(r=>r.ASIN),domain:'UK',hasSince:true,missing:[],fromKeepa:true};
-    clearRun();files.viewer=f;files.UK=null;
-    if(eu.length){const got=await eupFetch(f.asins,eu,(done,tot,mk)=>{b.textContent=`${mk} prices · ${done}/${tot}`;},rate());eu.forEach(m=>{files[m]=got[m];});}
-    touched.clear();paintSlots();warn([`${nm}: ${R.rows.length.toLocaleString()} of ${asins.length.toLocaleString()} ${cur.list==='adhoc'?'pasted':'storefront'} products from Keepa · about ${est.toLocaleString()} tokens`]);run();}
+    clearRun();files.viewer=f;files.UK=null;filesAt=Date.now();
+    let euNC=0;if(eu.length){const got=await eupFetch(f.asins,eu,(done,tot,mk)=>{b.textContent=`${mk} prices · ${done}/${tot}`;},rate());eu.forEach(m=>{files[m]=got[m];});euNC=eupNotChecked(got);}
+    touched.clear();paintSlots();warn([`${nm}: ${R.rows.length.toLocaleString()} of ${asins.length.toLocaleString()} ${cur.list==='adhoc'?'pasted':'storefront'} products from Keepa · about ${est.toLocaleString()} tokens`].concat(euNC?[euNotCheckedNote(euNC)]:[]));run();}
   catch(e){toast('Keepa run failed — '+(e&&e.message||e),true);}
   finally{b.disabled=false;b.textContent='Run via Keepa API · priced first';}}
 async function apiRunSource(){if(!cur||!isJack())return;const b=$('#apiRunBtn');const link=finderLink(cur);const t=apiSelection({link});
@@ -1003,8 +1039,10 @@ async function apiRunSource(){if(!cur||!isJack())return;const b=$('#apiRunBtn');
     if(!total){toast('Keepa finds nothing for this filter today',true);return;}
     const pages=Math.ceil(total/API_PAGE);
     const cache=apiCache(),now=Date.now();let cached=0;(c.asinList||[]).forEach(a=>{const k=cache['2|'+a];if(k&&now-k.at<API_CACHE_H*3600e3)cached++;});
+    const sample=c.asinList||[],plan=apiPlan(cache,2,sample,now);   /* b332: these two were used below but never defined */
     const est=pages*API_PER_PAGE+Math.round(total*(1-cached/Math.max(1,(c.asinList||[]).length)))*API_PER_PRODUCT+(eu.length?total*eu.length:0);
     const left=(c.tokensLeft!=null)?c.tokensLeft:left0;
+    if(left==null){toast(API_BLIND,true);return;}   /* b332 */
     /* b138: when the whole list will not fit, offer the top slice the balance can afford — Keepa returns the filter's own sort order, so the first N are the ones worth having */
     const perProduct=API_PER_PRODUCT+eu.length;let limit=0,estRun=est;
     if(left!=null&&left-est<API_FLOOR){const room=left-API_FLOOR-API_PER_PAGE;limit=Math.max(0,Math.floor(room/perProduct));
@@ -1015,26 +1053,37 @@ async function apiRunSource(){if(!cur||!isJack())return;const b=$('#apiRunBtn');
       :`Run "${cur.name}" through Keepa?\n\n${total.toLocaleString()} products today · about ${est.toLocaleString()} tokens`+(eu.length?` (includes ${eu.join(', ')} prices)`:'')+(cached||plan.topUp.length?`\n${cached} of the first ${sample.length} are already here free${plan.topUp.length?`, ${plan.topUp.length} need only a 1-token refresh (averages still good)`:''}`:'')+`\n\nBalance ${left!=null?left.toLocaleString():'?'} → about ${left!=null?(left-est).toLocaleString():'?'} after. Floor ${API_FLOOR}.`;
     if(!await uiConfirm(msg+(plan.topUp.length?`\n\nEvery product that comes out as a LEAD is then pulled in full (${API_PER_PRODUCT} tokens each) so its live Buy Box and FBA prices are today's.`:''),{ok:'Run it through Keepa',tone:'token'}))return;
     const L=await apiAllAsins(t.selection,2,(n,tot)=>{b.textContent=`Listing… ${n}${tot?'/'+tot:''}`;},limit||0);
+    /* b332: the real list is known now — price it exactly before the products are bought */
+    {const c2=apiCache(),n2=Date.now(),euc=eu.length?eupCache():null,left2=left-(L.spent||0),quoted=limit?estRun:est;
+     const fit=apiFit(L.asins.map(a=>apiCostFor(c2,2,a,n2)+(euc?eu.filter(m=>!eupHit(euc,m,a)).length:0)),left2,API_FLOOR);
+     const spentSoFar=`The listing spent ${(L.spent||0).toLocaleString()} tokens — nothing else was spent.`;
+     if(!fit.fits){
+       if(fit.n<25){toast(`The real cost is ${fit.cost.toLocaleString()} tokens — more than the balance allows above the floor of ${API_FLOOR}. Stopped. ${spentSoFar}`,true);return;}
+       if(!await uiConfirm(`The real cost is higher than the estimate\n\nThese ${L.asins.length.toLocaleString()} products need ${fit.cost.toLocaleString()} tokens (the box said about ${quoted.toLocaleString()} for the whole run). That would take the balance under the floor of ${API_FLOOR}.\n\nRun the FIRST ${fit.n.toLocaleString()} instead (Keepa's own order, best first) for ${fit.costN.toLocaleString()} tokens?\n\nBalance ${left2.toLocaleString()} → ${(left2-fit.costN).toLocaleString()} after.`,{ok:`Run the first ${fit.n.toLocaleString()}`,tone:'token'})){toast('Stopped. '+spentSoFar);return;}
+       L.asins=L.asins.slice(0,fit.n);limit=fit.n;}
+     else if(apiOverQuote((L.spent||0)+fit.cost,quoted)){
+       if(!await uiConfirm(`The real cost is higher than the estimate\n\nThese ${L.asins.length.toLocaleString()} products need ${fit.cost.toLocaleString()} tokens — the box said about ${quoted.toLocaleString()} for the whole run.\n\nBalance ${left2.toLocaleString()} → ${(left2-fit.cost).toLocaleString()} after. Floor ${API_FLOOR}.`,{ok:`Spend ${fit.cost.toLocaleString()} tokens`,tone:'token'})){toast('Stopped. '+spentSoFar);return;}}}
     const R=await apiRows(L.asins,2,(n,tot)=>{b.textContent=`Fetching ${n}/${tot} products…`;});
     /* the exclusions the API could not take (brand, root category, binding), from the product itself */
-    const rows=R.rows.filter(r=>apiKeep({brand:r.Brand,rootCategory:r.__rootId,binding:r.__binding},t.after));
+    const rows=R.rows.filter(r=>apiKeep({brand:r.Brand,rootCategory:r.__rootId,binding:r.__binding,productGroup:r.__group},t.after));
     const stamp=new Date();const nm=`Keepa API · ${stamp.getDate()}/${String(stamp.getMonth()+1).padStart(2,'0')} ${String(stamp.getHours()).padStart(2,'0')}:${String(stamp.getMinutes()).padStart(2,'0')}`;
     const f={name:nm,rows,hasFees:true,asins:rows.map(r=>r.ASIN),domain:'UK',hasSince:true,missing:[],fromKeepa:true};
-    clearRun();
+    clearRun();filesAt=Date.now();
+    let euNC=0;
     if(cur.rule===1){files.viewer=f;files.UK=null;
-      if(eu.length){const got=await eupFetch(f.asins,eu,(done,tot,mk)=>{b.textContent=`${mk} prices · ${done}/${tot}`;},rate());eu.forEach(m=>{files[m]=got[m];});}}
+      if(eu.length){const got=await eupFetch(f.asins,eu,(done,tot,mk)=>{b.textContent=`${mk} prices · ${done}/${tot}`;},rate());eu.forEach(m=>{files[m]=got[m];});euNC=eupNotChecked(got);}}
     else files.one=f;
     touched.clear();paintSlots();
     const saved=(R.toppedUp||0)*(API_PER_PRODUCT-1)+(R.fromCache||0)*API_PER_PRODUCT;
     warn([`${nm}: ${rows.length.toLocaleString()} products from Keepa (${L.total.toLocaleString()} matched${limit?`, the first ${limit} taken`:''}, ${L.asins.length-rows.length} excluded by brand / category) · ${(L.spent+R.spent).toLocaleString()} tokens spent`
       +` · ${R.fromCache} free from cache, ${R.toppedUp||0} refreshed for 1 token each (averages up to ${Math.round(API_STABLE_H/24)} days old), ${R.fullPulls||0} pulled in full`
-      +(saved?` · ${saved.toLocaleString()} tokens saved by caching`:'')]);run();
+      +(saved?` · ${saved.toLocaleString()} tokens saved by caching`:'')].concat(euNC?[euNotCheckedNote(euNC)]:[]));run();
     /* b149: any lead whose row was refreshed for 1 token has no live Buy Box / FBA price yet. Pull those in full and run again,
        so every lead on the screen carries today's competition. Never below the floor: if the balance will not stretch, say so. */
     {const byA={};rows.forEach(r=>byA[r.ASIN]=r);
      const need=((result&&result.out)||[]).map(o=>o.ASIN).filter(a=>byA[a]&&byA[a].__avgAt);
      if(need.length){const left=await eupBalance();const cost=need.length*API_PER_PRODUCT;
-       if(left!=null&&left-cost<API_FLOOR){warn([`${need.length} lead${need.length===1?'':'s'} still carry averages from up to ${Math.round(API_STABLE_H/24)} days ago and no live Buy Box or FBA price — confirming them would take the balance under the floor of ${API_FLOOR}. Check the live offer on Keepa before buying.`]);}
+       if(left==null||left-cost<API_FLOOR){warn([`${need.length} lead${need.length===1?'':'s'} still carry averages from up to ${Math.round(API_STABLE_H/24)} days ago and no live Buy Box or FBA price — ${left==null?'the Keepa balance could not be read, so they were not confirmed':`confirming them would take the balance under the floor of ${API_FLOOR}`}. Check the live offer on Keepa before buying.`]);}
        else{b.textContent=`Confirming ${need.length} leads…`;
          const C=await apiConfirm(need,2,(n,tot)=>{b.textContent=`Live prices for leads · ${n}/${tot}`;});
          const fresh={};C.rows.forEach(r=>fresh[r.ASIN]=r);
@@ -1165,7 +1214,7 @@ async function fillUnknownShares(f){if(!f||!f.rows||typeof shareUnknown!=='funct
   let asked=0,confirmed=0;const ask=[];
   need.forEach(a=>{const c=cache[a];if(c&&now-c.at<UNK_TTL_H*3600e3){optionStamp(by[a],c);if(c.n>=50||(c.last&&c.last.n>0))confirmed++;}else ask.push(a);});
   for(let i=0;i<ask.length;i+=100){const part=ask.slice(i,i+100);
-    const r=await fetch(WORKER+'/keepa?path=product&domain=2&stats=30&asin='+part.join(','));const j=await r.json();if(j.error)break;   /* history on: monthlySoldHistory only comes with it, same 1 token */
+    const r=await fetch(WORKER+'/keepa?app=sourcing&path=product&domain=2&stats=30&asin='+part.join(','));const j=await r.json();if(j.error)break;   /* history on: monthlySoldHistory only comes with it, same 1 token */
     (j.products||[]).forEach(p=>{const c=optionFromKeepa(p);cache[p.asin]=c;optionStamp(by[p.asin],c);asked++;if(c.n>=50||(c.last&&c.last.n>0))confirmed++;});}
   lsSet(UNK_KEY,cache);if(asked&&typeof paintTokens==='function')paintTokens();return{asked,confirmed,cached:need.length-ask.length};}
 function warn(lines){const w=$('#warnRun');if(!lines||!lines.length){w.classList.remove('show','okonly');w.innerHTML='';return;}
@@ -1184,7 +1233,7 @@ function onePage(n){return KEEPA_PAGE_SIZES.includes(n);}
    demand-ladder columns or the run does not start. Pure: takes the file, returns the message or null. */
 function ladderBlock(f){if(!f||f.fromKeepa||!f.missing||!f.missing.length)return null;const n=f.missing.length;
   return `<b>Export error — ${escapeHtml(f.name)} is missing ${n} column${n===1?'':'s'} the demand rules need.</b> In Keepa press Configure Columns (top left of the table) and tick: ${f.missing.map(h=>escapeHtml(colPathH(h))).join(' · ')}. Then export again and drop the new file here. Without them every variation would be judged on its family's figures, so the run does not start.`;}
-function paintSlots(){if(!cur)return;const r1=cur.rule===1;
+function paintSlots(){if(!cur)return;const r1=cur.rule===1;if(typeof autoPaint==='function')autoPaint();   /* b330: last night's list, first */
   const chip=(k,label,f,need)=>{const cut=f&&!f.fromKeepa&&onePage(f.rows.length);
     /* b110: the UK sell-side file carries the variation / review / last-known columns the demand ladder needs. Say what is missing on the file. */
     const ukSide=k==='viewer'||k==='one'||(k==='UK'&&ukOnly());const miss=(ukSide&&f&&!f.fromKeepa&&f.missing&&f.missing.length)?f.missing:null;
@@ -1273,7 +1322,9 @@ async function euRun(){const want=euWant(),asins=files.viewer?files.viewer.asins
   try{
     const got=await eupFetch(asins,want,(done,total,mk)=>{lab.textContent=`${mk} · ${done}/${total}`;},rate());
     let rows=0;want.forEach(m=>{files[m]=got[m];rows+=got[m].rows.length;});
-    toast(`${rows.toLocaleString()} EU prices in — ${(asins.length*want.length-rows).toLocaleString()} had no Amazon offer`);
+    const NC=eupNotChecked(got),noOffer=Math.max(0,asins.length*want.length-rows-NC);   /* b332: a call Keepa did not answer is "not checked", never "no offer" */
+    if(NC)toast(`${rows.toLocaleString()} EU prices in — ${noOffer.toLocaleString()} had no Amazon offer · ${NC.toLocaleString()} could NOT be checked (Keepa did not answer) — press Get EU prices again`,true,{label:'OK',fn:()=>{}});
+    else toast(`${rows.toLocaleString()} EU prices in — ${noOffer.toLocaleString()} had no Amazon offer`);
     paintSlots();run();
   }catch(e){toast('Keepa did not answer — nothing was spent on the failed part',true);}
   finally{b.disabled=false;lab.textContent='Get EU prices';}}
@@ -1315,7 +1366,7 @@ function runStored(){if(!cur)return false;const {rows,last}=storedRows(cur.key,c
       :{rows:rst.rows||n,priced:rst.priced==null?'—':rst.priced,demand:rst.demand==null?'—':rst.demand,kept:rows.length}};
   R.gone=applyQueue(R.out,R.rule,prevMap,verdAll(),carryFor(cur)).filter(([a])=>!blAll()[a]);R.prevMap=prevMap;backNote(R);const pst=Object.values(prevMap).map(p=>p.stamp).filter(Boolean).sort();R.prevStamp=pst.length?pst[pst.length-1]:null;result=R;
   renderResults();renderGuide();return true;}
-function clearRun(){pillOff();view.lastFor=null;viewerRefused=null;if(cur&&cur.list==='finder'){cur._sf=null;cur._sfMini=null;setTimeout(()=>{if(cur&&cur.list==='finder')paintStorefrontRow(cur);},0);}SLOTS.forEach(k=>files[k]=null);files.one=null;if(typeof primeClear==='function')primeClear();result=null;lastSig='';$('#fileIn').value='';view.sel.clear();view.page=1;touched.clear();blPick=null;
+function clearRun(){filesAt=0;pillOff();view.lastFor=null;viewerRefused=null;if(cur&&cur.list==='finder'){cur._sf=null;cur._sfMini=null;setTimeout(()=>{if(cur&&cur.list==='finder')paintStorefrontRow(cur);},0);}SLOTS.forEach(k=>files[k]=null);files.one=null;if(typeof primeClear==='function')primeClear();result=null;lastSig='';$('#fileIn').value='';view.sel.clear();view.page=1;touched.clear();blPick=null;
   warn([]);$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;if(cur){paintSlots();renderGuide();if($('#doneEmpty'))paintDoneEmpty();}}
 
 /* ============ FX (Rule 1 EU buys) — lives in Settings, used here ============ */
@@ -1374,7 +1425,7 @@ function run(){if(!cur)return;stampLearned();
     if(blk){result=null;$('#results').hidden=true;$('#sumGrid').innerHTML='';$('#sumEmpty').hidden=false;$('#sumEmpty').innerHTML=blk;$('#sumEmpty').classList.add('err');
       ['#story','#statusRow','#sumDetail','#fell'].forEach(id=>{const e=$(id);if(e){e.innerHTML='';if(id==='#story')e.hidden=true;}});['#brandNote','#storedNote'].forEach(id=>{const e=$(id);if(e)e.hidden=true;});return;}
     $('#sumEmpty').classList.remove('err');}
-  const prevMap=baselineOf(leadMap(cur.key));
+  const prevMap=dayBaseline(leadMap(cur.key),leadKeep(cur.key));   /* b332: + yesterday's records an earlier file today did not hold */
   let R;
   if(cur.rule===1){if(files.viewer)stampShares(files.viewer.rows);const NB=euNoBuy(Object.assign({},files,{prime:typeof primeOn==='function'&&primeOn(),plugOk:cur.plugOk||null}));R=rule1Compute(NB.F,cur.name,rate(),null);R.rule=1;euNoBuyNote(R,NB);R.out.forEach(o=>{if(!o.Brand)o.Brand=cur.name;o.Score=r2score(o['Profit £'],o['ROI %'],o.SPM,(o['Sell £ used']||0)<R2.LOW_TICKET);});}
   else{/* a tea & coffee filter: every row is 0% unless it reads like an appliance (machine, grinder…) or a VA has set it */
@@ -1569,7 +1620,9 @@ function logRun(){const R=result,c={NEW:0,BETTER:0,WORSE:0,UNCHANGED:0};R.out.fo
     nb:allOut.map(o=>{const b=+(cur.rule===1?o['Landed £']:o['After discount £'])||0;return[b?Math.round(b*100)/100:null,o.Score!=null?Math.round(+o.Score):null,o['ROI %']!=null?Math.round(+o['ROI %']*10)/10:null];})});
   /* b239: every product the export had — cut ones too — goes to src_seen, so the audit can tell "never found" from "found and cut" */
   if(typeof seenRecord==='function')try{seenRecord(R.floorCut&&R.floorCut.length?Object.assign({},R,{out:allOut}):R,files,cur.key,me());}catch(e){}   /* b260: a lead a limit is hiding is still a lead in the audit */
-  leadSave(cur.key,nextLeadMap(allOut,R.rule,leadMap(cur.key)));renderLog();
+  {const lmWas=leadMap(cur.key),kp=leadKeep(cur.key),nm=nextLeadMap(allOut,R.rule,lmWas,null,kp);   /* b332: yesterday's record of a lead this file does not hold is kept for today */
+    leadKeepSave(cur.key,nextLeadKeep(dayBaseline(lmWas,kp),nm,today()));leadSave(cur.key,nm);}
+  renderLog();
   paintRunStrip();}   /* b143: today's run joins Last runs straight away — it used to need a reopen before you could click back into it */
 
 /* b247 (Jack, 4 Oct, after going through the top of his £60+ run: the 44-day-old Zenbook the app scored 91 = "not loads of data, wouldn't
@@ -1706,7 +1759,7 @@ function renderResults(){const R=result,st=R.st,out=R.out;$('#sumEmpty').hidden=
     tiles=sumTile(st.rows,'in the export')+sumTile(st.priced,'Amazon selling it')+sumTile(st.demand,'sell 9+/month')+sumTile(out.length,'leads · show all','lead go',' data-showall="1" role="button" tabindex="0" title="Show every lead this run kept"')
       +sumTile(rev,'to review today',rev?'cool':'')+sumTile(out.filter(o=>o.Score>=60).length,'score 60+')+sumTile(out.filter(o=>o.Score>=40&&o.Score<60).length,'score 40–59','warm')+sumTile(out.filter(o=>o['ROI %']>=20).length,'ROI 20%+','jade');}
   $('#sumGrid').innerHTML=tiles;
-  paintStory();
+  paintStory();if(typeof paintSumLine==='function')paintSumLine();   /* b333: the summary folds to one line */
   const rs=Object.entries(R.reasons).sort((a,b)=>b[1]-a[1]);
   $('#fell').innerHTML=`<span class="fl">Filtered out</span><span class="fr">${rs.length?rs.map(([k,n])=>`${escapeHtml(k)} ${n}`).join(' · '):'nothing'}</span><span class="fbar"><span style="width:${Math.min(100,R.dropped.length/((st.viewer||st.rows)||1)*100)}%"></span></span><span class="fn">${R.dropped.length} dropped</span>`;
   const est=cur.rule===1?out.filter(o=>(o['Fees from']||'').startsWith('ESTIMATED')).length:0;
@@ -2268,7 +2321,12 @@ const rlog=Object.assign({period:'7d',who:'ALL',rule:'ALL',src:'ALL',q:'',sort:'
 function rlogSave(){const {q,...rest}=rlog;lsSet(RLOG_KEY,rest);}
 function periodFrom(p){const t=new Date();t.setHours(0,0,0,0);if(p==='today')return t.getTime();if(p==='7d')return Date.now()-7*864e5;if(p==='30d')return Date.now()-30*864e5;return 0;}
 const PERIOD_LABEL={today:'Today',"7d":'Last 7 days',"30d":'Last 30 days',all:'All time'};
-function runRows(){const V=verdAll();return runsAll().map(r=>{let y=0,n=0,m=0;(r.asins||[]).forEach(a=>{const v=V[a];if(!v)return;if(v.v==='Yes')y++;else if(v.v==='No')n++;else if(v.v==='Maybe')m++;});
+/* b332 (16 Nov audit, bug 1): the Runs tab showed every run to everyone — a VA could read the other VA's runs and open them. Anyone but Jack now
+   gets only the runs of filters she can see (canSee: hers, the shared "VAs" ones, one she has open). Jack sees every run, as before. */
+function runsVisible(){const a=runsAll();if(isJack())return a;const okFor={};return a.filter(r=>{if(!(r.source in okFor))okFor[r.source]=canSee(srcGet(r.source));return okFor[r.source];});}
+/* the names offered in "Ran by": Jack keeps the full list; a VA gets the names on the runs she can see */
+function runsWhoNames(runs,jack){if(jack)return['Jack','Mera','Suz'];const s=new Set();(runs||[]).forEach(r=>{[r.who].concat((r.runs||[]).map(x=>x&&x.who)).forEach(w=>{if(w)s.add(w);});});return[...s].sort();}
+function runRows(){const V=verdAll();return runsVisible().map(r=>{let y=0,n=0,m=0;(r.asins||[]).forEach(a=>{const v=V[a];if(!v)return;if(v.v==='Yes')y++;else if(v.v==='No')n++;else if(v.v==='Maybe')m++;});
   const tr=toReviewCount(r),rowsIn=r.rowsIn||0,leads=r.leads||0,cut=Math.max(0,rowsIn-leads);
   const times=(r.runs&&r.runs.length)||1;   /* b267: runs on the day's record */
   return{r,times,whoRuns:runsOfDay(r).map(x=>x.who||''),at:r.at,ms:new Date(r.at).getTime(),who:r.who||'',key:r.source,name:r.name||r.source,rule:r.rule,files:(r.files||[]).length,rowsIn,cut,pct:rowsIn?Math.round(cut/rowsIn*100):0,leads,new:r.new||0,better:r.better||0,worse:r.worse||0,gone:r.gone||0,y,n,m,tr,jp:leads?Math.round((y+n+m)/leads*100):0,day:String(r.day||r.at).slice(0,10)};});}
@@ -2277,10 +2335,16 @@ function runsFiltered(){const from=periodFrom(rlog.period),q=(rlog.q||'').toLowe
 function cutCls(p){return p>=85?'jade':p>=60?'amber':'coral';}
 function cutCell(cut,pct){return`<span class="cutn">${cut.toLocaleString()}</span><div class="cutbar ${cutCls(pct)}"><i style="width:${pct}%"></i></div><div class="chg">${pct}% cut</div>`;}
 function znum(v,cls){return v?`<span class="${cls||''}">${v.toLocaleString()}</span>`:'<span class=z>0</span>';}
-function renderLog(){const el=$('#runLog');if(!el)return;const all=runsAll();
+function renderLog(){const el=$('#runLog');if(!el)return;const all=runsVisible();
+  /* b332: "Ran by" follows who is looking — never a name whose runs she cannot see */
+  {const ws=$('#rlWho');if(ws){const want=runsWhoNames(all,isJack()),have=[...ws.options].map(o=>o.value).filter(v=>v!=='ALL');
+      if(want.join('|')!==have.join('|')){[...ws.options].forEach(o=>{if(o.value!=='ALL')o.remove();});want.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;ws.appendChild(o);});}
+      ws.value=rlog.who;if(ws.value!==rlog.who){rlog.who='ALL';ws.value='ALL';}}}
   if(!all.length){el.innerHTML='<div class="empty"><span>No runs yet. Hit Run on a brand and drop its exports — every run lands here with its lead count and what was marked.</span></div>';return;}
   /* the source dropdown follows what has actually run */
-  const sel=$('#rlSrc');if(sel){const have=new Set([...sel.options].map(o=>o.value));const names={};all.forEach(r=>names[r.source]=r.name||r.source);
+  const sel=$('#rlSrc');if(sel){const names={};all.forEach(r=>names[r.source]=r.name||r.source);
+    if(!isJack())[...sel.options].forEach(o=>{if(o.value!=='ALL'&&!(o.value in names))o.remove();});   /* b332: a source she cannot see is not offered */
+    const have=new Set([...sel.options].map(o=>o.value));
     Object.entries(names).sort((a,b)=>a[1].localeCompare(b[1])).forEach(([k,n])=>{if(!have.has(k)){const o=document.createElement('option');o.value=k;o.textContent=n;sel.appendChild(o);}});sel.value=rlog.src;if(sel.value!==rlog.src){rlog.src='ALL';sel.value='ALL';}}
   const rows=runsFiltered();
   const tot={runs:0,rows:0,leads:0,new:0,better:0,y:0,n:0,m:0,tr:0};rows.forEach(x=>{tot.runs+=x.times||1;tot.rows+=x.rowsIn;tot.leads+=x.leads;tot.new+=x.new;tot.better+=x.better;tot.y+=x.y;tot.n+=x.n;tot.m+=x.m;tot.tr+=x.tr;});
@@ -2333,9 +2397,10 @@ function runsLogInit(){const el=$('#runLog');if(!el)return;
   const ra=$('#rlAll');ra.checked=!!rlog.all;ra.addEventListener('change',e=>{rlog.all=e.target.checked;rlogSave();renderLog();});
   document.querySelectorAll('#rlGroup button').forEach(b=>{b.classList.toggle('on',b.dataset.g===rlog.group);b.addEventListener('click',()=>{document.querySelectorAll('#rlGroup button').forEach(x=>x.classList.remove('on'));b.classList.add('on');rlog.group=b.dataset.g;rlogSave();renderLog();});});
   el.addEventListener('click',e=>{const th=e.target.closest('th.sortable');if(th){const k=th.dataset.sort;if(rlog.sort===k)rlog.dir=-rlog.dir;else{rlog.sort=k;rlog.dir=['name','who'].includes(k)?1:-1;}rlogSave();renderLog();return;}
-    const tr=e.target.closest('tr.rrow');if(tr&&tr.dataset.key&&srcGet(tr.dataset.key))openRun(tr.dataset.key);});}
+    const tr=e.target.closest('tr.rrow');if(tr&&tr.dataset.key&&srcGet(tr.dataset.key)&&canSee(srcGet(tr.dataset.key)))openRun(tr.dataset.key);});}   /* b332: only a filter she can see */
 function stat(k,v,sub){return`<div class="stat"><span class="k">${k}</span><span class="v">${typeof v==='number'?v.toLocaleString():v}</span>${sub?`<span class="sub">${escapeHtml(sub)}</span>`:''}</div>`;}
-function exportLog(){const runs=runsAll(),V=verdAll();
+function exportLog(){const runs=runsVisible(),V0=verdAll(),V={};   /* b332: a VA's export holds her runs and the answers on filters she can see — Jack's holds everything, as before */
+  Object.keys(V0).forEach(a=>{const v=V0[a];if(isJack()||(v&&(v.who===me()||canSee(srcGet(v.source)))))V[a]=v;});
   const hdr=['at','who','source','rule','files','rows_in','leads','new','better','worse','gone','blacklisted','yes','no','maybe','seen'];
   const rows=runs.map(r=>{let y=0,n=0,m=0,s=0;(r.asins||[]).forEach(a=>{const v=V[a];if(!v)return;if(v.v==='Yes')y++;else if(v.v==='No')n++;else if(v.v==='Maybe')m++;else s++;});
     return{at:r.at,who:r.who||'',source:r.name,rule:r.rule,files:(r.files||[]).join(' | '),rows_in:r.rowsIn,leads:r.leads,new:r.new,better:r.better,worse:r.worse,gone:r.gone,blacklisted:r.blacklisted||0,yes:y,no:n,maybe:m,seen:s};});
@@ -2469,7 +2534,7 @@ const ONE_UNIT={share:0.50,drops:10,roi:50,profit:10};
    ones, and it's not a lot of them." Measured on his own 1,404-row no-figure export: 60 of them, 4%.
    Above this many drops a missing figure is treated as LOST, not as proof of a small seller. */
 const LOST_FIGURE_DROPS=50;
-const WORKER='https://bdl-sourcing.jackbithellbusiness.workers.dev';
+const WORKER='https://keepa.jackbithellbusiness.workers.dev/src';   /* b328 (9 Nov): bdl-sourcing merged into the keepa Worker (its /src box) — the old Worker is being deleted */
 /* b173: the pill is born with the last number it showed, so it never pops in empty and grows on every page load */
 async function paintTokens(){let el=$('#tokPill');const cp=$('#cloudPill');if(!cp)return;if(!el){el=document.createElement('span');el.id='tokPill';el.className='pill tok';el.textContent=lsGet('bdl-sourcing-tokens-last','Keepa · … tokens');cp.parentNode.insertBefore(el,cp);}
   try{const r=await fetch(WORKER+'/health');const t=await r.json();if(t.ok&&t.tokensLeft!=null){el.textContent='Keepa · '+t.tokensLeft.toLocaleString()+' tokens';lsSet('bdl-sourcing-tokens-last',el.textContent);el.title=`Keepa API balance via the Worker · refills ${t.refillRate}/min · nothing runs automatically yet`;el.classList.remove('bad');}
@@ -2584,7 +2649,7 @@ function brandsInit(){if(typeof primeEndOnce==='function')primeEndOnce();   /* b
     if(k&&srcGet(k)){backToList();openRun(k);window.scrollTo({top:0,behavior:'smooth'});}
     else if(cur&&cur.drop){backToList();window.scrollTo({top:0,behavior:'smooth'});}}));   /* b223 */
   $('#yourDay').addEventListener('click',e=>{const l=e.target.closest('button[data-latedone]');if(l){lateDone(l.dataset.latedone);return;}const b=e.target.closest('button[data-start]');if(b)openRun(b.dataset.start);});   /* b314: + mark a late run done */
-  $('#howToHide').addEventListener('click',()=>{lsSet(HOWTO_KEY,true);renderHowTo();});$('#howToShow').addEventListener('click',()=>{lsSet(HOWTO_KEY,false);renderHowTo();$('#howTo').scrollIntoView({behavior:'smooth',block:'center'});});
+  $('#howToHide').addEventListener('click',()=>{if(typeof foldSet==='function')foldSet('how',false);else lsSet(HOWTO_KEY,true);renderHowTo();});$('#howToShow').addEventListener('click',()=>{if(typeof foldSet==='function')foldSet('how',true);else lsSet(HOWTO_KEY,false);renderHowTo();$('#howTo').scrollIntoView({behavior:'smooth',block:'center'});});
   $('#runStrip').addEventListener('click',e=>{const d=e.target.closest('[data-run]');if(d&&cur){openPastRun(d.dataset.run);return;}if(e.target.closest('[data-look]')&&cur){openApiLook();return;}if(e.target.closest('[data-act="hist"]')&&cur)openHistory(cur);});
   $('#runCopyLink').addEventListener('click',e=>{if(!cur)return;const w=USERS.includes(cur.owner)?'&who='+cur.owner:'';copy(location.origin+location.pathname+'#run='+cur.key+w,'Link copied — paste it into the AVM HQ task'+(w?' (opens as '+cur.owner+', no name prompt)':''),e.currentTarget,'Copied');});
   $('#runAllTime').addEventListener('click',()=>{if(!cur)return;const k=cur.key;backToList();historyOpenFor(k);});

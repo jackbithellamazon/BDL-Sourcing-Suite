@@ -2,7 +2,7 @@
    apirun.js — Keepa Product Finder through the Worker. ADDED, NOT USED.
    b110 (Jack, 18 Sep 2026: "add it in but not using yet").
 
-   Measured 18 Sep through bdl-sourcing.…workers.dev (path=query, already allowed by the Worker):
+   Measured 18 Sep through bdl-sourcing.…workers.dev (since b328: keepa.…workers.dev/src) (path=query, already allowed by the Worker):
      one /query call            = 10 tokens + 1 per 50 results   (11 tokens for 50 ASINs; 10 for an empty result)
      a Suz-shaped selection     = 318 matches without her brand blocks
      stats for each ASIN after  = 1 token each (same call the audit and EU pricing use)
@@ -25,12 +25,14 @@ const API_STATS=/^(current|avg7|avg30|avg90|avg180|avg365|delta7|delta30|delta90
 function apiField(colId){const i=colId.lastIndexOf('_');if(i<0)return null;const base=colId.slice(0,i),stat=colId.slice(i+1);
   if(!API_STATS.test(stat))return null;return{key:stat+'_'+base,pence:API_PRICE.test(base)&&!/deltaPercent/.test(stat)};}
 const API_PLAIN={totalOfferCount:'totalOfferCount',monthlySold:'monthlySold',salesRankDrops30:'salesRankDrops30',salesRankDrops90:'salesRankDrops90',
-  COUNT_NEW_current:'current_COUNT_NEW',COUNT_NEW_avg180:'avg180_COUNT_NEW',COUNT_REVIEWS_current:'current_COUNT_REVIEWS',RATING_current:'current_RATING'};
+  COUNT_NEW_current:'current_COUNT_NEW',COUNT_NEW_avg180:'avg180_COUNT_NEW',COUNT_REVIEWS_current:'current_COUNT_REVIEWS',RATING_current:'current_RATING',
+  /* b325 → b330: the fields that make Suz's coupon and Business filters what they are — Keepa's own names, from its Product Finder field list (7 Nov) */
+  couponOneTimePercent:'couponOneTimePercent',couponOneTimeAbsolute:'couponOneTimeAbsolute',couponSNSPercent:'couponSNSPercent',businessDiscount:'businessDiscount'};
 function apiIds(v){return String(v||'').split('###').map(x=>x.trim()).filter(Boolean);}
 /* turns a saved keepa.com/#!finder/… link (or its decoded JSON) into {selection, after, skipped} */
 function apiSelection(src){const link=(src&&src.link)||'';const m=/#!finder\/(.+)$/.exec(link);if(!m)return null;
   let j;try{j=JSON.parse(decodeURIComponent(m[1]));}catch(e){return null;}
-  const f=j.f||{},sel={perPage:APIRUN.PER_PAGE,page:0},after={brandNot:[],rootNot:[],bindingNot:[]},skipped=[];
+  const f=j.f||{},sel={perPage:APIRUN.PER_PAGE,page:0},after={brandNot:[],rootNot:[],bindingNot:[],groupNot:[]},skipped=[];
   const num=(k,v)=>{if(v==null||v==='')return;sel[k]=v;};
   for(const [col,c] of Object.entries(f)){
     if(col==='srAvgMonth'){skipped.push('rank month (website only)');continue;}
@@ -39,6 +41,11 @@ function apiSelection(src){const link=(src&&src.link)||'';const m=/#!finder\/(.+
     if(col==='rootCategory'){const ids=apiIds(c.filter).map(Number);if(c.type==='isNoneOf')after.rootNot=ids;else sel.rootCategory=ids;continue;}
     if(col==='categories_exclude'){sel.categories_exclude=apiIds(c.filter).map(Number);continue;}
     if(col==='categories_include'){sel.categories_include=apiIds(c.filter).map(Number);continue;}
+    /* b325 → b330: the website's own "Categories" box (Suz's tea & coffee) is the API's categories_include / _exclude */
+    if(col==='categories'){const ids=apiIds(c.filter).map(Number);if(c.type==='isNoneOf')sel.categories_exclude=(sel.categories_exclude||[]).concat(ids);else sel.categories_include=(sel.categories_include||[]).concat(ids);continue;}
+    /* b330: "Product Group is none of" (Mera's 7-Day: apparel / shoes / sports) cannot be sent — it is applied to each product after its
+       1-token look (autocut.js), like the brand / root / binding exclusions. Was dropped altogether before, so the API list was wider. */
+    if(col==='productGroup'&&c.type==='isNoneOf'){after.groupNot=apiIds(c.filter).map(x=>x.toLowerCase());continue;}
     if(col==='binding'){const ids=apiIds(c.filter).map(x=>x.toLowerCase());if(c.type==='isNoneOf')after.bindingNot=ids;else skipped.push('binding is-one-of');continue;}
     if(c.filterType==='number'){const fld=apiField(col)||(API_PLAIN[col]?{key:API_PLAIN[col],pence:false}:null);
       if(!fld){skipped.push(col);continue;}
@@ -51,13 +58,10 @@ function apiSelection(src){const link=(src&&src.link)||'';const m=/#!finder\/(.+
       continue;}
     skipped.push(col);}
   return{selection:sel,after,skipped};}
-/* the exclusions the API could not do, applied to a fetched product {brand, rootCategory, binding} */
-function apiKeep(prod,after){if(!after)return true;const b=(prod.brand||'').toLowerCase(),bd=(prod.binding||'').toLowerCase();
-  if(after.brandNot.some(x=>b===x))return false;
-  if(after.rootNot.includes(Number(prod.rootCategory)))return false;
-  if(after.bindingNot.some(x=>bd===x))return false;return true;}
+/* b325 → b330: a source can have two Keepa links (Suz's coupons: % and £) — one search each, in link order. apiKeep moved to autocut.js (b330). */
+function apiSelections(src){return[(src&&src.link)||'',(src&&src.link2)||''].filter(Boolean).map(l=>apiSelection({link:l}));}
 /* one page of ASINs. domain 2 = UK. Costs 10 tokens + 1 per 50 results. */
-async function apiQuery(selection,domain){const r=await fetch(WORKER+'/keepa?path=query&domain='+(domain||2)+'&selection='+encodeURIComponent(JSON.stringify(selection)));
+async function apiQuery(selection,domain){const r=await fetch(WORKER+'/keepa?app=sourcing&path=query&domain='+(domain||2)+'&selection='+encodeURIComponent(JSON.stringify(selection)));
   const j=await r.json();if(j.error)throw new Error(j.error.message||'Keepa refused the query');return j;}
 /* what a full API run of this source would cost, from one 10-11 token call */
 async function apiCount(src){const t=apiSelection(src);if(!t)throw new Error('no Keepa finder link on this source');
@@ -149,7 +153,7 @@ function apiRow(p,domain){if(!p||!p.asin)return null;const st=p.stats||{},cur=st
     'Deals: Badge':(st.lightningDealInfo&&st.lightningDealInfo.length)?'Lightning Deal':'',
     'One Time Coupon: Percentage':coupon&&coupon[0]<0?String(-coupon[0]):'','One Time Coupon: Absolute':coupon&&coupon[0]>0?(coupon[0]/100).toFixed(2):'','One Time Coupon: Subscribe & Save %':coupon&&coupon[1]<0?String(-coupon[1]):'',
     'Business Discount: Percentage':'',
-    __api:true,__rootId:p.rootCategory,__binding:(p.binding||'').toLowerCase()};}
+    __api:true,__rootId:p.rootCategory,__binding:(p.binding||'').toLowerCase(),__group:(p.productGroup||'').toLowerCase()};}
 function apiCache(){return lsGet(API_CACHE_KEY,{});}
 /* rows for these ASINs: free from cache, 1 token to refresh what moves, 6 only when we have nothing */
 async function apiRows(asins,domain,onStep){const cache=apiCache(),now=Date.now(),out=[];
@@ -162,7 +166,7 @@ async function apiRows(asins,domain,onStep){const cache=apiCache(),now=Date.now(
   const pull=async(list,cheap)=>{
     for(let i=0;i<list.length;i+=100){const part=list.slice(i,i+100);if(onStep)onStep(done,need);
       const q='path=product&domain='+domain+'&stats=90&history=0'+(cheap?'':'&offers=20&rating=1')+'&asin='+part.join(',');
-      const r=await fetch(WORKER+'/keepa?'+q);const j=await r.json();
+      const r=await fetch(WORKER+'/keepa?app=sourcing&'+q);const j=await r.json();
       if(j.error)throw new Error(j.error.message||'Keepa refused');spent+=j.tokensConsumed||0;if(typeof kcPut==='function')kcPut(domain,j.products,cheap?'stats':'offers');   /* b319: saved for every app */
       (j.products||[]).forEach(p=>{let row=apiRow(p,domain);if(!row)return;const key=domain+'|'+p.asin;
         if(cheap){const held=(cache[key]||{}).row||{};
@@ -180,7 +184,7 @@ async function apiRows(asins,domain,onStep){const cache=apiCache(),now=Date.now(
 /* b149: the leads, pulled in full at 6 tokens each, so their live Buy Box / FBA / FBM prices are today's */
 async function apiConfirm(asins,domain,onStep){const cache=apiCache(),now=Date.now(),out=[];let spent=0;
   for(let i=0;i<asins.length;i+=100){const part=asins.slice(i,i+100);if(onStep)onStep(i,asins.length);
-    const r=await fetch(WORKER+'/keepa?path=product&domain='+domain+'&stats=90&history=0&offers=20&rating=1&asin='+part.join(','));const j=await r.json();
+    const r=await fetch(WORKER+'/keepa?app=sourcing&path=product&domain='+domain+'&stats=90&history=0&offers=20&rating=1&asin='+part.join(','));const j=await r.json();
     if(j.error)throw new Error(j.error.message||'Keepa refused');spent+=j.tokensConsumed||0;if(typeof kcPut==='function')kcPut(domain,j.products,'offers');   /* b322: the 6-token confirms are saved for every app too */
     (j.products||[]).forEach(p=>{const row=apiRow(p,domain);if(!row)return;cache[domain+'|'+p.asin]={at:now,fresh:now,row};out.push(row);});}
   lsSet(API_CACHE_KEY,apiTrim(cache));return{rows:out,spent};}

@@ -31,6 +31,7 @@ const R2={
   /* generic UK retailers that price-match Amazon and then discount on top */
   RETAIL:[['Argos',6],['Currys',5],['John Lewis',4]],
   HIGH:{p:20,roi:20,spm:50,base:80,money:2000,world:{roi:30,spm:100,money:8000},banger:{roi:20,spm:300,money:3000,pLo:2,pHi:4},unreal:{roi:25,money:6000}},   /* b280 / b281 / b283 */
+  GRAPH_PCT:0,GRAPH_MIN_SELL:60,   /* b324: GRAPH CHECK lane — OFF until Jack picks the version (5% on £60+ added +193 to Mera's £95+ list of 417) */
   DEFAULT_ALLOW:10, MIN_SCORE:35, MIN_ROI_LOW:10   /* b45 (Jack): "I won't buy anything under 10% ROI on the lower-ticket side" — own price or with a code */   /* b41 (Jack, 15 Sep: "the shit shouldn't be on her thing to look at") — a row must score 35, on its own or with a code, to be a lead */
 };
 function r2sat(x,h){return x>0?x/(x+h):0;}
@@ -241,14 +242,15 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     const sell=fact.sell||S.sell;if(!sell)continue;st.sell++;
     const vt=opts.vatFor?opts.vatFor(r,fact):{rate:R2.VAT,why:'',src:'default'};const vat=vt.rate;
     const ref=(kNum(r['Referral Fee %'])||R2.DEF_REF)/100,fba=kNum(r['FBA Pick&Pack Fee'])||R2.DEF_FBA;
-    const brand=(r.Brand||'').trim();let eff=amz;const ap=[];
+    /* b331: effNoBiz = the same buy price without Keepa's Business % (see the BUSINESS chip below) */
+    const brand=(r.Brand||'').trim();let eff=amz,effNoBiz=amz;const ap=[];
     const bd=kNum(r['Business Discount: Percentage']);if(bd){eff*=(1-bd/100);ap.push(`Business ${Math.round(bd)}%`);}
-    const cp=kNum(r['One Time Coupon: Percentage']);if(cp){eff*=(1-cp/100);ap.push(`coupon ${Math.round(cp)}%`);}
-    const ca=kNum(r['One Time Coupon: Absolute']);if(ca){eff-=ca;ap.push(`coupon £${ca.toFixed(2)}`);}
-    if(r2hasSS(r)){eff*=(1-R2.SS_UK);ap.push(`S&S ${R2.SS_UK*100}%`);}
+    const cp=kNum(r['One Time Coupon: Percentage']);if(cp){eff*=(1-cp/100);effNoBiz*=(1-cp/100);ap.push(`coupon ${Math.round(cp)}%`);}
+    const ca=kNum(r['One Time Coupon: Absolute']);if(ca){eff-=ca;effNoBiz-=ca;ap.push(`coupon £${ca.toFixed(2)}`);}
+    if(r2hasSS(r)){eff*=(1-R2.SS_UK);effNoBiz*=(1-R2.SS_UK);ap.push(`S&S ${R2.SS_UK*100}%`);}
     /* b206: the export says no S&S, but this ASIN had it when last seen and Amazon is selling it now — S&S follows Amazon */
-    else{const seen=typeof snsRemembered==='function'&&amz>0?snsRemembered(fact):null;if(seen){eff*=(1-R2.SS_UK);ap.push(`S&S ${R2.SS_UK*100}% (seen ${seen.slice(8,10)}/${seen.slice(5,7)})`);}}
-    eff=Math.round(eff*100)/100;
+    else{const seen=typeof snsRemembered==='function'&&amz>0?snsRemembered(fact):null;if(seen){eff*=(1-R2.SS_UK);effNoBiz*=(1-R2.SS_UK);ap.push(`S&S ${R2.SS_UK*100}% (seen ${seen.slice(8,10)}/${seen.slice(5,7)})`);}}
+    eff=Math.round(eff*100)/100;effNoBiz=Math.round(effNoBiz*100)/100;
     /* b214: Prime event (only when the page passes opts.prime — Jack's switch). Keepa's "New, Prime exclusive: Current" is the buy when it
        beats Amazon's price after every discount. The coupon and S&S the export shows go on top (Jack, 30 Sep: "some might — you can see
        if they do by the export"); a Business tier does not — that is another account. */
@@ -260,6 +262,11 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     const [p,roi]=r2prof(sell,eff,ref,fba,vat),br=r2brate(brand,amz),nd=r2needed(sell,eff,ref,fba,null,vat);const bEntry=(typeof discForBrand==='function')?discForBrand(brand):null;
     const kept=nd<=Math.max(R2.DEFAULT_ALLOW,br||R2.DEFAULT_ALLOW);
     const low=sell<R2.LOW_TICKET;const score=r2score(p,roi,Math.round(spm),low);
+    /* b331 (Jack, 14 Nov 2026, on Wellman Max B00UI3O5BE: "it doesn't have the business 40% off btw it's just 6 with 15% sub and save" ·
+       "keep it scored high tho and let va's check manually"). Since 12 Nov Keepa's export shows a Business discount on hundreds of
+       products, nearly all exactly 40%, and many aren't real. The score keeps it (unchanged); the row says so, with what it is without
+       it, and the VA checks the listing on the Business account. Not when a Prime price won (a Business tier isn't stacked on that). */
+    const biz=(bd&&!prime)?(()=>{const [bp,br2]=r2prof(sell,effNoBiz,ref,fba,vat);return{pct:Math.round(bd),cost:effNoBiz,p:bp,roi:br2,score:r2score(bp,br2,Math.round(spm),low)};})():null;
     /* what an extra retailer discount would do — brand direct, and the best generic price-matcher */
     const pot=[];
     if(br){const c=Math.round(amz*(1-br/100)*100)/100;const [pp,pr]=r2prof(sell,c,ref,fba,vat);pot.push({who:(bEntry?bEntry.name:brand.split(' ')[0]+' direct'),pct:br,cost:c,p:pp,roi:pr,score:r2score(pp,pr,Math.round(spm),low),confirmed:(fact.pm||[]).some(x=>/direct|brand/i.test(x))});}
@@ -290,6 +297,7 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     const ltd=!!(r['Deals: Badge']||'').trim();
     const chips=[];
     if(prime)chips.push(['★ PRIME DEAL','prime']);
+    if(biz)chips.push([`BUSINESS ${biz.pct}% FROM KEEPA · CHECK THE BUSINESS ACCOUNT · WITHOUT IT `+(biz.p>0?`${biz.score} · £${biz.p.toFixed(2)}`:`LOSES £${(-biz.p).toFixed(2)}`),'warn']);
     if(spm>=300)chips.push(['STRONG SALES','good']);else if(spm>=100)chips.push(['GOOD SALES','good']);
     if(p>=40)chips.push(['HIGH PROFIT','good']);
     if(roi>=20)chips.push(['HIGH ROI','good']);else if(roi>0&&roi<8)chips.push(['THIN MARGIN','warn']);
@@ -316,7 +324,7 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     else if(!f90)chips.push(['NO FBA HISTORY','warn']);
     if(loneFba)chips.push(['FBA PRICE = ONE OFFER','warn']);
     if(age!=null&&age<R2.YOUNG_DAYS)chips.push([`${age}D OLD`,'warn']);
-    else if(reviews<R2.THIN_REVIEWS)chips.push(['FEW REVIEWS','warn']);
+    else if(reviews<R2.THIN_REVIEWS&&!(r.__api&&String(r['Reviews: Rating Count']||'').trim()===''))chips.push(['FEW REVIEWS','warn']);   /* b330: an automated pull asks no rating (no keep/cut rule uses it) — blank is unknown, not few */
     if(S.why.startsWith('3P holds'))chips.push(['3P HOLDS BUY BOX','info']);
     if(fact.sell)chips.push(['SELL SET BY VA','good']);
     if(unknownShare)chips.push([`FAMILY DROPS · OWN SHARE UNKNOWN (${kNum(r['Variation Count'])||0} OPTIONS)`,'warn']);
@@ -326,7 +334,7 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
     if(yearOk)chips.push([`REVIEWS SAY ${Math.round(spm)}/MO · CONFIRMED ${yearOk.n} ON ${yearOk.since}`,'info']);
     if(vat===0)chips.push([vt.src==='va'?'0% VAT · SET BY VA':vt.src==='source'?'0% VAT · FILTER':'0% VAT · CHECK',vt.src==='warn'?'warn':vt.src==='va'||vt.src==='source'?'good':'warn']);else if(vt.src==='va')chips.push(['20% VAT · SET BY VA','info']);else if(vt.src==='rule')chips.push(['20% VAT · APPLIANCE','info']);
     const o={ASIN:a,Product:r.Title||'',Brand:brand,Score:score,'Potential score':best.score,'Potential via':best.who?`${best.who} ${best.pct}%`:'',
-      'Buy at £':amz,'After discount £':eff,'Prime £':prime||'','Prime deal':prime?'yes':'','Discount applied':ap.join('; '),'Sell for £':sell,'Sell from':fact.sell?'VA':S.why,'Sell confidence':fact.sell?'set':S.conf,
+      'Buy at £':amz,'After discount £':eff,'Business % (Keepa)':biz?biz.pct:'','Score without Business':biz?biz.score:'','Profit without Business £':biz?biz.p:'','Buy without Business £':biz?biz.cost:'','Prime £':prime||'','Prime deal':prime?'yes':'','Discount applied':ap.join('; '),'Sell for £':sell,'Sell from':fact.sell?'VA':S.why,'Sell confidence':fact.sell?'set':S.conf,
       'Buy Box 90d £':bb90,'Buy Box 180d £':kNum(r['Buy Box: 180 days avg.']),'FBA 90d £':f90,'FBM 90d £':fbm90,'Buy Box high £':kNum(r['Buy Box: Highest']),'Buy Box 30d £':kNum(r['Buy Box: 30 days avg.']),'FBA 30d £':kNum(r['New, 3rd Party FBA: 30 days avg.']),'Offers':kNum(r['New Offer Count: Current']),
       'Profit £':p,'ROI %':roi,'Sells /mo':Math.round(spm),'Demand from':bought?'confirmed':(share!=null?'drops x '+Math.round(share*100)+'% of reviews':'drops'),
       '£ per month':Math.round(p*spm),'Needs % off':Math.round(nd*10)/10,'Brand discount %':br==null?'':br,
@@ -340,6 +348,23 @@ function rule2Compute(rows,facts,opts){facts=facts||{};opts=opts||{};
       /* b260: WHY a row that passed the discount test was still cut — so the dropped list says the real reason (it called a £100+ bar miss "scored 50 — under 35") */
       cutWhy:!kept||keptFinal?'':underBar?'bar':thin?'thin':'score',bestRoi:Math.round(bestRoi*10)/10,bestP:Math.round(bestP*100)/100,velBar:vb};
     all.push(o);}
+  /* b324 (Jack, 7 Nov: "rather it keeps a few more in … as VAs will mainly look at graphs with a human eye anyway"). On his 26 graph reads
+     of 7 Nov the app's sell price was within 2.5% of his on 19 — but the Samsung Odyssey G5 (B0CP851QXD, 6 Oct) sold at £179 against the
+     app's £152.29 and was cut. So a row cut on money that WOULD be a lead if it sold up to GRAPH_PCT (5%) higher is kept, marked GRAPH CHECK
+     with the lowest sell price it needs: the VA reads the graph and decides. The same rules decide it — the row is re-run at a higher sell.
+     Never for a sell the VA set herself, and the audit's "still a lead today?" asks without it (opts.noGraph). */
+  st.graph=0;
+  if(!opts.noGraph&&R2.GRAPH_PCT>0){const rawBy={};rows.forEach(r=>{const a=(r.ASIN||'').trim();if(a&&!rawBy[a])rawBy[a]=r;});const up=1+R2.GRAPH_PCT/100;
+    all.forEach((o,i)=>{const S=+o['Sell for £'];if(o.kept||!(S>=R2.GRAPH_MIN_SELL)||(facts[o.ASIN]||{}).sell)return;   /* under £60, 5% is pennies — the S&S list would double */const raw=rawBy[o.ASIN];if(!raw)return;
+      if((+o['Needs % off']||0)>Math.max(R2.DEFAULT_ALLOW,+o['Brand discount %']||0)+12)return;   /* far off — 5% on the sell cannot save it */
+      const at=s=>{const f=Object.assign({},facts);f[o.ASIN]=Object.assign({},facts[o.ASIN]||{},{sell:Math.round(s*100)/100});
+        const R=rule2Compute([Object.assign({},raw)],f,Object.assign({},opts,{noGraph:true}));return(R.out||[])[0]||null;};
+      let lo=S,hi=S*up,g=at(hi);if(!g)return;
+      for(let k=0;k<7;k++){const mid=(lo+hi)/2,x=at(mid);if(x){hi=mid;g=x;}else lo=mid;}
+      const X=+g['Sell for £'],pct=Math.round((X/S-1)*1000)/10;
+      all[i]=Object.assign({},g,{'Sell from':`Graph check · the app's sell is £${S.toFixed(2)} (${o['Sell from']}) — a lead from £${X.toFixed(2)}, +${pct}%`,'Sell confidence':'graph',
+        graph:{app:S,at:X,pct,from:o['Sell from']},chips:[[`GRAPH CHECK · LEAD IF IT SELLS AT £${X.toFixed(2)}+ (APP £${S.toFixed(2)})`,'graph']].concat((g.chips||[]).filter(([t])=>t!=='SELL SET BY VA'))});
+      st.graph++;});}
   const out=all.filter(o=>o.kept).sort((x,y)=>y.Score-x.Score||y['Potential score']-x['Potential score']||y['£ per month']-x['£ per month']);
   out.forEach((o,i)=>o['#']=i+1);st.kept=out.length;
   return{out,all,st,unknown:unknownList};}

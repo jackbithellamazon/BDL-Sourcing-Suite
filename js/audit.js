@@ -89,6 +89,7 @@ function audFromSet(id,day){const v=Object.assign({map:{}},lsGet(AUD_FROM,null)|
   if(typeof cloudQueue==='function'&&typeof settingRow==='function')cloudQueue('src_settings','upsert',[settingRow('audit-from',v)]);return v;}
 function audFromDay(){const d=new Date();d.setDate(d.getDate()-AUD_FROM_DAYS);return stamp(d).slice(0,10);}
 function audOldWhy(sh){const f=[sh?audFromFor(sh.seller||sh.id):'',audFromDay()].sort().pop();return'listed more than '+AUD_FROM_DAYS+' days ago (before '+ukDate(f)+') or already on their shelf when we started tracking them';}
+function audOldFrom(sh){return[sh?audFromFor(sh.seller||sh.id):'',audFromDay()].sort().pop();}   /* b332: the real cut-off day, for the header */
 function audIsOld(it,sh){if(!it||!sh||sh.kind!=='rival'||audIsVA())return false;
   {const f=[audFromFor(sh.seller||sh.id),audFromDay()].sort().pop();if(it.base)return true;if(it.first&&String(it.first)<f)return true;}   /* b317: Jack, 6 Nov: "yes" — every rival, only what it listed in the last 30 days */if(!audVaFor(sh.seller||sh.id).length)return false;return!!it.base||String(it.first||'')<AUD_VA.START;}
 function audVaSet(id,list){const v=Object.assign({map:{}},lsGet(AUD_VA.KEY,null)||{});v.map=Object.assign({},v.map,{[id]:list});v.at=nowIso();v.who=me();lsSet(AUD_VA.KEY,v);
@@ -145,13 +146,15 @@ function audNowAll(){if(!AUD_NOW_C)AUD_NOW_C=lsGet(AUD_NOW,{})||{};return AUD_NO
 function audNowSave(m){let e=Object.entries(m);if(e.length>3000)e=e.sort((x,y)=>String(y[1].at).localeCompare(String(x[1].at))).slice(0,3000);AUD_NOW_C=Object.fromEntries(e);lsSet(AUD_NOW,AUD_NOW_C);}
 function audNowFresh(a){const r=audNowAll()[a];return!!r&&!r.none&&Date.now()-new Date(r.at).getTime()<3*864e5;}   /* b317: "could not price it" is not a check */
 function audNowRow(row){try{if(typeof rule2Compute!=='function'||!row||!row.ASIN)return null;const a=String(row.ASIN).trim();
-    const R=rule2Compute([Object.assign({},row)],typeof factsAll==='function'?factsAll():{},{vatFor:typeof vatFor==='function'?vatFor:undefined,rule:2});
+    const R=rule2Compute([Object.assign({},row)],typeof factsAll==='function'?factsAll():{},{vatFor:typeof vatFor==='function'?vatFor:undefined,rule:2,noGraph:true});   /* b324: today's maths only — no graph-check lane here */
     const kept=(R.out||[]).find(x=>x.ASIN===a),o=kept||(R.all||[]).find(x=>x.ASIN===a);
     const ref=(kNum(row['Referral Fee %'])||15)/100,fba=kNum(row['FBA Pick&Pack Fee'])||null,kg=(kNum(row['Package: Weight (g)'])||kNum(row['Item: Weight (g)'])||0)/1000;
     if(!o)return{at:nowIso(),lead:false,none:true,ref,fba,kg};const q=Object.assign({},o);if(kept&&typeof proofScore==='function')proofScore(q,2);
     /* b317 (Jack, 6 Nov: "to make my life easier to see if it's a lead or not"): at today's sell price, the most it can cost anywhere (a shop, OA) to make 10% */
-    const sell=+o['Sell for £']||null;let max10=null;if(sell&&fba!=null&&typeof brProfit==='function'){let lo=0.01,hi=sell;for(let i=0;i<40;i++){const mid=(lo+hi)/2;if(brProfit(sell,mid,ref,fba,kg,null,'')[1]>=10)lo=mid;else hi=mid;}max10=brProfit(sell,lo,ref,fba,kg,null,'')[1]>=10?Math.floor(lo*100)/100:null;}
-    return{at:nowIso(),lead:!!kept,root:String(row['Categories: Root']||'').slice(0,60),buy:+o['After discount £']||+o['Buy at £']||null,disc:o['Discount applied']||'',sell,p:o['Profit £']!=null?+o['Profit £']:null,roi:o['ROI %']!=null?+o['ROI %']:null,sc:+(q.Score||o.Score||0),ref,fba,kg,max10};}
+    /* b333: at the product's own VAT — the rate Rule 2 just used for this row (a 0% product was being worked at 20% here) */
+    const vp=o['VAT %'],vat=vp!=null&&vp!==''&&isFinite(+vp)?(+vp)/100:null;
+    const sell=+o['Sell for £']||null;let max10=null;if(sell&&fba!=null&&typeof brProfit==='function'){let lo=0.01,hi=sell;for(let i=0;i<40;i++){const mid=(lo+hi)/2;if(brProfit(sell,mid,ref,fba,kg,vat,'')[1]>=10)lo=mid;else hi=mid;}max10=brProfit(sell,lo,ref,fba,kg,vat,'')[1]>=10?Math.floor(lo*100)/100:null;}
+    return{at:nowIso(),lead:!!kept,root:String(row['Categories: Root']||'').slice(0,60),buy:+o['After discount £']||+o['Buy at £']||null,disc:o['Discount applied']||'',sell,p:o['Profit £']!=null?+o['Profit £']:null,roi:o['ROI %']!=null?+o['ROI %']:null,sc:+(q.Score||o.Score||0),ref,fba,kg,max10,vat};}
   catch(e){return null;}}
 function audNowRecord(rows){if(!(typeof isJack==='function'&&isJack())||audIsVA())return 0;const m=Object.assign({},audNowAll());let n=0;
   (rows||[]).forEach(r=>{const x=audNowRow(r);if(x){m[String(r.ASIN).trim()]=x;n++;}});if(n)audNowSave(m);return n;}
@@ -210,6 +213,7 @@ function audSave(m){lsSet(audKeyFor(audIsVA()?me():null),m);}
 function audGet(asin){return audAll()[asin]||null;}
 function audOut(){return lsGet(AUD.OUT,[]);}
 function audQueue(op){if(typeof guestOn==='function'&&guestOn())return;   /* b155: guest mode queues nothing, so nothing can be sent later */
+  if(!op.qid)op.qid=Date.now().toString(36)+Math.random().toString(36).slice(2,7);   /* b332: so the sender takes out exactly the one it sent */
   const q=audOut();q.push(op);lsSet(AUD.OUT,q);audFlush();}
 const AUD_PROD='bdl-sourcing-audit-prod';   /* b178: read again in boot.js once the big store is in — this line runs before it is */
 const audState={tables:null,pulled:0,shelfAt:0,sellers:[],shelf:{},shared:{},mineNow:new Set(),mineEver:new Set(),mineLast:{},mineLatest:'',prod:lsGet(AUD_PROD,{})||{},checking:false};
@@ -235,16 +239,44 @@ const AUD_COLS={
 function audShape(table,rows){const c=AUD_COLS[table];if(!c)return rows;
   return rows.map(r=>{const o={};c.forEach(k=>{if(r[k]!==undefined)o[k]=r[k];});
     if(table==='src_products'&&(o.fba==null||o.fba==='')&&r.offers!=null)o.fba=r.offers;return o;});}
-async function audFlush(){if(!cloudEnabled())return;if(audState.tables===null)await audCheckTables();if(!audState.tables)return;
-  let q=audOut();let guard=0;
-  while(q.length&&guard++<50){const it=q[0];
-    try{
-      if(it.op==='up')for(let i=0;i<it.rows.length;i+=200)await cloudReq('POST',it.table,audShape(it.table,it.rows.slice(i,i+200)),'resolution=merge-duplicates,return=minimal');
-      else if(it.op==='del')await cloudReq('DELETE',it.table+'?id=in.('+it.ids.map(v=>'"'+encodeURIComponent(v)+'"').join(',')+')',null,'return=minimal');
-      q=audOut();q.shift();lsSet(AUD.OUT,q);
-    }catch(e){if(missingTables(e)){audState.tables=false;return;}
-      it.tries=(it.tries||0)+1;q[0]=it;lsSet(AUD.OUT,q);if(it.tries>=3){q.shift();lsSet(AUD.OUT,q);console.warn('audit: dropped a change',it,e.message);}return;}}
-  audPaintSync();}
+/* b332 (16 Nov audit, bug 4). Three ways an answer could vanish, all closed:
+   · two sends at once (every answer starts one) each took "the first in the queue" out — the second took out one that was never sent.
+     Now only one runs at a time, and it takes out exactly the item it sent.
+   · no internet / a busy server counted as a strike, and three strikes threw the answer away. Now those just wait and go again.
+   · an answer the server refuses three times was thrown away and the page still said "Saved for everyone". Now it is HELD in this
+     browser, the page says so in red, and it is offered to the server again the next time the page is opened.
+   Product details (src_products) are the one thing still let go after three refusals — they are read again from Keepa, never typed. */
+const AUD_HELD='bdl-sourcing-audit-held';
+function audHeld(){return lsGet(AUD_HELD,[])||[];}
+function audRetryable(status){return !status||status===408||status===429||status>=500;}
+async function audSend(it){
+  if(it.op==='up')for(let i=0;i<it.rows.length;i+=200)await cloudReq('POST',it.table,audShape(it.table,it.rows.slice(i,i+200)),'resolution=merge-duplicates,return=minimal');
+  else if(it.op==='del')await cloudReq('DELETE',it.table+'?id=in.('+it.ids.map(v=>'"'+encodeURIComponent(v)+'"').join(',')+')',null,'return=minimal');}
+/* one pass over the queue with any sender (the checks hand it a fake one). → {state:'done'|'later'|'tables', held, letGo} */
+async function audFlushRun(send){const out={state:'done',held:0,letGo:0};let guard=0;
+  const at=(q,it)=>it.qid?q.findIndex(x=>x.qid===it.qid):(q.length?0:-1);
+  while(guard++<500){const q=audOut();if(!q.length)break;const it=q[0];
+    try{await send(it);const q2=audOut();const i=at(q2,it);if(i>=0){q2.splice(i,1);lsSet(AUD.OUT,q2);}}
+    catch(e){if(missingTables(e)){audState.tables=false;out.state='tables';return out;}
+      if(audRetryable(e&&e.status)){out.state='later';return out;}   /* nothing counted against it — it goes again */
+      const q2=audOut();const i=at(q2,it);if(i<0)continue;const x=q2[i];x.tries=(x.tries||0)+1;
+      if(x.tries<3){lsSet(AUD.OUT,q2);out.state='later';return out;}
+      q2.splice(i,1);lsSet(AUD.OUT,q2);
+      if(x.table==='src_products'){out.letGo++;console.warn('audit: product details refused three times — let go, they are read again from Keepa',e&&e.message);}
+      else{const h=audHeld();h.push(Object.assign({},x,{why:String(e&&e.message||e).slice(0,160),heldAt:nowIso()}));lsSet(AUD_HELD,h);out.held++;}}}
+  return out;}
+async function audFlush(){if(!cloudEnabled())return;
+  if(audState.flushing){audState.again=true;return;}   /* one at a time */
+  audState.flushing=true;clearTimeout(audState.retryT);
+  try{if(audState.tables===null)await audCheckTables();if(!audState.tables)return;
+    if(!audState.heldTried){audState.heldTried=true;const h=audHeld();   /* once per page load: offer the held ones again */
+      if(h.length){lsSet(AUD.OUT,audOut().concat(h.map(x=>{const y=Object.assign({},x);delete y.why;delete y.heldAt;y.tries=0;return y;})));lsSet(AUD_HELD,[]);}}
+    do{audState.again=false;const r=await audFlushRun(audSend);
+      if(r.held&&typeof toast==='function')toast(`${r.held} answer${r.held===1?'':'s'} could NOT be saved for everyone — the server refused ${r.held===1?'it':'them'} three times. ${r.held===1?'It is':'They are'} still in this browser. Tell Jack.`,true,{label:'OK',fn:()=>{}});
+      if(r.state==='later'){audState.retryT=setTimeout(audFlush,20000);break;}
+      if(r.state==='tables')break;
+    }while(audState.again);
+  }finally{audState.flushing=false;audPaintSync();}}
 async function audPullVerdicts(force){if(!cloudReadable()||!(await audCheckTables()))return false;
   if(!force&&Date.now()-audState.pulled<600e3)return true;
   /* b288: src_audit_current is the newest answer per product from ANYONE — so a VA's answer must never become Jack's. Jack's map is
@@ -333,7 +365,7 @@ async function audLoadDetails(asins,quiet,onBatch,again){const need=again?asins.
       const rest=part.filter(a=>!now0.includes(a));audAvgSave(rest.filter(a=>kc[a]).map(a=>apiRow(kc[a].p,2)).filter(Boolean),kc);
       const cheap=rest.filter(a=>audAvgGet(a)),dear=rest.filter(a=>!audAvgGet(a));
       for(const [L,bb] of [[cheap,false],[dear,true]]){if(!L.length)continue;
-        try{const j=await (await fetch(WORKER+'/keepa?path=product&domain=2&stats=90&history=0'+(bb?'&buybox=1':'')+'&asin='+L.join(','))).json();if(typeof kcPut==='function')kcPut(2,j.products,bb?'bb':'stats');if(typeof oaIdsSave==='function')oaIdsSave(j.products);   /* b319: saved for every app */
+        try{const j=await (await fetch(WORKER+'/keepa?app=sourcing&path=product&domain=2&stats=90&history=0'+(bb?'&buybox=1':'')+'&asin='+L.join(','))).json();if(typeof kcPut==='function')kcPut(2,j.products,bb?'bb':'stats');if(typeof oaIdsSave==='function')oaIdsSave(j.products);   /* b319: saved for every app */
           const rows=(j.products||[]).map(p=>{const row=typeof apiRow==='function'?apiRow(p,2):null;if(row&&!bb){const av=audAvgGet(p.asin)||{};Object.keys(av).forEach(k=>{if((row[k]==null||row[k]==='')&&av[k]!=null&&av[k]!=='')row[k]=av[k];});}return row;}).filter(Boolean);
           if(bb)audAvgSave(rows);audNowRecord(rows);
           const det=(j.products||[]).map(audFromKeepa).filter(Boolean);if(det.length){audSaveProducts(det);}n2+=(j.products||[]).length;if(j.error)break;}
@@ -344,24 +376,39 @@ async function audLoadDetails(asins,quiet,onBatch,again){const need=again?asins.
       if(hit.length){const det=hit.map(a=>audFromKeepa(kcI[a].p)).filter(Boolean);if(det.length){audSaveProducts(det);got+=det.length;if(onBatch)onBatch(got,need.length,det.map(r=>r.asin));}
         audNowRecord(hit.filter(a=>kcAge(kcI[a])<=KC_NOW_H).map(a=>apiRow(kcI[a].p,2)).filter(Boolean));}
       const miss=part.filter(a=>!kcI[a]);if(!miss.length)continue;part.length=0;part.push(...miss);}
-    try{const r=await fetch(WORKER+'/keepa?path=product&domain=2&stats=90&history=0&asin='+part.join(','));const j=await r.json();if(typeof kcPut==='function')kcPut(2,j.products,'stats');if(typeof oaIdsSave==='function')oaIdsSave(j.products);   /* b300: 90-day stats — 1 token (titles, pictures) · b319: saved for every app */
+    try{const r=await fetch(WORKER+'/keepa?app=sourcing&path=product&domain=2&stats=90&history=0&asin='+part.join(','));const j=await r.json();if(typeof kcPut==='function')kcPut(2,j.products,'stats');if(typeof oaIdsSave==='function')oaIdsSave(j.products);   /* b300: 90-day stats — 1 token (titles, pictures) · b319: saved for every app */
       const rows=(j.products||[]).map(audFromKeepa).filter(Boolean);
       if(typeof apiRow==='function')audNowRecord((j.products||[]).map(p=>apiRow(p,2)).filter(Boolean));   /* b300: is it a lead today */
       if(rows.length){audSaveProducts(rows);got+=rows.length;if(onBatch)onBatch(got,need.length,rows.map(r=>r.asin));}   /* b168: which rows, so the screen repaints only those */
       if(j.error)break;}
     catch(e){break;}}
   return got;}
-/* b66 (Jack: "if we find the lead but don't sell it, can that be automated?") — yes: a product that was a lead on one of
-   our filters, that nobody bought, sitting on a rival's shelf we do not sell on, IS a missed lead. Marked for him as
-   'auto' with the reason filled in; one key press overrides it. Never touches a product that already has an answer. */
-function audAutoMissed(sh){if(audIsVA())return 0;   /* b288: a VA gives every answer herself — that is what is being learnt */
-  const V=audAll();const O=auOurs();const now=nowIso();const rows=[];
-  sh.items.forEach(it=>{if(V[it.a]||audSells(sh.id,it.a)||audIsOld(it,sh))return;const o=O[it.a];if(!o||o.said==='Yes')return;
-    const reason=o.said==='No'?'Passed on it':o.said?'Passed on it':'Never looked at';
-    const row=audRow(it.a,'missed','auto',sh.seller||sh.id,now);row.reason=reason;row.note=(o.src||'')+(o.saidBy?' · '+o.saidBy+' said '+o.said:'');
-    V[it.a]=row;rows.push(row);});
-  if(rows.length){audSave(V);if(cloudEnabled())audQueue({op:'up',table:'src_audit_verdicts',rows});}
-  return rows.length;}
+/* b66 marked "our lead, nobody bought it" as Missed it by itself when a shelf opened (who:'auto'). b333 — Jack, 16 Nov: "no it shouldn't
+   actually do missed it — tell me what happened and I write it. I click missed it only — you only automatically do joint and then you
+   suggest what to press with reason and info". So that is gone: nothing but Jack's own press stores a Missed it. Those products stay
+   "left to judge" with Missed it as the SUGGESTED answer and its reason on the row (audSuggest, trace.js). Joint stays automatic (computed, never stored).
+   The rows b66–b332 already stored are put back by ONE button Jack presses himself on the overview ("can we reverse any missed it the app
+   automatically did and I didn't click?"): only who:'auto' rows go, through the same outbox the undo uses; a copy is kept so it can be undone. */
+const AUD_AUTOBACK='bdl-sourcing-audit-autoback';
+const AU_AUTOBACK={n:0};   /* this session only: how many were just put back — the overview offers Undo */
+/* pure: V = the answers map → the page's own rows, the map without them, and the deletes to queue (60 ids each, so the address stays short) */
+function audAutoBackPlan(V){const rows=[],left={};Object.entries(V||{}).forEach(([a,r])=>{if(r&&r.who==='auto')rows.push(r);else left[a]=r;});
+  const ops=[];for(let i=0;i<rows.length;i+=60)ops.push({op:'del',table:'src_audit_verdicts',ids:rows.slice(i,i+60).map(r=>r.id)});
+  return{rows,left,ops};}
+function audAutoRows(){return audIsVA()?[]:Object.values(audAll()).filter(v=>v&&v.who==='auto');}
+function audAutoBack(){if(audIsVA())return null;const pl=audAutoBackPlan(audAll());if(!pl.rows.length)return[];
+  lsSet(AUD_AUTOBACK,{at:nowIso(),rows:pl.rows});audSave(pl.left);
+  if(cloudEnabled())pl.ops.forEach(op=>audQueue(op));
+  return pl.rows;}
+/* the same rows go back as they were — except where an answer has been pressed since (that answer stays) */
+function audAutoBackUndo(){if(audIsVA())return 0;const c=lsGet(AUD_AUTOBACK,null);if(!c||!Array.isArray(c.rows)||!c.rows.length)return 0;
+  const m=audAll(),up=[];c.rows.forEach(r=>{if(r&&r.asin&&r.who==='auto'&&!m[r.asin]){m[r.asin]=r;up.push(r);}});
+  if(up.length){audSave(m);if(cloudEnabled())audQueue({op:'up',table:'src_audit_verdicts',rows:up});}
+  lsRemove(AUD_AUTOBACK);return up.length;}
+function auAutoBackBar(){if(audIsVA())return'';const n=audAutoRows().length,u=AU_AUTOBACK.n,s=k=>k===1?'':'s';if(!n&&!u)return'';
+  return`<div class="auback">${n?`<span class="abt"><b>${n.toLocaleString()}</b> Missed-it${s(n)} here ${n===1?'was':'were'} marked by the page, not by you.</span><button class="btn solid sm" id="auAutoBack" type="button">Put back the ${n.toLocaleString()} Missed-it${s(n)} the page marked for you</button>`
+    :`<span class="abt"><b>${u.toLocaleString()}</b> put back — left to judge again, each with the suggested answer and its reason.</span><button class="btn ghost sm" id="auAutoBackUndo" type="button">Undo</button>`}</div>`;}
+function auAutoBackUndoGo(){const n=audAutoBackUndo();AU_AUTOBACK.n=0;renderAudit();toast(n?n.toLocaleString()+' Missed-it'+(n===1?' is':'s are')+' back as the page had '+(n===1?'it':'them'):'Nothing to undo');}
 /* ---------- shelves in this browser (pasted lists and pulled sellers) ---------- */
 function audShelfList(){const out=[];const va=audIsVA()?me():null;
   audState.sellers.forEach(s=>{let items=audState.shelf[s.seller_id]||[];
@@ -488,6 +535,10 @@ function auDonut(c,size){const segs=audTypes().map(t=>[c[t.code]||0,t.hex]).conc
   return`<svg class="audonut" viewBox="0 0 42 42" style="width:${size||78}px;height:${size||78}px">${segs.filter(([n])=>n).map(([n,col])=>{const p=n/tot*100;const el=`<circle cx="21" cy="21" r="${R}" fill="none" stroke="${col}" stroke-width="6" stroke-dasharray="${p} ${100-p}" stroke-dashoffset="${off}"/>`;off-=p;return el;}).join('')}<text x="21" y="21.6" text-anchor="middle" font-size="9" font-weight="800" fill="currentColor">${c.todo.toLocaleString()}</text><text x="21" y="26.4" text-anchor="middle" font-size="3.4" font-weight="700" fill="currentColor" opacity=".6">LEFT</text></svg>`;}
 function auSyncNote(){const n=audOut().length;if(!cloudEnabled())return guestOn()?'<span class="ausync guest">Guest mode · nothing you do is saved</span>':location.protocol==='file:'?'<span class="ausync bad">A copy on this Mac — not the live app</span>':'<span class="ausync off">Sandbox · nothing leaves this browser</span>';   /* b182: says which */
   if(audState.tables===false)return'<span class="ausync bad">Audit tables not created yet — run the SQL once. Your answers are saved here and will send themselves.</span>';
+  return auSyncText(n,audHeld().length);}
+/* b332: "Saved for everyone" only when nothing is waiting AND nothing was refused */
+function auSyncText(n,held){
+  if(held)return`<span class="ausync bad">${held} answer${held===1?'':'s'} NOT saved for everyone — still in this browser. Tell Jack.${n?` · ${n} more to send`:''}</span>`;
   return n?`<span class="ausync">${n} answer${n===1?'':'s'} to send</span>`:'<span class="ausync ok">Saved for everyone</span>';}
 function audPaintSync(){const el=$('#auSync');if(el)el.outerHTML=auSyncNote().replace('<span class="','<span id="auSync" class="');}
 
@@ -671,7 +722,8 @@ function auRenderList(){auView.mode='list';setTimeout(auFixHash,0);
   const h=(typeof auVaCard==='function'?auVaCard():'')+`<div class="card">
     <div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg></span><h2>Storefront audits</h2>
       <span class="sub">One pass per rival. After that only their new lines come back. An answer belongs to the product, so it counts on every shelf.</span>
-      <div class="right">${auSyncNote().replace('<span class="','<span id="auSync" class="')}<label class="ausortby"><span>Order</span><select id="auRsort">${AU_RSORTS.map(([v,l])=>`<option value="${v}"${auRsort()===v?' selected':''}>${l}</option>`).join('')}</select></label><button class="btn ghost sm" id="auCards" type="button">${auView.cards?'Show as a list':'Show as cards'}</button><button class="btn ghost sm" id="auRefresh" type="button">Refresh shelves</button>${(()=>{const n=auNextShelf(null);const c=n?auCounts(n):null;return n?`<button class="btn primary sm" type="button" data-open="${escapeHtml(n.id)}">${ICONS.run}${c.byHand?'Carry on':'Start'} · ${escapeHtml(n.name)} · ${c.todo.toLocaleString()} left</button>`:'';})()}</div></div>
+      <div class="right">${auSyncNote().replace('<span class="','<span id="auSync" class="')}<label class="ausortby"><span>Order</span><select id="auRsort">${AU_RSORTS.map(([v,l])=>`<option value="${v}"${auRsort()===v?' selected':''}>${l}</option>`).join('')}</select></label><button class="btn ghost sm" id="auCards" type="button">${auView.cards?'Show as a list':'Show as cards'}</button>${typeof claudeHeadBtns==='function'?claudeHeadBtns():''}<button class="btn ghost sm" id="auRefresh" type="button">Refresh shelves</button>${(()=>{const n=auNextShelf(null);const c=n?auCounts(n):null;return n?`<button class="btn primary sm" type="button" data-open="${escapeHtml(n.id)}">${ICONS.run}${c.byHand?'Carry on':'Start'} · ${escapeHtml(n.name)} · ${c.todo.toLocaleString()} left</button>`:'';})()}</div></div>
+    ${auAutoBackBar()}${typeof claudeBar==='function'?claudeBar(''):''}
     ${cloudReadable()?(()=>{const t=today(),nNew=shelves.filter(x=>x.kind==='rival').reduce((n,x)=>n+x.items.filter(i=>i.first===t).length,0),oa=audState.oaAt,fresh=oa&&String(oa).slice(0,10)===t;
       return`<div class="auoa ${fresh?'ok':'old'}"><i></i><span><b>OA Overview last updated the shelves</b> ${oa?auWhenFull(oa):'— nothing from it yet'}</span>${nNew?`<span class="auoan"><b>+${nNew.toLocaleString()}</b> new lines on rival shelves today</span>`:''}<span class="auoap">pulled into this page ${auClock(new Date(audState.shelfAt||Date.now()).toISOString())}</span><button class="btn ghost xs" id="auRefresh2" type="button" title="Pull the latest from OA Overview now">Refresh</button></div>`;})():''}
     ${shelves.length?`<div class="kpis aukpis">
@@ -767,7 +819,8 @@ function auVisible(sh){const V=audAll();const q=auView.q.toLowerCase();const tab
    least I know"). One line over the list: of what is showing, how many our filters had as a lead, had and cut (money / blacklisted brand /
    other), never had at all, and are still a lead today. Each number filters the list; pressing it again shows everything. Jack's page only. */
 function auOflWhy(w){w=String(w||'');return/blacklist/i.test(w)?'black':/ROI|profit|under the £|% off|scored \d+|bar:/i.test(w)?'money':'other';}
-function auOflKeep(a,f){if(f==='now')return!!(audNowAll()[a]||{}).lead;if(f==='oa'){const v=typeof oaVerdict==='function'?oaVerdict(a):null;return!!v&&(v.k==='lead'||v.k==='maybe');}   /* b321 */
+function auOflKeep(a,f){if(f==='cl-lead'||f==='cl-any')return typeof claudeKeep==='function'&&claudeKeep(a,f);   /* b333 */
+  if(f==='now')return!!(audNowAll()[a]||{}).lead;if(f==='oa'){const v=typeof oaVerdict==='function'?oaVerdict(a):null;return!!v&&(v.k==='lead'||v.k==='maybe');}   /* b321 */
   if(/^why-/.test(f)){const it=auItemOf(a),w=typeof audWhyInfo==='function'?audWhyInfo(a,it&&!it.base?it.first||'':''):null;if(!w)return false;const k=f.slice(4);   /* b313 */
     if(k==='mera'||k==='suz')return w.k==='person'&&w.who.length===1&&w.who[0]===(k==='mera'?'Mera':'Suz');if(k==='both')return w.k==='person'&&w.who.includes('Mera')&&w.who.includes('Suz');
     if(k==='stale')return/really run since/.test(w.txt);if(k==='none')return w.k==='none'||w.k==='block';return w.k===k;}const h=typeof audHistInfo==='function'?audHistInfo(a):null;
@@ -795,6 +848,7 @@ function auOflSum(sh){if(audIsVA()||!(typeof isJack==='function'&&isJack())||typ
     ${b('never','never',`<b>${c.never}</b> never in our exports`,'None of our filter or brand exports had it')}${c['never-bl']?`<span class="ofsubs">${b('never-bl','never sub',`${c['never-bl']} our own brand blocks`,'Never exported because the brand is on our blacklist or blocked in our Keepa filters')}</span>`:''}
     ${c.now?b('now','now',`<b>★ ${c.now}</b> still a lead today`,'Your filter maths on today\u2019s Keepa numbers says it is a lead now'):''}
     ${c.oa?b('oa','oa',`<b>🛒 ${c.oa}</b> OA lead${c.oa===1?'':'s'} at a shop`,'Not a lead on Amazon UK, but a UK shop on Google Shopping has it cheap enough once your code is off'):''}
+    ${typeof claudeChips==='function'?claudeChips(L,b):''}
     ${c.wait?`<span class="ofsw" title="Our export records for these are still loading (or the cloud is off here)">${c.wait} still checking…</span>`:''}</div>`;}
 const AU_LINK_ICON={amazon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h2l2.4 10.5a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 9H7"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>',
   keepa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 4-6 5 4"/><path d="M3 21h18"/></svg>',
@@ -850,6 +904,9 @@ function auRow(it,i,sh){const V=audAll();let v=V[it.a];const vOld=audExpired(v)?
       :on?x.label+' · '+(v.who==='auto'?'marked for you':v.who+' · '+auUk(v.at))+(v.reason?' · '+v.reason:'')+(v.note?' · '+v.note:'')+' · press again to change'
       :sg?`Suggested — ${sug.why} · press Enter (or key ${auKey(n)})`:x.label+' · key '+auKey(n);
     return`<button type="button" class="aub${on?' on':''}${auto?' auto':''}${sg?' sug':''}" style="--c:${x.hex}" data-v="${x.code}" data-a="${it.a}" title="${escapeHtml(tip)}"><kbd>${sg?'↵':auKey(n)}</kbd>${AU_ICON[x.icon]||''}<span class="lab">${escapeHtml(x.short||x.label)}</span></button>`;}).join('');
+  /* b333 (Jack, 16 Nov): the suggested answer says itself and its reason on the row — no hovering. Enter still takes it; nothing is stored until he presses. */
+  const sugT=sug?audPick().find(x=>x.code===sug.code):null;
+  const sugHtml=sugT?`<span class="ausug" style="--c:${sugT.hex}" title="${escapeHtml('Suggested: '+sugT.label+' — '+sug.why+' · press Enter to take it, or any number key for a different answer')}"><b>Suggested: ${escapeHtml(sugT.short||sugT.label)}</b> — ${escapeHtml(sug.why)}</span>`:'';
   /* b141: the reason chips take the buttons' place instead of opening a new line under them, so the row keeps its height */
   const reasons=v&&audType(v.verdict)&&audType(v.verdict).reasons&&!v.reason
     ?`<div class="aureasons" style="--c:${audType(v.verdict).hex}">${audType(v.verdict).prompt||'Why?'}${audType(v.verdict).reasons.map((x,n)=>`<button type="button" class="aurs ${v.reason===x?'on':''}" data-r="${escapeHtml(x)}" data-a="${it.a}"><kbd>${AU_RKEYS[n].toUpperCase()}</kbd>${escapeHtml(x)}</button>`).join('')}</div>`:'';
@@ -891,8 +948,8 @@ function auRow(it,i,sh){const V=audAll();let v=V[it.a];const vOld=audExpired(v)?
         ${chips?`<span class="auchips">${chips}</span>`:''}
       </div></div>
     <div class="aulinks">${links}</div>
-    <div class="auhistl">${hist}${audNowChips(it.a)}</div>
-    <div class="aubtns">${btns}${mark}</div>${reasons}${typeof trDrop==='function'?trDrop(it.a,it.base?'':it.first||''):''}</div>`;}
+    <div class="auhistl">${hist}${audNowChips(it.a)}${typeof claudeRowLine==='function'?claudeRowLine(it.a):''}</div>
+    <div class="aubtns">${btns}${mark}${sugHtml}</div>${reasons}${typeof trDrop==='function'?trDrop(it.a,it.base?'':it.first||''):''}</div>`;}
 function auRenderOne(){auView._listHtml=null;const sh=audShelf(auView.shelf);const c=auCounts(sh);const vis=auVisible(sh);const tab=auView.tab[sh.id]||'todo';
   if(auView.focus>=vis.length)auView.focus=Math.max(0,vis.length-1);
   const secs=auView.secs.length?auView.secs.reduce((a,b)=>a+b,0)/auView.secs.length:6;
@@ -909,11 +966,11 @@ function auRenderOne(){auView._listHtml=null;const sh=audShelf(auView.shelf);con
   $('#page-audit').innerHTML=`<div class="card">
     <div class="auhead"><button class="back" id="auBack" type="button" aria-label="Back to audits">${ICONS.back}</button>
       <span class="auav" style="background:${auAv(sh.name)}">${auIni(sh.name)}</span>
-      <div><h2>${escapeHtml(sh.name)}</h2><div class="meta">${c.all.toLocaleString()} products${c.old?` · ${c.old.toLocaleString()} OLD DATA (before 7 Oct)`:''} · ${la?'last audited '+auUk(la)+' ('+auAgo(la)+')':'first audit'}${sh.seller?' · seller '+escapeHtml(sh.seller):''}</div></div>
+      <div><h2>${escapeHtml(sh.name)}</h2><div class="meta">${c.all.toLocaleString()} products${c.old?` · <span title="${escapeHtml(audOldWhy(sh))}">${c.old.toLocaleString()} OLD DATA (before ${auUk(audOldFrom(sh))})</span>`:''} · ${la?'last audited '+auUk(la)+' ('+auAgo(la)+')':'first audit'}${sh.seller?' · seller '+escapeHtml(sh.seller):''}</div></div>
       <div class="right">${auSyncNote().replace('<span class="','<span id="auSync" class="')}
         ${sh.seller?`<a class="btn ghost sm" href="https://www.amazon.co.uk/s?me=${escapeHtml(sh.seller)}" target="_blank" rel="noopener">Their shelf</a><a class="btn ghost sm" href="https://keepa.com/#!seller/2-${escapeHtml(sh.seller)}" target="_blank" rel="noopener">Keepa seller</a>`:''}
         <button class="btn ${auView.follow?'primary':'ghost'} sm" id="auFollow" type="button" title="Opens whatever product you land on in one Keepa tab, so you never click Keepa">${auView.follow?'Keepa follows me · on':'Keepa follows me'}</button>
-        <button class="btn ghost sm" id="auRest" type="button">Mark the rest Not lead</button>${(()=>{const n=auNextShelf(sh.id);return n?`<button class="btn primary sm" type="button" data-open="${escapeHtml(n.id)}" title="${escapeHtml(n.name)} · ${auCounts(n).todo} to do">Next rival →</button>`:'';})()}</div></div>
+        ${typeof claudeShelfBtn==='function'?claudeShelfBtn():''}<button class="btn ghost sm" id="auRest" type="button">Mark the rest Not lead</button>${(()=>{const n=auNextShelf(sh.id);return n?`<button class="btn primary sm" type="button" data-open="${escapeHtml(n.id)}" title="${escapeHtml(n.name)} · ${auCounts(n).todo} to do">Next rival →</button>`:'';})()}</div></div>${typeof claudeBar==='function'?claudeBar(sh.id):''}
     <div class="auprog"><div class="aubar">${audTypes().map(t=>c[t.code]?`<i style="width:${c[t.code]/c.all*100}%;background:${t.hex}" title="${c[t.code]} ${escapeHtml(t.label)}"></i>`:'').join('')}</div>
       <div class="aupline"><b>${c.todo.toLocaleString()} left of ${c.all.toLocaleString()}</b><span>${c.todo?`about ${Math.max(1,Math.round(c.todo*secs/60))} min · ${c.byHand.toLocaleString()} judged${c.auto?` · ${c.auto.toLocaleString()} marked for you`:''}`:'all done'}</span>
         <span class="audet">${loaded} of ${sh.items.length} have pictures${loaded<sh.items.length?` · <button type="button" class="linkbtn" id="auViewer">Keepa Viewer (free)</button>${audIsVA()?'':' · <button type="button" class="linkbtn" id="auTokens">load with tokens</button>'}`:''}${(()=>{const n=auNowNeed(sh).length;return n?` · <button type="button" class="linkbtn" id="auNowChk" title="Runs your filter maths (UK buy → UK sell) on today's Keepa numbers. Free instead: Keepa Viewer → Export → drop the file on this page">★ still a lead today? check ${n} to do · up to ${audNowCost(auNowNeed(sh))} tokens${typeof OA!=='undefined'&&OA.ready?' + shop prices':''}</button>`:'';})()}${typeof oaBtn==='function'?oaBtn(sh):''}</span></div></div>
@@ -964,7 +1021,7 @@ const AU_GRAPH_Q='domain=2&range=90&width=600&height=230&amazon=1&new=1&bb=1&sal
    so that is tried first once the Worker knows the route. */
 async function auFetchGraph(asin){
   if(AU_GRAPH.worker!==false&&!audIsVA()){try{   /* b288: the Worker chart costs a token — not for a VA */
-      const r=await fetch(`${WORKER}/keepa?path=graphimage&asin=${asin}&${AU_GRAPH_Q}`);
+      const r=await fetch(`${WORKER}/keepa?app=sourcing&path=graphimage&asin=${asin}&${AU_GRAPH_Q}`);
       const ct=r.headers.get('content-type')||'';
       if(r.ok&&/image/.test(ct)){const b=await r.blob();if(b.size>8000){AU_GRAPH.worker=true;return URL.createObjectURL(b);}}
       else AU_GRAPH.worker=false;   /* the Worker does not allow this route yet */
@@ -1030,7 +1087,6 @@ function auDone(sh,c){const disc=sh.items.filter(it=>(audGet(it.a)||{}).verdict=
 function auOpen(id){auView.pendingOpen=null;auView.mode='audit';auView.shelf=id;auView.q='';auView.limit=0;auView.order=null;auView.stay=new Set();auView.sel=new Set();auView.lastAt=0;
   location.hash='#audit='+id;const sh=audShelf(id);if(!sh)return;
   const vis=auVisible(sh);const V=audAll();const first=vis.findIndex(it=>audStatus(V[it.a],audSells(sh.id,it.a))==='todo');
-  const autoN=audAutoMissed(sh);if(autoN)toast(autoN+' marked Missed it for you — leads we had and never bought');
   auView.focus=Math.max(0,first);auView.opened=true;auView.noteHtml='';clearTimeout(AU_TRICKLE.t);renderAudit();
   (async()=>{const asins=sh.items.map(i=>i.a);
     await audPullProducts(asins);                                   /* what the shared cache already holds */
@@ -1048,7 +1104,9 @@ function auNeed(sh){const seen=new Set();return auVisible(sh).filter(it=>!audIsO
 /* b300: Jack's to-do rows with no "is it a lead today" answer from the last 3 days. Never automatic — his button (1 token each). */
 function auNowNeed(sh){if(!sh||!(typeof isJack==='function'&&isJack())||audIsVA())return[];const V=audAll();
   return sh.items.filter(it=>!audIsOld(it,sh)&&!audNowFresh(it.a)&&audStatus(V[it.a],audSells(sh.id,it.a))==='todo').map(it=>it.a);}
-async function auNowCheck(id){const sh=audShelf(id);const list=auNowNeed(sh);if(!list.length){toast('Every to-do row was checked in the last 3 days');return;}
+async function auNowCheck(id){if(audState.nowBusy)return;   /* b332: a second press while it is checking paid for the same products twice */
+  const sh=audShelf(id);const list=auNowNeed(sh);if(!list.length){toast('Every to-do row was checked in the last 3 days');return;}
+  audState.nowBusy=true;try{
   auNote(`Is it still a lead today? Checking ${list.length} on Keepa · 0 of ${list.length}`,0);
   const got=await audLoadDetails(list,true,(n,t)=>auNote(`Is it still a lead today? Checking on Keepa · ${n} of ${t}`,n/t*100),true);
   const N=audNowAll(),lead=list.filter(a=>N[a]&&N[a].lead).length;
@@ -1056,7 +1114,8 @@ async function auNowCheck(id){const sh=audShelf(id);const list=auNowNeed(sh);if(
   let oa=null;if(got&&typeof oaCheck==='function'&&oaNeed(list).length&&await oaReady()){const n0=oaNeed(list).length;auNote(`Shop prices on Google · 0 of ${n0}`,0);
     oa=await oaCheck(list,(n,t)=>auNote(`Shop prices on Google · ${n} of ${t}`,n/t*100));}
   auNote('');if(auView.shelf===id)renderAudit();
-  toast(got?`${got} checked · ${lead} still a lead today (gold chip)${oa&&oa.n?` · ${oa.lead} OA lead${oa.lead===1?'':'s'} (green)`:''}`:'Keepa did not answer — try again in a minute',!got);}
+  toast(got?`${got} checked · ${lead} still a lead today (gold chip)${oa&&oa.n?` · ${oa.lead} OA lead${oa.lead===1?'':'s'} (green)`:''}`:'Keepa did not answer — try again in a minute',!got);
+  }finally{audState.nowBusy=false;}}
 async function auTrickle(id,force){clearTimeout(AU_TRICKLE.t);const sh=audShelf(id);if(!sh||auView.shelf!==id||auView.mode!=='audit'||AU_TRICKLE.busy)return;
   const need=auNeed(sh);if(!need.length){auNote('');return;}
   const rest=`<button type="button" class="linkbtn" id="auLoadRest">load the rest now · about ${need.length} tokens</button>`;
@@ -1147,7 +1206,7 @@ async function auLoadTokens(){const sh=audShelf(auView.shelf);if(!sh)return;
 async function auPullSeller(id){id=(id||'').trim().toUpperCase();if(!/^A[0-9A-Z]{5,}$/.test(id)){toast('That does not look like a seller ID',true);return;}
   if(!await uiConfirm('Pull this seller\'s whole shelf from Keepa?\n\nThat costs about 10 tokens.',{ok:'Pull the shelf · ~10 tokens',tone:'token'}))return;
   toast('Asking Keepa…');
-  try{const r=await fetch(WORKER+'/keepa?path=seller&domain=2&storefront=1&seller='+id);const j=await r.json();
+  try{const r=await fetch(WORKER+'/keepa?app=sourcing&path=seller&domain=2&storefront=1&seller='+id);const j=await r.json();
     const s=j.sellers&&j.sellers[id];const asins=(s&&(s.asinList||[]))||[];
     if(!asins.length){toast('Keepa returned no products for that seller',true);return;}
     const all=audShelvesLocal();all[id]={id,name:(s.sellerName||id),seller:id,kind:'pulled',asins,at:today(),by:me()};audShelvesSave(all);
@@ -1160,7 +1219,8 @@ function auAddList(){const name=($('#auName')&&$('#auName').value.trim())||'Past
   const id='list-'+srcKeyFor(name);const all=audShelvesLocal();all[id]={id,name,seller:'',kind:'list',asins,at:today(),by:me()};audShelvesSave(all);
   if(cloudEnabled())audQueue({op:'up',table:'src_audit_shelves',rows:[{seller_id:id,name,kind:'list',asins,pulled_at:nowIso(),pulled_by:me()}]});
   toast(asins.length+' ASINs ready');auOpen(id);}
-async function auTakeFiles(list){const files=[...list].filter(f=>/\.csv$/i.test(f.name));if(!files.length)return;
+async function auTakeFiles(list){if(typeof claudeSift==='function')list=await claudeSift(list);   /* b333: Claude's results file is taken there, not read as a Keepa export */
+  const files=[...list].filter(f=>/\.csv$/i.test(f.name));if(!files.length)return;
   let rows=[];for(const f of files){try{const t=await readFileText(f);const ex=describeExport(parseCSV(t));if(ex&&ex.rows)rows=rows.concat(ex.rows);}catch(e){}}
   const prods=rows.map(audFromCsv).filter(Boolean);
   if(!prods.length){toast('No ASINs in that export',true);return;}
@@ -1210,6 +1270,11 @@ function auInit(){const host=$('#page-audit');if(!host)return;
     const trOpen=t.closest('tr[data-open]');if(trOpen){auOpen(trOpen.dataset.open);return;}
     if(t.closest('#auBack')||t.closest('#auBack2')){auBack();return;}
     if(t.closest('#auCards')){auView.cards=!auView.cards;auSave();renderAudit();return;}
+    if(t.closest('#auAutoBack')){if(audIsVA())return;const n=audAutoRows().length;if(!n)return;   /* b333 */
+      if(!await uiConfirm(`Put back the ${n.toLocaleString()} Missed-it${n===1?'':'s'} the page marked for you?\n\nThese go back to left to judge, with the suggested answer and its reason. Your own answers are not touched.`,{ok:'Put them back'}))return;
+      const rows=audAutoBack()||[];AU_AUTOBACK.n=rows.length;renderAudit();
+      toast(`${rows.length.toLocaleString()} put back \u2014 left to judge again`,false,{label:'Undo',fn:auAutoBackUndoGo});return;}
+    if(t.closest('#auAutoBackUndo')){auAutoBackUndoGo();return;}
     if(t.closest('#auRsort'))return;   /* the select handles itself, below */
     if(t.closest('#auRefresh')||t.closest('#auRefresh2')){toast('Refreshing…');await audPullShelves(true);await audPullVerdicts(true);renderAudit();toast('Up to date');return;}
     if(t.closest('#auPull')){auPullSeller($('#auSeller').value);return;}

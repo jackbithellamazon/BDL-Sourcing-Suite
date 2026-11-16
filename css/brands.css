@@ -265,6 +265,7 @@
 .ch.warn{color:var(--amber);border-color:rgba(251,191,36,.4);background:var(--amber-dim)}
 .ch.bad{color:var(--coral);border-color:rgba(247,106,131,.45);background:var(--coral-dim)}
 .ch.risk{color:#fff;background:var(--coral);border-color:var(--coral)}
+.ch.graph{color:#0B0E16;background:#22D3EE;border-color:#22D3EE;font-weight:800}   /* b324: GRAPH CHECK — read the graph for the sell */
 .ch.info{color:var(--iris);border-color:rgba(110,123,255,.4);background:rgba(110,123,255,.12)}
 .score.lo{color:var(--amber);border-color:rgba(251,191,36,.35)}
 .score.weak{color:var(--faint)}
@@ -3378,3 +3379,1050 @@ body:has(#page-audit.active) .wrap{max-width:none}
 #page-audit .aulist .aurow .auadded{font-size:12.5px;font-weight:600;color:var(--au-sub);white-space:nowrap}
 #page-audit .aulist .aurow .auadded.new{color:var(--iris2)}
 #page-audit .aulist .aurow .auadded.old{color:var(--faint);font-weight:500}
+/* b330: automated filters — last night's list on the run screen (the FIRST thing a VA sees), the READY badge, Filter check's two lists */
+.autopull{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:0 0 14px;padding:14px 18px;border-radius:14px;border:2px solid var(--line2);background:var(--ink)}
+.autopull .apmoon{font-size:28px;line-height:1}
+.autopull .apt{display:flex;flex-direction:column;gap:3px;flex:1 1 320px;min-width:0}
+.autopull .apl{font:800 17px var(--sans);color:var(--text)}
+.autopull .apx{font-size:13.5px;color:var(--muted);min-width:0}
+.autopull .apuse{font:800 15px var(--sans);padding:11px 22px;border-radius:11px;background:#22D3EE;border-color:#22D3EE;color:#06121a}
+.autopull .apuse:hover{filter:brightness(1.08)}
+.autopull.ok{border-color:#22D3EE;background:rgba(34,211,238,.10)}.autopull.ok .apl{color:#22D3EE}
+.autopull.on{border-color:var(--jade);background:rgba(54,214,164,.10)}.autopull.on .apl{color:var(--jade)}
+.autopull.none{border-style:dashed}.autopull.none .apl{font-size:15px}
+.autopull.wait .apl{font-size:14px;color:var(--muted)}
+.autobadge{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 9px;border-radius:999px;font:800 11.5px var(--sans);letter-spacing:.02em;white-space:nowrap;border:1px solid var(--line2);color:var(--muted)}
+.autobadge.ok{background:#22D3EE;border-color:#22D3EE;color:#06121a}
+.autobadge.none{border-style:dashed}
+.fcautobox{margin:0 0 16px;padding:12px 14px;border-radius:12px;border:2px solid rgba(34,211,238,.55);background:rgba(34,211,238,.06)}
+.fcautobox .fcdh{color:#22D3EE}
+.fcmanh{margin:4px 0 8px}
+.fctbl td.fcautoc{white-space:nowrap}
+.fcautobtn{white-space:nowrap}
+
+/* ===== b333 — Storefront audits: the suggested answer says itself on the row; the put-back bar ===== */
+#page-audit .aulist .aurow .aubtns .ausug{flex:1 1 180px;min-width:0;align-self:center;margin-left:8px;padding:1px 0 1px 10px;border-left:3px solid var(--c,#8B93A7);font:500 12.5px/1.32 var(--sans);color:#D6DCE8;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+#page-audit .aulist .aurow .aubtns .ausug b{font-weight:750;color:var(--c,#fff)}
+.auback{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0 0;padding:10px 14px;border-radius:12px;border:1px solid color-mix(in srgb,#FBBF24 45%,transparent);background:color-mix(in srgb,#FBBF24 9%,var(--surface2));font:500 14px/1.4 var(--sans);color:#E3E8F2}
+.auback .abt{flex:1 1 320px;min-width:0}
+.auback b{color:#fff;font-weight:750;font-variant-numeric:tabular-nums}
+
+/* ============ b333 (Jack, 16 Nov: "L yes · M yes · N yes · P ok · Q fix all text · S ok") ============ */
+/* L · the guide and the week's tiles sit behind one thin line each */
+.listfold{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 6px;min-height:28px}
+.lfb,.sumline{display:inline-flex;align-items:center;gap:8px;min-height:28px;padding:3px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);font:600 12.5px var(--sans);cursor:pointer;text-align:left;font-variant-numeric:tabular-nums}
+.lfb:hover,.sumline:hover{border-color:var(--line2);color:var(--text)}
+.lfb.on{border-color:var(--line2);color:var(--text)}
+.lfb .lfa,.sumline .lfa{font-style:normal;color:var(--faint);font-size:11px;width:10px}
+.lfb .lfl{font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:11px;color:var(--muted)}
+.lfb .lfv b,.sumline .lfv b{color:var(--text);font-weight:700}
+.lfb .lfd{font-style:normal;color:var(--faint);margin:0 7px}
+.listfold .lfp{display:inline-block;margin:0 2px 0 auto;font-size:12.5px;white-space:nowrap}
+#bKpis[hidden],#howTo[hidden]{display:none!important}
+#cardBrands .kpis{margin-bottom:10px}
+#cardBrands .howto{margin:0 0 10px}
+/* tighter head so the first filter sits high on a laptop */
+#cardBrands{padding-top:10px}
+#cardBrands>.cardhead{margin-bottom:6px}
+#cardBrands .yourday{margin:0 0 6px}
+#cardBrands .yourday .yd{padding-top:4px;padding-bottom:4px}
+#cardBrands .tb{flex-wrap:nowrap;margin-bottom:6px;gap:6px}
+#cardBrands .tb #lq{min-width:150px;flex:1 1 170px}
+#cardBrands .tb select{flex:0 1 auto;min-width:0}
+#cardBrands .tb .seg{flex:0 0 auto;margin-left:auto}
+#brandTbl tr.grp td{padding:5px 4px 2px}
+#brandTbl thead th{padding-top:3px;padding-bottom:3px}
+/* M · one status per row, the description in full, slimmer rows */
+#brandTbl td{padding-top:6px;padding-bottom:6px}
+#brandTbl .note{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow:hidden;text-overflow:clip;max-width:none;line-height:1.3;margin-top:1px}   /* two full lines instead of one cut line; the whole text is on hover (title) */
+#brandTbl .dstate{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:8px;row-gap:2px}
+#brandTbl .dstate .dnext,#brandTbl .dstate .dlast,#brandTbl .dstate .dbusy{flex:0 0 100%}
+#brandTbl td.lastc .l1.dim{color:var(--faint)}
+#brandTbl td.stc select.inl{margin:0}
+#brandTbl td.stc select.inl+select.inl{margin-top:3px}
+/* N · the Run summary as one line; click opens it exactly as before */
+.sumline{width:100%;justify-content:flex-start;font-size:14px;padding:6px 12px}
+.sumline .lfs{margin-left:auto;color:var(--muted);font-weight:600;font-size:12.5px;text-decoration:underline;text-underline-offset:3px}
+#sumEmpty:not([hidden])~#sumLine{display:none}
+.stepcard.sumfold>#sumGrid,.stepcard.sumfold>#story,.stepcard.sumfold>#vsYest,.stepcard.sumfold>#statusRow,.stepcard.sumfold>#sumDetail,.stepcard.sumfold>#fell{display:none!important}
+.stepcard.sumfold{gap:8px;padding-top:10px;padding-bottom:10px}
+.stepcard.sumfold .stephead .ss{display:none}
+/* P · the product name in full */
+.ltbl td.prod .t{display:block;-webkit-line-clamp:unset;-webkit-box-orient:initial;overflow:visible;white-space:normal;text-overflow:clip;overflow-wrap:anywhere}
+/* S · Today, on the home page */
+.todaypanel{margin:0 0 14px;padding:12px 16px}
+.todaypanel[hidden]{display:none}
+.tdhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 10px}
+.tdhead h2{margin:0;font:700 17px var(--sans);color:var(--text)}
+.tdhead .sub{font-size:12.5px;color:var(--muted)}
+.tdgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tdc{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:10px 10px 8px;min-width:0;display:flex;flex-direction:column;gap:3px}
+.tdh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 2px 5px;font:700 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tdh b{font:800 22px var(--sans);letter-spacing:0;font-variant-numeric:tabular-nums;text-transform:none}
+.tdh b.amber{color:var(--amber)}.tdh b.jade{color:var(--jade)}.tdh b.dim{color:var(--faint)}
+.tdl{display:flex;flex-direction:row;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:1px 10px;width:100%;padding:4px 8px;border-radius:8px;background:transparent;border:1px solid transparent;color:var(--text);font:600 12.5px var(--sans);text-align:left;cursor:pointer}
+.tdl:hover{background:var(--raise);border-color:var(--line2)}
+.tdl .tdn{white-space:normal;overflow-wrap:anywhere;line-height:1.3}
+.tdl .tdr{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;font-variant-numeric:tabular-nums}
+.tdl .tdr .whochip{margin:0;font-size:11px}
+.tdt{font-style:normal;font-weight:700}
+.tdt.coral{color:var(--coral)}.tdt.amber{color:var(--amber)}.tdt.jade{color:var(--jade)}.tdt.dim{color:var(--muted);font-weight:600}
+.tdb{font-weight:800;font-size:12.5px;color:var(--amber)}
+.tde{padding:6px 8px;font-size:12.5px;color:var(--muted);line-height:1.35}
+.tdm{align-self:flex-start;margin:2px 0 0;padding:4px 8px;border:0;background:none;color:var(--muted);font:600 11px var(--sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.tdm:hover{color:var(--text)}
+@media (max-width:900px){.tdgrid{grid-template-columns:repeat(2,minmax(0,1fr))}#cardBrands .tb{flex-wrap:wrap}}
+/* b333 · Claude's results on Storefront audits (Jack's page only) */
+.clbar{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;margin:10px 0 0;padding:8px 14px;border-radius:12px;border:1px solid color-mix(in srgb,#38BDF8 40%,transparent);background:color-mix(in srgb,#38BDF8 7%,var(--surface2));font-family:var(--sans);font-size:12.5px;line-height:1.4;color:#E3E8F2}
+.clbar b{color:#fff;font-weight:750;font-variant-numeric:tabular-nums}
+.clbar .clchk{display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:#E3E8F2}
+.clbar .clchk input{accent-color:#38BDF8;width:15px;height:15px;margin:0}
+.clbar .clwarn{color:#FBBF24}
+.clbar .clwarn b{color:#FDE68A}
+.clline{flex:1 0 100%;min-width:0;font-family:var(--sans);font-size:12.5px;line-height:1.45;font-weight:600;font-variant-numeric:tabular-nums;color:#BAE6FD;overflow-wrap:anywhere}
+.clline.cl-lead{color:#34D399}
+.clline.cl-dear{color:#FDA4AF}
+.clline.cl-none{color:#A9B4C7}
+.clline.cl-check{color:#FDE047}
+.clline a{color:#7DD3FC;font-weight:700;text-decoration:none}
+.clline a:hover{text-decoration:underline}
+#auClaudeDrop.over{border-color:#38BDF8;background:color-mix(in srgb,#38BDF8 18%,transparent);color:#fff}
+/* ===== b333 Q · text sizes (Jack, 16 Nov: "fix all text side"). Brands / Filters, the run screen, the top bar and the tool cards now use five text sizes — 11 · 12.5 · 14 · 17 · 22 px — and 9.5 px only inside a tight table cell. Every line below is an older rule's size, re-stated for these pages only (same order, so the same rule still wins); nothing else about any rule changes. Generated by b333-work/qgen.py. ===== */
+:where(#page-brands,nav.pagenav,header.topbar,#leadsReady) :where(button,input,select,textarea){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.brand h1){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.brand .tag){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.privacy){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.theme-toggle){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pagebtn .pt){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pagebtn .ps){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tab){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tab .step){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.intro){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.field label){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.field input){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.field select){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rule){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rule .chip){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rule .or){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.drop .big){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.drop .small){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.files .f){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.warn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.empty){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.yield .head){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.yield .total){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.bar .seg .n){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.bar .seg .l){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btn){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.out){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(table){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(thead th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(td.asin){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(td.title){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pill){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.stat .k){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.stat .v){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.scorebox .head){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.scorenum){font-size:54px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.scorenum .of){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.scoretrack .ticks){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.verdict){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pricebox label){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.money .cur){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.money input){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pricebox .sub){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.checksbox .grouplab){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.check .lab){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.check .off){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.promobox .head){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.finalprice){font-size:46px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.saveline){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.breakdown div){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.breakdown div span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fxbtn){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fxchip){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.linkbtn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rulesbox){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.slot .sk){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.slot .sn){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.slot .sv){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fstage .fl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fstage .fn){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.stats .stat .sub){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.statusrow .vs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.spill){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.spill b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.reasons-wrap .head){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.reasons-wrap .total){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.reason){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.warn.feewarn em){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.hint){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(footer){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.toast){font-size:14px}
+@media (max-width:640px){:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.scorenum){font-size:44px}:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.finalprice){font-size:38px}}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.cardhead h2){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.cardhead .sub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btn.sm){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btn.xs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kpi .kv){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kpi .kl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tb .search input){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tb select){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.seg button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.avatar){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.bname){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ttag){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.flags .f){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.flags .fk){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rule){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.cad){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.due){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lastrun){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lastrun .sub){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.note){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.menu .pop button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.drawer h3){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.drawer .dsub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form textarea){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .mks label){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .hintline){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.hist .h){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.hist .h .w){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.hist .h .v){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.runhead .avatar){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.runhead h2){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.runhead .meta){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.stephead .n){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.stephead .sh){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.stephead .ss){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.keeparow .lab){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.keeparow a){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dropz .big){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dropz .small){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fchip .k){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fchip .n){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fchip .r){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fchip .x){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.asinbar .am){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sincenote){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sum .sv){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sum .sl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.emptysum){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fell){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.leadhead h3){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.leadhead .sub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.leadhead .search input){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.leadhead select){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.leadhead input.num){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.leadhead .chk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl thead th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.idx){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.score){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.asin){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.prod .s){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.mk){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.num .sub){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.spill){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.spill b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.chg){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vb){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vr){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vnote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.flagc){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rowacts a){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pager){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pager .pg button){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.testmode){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.build){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sbox h3){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sbox .ssub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sbox .ro){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kvlist div){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.chips .c){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.chips .c button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sbox input.txt){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fxchip){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.st){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tok){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ch){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.potl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ysell){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pm){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pmc .sub){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dtbl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dtbl th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dtbl td .sub){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dtbl td.dnote){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sbox .sel){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sbox .chk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl tr.grp td){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl tr.grp td span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.owner){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.own){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.flags .f){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .tok){font-size:11px}
+@media (max-width:1100px){:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.cad){font-size:11px}}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl tr.grp td .gl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl tr.grp td .gn){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.avatar){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.bname){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .note){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.ownc){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .flags .f){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.st){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.cadc){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .l1){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .l2){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .nx){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btn.run.xs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.ownc){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.cadc){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .l1){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .nx){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .l2){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.whosel){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.cloudpill){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.inprog){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.approvals .ah){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.approvals .ar .why){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.approvals .ar .by){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.approvals .ar .wait){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vb.B){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.blpick .t){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.blpick .brandb){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rowacts button){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vatgrid textarea){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dtbl .stp){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.gs .gn){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.gs .gt){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.gs .gd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.floors .ft){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.floors .fs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.floors .fin label){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.floors .fin input){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.nolinkmsg){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ssec h3){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ssec p){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.scope){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.stc .inprog){font-size:9.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .field label.chk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dhead .avatar){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fst){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .field>label:first-child){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.segf button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.segf button span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rcard b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.scard b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rcard span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.scard span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.mk-chip span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.linkrow input){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .field .rcard){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .field .scard){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .field .mk-chip){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .field .mk-chip span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .field label.chk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .field .rcard b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .field .scard b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .field .rcard span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.form .field .scard span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl thead th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.idx){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.asin){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.prod .t){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.prod .s){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.num){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.num b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.num .sub){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.chg){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ch){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.score){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.spill){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rowacts a){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ysell){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vr){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.leadhead .sub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.floors .fs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.floors .fin label){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.story){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.story p.s2){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.story b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.statusrow .vs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sum .sl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fell .fr){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fell .fn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.gs .gt){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.gs .gd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.runhead .meta){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .note){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .l2){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .nextc .l2){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kpi .kl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.cardhead .sub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.story p.s3){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.story p.s3 b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fxrow input){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.keeparow .mkhint){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.asinl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.prod .t){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.prod .s){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.mk){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.floors .ft){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl thead th){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.num b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ch){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.spill){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.spill b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vb){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.asinl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.story b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.floors .ft){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.linkc .rowacts a){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pms-r1 .pm){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pms-r1 .pm){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sumdetail .dh){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sumdetail .dr){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td .bname){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.lastc .l1){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.nextc .nx){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .grp .gl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.stepcard .floors .fs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sum .sv){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sum .sl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.stepcard .story){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.stepcard .story p.s2){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sumdetail .dr){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.prod .rowacts a){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.oabest){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.oabest.dim){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.pmc .pm){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.mk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcap){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kpi .ks){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pmhint){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.brandnote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.wgt){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.wgs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.wgb button){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.storednote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.prod .rowacts a){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.floors label small){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pill.tok){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.logtbl td.lead b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.logtbl .pill-new){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.logtbl .pill-better){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.logtbl .pill-worse){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.logtbl .pill-gone){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.stc .cad){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.nextc .nx){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.nextc .nx.due){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.nextc .l2){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.floors label small){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.twocol.one .dropz .big){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.twocol.one .dropz .small){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vsyest .vsh){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vstbl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vstbl th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vstbl td.num b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vstbl i){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vslines p){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sum .sv){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sum .sl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.story){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.story p.s2){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.story b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vsyest .vsh){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vstbl th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vstbl td.num b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vslines p){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.nextc .nx.done){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.nextc .nx.paused){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl select.inl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl select.inl.cadsel){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#viewRun .twocol.one .dropz .big){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#viewRun .twocol.one .dropz .small){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvnav button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvnav button b){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.seg button b){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.whochip){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl select.inl.ownsel){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl select.inl.stsel){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.logtbl td .whochip){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#rlTb .chk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.hstbl .cp){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.hstbl .sc){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.hstbl td.lnks a){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.runhead .meta .rl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.runhead .meta .mchip){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.runhead .meta .mnote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.runstrip .rl-lab){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.runstrip .rl-tot){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rchip){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rchip .d){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rchip b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rchip .s){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rchip .y){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.rchip .tr){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .ghead){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.seg.segl button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.yourday .ydn .whochip){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.yourday .ydt){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.yourday .ydt b){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.howto .hh b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.howto li){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide.full .gs .gt){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gh){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ausync){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aukpis .kv){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aucard .nm){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aucard .meta){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aucard .prog){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aucard .prog b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auav){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupill){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubox h3){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.audrop){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auhead h2){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auhead .meta){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupline){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupline b){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupline .audet){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autabs button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autabs .search input){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auimg){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aut){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aufacts){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auasin){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulinks a){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aub kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aureasons){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aurs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aurs kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumore){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupimg.none){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupanel h3){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aufgrid .k){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aufgrid .v){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulinksbig a){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ausec .h){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auours){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auours b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aukeys){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aukeys kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.audone h3){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aucounts button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aut){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aurow .auasin){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aurow .auimg){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aufacts){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aujudge){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupill.big){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aunodet .ssub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupanel h3){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aufgrid .v){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aufgrid .k){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autabs button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupline b){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aut.plain){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aunote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aut){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aufacts){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulinksbig .aulk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aujudge){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auadd summary){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aurow .aut){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aurow .auasin){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autools .l){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autools select){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autoolsn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow > .auimg){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow .aut){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupill .auauto){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autbl .auav.sm){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autbl td.lsrc b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autbl .btn.xs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow .aub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow .aub kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow .aulk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupanel .aulk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulinksbig .aulk){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow .aurs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow .aurs kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aureasons){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auglab){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auglab kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aukeys){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aukeys kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aunext){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.eubar .eutext b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.eubar .eutext span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aurev b){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aurev span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autabs button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autabs button b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aufgrid .pend){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ausortby>span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ausortby select){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.cutwarn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sellc .ysell){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lv){font-size:9.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvlearn){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvstale){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.jpill){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.optbar){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.wgmail input){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.wgmsg){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.wgor){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.authpill){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pastbar){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.authnow){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.authsend input){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.eupanel){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.euprow){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.eupmore){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.emptyrow){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.emptyrow b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tbmenu .caret){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lv){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.num .lv b){font-size:11px}
+@media (max-width:1320px){:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl){font-size:12.5px}}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vr){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow .aumoney .aupf){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow .auelse){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aureasons .aurs){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow .aub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow .aub kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow .aulk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aunext){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl .chg .viab){font-size:9.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.daybar .dbt){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.gainb){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.oatarg .oah b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.oatarg .oah span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.oatbl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.oatbl th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.oatbl td.p .a){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.oatbl td.n .s){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bwhy){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bn b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bb){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bb kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bgrp .bl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bl2){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bl2 kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow > .aureasons .aurs){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aulist .aurow > .aureasons .aurs kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.authnow){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.teambox .tbh span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trow .temail){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trow .tstat){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lockbox p){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lksteps){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lksteps code){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lklogo){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lkcard h1){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lkcard p){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lkrow input){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lkmsg){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.asinl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.toast .tact){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.nextc .nx){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.nextc .nx.due){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.nextc .nx.done){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.nextc .nx.paused){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.nextc .l2){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcb button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcold){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcsrc){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcsrc select){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcprog){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcprog b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcl2){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcseg button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcpop .t){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcpop .vr){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcpop .vr kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kct-h .t){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kct-h .s){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kct){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kct thead th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kct td b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kct td span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kct-l .t){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcla){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcla code){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcla .fr){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kct-e){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guestbar){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guestbar .gas){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guestbar .gas select){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guestbox .glist){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.teambox .tpw){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl select.inl.cadsel){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.lastc .l1 .whochip){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.lastc .l2 .tr:not(.zero)){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.teambox .wgmsg .tlink){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumine summary){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autbl .auarch.inl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auarchbar){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autools .autick){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumine .aujd){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumine .aujd select){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumore){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupanel .augraph.big .auglab){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupanel .auphead h3){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow > .auimg){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aut){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aufacts){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .auasin){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aumoney .aup){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aumoney .aupf){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aub kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aub.on .auelse){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow > .aureasons){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aurs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .auhead .meta){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aupline){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aupline .audet){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .autools .l){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .autabs button kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aufgrid .k){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aufgrid .v){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .auours){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aukpis .kl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aukpis .ks){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aumore){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aunote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aunote .linkbtn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumine2){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumine2 .amt){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumine2 .amsrc){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumine2 .amn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumine2 .amn b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumine2 .aujd){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumine2 .aujd select){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aumine2 .ampaste summary){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aut){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aulk span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aub kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow > .aureasons){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aumark){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aucard .nm){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aucard .meta){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aucard .prog){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aucard .prog b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aucard)::after{font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .ausortby>span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aukpis .kv){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aukpis .kl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aukpis .ks){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aub kbd){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aulk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aulk span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aufacts){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .auasin){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aumoney .aup){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aureasons){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aurs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aufgrid .k){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aufgrid .v){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .ausec .h){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .auours){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aupanel .ssub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aupanel .auphead h3){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulinksbig .aulk){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aukeys){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .autoolsn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .autools .autick){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .autabs button){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aupline){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .auhead .meta){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aunote){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aumore){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bwhy){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bl2){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aubulk .bb){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .audone2 h3){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .audone2 p){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .audone2 .aucounts button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.brand.home h1){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.brand.home h1)::after{font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(html:not([data-theme="light"]) .brand .tag){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(html:not([data-theme="light"]) .build){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pill.tok){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.cloudpill){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(html:not([data-theme="light"]) .theme-toggle){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(html:not([data-theme="light"]) .whosel){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pagebtn .pt){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pagebtn .ps){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.authpill){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.aupanel .augraph.big .augwait){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .auadd summary){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aubox h3){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aubox .ssub){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aubox input.txt){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aubox textarea.txt){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .audrop){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .auarchbar){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.teambox .tstat){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.teambox .tstat em){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.teambox .tipnote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.teambox .tipnote code){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lockbox .lkalways){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pagebtn .pt .ponly){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.teambox .tstat){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.teambox .tstat em){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lsfullbar){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lsfullbar button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.storemeter .smh){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.storemeter .smh b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.storemeter .smleg){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.storemeter .smwarn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.storemeter .smapps){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.storemeter .smitems){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.storemeter .smitem .kind){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#keepaRow .apihint){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcc textarea.txt){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kccrow .l){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kccmk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kccn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tab .ponly){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.lastc .opened){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .auoa){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aufresh){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#kcCheck .kcsteps){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gseg span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gseg span i){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gbig){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gkick){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gtitle){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gsub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gtog){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gdo li){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gdo li)::before{font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gh){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.colshead h3){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.colshead p){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcg h4){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kss){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcl i){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.colsfoot){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.guide .gcols){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.stephead .linkbtn){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.cutwarn .linkbtn){font-size:inherit}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.colsneed b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.colsneed i){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kcl i.need){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#cardAct .acthead){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#cardAct .actsum b){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#cardAct .actsum span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#cardAct .actline){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#cardAct .actlog summary){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#cardAct .actlog li){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#cardAct .actnote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dropnudge){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl td.lastc .wkleads){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.leadsready){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dropall b){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dropall span){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#floorTog){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#story .s4){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .pghead>b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .pghead>span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .pgcount b){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .pcolh){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .pmk){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .pmk .fl){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .pmk small){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .pcell .box){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .pcell .t1){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .pcell .t2){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .go){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .x){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.primegrid .pnote){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#asinBar .vpart){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl .primenote){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pnchip){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#runMeta .pnrun){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.workbox .workhead b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.workbox .workhead span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.workbox .wspan){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.workbox h4){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.workbox .worktbl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.workbox .worktbl th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.seg.segl .segsep){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.flagc .primenote){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.pmc .primenote){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#kcCheck .kcdrop .t>b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#kcCheck .kcdrop .t>span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trx){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trsheet){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trtl li){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trtl .trd){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trtl .trwho){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trtag){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trnone){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trcard textarea){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trout){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trtbl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trtbl th){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tra a){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trtitle){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trwhy){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trnote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trbusy){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.mkpick .lab){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.mkpick button){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.mkpick button b){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pwhat summary){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pwhat p){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lfnote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dstate .dbig){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dstate.paused .dbig){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dstate.oneoff .dbig){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dstate .dsub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dstate .dnext){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dstate .dbusy){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.btbl .pnchip){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.vpwarn){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvhead h3){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvhead p){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvsteps .lvi){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvsteps .lvt b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvsteps .lvt small){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvnext .lvlab){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvnext p){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvbtns .btn.primary){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lvfoot){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl .primenote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.flagc .primenote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl td.pmc .primenote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl .oanote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ltbl tr.oarow .oanot){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.chg.why b){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dstate .druns){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.uibody){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.uisteps li){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.uisteps li)::before{font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.uiin){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.flagcard .lvsteps li .lvt b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.refsteps .lvt b){font-size:inherit}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.refsteps .lvt>b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.refsteps li.now .lvt small){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.refsteps li.now .lvt small.reffile){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.dstate .dlast){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.busycard .btitle){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.busycard .bsub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.busycard .bsteps li){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.busycard .bsteps small){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.mkpick .lfhint){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.p-old){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auvah b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auvan2){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auvap .aucounts span){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auvawhy){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auvach){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auvashelves summary){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auvasteps){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.donesync){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ofl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(button.ofl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.trhist span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auhistl .ofl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auhistl button.ofl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auhistl .ofl .oft){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ofl .oag){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auofsum .l){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ofsb){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ofsb.sub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.ofsw){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lastexp){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.pms .gshop){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.buyc .bulk){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.uibody .uiol){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.uibody .uiwarnline){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kp){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kp .kpn){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kp-nav){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kp-search){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kp-mh){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kp-mi i){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kp-sub){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kp-note){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kp-dlg>b){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kpfiles){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kpfiles i){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kpsteps){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kpwrap .kpsteps li){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.kpwrap .kpsteps li b){font-size:inherit}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tabcard h3){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tabcard p){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tabcard .tabsmall){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tabic){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.a2acell){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fcsum .fcsh span){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fcsum .fcsn b){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fcsum .fcsn small){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fcst){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fctbl .linkbtn.fcopen){font-size:inherit}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fcnote){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fctbl select.inl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fctbl select.inl.cadsel){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fctbl select.inl.ownsel){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fctbl select.inl.stsel){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fctbl select.inl.cadsel){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auhistl .auwhy){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auwhy .awt){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auwhy .trcar){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.yourday .ydlh){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.yourday .ydlt){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fcdh){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fcday b){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fcday i){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.fcday small){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .auadded){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autopull .apmoon){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autopull .apl){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autopull .apx){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autopull .apuse){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autopull.none .apl){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autopull.wait .apl){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.autobadge){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(#page-audit .aulist .aurow .aubtns .ausug){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.auback){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lfb){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sumline){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lfb .lfa){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sumline .lfa){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.lfb .lfl){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.listfold .lfp){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sumline){font-size:14px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.sumline .lfs){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tdhead h2){font-size:17px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tdhead .sub){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tdh){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tdh b){font-size:22px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tdl){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tdl .tdr){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tdl .tdr .whochip){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tdb){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tde){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tdm){font-size:11px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.clbar){font-size:12.5px}
+:is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.clline){font-size:12.5px}

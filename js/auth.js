@@ -190,11 +190,13 @@ async function authStore(tok){
   if(first)signinRecord(nm,u.email);   /* b153: Jack's Team list shows who is in */
   return true;}
 /* tokens last an hour; renew quietly when the app opens */
+function authRefused(status){return status===400||status===401||status===403;}
 async function authRefresh(){const s=authSession();if(!s||!s.refresh_token)return false;
   if(Date.now()-s.at<(s.expires_in-300)*1000)return true;
   try{const r=await fetch(authBase()+'/token?grant_type=refresh_token',
       {method:'POST',headers:{apikey:authKey(),'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
-    if(!r.ok){authClear();return false;}
+    /* b332: only a real refusal signs her out. A busy or broken server (429 / 5xx) used to sign a VA out mid-shift — now the sign-in is kept and tried again next time */
+    if(!r.ok){if(authRefused(r.status)){authClear();return false;}return true;}
     const j=await r.json();return await authStore({access_token:j.access_token,refresh_token:j.refresh_token,expires_in:j.expires_in});}
   catch(e){return true;}}
 function authSignOut(){const n=authedName();authClear();if(typeof lsSet==='function')lsSet(ME_KEY,'');

@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>(function(){try{const s=localStorage.getItem('sourcing-suite-theme');if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;}catch(e){}})();</script>
-<link rel="stylesheet" href="css/base.css?v=b322">
-<link rel="stylesheet" href="css/brands.css?v=b322">
+<link rel="stylesheet" href="css/base.css?v=b333">
+<link rel="stylesheet" href="css/brands.css?v=b333">
 </head>
 <body>
 <div class="wrap">
@@ -65,6 +65,7 @@
   <!-- PAGE 1 · LEAD TOOLS (unchanged)                          -->
   <!-- ======================================================= -->
   <div class="page active" id="page-lead">
+    <div class="card todaypanel" id="todayPanel" hidden></div>
     <div class="tabs">
       <button class="tab active" data-tab="lead"><span class="step">1</span>Score lead</button>
       <button class="tab" data-tab="promo"><span class="step">2</span>Promo price</button>
@@ -284,8 +285,9 @@
       <div class="lvnav" id="lvNav"><button class="on" data-tab="brands" type="button"><span class="t">Brands / Filters</span><b id="lvnBrands">0</b></button><button data-tab="runs" type="button"><span class="t">Runs</span><b id="lvnRuns">0</b></button><button data-tab="leads" type="button"><span class="t">Lead history</span><b id="lvnLeads">0</b></button><button data-tab="act" type="button" class="jackonly" hidden><span class="t">VA activity</span><i class="ponly">Only you</i></button><button data-tab="fc" type="button" class="jackonly" hidden><span class="t">Filter check</span><i class="ponly">Only you</i></button></div>
       <div class="card" id="cardBrands">
         <div class="cardhead"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><h2>Brands / Filters</h2><span class="sub">every saved Keepa search we run · greyed = not switched on yet · <b>In progress</b> = someone is on it right now</span>
-          <div class="right"><button class="btn ghost sm" id="howToShow" type="button">How to use this</button><button class="btn primary sm" id="addBrand" type="button"><span class="lab">+ Add brand / filter</span></button></div></div>
+          <div class="right"><button class="btn ghost sm" id="howToShow" type="button" hidden>How to use this</button><button class="btn primary sm" id="addBrand" type="button"><span class="lab">+ Add brand / filter</span></button></div></div>
         <div class="yourday" id="yourDay" hidden></div>
+        <div class="listfold" id="listFold"></div>
         <div class="howto" id="howTo" hidden>
           <div class="hh"><b>How a day works</b><button class="linkbtn" id="howToHide" type="button">Got it, hide this</button></div>
           <ol>
@@ -381,6 +383,7 @@
         </div>
 
         <div class="runstrip" id="runStrip" hidden></div>
+        <div class="autopull" id="autoPull" hidden></div>
         <div class="guide" id="guide"></div>
         <div class="twocol">
           <div class="stepcard">
@@ -422,6 +425,7 @@
             <div class="stephead"><span class="n">2</span><div><p class="sh">Run summary</p><p class="ss">Key numbers from this export</p></div>
               <div class="right"><button class="linkbtn" id="rulesToggle" type="button">Show the rules</button></div></div>
             <div class="emptysum" id="sumEmpty">Drop the exports and the numbers appear here.</div>
+            <button class="sumline" id="sumLine" type="button" hidden title="Click to show or hide the full Run summary"></button>
             <div class="sumgrid" id="sumGrid"></div>
             <div class="story" id="story" hidden></div>
             <div class="statusrow instory" id="statusRow"></div>
@@ -434,7 +438,7 @@
           <div><b>Rule 2 · UK Amazon-to-Amazon</b> Amazon selling it · needs 9+ a month · buy = Amazon's price now, less a Business price, coupon or S&amp;S 15% when Keepa shows them (the ★ Prime price while the Prime event is on) · sell = the one sell price below · kept if the % off needed to reach 5% ROI is within what the rule allows — 10%, or the brand's own code if that is bigger · then the same pace bar as Rule 1 · anything selling for £100+ needs 8% ROI or £15 profit · under-£60 leads need a score of 35+. Every UK filter runs this — Mera's, Suz's, the next one.</div>
           <div><b>The one sell price</b> (both rules) <b>under £60</b>: Buy Box 90-day average +6%, never above the FBA sellers' 90-day average — or the FBA 30-day level when 8+ FBA sellers sit above the box or the box is often empty · <b>£60+</b>: Amazon owns the Buy Box → Buy Box 90-day average +8%, never above the FBA 90-day average; Amazon dips in and out → the third-party sellers' level · never above the highest the Buy Box has ever been · a price you type on the row beats all of it.</div>
           <div><b>Score /100</b> mostly £ a month (profit × sales), then ROI, then profit per unit · under a <i>confirmed</i> 50 a month the score stops at 60 · +5 when Amazon confirms 100+ a month and FBA sellers already sell it.</div>
-          <div><b>Rule 3 · VAT</b> tea and coffee are 0% VAT on both sides (the product, never the machine) · contraceptives 5% · everything else 20%. A VA can set 0% or 20% on the row; that beats the keyword rule, which beats the 20% default. Keyword lists are in Settings.</div>
+          <div><b>Rule 3 · VAT</b> tea and coffee are 0% VAT on both sides (the product, never the machine) · baby feeding bottles 0% (assumed — confirm on the row; never the warmer, steriliser or teats) · contraceptives 5% · everything else 20%. A VA can set 0% or 20% on the row; that beats the keyword rule, which beats the 20% default. Keyword lists are in Settings.</div>
           <div><b>To review</b> = new on this filter, or better than on its last run (2p counts), plus anything from the last run nobody has done yet. A lead that dropped off and came back is New again, with a note. Blacklisted never shows. <b>✓ Done</b> (next to Open all in Keepa) finishes the filter — a run not finished within 12 hours goes back to NOT DONE and needs running again.</div>
           <div><b>Flags, never rules</b> the graph reading stays with the human. A No needs a reason — that's what the system learns from.</div>
         </div>
@@ -526,7 +530,7 @@
             <button class="btn primary sm" id="dAdd" type="button"><span class="lab">Add</span></button>
             <button class="btn ghost sm" id="dReset" type="button">Reset to the 6 Sep list</button>
           </div></div>
-        <div class="sbox wide"><h3>Rule 3 · what counts as 0% VAT <span class="scope shared">shared</span></h3><p class="ssub">Tea and coffee are 0% VAT. A lead is worked at 0% when its title or category contains a word from the first list and none from the second, so <i>coffee beans</i> is 0% and <i>coffee machine</i> is 20%. Whole words, comma-separated. A VA's own 0% / 20% click on a lead always wins over these lists.</p>
+        <div class="sbox wide"><h3>Rule 3 · what counts as 0% VAT <span class="scope shared">shared</span></h3><p class="ssub">Tea and coffee are 0% VAT. A lead is worked at 0% when its title or category contains a word from the first list and none from the second, so <i>coffee beans</i> is 0% and <i>coffee machine</i> is 20%. Whole words, comma-separated. The built-in words always apply — what you save here is added to them. A VA's own 0% / 20% click on a lead always wins over these lists.</p>
           <div class="vatgrid"><div><label class="ssub">0% VAT when it says…</label><textarea id="vatZero" spellcheck="false"></textarea></div><div><label class="ssub">…but 20% if it also says</label><textarea id="vatNot" spellcheck="false"></textarea></div></div>
           <div class="row" style="margin-top:8px"><button class="btn solid sm" id="vatSave" type="button">Save</button><button class="btn ghost sm" id="vatReset" type="button">Reset to defaults</button></div></div>
       </div>
@@ -556,34 +560,38 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="js/core.js?v=b322"></script>
-<script src="js/parse.js?v=b322"></script>
-<script src="js/rule1.js?v=b322"></script>
-<script src="js/rule2.js?v=b322"></script>
-<script src="js/export.js?v=b322"></script>
-<script src="js/rule4.js?v=b322"></script>
-<script src="js/queue.js?v=b322"></script>
-<script src="js/sources.js?v=b322"></script>
-<script src="js/prime.js?v=b322"></script>
-<script src="js/cloud.js?v=b322"></script>
-<script src="js/auth.js?v=b322"></script>
-<script src="js/leadtools.js?v=b322"></script>
-<script src="js/keepaconsole.js?v=b322"></script>
-<script src="js/euprice.js?v=b322"></script>
-<script src="js/kcache.js?v=b322"></script>
-<script src="js/apirun.js?v=b322"></script>
-<script src="js/brands.js?v=b322"></script>
-<script src="js/history.js?v=b322"></script>
-<script src="js/audit.js?v=b322"></script>
-<script src="js/auditva.js?v=b322"></script>
-<script src="js/trace.js?v=b322"></script>
-<script src="js/oashop.js?v=b322"></script>
-<script src="js/notice.js?v=b322"></script>
-<script src="js/leave.js?v=b322"></script>
-<script src="js/kcjudge.js?v=b322"></script>
-<script src="js/activity.js?v=b322"></script>
-<script src="js/fcheck.js?v=b322"></script>
-<script src="js/guest.js?v=b322"></script>
-<script src="js/boot.js?v=b322"></script>
+<script src="js/core.js?v=b333"></script>
+<script src="js/parse.js?v=b333"></script>
+<script src="js/rule1.js?v=b333"></script>
+<script src="js/rule2.js?v=b333"></script>
+<script src="js/export.js?v=b333"></script>
+<script src="js/rule4.js?v=b333"></script>
+<script src="js/queue.js?v=b333"></script>
+<script src="js/sources.js?v=b333"></script>
+<script src="js/prime.js?v=b333"></script>
+<script src="js/cloud.js?v=b333"></script>
+<script src="js/auth.js?v=b333"></script>
+<script src="js/leadtools.js?v=b333"></script>
+<script src="js/keepaconsole.js?v=b333"></script>
+<script src="js/euprice.js?v=b333"></script>
+<script src="js/kcache.js?v=b333"></script>
+<script src="js/autocut.js?v=b333"></script>
+<script src="js/apirun.js?v=b333"></script>
+<script src="js/brands.js?v=b333"></script>
+<script src="js/today.js?v=b333"></script>
+<script src="js/history.js?v=b333"></script>
+<script src="js/audit.js?v=b333"></script>
+<script src="js/auditva.js?v=b333"></script>
+<script src="js/trace.js?v=b333"></script>
+<script src="js/oashop.js?v=b333"></script>
+<script src="js/claudeoa.js?v=b333"></script>
+<script src="js/notice.js?v=b333"></script>
+<script src="js/leave.js?v=b333"></script>
+<script src="js/kcjudge.js?v=b333"></script>
+<script src="js/activity.js?v=b333"></script>
+<script src="js/fcheck.js?v=b333"></script>
+<script src="js/autorun.js?v=b333"></script>
+<script src="js/guest.js?v=b333"></script>
+<script src="js/boot.js?v=b333"></script>
 </body>
 </html>

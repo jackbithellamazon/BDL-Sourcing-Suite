@@ -47,11 +47,16 @@ function eupCents(p){const cur=(p&&p.stats&&p.stats.current)||[];
 async function eupBalance(){try{const r=await fetch(WORKER+'/health');const j=await r.json();
   return j&&j.tokensLeft!=null?j.tokensLeft:null;}catch(e){return null;}}
 
+/* b332 (16 Nov audit, bug 7): a call that failed or was refused (no network, 429, a Worker error, no `products` list in the answer) used to
+   be remembered as "Amazon is not selling" for 12 hours, so real EU leads vanished with the wrong reason. Now only a real answer is cached:
+   the products of a failed call are left un-cached and counted on the file as `notChecked`, so the page can say "not checked — press again". */
+function eupAnswered(ok,js){return ok!==false&&!!js&&Array.isArray(js.products)&&!js.error;}
+function eupNotChecked(got){let n=0;Object.values(got||{}).forEach(f=>{n+=(f&&f.notChecked)||0;});return n;}
 /* Buys the missing prices and returns {DE:{name,rows,asins}, …} — the same shape paintSlots
    and rule1Compute already expect from a dropped file. onStep(done,total,market) drives the UI. */
 async function eupFetch(asins,markets,onStep,rate){
   rate=rate>0?rate:0.86;   /* GBP per EUR, same number the run screen shows */
-  const cache=eupCache(),out={},miss={};let need=0;
+  const cache=eupCache(),out={},miss={},failed={};let need=0;
   markets.forEach(mk=>{miss[mk]=asins.filter(a=>!eupHit(cache,mk,a));need+=miss[mk].length;});
   let done=0;
   for(const mk of markets){
@@ -63,9 +68,10 @@ async function eupFetch(asins,markets,onStep,rate){
     for(let i=0;i<miss[mk].length;i+=EUP_BATCH){
       const part=miss[mk].slice(i,i+EUP_BATCH);
       if(onStep)onStep(done,need,mk);
-      let js=null;
-      try{const r=await fetch(WORKER+'/keepa?path=product&domain='+dom+'&stats=90&history=0&asin='+part.join(','));
-        js=await r.json();}catch(e){js=null;}
+      let js=null,httpOk;
+      try{const r=await fetch(WORKER+'/keepa?app=sourcing&path=product&domain='+dom+'&stats=90&history=0&asin='+part.join(','));
+        httpOk=r.ok;js=await r.json();}catch(e){js=null;}
+      if(!eupAnswered(httpOk,js)){failed[mk]=(failed[mk]||0)+part.length;done+=part.length;if(onStep)onStep(done,need,mk);continue;}   /* b332: no answer is not "no offer" */
       const got=(js&&js.products)||[];if(got.length&&typeof kcPut==='function')kcPut(dom,got,'stats');   /* b322: saved for every app */
       /* Keepa answers in the order asked, but never trust that — match on the ASIN it sends back. */
       const byAsin={};got.forEach(p=>{if(p&&p.asin)byAsin[p.asin]=p;});
@@ -77,7 +83,7 @@ async function eupFetch(asins,markets,onStep,rate){
   eupPut(cache);
   markets.forEach(mk=>{
     const rows=[];asins.forEach(a=>{const e=eupHit(cache,mk,a);const r=e?eupRow(a,e.cents,rate):null;if(r)rows.push(r);});
-    out[mk]={name:'Keepa · '+mk+' · '+today(),rows,asins:rows.map(r=>r.ASIN),fromKeepa:true,hasSince:true};
+    out[mk]={name:'Keepa · '+mk+' · '+today()+(failed[mk]?' · '+failed[mk]+' not checked':''),rows,asins:rows.map(r=>r.ASIN),fromKeepa:true,hasSince:true,notChecked:failed[mk]||0};
   });
   return out;
 }

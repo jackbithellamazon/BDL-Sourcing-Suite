@@ -70,9 +70,25 @@ function applyQueue(out,rule,prevMap,verdicts,carry){prevMap=prevMap||{};verdict
   return Object.entries(prevMap).filter(([a])=>!seen.has(a)).map(([a,p])=>[a,(p.state.title||'')+(p.state.title?' · ':'')+`was £${(+p.state.buy).toFixed(2)} ROI ${p.state.roi}%`+(p.state.score?' score '+p.state.score:'')]);}
 /* the next lead-state map for a source: today's states, each remembering the last previous-day state as its `prev`
    (a second run on the same day compares against yesterday again, not against this morning) */
-function nextLeadMap(out,rule,prevAll,stampNow){const t=(stampNow||stamp()).slice(0,10);const m={};
+function nextLeadMap(out,rule,prevAll,stampNow,keep){const t=(stampNow||stamp()).slice(0,10);const m={};
+  const kb=(keep&&keep.day===t&&keep.map)||{};   /* b332: yesterday's record of a lead an earlier file today did not have */
   out.forEach(o=>{const e=prevAll[o.ASIN];const base=e?(e.stamp.slice(0,10)===t?e.prev:{state:e.state,stamp:e.stamp}):null;
-    m[o.ASIN]={state:o.state||leadState(o,rule),stamp:stampNow||stamp(),prev:base||null};});return m;}
+    m[o.ASIN]={state:o.state||leadState(o,rule),stamp:stampNow||stamp(),prev:base||kb[o.ASIN]||null};});return m;}
 /* the previous-day baseline out of a lead map */
-function baselineOf(map){const t=today();const b={};Object.entries(map||{}).forEach(([a,e])=>{if(!e)return;
+function baselineOf(map,day){const t=day||today();const b={};Object.entries(map||{}).forEach(([a,e])=>{if(!e)return;
   if(e.stamp&&e.stamp.slice(0,10)!==t)b[a]={state:e.state,stamp:e.stamp};else if(e.prev)b[a]=e.prev;});return b;}
+/* b332 (16 Nov audit, bug 5): files dropped one after another on the same day. Logging the first file used to wipe yesterday's record of every
+   lead that file did not hold, so the next file showed them as NEW. Those records are now kept FOR TODAY ONLY, in this browser:
+   {source:{day,map:{asin:{state,stamp}}}}. Tomorrow the keep is ignored, so a lead that really went away still goes away. */
+const LEAD_KEEP_KEY='bdl-sourcing-leadkeep';
+function leadKeep(key){const k=(lsGet(LEAD_KEEP_KEY,{})||{})[key];return k&&k.day&&k.map?k:null;}
+function leadKeepSave(key,keep,day){const t=day||today();const all=lsGet(LEAD_KEEP_KEY,{})||{};
+  Object.keys(all).forEach(k=>{if(!all[k]||all[k].day!==t)delete all[k];});
+  if(keep&&keep.day===t&&Object.keys(keep.map||{}).length)all[key]=keep;else delete all[key];lsSet(LEAD_KEEP_KEY,all);}
+function leadKeepForget(key){const all=lsGet(LEAD_KEEP_KEY,{})||{};if(all[key]){delete all[key];lsSet(LEAD_KEEP_KEY,all);}}
+/* the previous-day baseline for a run: the lead map's, with today's kept records filling the holes */
+function dayBaseline(map,keep,day){const t=day||today();const b=baselineOf(map,t);
+  if(keep&&keep.day===t)Object.entries(keep.map||{}).forEach(([a,p])=>{if(!b[a]&&p&&p.state)b[a]={state:p.state,stamp:p.stamp};});return b;}
+/* what to keep after a log: every previous-day record whose lead is not in the map just saved */
+function nextLeadKeep(base,newMap,day){const m={};Object.entries(base||{}).forEach(([a,p])=>{
+  if(p&&p.state&&!(newMap||{})[a]&&p.stamp&&p.stamp.slice(0,10)!==day)m[a]={state:p.state,stamp:p.stamp};});return{day,map:m};}

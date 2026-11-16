@@ -191,40 +191,116 @@ function audHistChip(a,when){when=typeof when==='string'?when:'';const h=audHist
      NO FILTER  none of our filters ever had it — the brand, or our own blacklist
    and, on any of them, "<filter> hasn't really run since …" when the filter that had it ran only on wrong files after that. Jack's page only. */
 const AUD_WHY={found:['FOUND','Found — on the lead sheet'],person:['NOT TAKEN','Our lead — not taken'],rules:['RULES CUT','Our rules cut it'],none:['NO FILTER','No filter had it'],block:['OUR BLOCK','Our brand blocks kept it out']};
+/* b333 (Jack, 16 Nov: "mention here who found it if it was found or should have showed on x filter please"). Three helpers, Jack's page only.
+   audVaFilter — the filter of THAT person's that had it as a lead (their own filter, or a brand run they exported), from the run log and the export log.
+   audShouldShow — pure: which of our filters this product fits, on ONLY what this page can really check (brand · the Buy Box averages it holds ·
+   the main category when every category id in the filter is one we have confirmed). A missing fact names nothing — no guessing.
+   The filter's own rules come from apiSelection(src), read only. */
+const AUD_UK_ROOTS={'11961407031':'Fashion','229816':'CDs & Vinyl','283926':'DVD & Blu-ray','266239':'Books'};   /* confirmed UK main-category ids only — a filter with any other id is never named on category */
+const AUD_SEL_META={perPage:1,page:1,productType:1};
+function audVaFilter(a,va){if(!va)return null;const R=trRunIdx()[a]||[],K=((trState.seen||{})[a]||[]).filter(s=>s.ever_kept),L=[];
+  R.forEach(y=>{const own=y.owner===va,ran=trVa(y.who||'')===va;if(own||ran)L.push({name:y.name,key:y.key,day:y.day,own});});
+  K.forEach(s=>{const src=(typeof srcGet==='function'&&srcGet(s.source_key))||{},o=!src.owner||src.owner==='—'?'Jack':src.owner;
+    const ran=trVa(s.who||'')===va||(Array.isArray(s.hist)&&s.hist.some(h=>h&&trVa(h.u||'')===va));
+    if(o===va||ran)L.push({name:src.name||s.source_key,key:s.source_key,day:String(s.last_day||'').slice(0,10),own:o===va});});
+  if(!L.length)return null;L.sort((p,q)=>(q.own-p.own)||(p.day<q.day?-1:p.day>q.day?1:0));return L[0];}
+function audShouldShow(P,F){const out=[],brand=String((P&&P.brand)||'').trim().toLowerCase(),root=String((P&&P.root)||'').trim(),bb=(P&&P.bb)||{};
+  const names=ids=>{const L=(ids||[]).map(i=>AUD_UK_ROOTS[String(i)]);return L.every(Boolean)?L:null;},has=x=>Array.isArray(x)&&x.length>0;
+  if(!brand)return out;
+  (F||[]).forEach(f=>{const sel=(f&&f.sel)||{},af=(f&&f.after)||{};let rest=false,price=null,cat=false;
+    const brandRun=has(sel.brand);
+    if(brandRun){if(!sel.brand.map(b=>String(b).trim().toLowerCase()).includes(brand))return;}
+    else if((af.brandNot||[]).concat(f.blocked||[]).map(b=>String(b).trim().toLowerCase()).includes(brand))return;
+    for(const k of Object.keys(sel)){const m=/^avg(30|90|180)_BUY_BOX_SHIPPING_(gte|lte)$/.exec(k);
+      if(m){const v=+bb[m[1]],lim=+sel[k]/100;if(!(v>0)||!(lim>=0))return;if(m[2]==='gte'?v<lim:v>lim)return;if(!price||m[1]==='90')price={d:+m[1],v};continue;}
+      if(AUD_SEL_META[k]||k==='brand'||k==='rootCategory'||k==='categories_include'||k==='categories_exclude')continue;
+      rest=true;}
+    if(!brandRun&&!price)return;                 /* a general filter is only named on a price we really checked */
+    if(has(sel.categories_include))return;      /* a list of sub-categories — this page only holds the main category */
+    if(has(af.rootNot)||has(sel.rootCategory)){if(!root)return;const no=names(af.rootNot||[]),yes=has(sel.rootCategory)?names(sel.rootCategory):[];
+      if(!no||!yes)return;if(no.includes(root))return;if(has(sel.rootCategory)&&!yes.includes(root))return;cat=true;}
+    else if(!brandRun&&has(sel.categories_exclude))return;   /* only sub-category blocks: nothing about its category can be checked */
+    if(has(sel.categories_exclude)||has(af.bindingNot)||has(af.groupNot))rest=true;
+    out.push({name:f.name,brandRun,price,cat,rest});});
+  return out;}
+function audShouldTxt(M,P){if(!M||!M.length)return'';const b=String((P&&P.brand)||'').trim(),root=String((P&&P.root)||'').trim();
+  const one=m=>{const c=[];if(m.brandRun)c.push('it is a '+b+' product');if(m.price)c.push(m.price.d+'-day Buy Box '+gbp(m.price.v)+' fits its price');
+    if(m.cat)c.push(root+' is a category it takes');if(!m.brandRun)c.push(b+' is not blocked');
+    return(m.brandRun?'our '+m.name+' brand run':m.name)+' (checked: '+c.join(', ')+(m.rest?' — its other rules not checked':'')+')';};
+  return'should have shown on '+M.slice(0,2).map(one).join(' and on ')+(M.length>2?' +'+(M.length-2)+' more':'');}
+function audShouldShort(M){if(!M||!M.length)return'';return'should have shown on '+M.slice(0,2).map(m=>m.brandRun?'our '+m.name+' brand run':m.name).join(' and on ')+(M.length>2?' +'+(M.length-2)+' more':'');}
+let AUD_SS_F=null,AUD_SS_SIG='',AUD_SS_MEMO={t:0,m:{}};
+function audShouldFilters(){const S=(typeof srcAll==='function'?srcAll():[]).filter(s=>s.status==='active');const sig=S.map(s=>s.key+(s.updatedAt||'')).join(',');if(AUD_SS_F&&AUD_SS_SIG===sig)return AUD_SS_F;
+  const BB=typeof audBrandBlocks==='function'?audBrandBlocks():new Map();
+  AUD_SS_F=S.map(s=>{let x=null;try{x=typeof apiSelection==='function'?apiSelection(s):null;}catch(e){x=null;}if(!x||!x.selection)return null;
+    const blocked=[];BB.forEach((set,b)=>{if(set.has(s.name))blocked.push(b);});return{name:s.name,sel:x.selection,after:x.after||{},blocked};}).filter(Boolean);
+  AUD_SS_SIG=sig;return AUD_SS_F;}
+/* → {txt, run} — txt '' when nothing can be said; run = one of our brand runs lists this brand */
+function audShouldFor(a){const none={txt:'',short:'',run:false};if(typeof audIsVA==='function'&&audIsVA())return none;
+  const now=Date.now();if(now-AUD_SS_MEMO.t>20000)AUD_SS_MEMO={t:now,m:{}};if(AUD_SS_MEMO.m[a])return AUD_SS_MEMO.m[a];
+  const p=((typeof audState!=='undefined'&&audState.prod)||{})[a]||{},N=(typeof audNowAll==='function'?audNowAll()[a]:null)||{},brand=String(p.brand||'').trim();
+  if(!brand)return none;const F=audShouldFilters(),bl=brand.toLowerCase(),run=F.some(f=>Array.isArray(f.sel.brand)&&f.sel.brand.map(b=>String(b).trim().toLowerCase()).includes(bl));
+  let txt='',short='';if(!(typeof bbStatusFor==='function'&&bbStatusFor(brand)==='approved')){
+    const avg=typeof audAvgGet==='function'?audAvgGet(a):null,num=v=>{const m=/\d+(?:\.\d+)?/.exec(String(v==null?'':v).replace(/,/g,''));return m?+m[0]:null;};
+    const P={brand,root:p.root||N.root||'',bb:avg?{30:num(avg['Buy Box: 30 days avg.']),90:num(avg['Buy Box: 90 days avg.']),180:num(avg['Buy Box: 180 days avg.'])}:{}};
+    const M=audShouldShow(P,F);txt=audShouldTxt(M,P);short=audShouldShort(M);}
+  return AUD_SS_MEMO.m[a]={txt,short,run};}
 function audWhyInfo(a,when){if(typeof audIsVA==='function'&&audIsVA())return null;when=typeof when==='string'?when:'';
   const S=(trState.sheet||{})[a]||[],R=trRunIdx()[a]||[],h=typeof audHistInfo==='function'?audHistInfo(a,when):null,dd=n=>n===1?'1 day':n+' days';
   const gapTxt=day=>{const g=trGap(day,when);return g==null?'':g<0?`, ${dd(-g)} before they listed`:g===0?', the day they listed':`, ${dd(g)} after they listed`;};
-  const P=(h&&h.people)||[],both=P.includes('Mera')&&P.includes('Suz'),poss=w=>w==='Jack'?'your':w+'\u2019s';
+  const P=(h&&h.people)||[],both=P.includes('Mera')&&P.includes('Suz'),poss=w=>w==='Jack'?'your':w+'’s';
   const ours=h&&h.k!=='never'?`${h.name} had it ${trD(h.day)}${h.by?' ('+poss(h.by)+' export)':''}`:'';
   /* the filter that had it, run only on wrong files since (Filter check's own test) */
   const key=R.length?R[R.length-1].key:((trState.seen[a]||[]).slice().sort((p,q)=>String(p.last_day)<String(q.last_day)?1:-1)[0]||{}).source_key;
   const lr=key&&typeof fcLastReal==='function'?fcLastReal(key):null,src=key&&typeof srcGet==='function'?srcGet(key):null;
-  const stale=lr&&when&&trGap(lr,when)>2&&src&&src.status!=='paused'?` · ${src.name} hasn\u2019t really run since ${trD(lr)}`:'';
+  const stale=lr&&when&&trGap(lr,when)>2&&src&&src.status!=='paused'?` · ${src.name} hasn’t really run since ${trD(lr)}`:'';
   if(S.length){const byVa=[...new Set(S.map(x=>x.va))].map(va=>{const L=S.filter(x=>x.va===va),x=L[L.length-1],st=L.find(y=>y.st==='BOUGHT')?'BOUGHT':L.find(y=>y.st==='NOT')?'NOT':'';return{va,x,st};});
-    const t=byVa.map(o=>`${poss(o.va)} lead sheet ${trD(o.x.date)}${o.st==='BOUGHT'?' — BOUGHT':o.st==='NOT'?' — said NOT':''}`).join(' and ');
-    const nf=h&&h.k==='never'?' · none of our filters had it'+(typeof audNeverWhy==='function'&&audNeverWhy(a)?' — '+audNeverWhy(a):''):'';
-    return{k:'found',reason:AUD_WHY.found[1]+(byVa.some(o=>o.st==='NOT')?' — said NOT':''),txt:`On ${t}${gapTxt(byVa[0].x.date)}${ours?' · our filters too: '+ours:nf}${stale}`,who:byVa.map(o=>o.va)};}
+    const stT=o=>o.st==='BOUGHT'?' — BOUGHT':o.st==='NOT'?' — said NOT':'';
+    const t=byVa.map(o=>`${poss(o.va)} lead sheet ${trD(o.x.date)}${stT(o)}`).join(' and ');
+    /* b333: who found it comes first, then the filter of theirs that had it — only when our logs really show one */
+    const fl=byVa.map(o=>({va:o.va,f:audVaFilter(a,o.va)})).filter(o=>o.f);
+    const first=byVa.map(o=>o.x.date).filter(Boolean).sort()[0]||'',early=first&&first<'2026-09-13';
+    let ftxt;
+    if(fl.length)ftxt=' · '+fl.map(o=>o.f.own?`from ${poss(o.va)} own filter ${o.f.name} (${trD(o.f.day)})`:`from ${poss(o.va)} export of ${o.f.name} (${trD(o.f.day)})`).join(' and ');
+    else if(h&&h.k==='kept')ftxt=` · none of ${byVa.map(o=>poss(o.va)).join(' or ')} filters on record — ${ours}`;
+    else if(h&&h.k==='cut')ftxt=` · none of ${byVa.map(o=>poss(o.va)).join(' or ')} filters on record — ${h.name} had it in ${h.by?poss(h.by)+' ':'the '}export ${trD(h.day)} and the rules cut it`;
+    else if(h&&h.k==='never'){const nw=typeof audNeverWhy==='function'?audNeverWhy(a):'';ftxt=' · filter not on record'+(early?' (our logs start 13 Sep)':'')+(nw?' · '+nw:'');}
+    else ftxt='';
+    const lead=byVa.length===1?`Found by ${byVa[0].va} — on the lead sheet ${trD(byVa[0].x.date)}${stT(byVa[0])}`:`Found by ${byVa.map(o=>o.va).join(' + ')} — on ${t}`;
+    return{k:'found',reason:AUD_WHY.found[1]+(byVa.some(o=>o.st==='NOT')?' — said NOT':''),txt:`${lead}${gapTxt(byVa[0].x.date)}${ftxt}${stale}`,who:byVa.map(o=>o.va),
+      sug:`on ${t}${fl.length?', from '+fl[0].f.name:''}`};}
   if(h&&h.k==='kept'){const W=[...new Set(R.map(x=>trVa(x.who||x.owner||'')).filter(Boolean))],v=typeof verdGet==='function'?verdGet(a):null;
     const who=both?'Mera + Suz both':W.length?W.map(w=>w==='Jack'?'You':w).join(' + '):'We';
-    const saw=v&&v.v?(v.v==='Seen'?` · ${v.who||'a VA'} opened it in Keepa`:` · ${v.who||'someone'} said ${v.v}${v.reason?' ('+v.reason+')':''}`):' · nobody opened it in Keepa';
-    return{k:'person',reason:`${AUD_WHY.person[1]} (${who==='We'?'nobody':who.replace(' both','')})`,txt:`${who} had it as a lead — ${ours}${h.score!=null?' · score '+h.score:''}${h.buy!=null?' · '+gbp(h.buy):''}${gapTxt(h.day)}${saw} — not on any lead sheet${stale}`,who:W};}
+    const saw=v&&v.v?(v.v==='Seen'?`${v.who||'a VA'} opened it in Keepa`:`${v.who||'someone'} said ${v.v}${v.reason?' ('+v.reason+')':''}`):'nobody opened it in Keepa';
+    const also=h.more>0&&Array.isArray(h.all)?` · also on ${h.all.filter(n=>n!==h.name).slice(0,2).join(', ')}${h.more>2?' +'+(h.more-2)+' more':''}`:'';
+    const on=`${h.name}, ${trD(h.day)}${h.by?' ('+poss(h.by)+' export)':''}`;
+    return{k:'person',reason:`${AUD_WHY.person[1]} (${who==='We'?'nobody':who.replace(' both','')})`,txt:`${who} had it as a lead on ${on}${h.score!=null?' · score '+h.score:''}${h.buy!=null?' · '+gbp(h.buy):''}${gapTxt(h.day)}${also} · ${saw} — not on any lead sheet${stale}`,who:W,
+      sug:`${h.name} had it as a lead ${trD(h.day)}${h.by?' ('+poss(h.by)+' export)':''}, ${saw}, nobody took it`};}
   if(h&&h.k==='cut'){const why=String(h.why||'').replace(/^([A-Z][A-Z\- ]{3,})(?=\s*[:·]|$)/,m=>m.toLowerCase());
-    return{k:'rules',reason:AUD_WHY.rules[1],txt:`In our export, the rules cut it — ${ours}${h.buy!=null?' at '+(h.mk&&h.mk!=='UK'?h.mk+' ':'')+gbp(h.buy):''}${gapTxt(h.day)}${why?': '+why:''}${both?' · in Mera\u2019s and Suz\u2019s exports':''}${stale}`,who:P};}
+    return{k:'rules',reason:AUD_WHY.rules[1],txt:`In our export, the rules cut it — ${ours}${h.buy!=null?' at '+(h.mk&&h.mk!=='UK'?h.mk+' ':'')+gbp(h.buy):''}${gapTxt(h.day)}${why?': '+why:''}${both?' · in Mera’s and Suz’s exports':''}${stale}`,who:P,
+      sug:`our rules cut it on ${h.name} ${trD(h.day)}${why?': '+why:''}`};}
   if(h&&h.k==='never'){const nw=typeof audNeverWhy==='function'?audNeverWhy(a):'',br=((typeof audState!=='undefined'&&audState.prod&&audState.prod[a])||{}).brand||'';
-    return nw?{k:'block',reason:AUD_WHY.block[1],txt:`None of our filters had it — ${nw}`,who:[]}:{k:'none',reason:AUD_WHY.none[1],txt:`None of our filters ever had it${br?' — no filter of ours covers '+br:''} (exports logged from 3 Oct, leads from 13 Sep)`,who:[]};}
+    const ss=audShouldFor(a),sh=ss.txt?' · '+ss.txt:'';
+    return nw?{k:'block',reason:AUD_WHY.block[1],txt:`None of our filters had it — ${nw}${sh}`,who:[],sug:nw+(ss.short?' · '+ss.short:'')}
+      :{k:'none',reason:AUD_WHY.none[1],txt:`None of our filters ever had it${!ss.txt&&br&&!ss.run?' — we have no brand run for '+br:''} (exports logged from 3 Oct, leads from 13 Sep)${sh}`,who:[],
+        sug:'no filter of ours ever had it'+(ss.short?' · '+ss.short:(br&&!ss.run?', and we have no brand run for '+br:''))};}
   return null;}
 /* b318 (Jack, 6 Nov: "happy yeah" to suggested answers): the answer the facts point to, for Jack's audit — Enter takes it, any number key overrides.
    On a lead sheet → LOS · our lead nobody took → Missed it · still a lead today → Missed it · not a lead today → Not lead ·
-   no filter of ours had it (or our own blocks) → Missed it · our rules cut it → Not lead. Nothing to go on → no suggestion. */
+   no filter of ours had it (or our own blocks) → Missed it · our rules cut it → Not lead. Nothing to go on → no suggestion.
+   b333 (Jack, 16 Nov: "you suggest what to press with reason and info such as was on x filter or on x lead"): the why now carries the specifics —
+   which filter, whose lead sheet, when, what the VA did — and the row shows it without hovering. Nothing is stored until Jack presses. */
 function audSuggest(it){if(!it||(typeof audIsVA==='function'&&audIsVA()))return null;const a=it.a,when=it.base?'':String(it.first||'');
   const w=typeof audWhyInfo==='function'?audWhyInfo(a,when):null,N=typeof audNowAll==='function'?audNowAll()[a]:null,now=N&&!N.none?N:null;
-  if(w&&w.k==='found')return{code:'los',why:'it is on '+(w.who||[]).join(' + ')+'\u2019s lead sheet'};
-  if(w&&w.k==='person')return{code:'missed',why:'it was our lead and nobody took it'};
-  if(now&&now.lead)return{code:'missed',why:'it is still a lead today'};
-  {const v=now&&typeof oaVerdict==='function'?oaVerdict(a):null;if(v&&v.k==='lead')return{code:'missed',why:'it is an OA lead today at '+v.h.s};}   /* b321 */
-  if(now)return{code:'not',why:'it is not a lead on Amazon UK today'+(now.max10?' (it would be under '+gbp(now.max10)+')':'')};
-  if(w&&(w.k==='none'||w.k==='block'))return{code:'missed',why:w.k==='block'?'our own filters left it out':'no filter of ours had it'};
-  if(w&&w.k==='rules')return{code:'not',why:'our rules cut it'};
+  const nums=n=>{const b=[];if(n.buy>0)b.push('buy '+gbp(n.buy));if(n.sell>0)b.push('sell '+gbp(n.sell));if(n.p!=null&&n.p!=='')b.push(+n.p<0?'loses '+gbp(-n.p):gbp(+n.p)+' profit');if(n.roi!=null&&n.roi!=='')b.push(n.roi+'% ROI');if(n.sc!=null&&n.sc!=='')b.push('score '+n.sc);return b.length?' — '+b.join(', '):'';};
+  if(w&&w.k==='found')return{code:'los',why:w.sug||('it is on '+(w.who||[]).join(' + ')+'’s lead sheet')};
+  if(w&&w.k==='person')return{code:'missed',why:w.sug||'it was our lead and nobody took it'};
+  {const cw=typeof claudeOf==='function'&&typeof claudeSugWhy==='function'?claudeSugWhy(claudeOf(a)):'';if(cw)return{code:'missed',why:cw};}   /* b333: Claude's OA lead — a suggestion only, never stored */
+  if(now&&now.lead)return{code:'missed',why:'it is still a lead today'+nums(now)};
+  {const v=now&&typeof oaVerdict==='function'?oaVerdict(a):null;if(v&&v.k==='lead')return{code:'missed',why:'it is an OA lead today at '+v.h.s+(v.h.c>0?' for '+gbp(v.h.c):'')+(v.h.roi!=null?', '+v.h.roi+'% ROI':'')};}   /* b321 */
+  if(now)return{code:'not',why:'it is not a lead on Amazon UK today'+nums(now)+(now.max10?' (it would be a lead under '+gbp(now.max10)+')':'')};
+  if(w&&(w.k==='none'||w.k==='block'))return{code:'missed',why:w.sug||(w.k==='block'?'our own filters left it out':'no filter of ours had it')};
+  if(w&&w.k==='rules')return{code:'not',why:w.sug||'our rules cut it'};
   return null;}
 function audWhyLine(a,when){const w=audWhyInfo(a,when);if(!w)return'';const e=escapeHtml;when=typeof when==='string'?when:'';   /* one line instead of the Our filters chip + sheet tile — click it for every day */
   return`<button type="button" class="auwhy w-${w.k}${trState.open.has(a)?' on':''}" data-trx="${a}" data-when="${e(when)}" title="${e('How we missed it — worked out from our runs, the export log and the lead sheet. Press Missed it and this is saved as the reason. Click for every day.')}"><b class="awt">${AUD_WHY[w.k][0]}</b><span class="awx">${e(w.txt)}</span><span class="trcar">▾</span></button>`;}
