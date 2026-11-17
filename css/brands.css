@@ -3124,6 +3124,15 @@ html[data-theme="light"]{--prime:#0a86b8;--prime-txt:#075f84;--prime-fill:rgba(1
 .busyov.ok .bbar i{animation:none;width:100%;transform:none;background:var(--jade)}
 .busyov.ok .bhead .bspin{animation:none;border-color:var(--jade)}
 @media (prefers-reduced-motion:reduce){.busycard .bbar i,.bspin{animation-duration:2.4s}}
+/* b335: the seconds on the loading card — a strip of numbers the browser slides by itself, so it counts while the page is busy */
+.busycard .bsecs{display:inline-block;height:1.35em;line-height:1.35em;overflow:hidden;vertical-align:bottom;text-align:left;white-space:nowrap;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.busycard .bsecs i{display:block;font-style:normal;animation:bsecs 180s steps(180,end) forwards;will-change:transform}
+.busycard .bsecs u{display:block;text-decoration:none;height:1.35em}
+@keyframes bsecs{to{transform:translateY(-99.4475%)}}
+.busycard{position:relative}
+.busycard .bslow{position:absolute;left:0;right:0;top:100%;margin:10px 0 0;padding:10px 12px;border-radius:10px;border:1px solid var(--amber);background:var(--surface);color:var(--text);font-size:12.5px;line-height:1.45;opacity:0;pointer-events:none;will-change:opacity;animation:bslow .4s linear 120s forwards}
+@keyframes bslow{to{opacity:1}}
+.busyov.ok .bslow{display:none}
 /* b282: Buy from hint */
 .mkpick .lfhint{font-size:11.5px;color:var(--faint);margin-left:6px}
 /* b288: VA storefront audit — OLD DATA chip, Jack's Mera & Suz section, the VA's steps */
@@ -3256,7 +3265,7 @@ html[data-theme="light"] .buyc .bulk{color:#b45309}
 .uibody .uiwarnline b{color:var(--amber)}
 /* ===== b305 · drawings of Keepa's own screen inside the popups (fixed Keepa colours — it is a picture of Keepa) ===== */
 .kpwrap{margin-top:8px;display:grid;gap:8px}
-.kp{border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.25);background:#f3f3f3;color:#333;font:12px/1.35 -apple-system,Segoe UI,Roboto,sans-serif;max-width:560px}
+div.kp{border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.25);background:#f3f3f3;color:#333;font:12px/1.35 -apple-system,Segoe UI,Roboto,sans-serif;max-width:560px}
 .kp .hl{outline:2px solid #ff4d5e;outline-offset:1px;border-radius:5px;background:#fff3f4;color:#111;font-weight:700}
 .kp .kpn{display:inline-grid;place-items:center;width:17px;height:17px;margin-right:5px;border-radius:50%;background:#ff4d5e;color:#fff;font-size:10.5px;font-weight:800;vertical-align:1px}
 .kp-top{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#3b3b3b;color:#eee;flex-wrap:wrap}
@@ -3447,8 +3456,8 @@ body:has(#page-audit.active) .wrap{max-width:none}
 .stepcard.sumfold>#sumGrid,.stepcard.sumfold>#story,.stepcard.sumfold>#vsYest,.stepcard.sumfold>#statusRow,.stepcard.sumfold>#sumDetail,.stepcard.sumfold>#fell{display:none!important}
 .stepcard.sumfold{gap:8px;padding-top:10px;padding-bottom:10px}
 .stepcard.sumfold .stephead .ss{display:none}
-/* P · the product name in full */
-.ltbl td.prod .t{display:block;-webkit-line-clamp:unset;-webkit-box-orient:initial;overflow:visible;white-space:normal;text-overflow:clip;overflow-wrap:anywhere}
+/* P · the product name: two lines, the full name on hover (Jack, 17 Nov — rows were too tall) */
+.ltbl td.prod .t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;overflow-wrap:anywhere}
 /* S · Today, on the home page */
 .todaypanel{margin:0 0 14px;padding:12px 16px}
 .todaypanel[hidden]{display:none}
@@ -3487,6 +3496,24 @@ body:has(#page-audit.active) .wrap{max-width:none}
 .clline a{color:#7DD3FC;font-weight:700;text-decoration:none}
 .clline a:hover{text-decoration:underline}
 #auClaudeDrop.over{border-color:#38BDF8;background:color-mix(in srgb,#38BDF8 18%,transparent);color:#fff}
+/* ===== b334 · one status line per row (Last run column). Two fixed lines that never wrap into pieces; the hover has the whole story.
+   The b305 Keepa drawings are now div.kp only, so nothing on the list picks up their light box again. ===== */
+.btbl td.lastc .pulse{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;margin-top:6px;max-width:100%;padding:0;border:0;background:none;font:600 11px/1.3 var(--sans);font-variant-numeric:tabular-nums;color:#93C5FD}
+.btbl td.lastc .pulse .p1,.btbl td.lastc .pulse .p2{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}
+.btbl td.lastc .pulse .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btbl td.lastc .pulse .p2 .t{font-weight:500}
+.btbl td.lastc .pulse b{font-weight:700;color:inherit}
+.btbl td.lastc .pulse .whochip{margin:0;flex:none}
+.btbl td.lastc .pulse i{width:7px;height:7px;border-radius:50%;background:#3B82F6;flex:none}
+.btbl td.lastc .pulse em{font-style:normal;font-weight:800;flex:none}
+.btbl td.lastc .pulse.bad{color:var(--coral)}
+.btbl td.lastc .pulse.calm{color:var(--muted)}
+.btbl td.lastc .pulse.calm i{background:var(--muted)}
+.btbl td.lastc .pulse .cm{display:inline-flex;gap:3px;flex:none}
+.btbl td.lastc .pulse .cm u{display:block;width:11px;height:6px;border-radius:2px;background:var(--line2);text-decoration:none}
+.btbl td.lastc .pulse .cm u.kp{background:#3B82F6}
+.btbl td.lastc .pulse .cm u.in{background:var(--jade)}
+:root[data-theme="light"] .btbl td.lastc .pulse.live{color:#1D4ED8}
 /* ===== b333 Q · text sizes (Jack, 16 Nov: "fix all text side"). Brands / Filters, the run screen, the top bar and the tool cards now use five text sizes — 11 · 12.5 · 14 · 17 · 22 px — and 9.5 px only inside a tight table cell. Every line below is an older rule's size, re-stated for these pages only (same order, so the same rule still wins); nothing else about any rule changes. Generated by b333-work/qgen.py. ===== */
 :where(#page-brands,nav.pagenav,header.topbar,#leadsReady) :where(button,input,select,textarea){font-size:12.5px}
 :is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.brand h1){font-size:22px}
@@ -4426,3 +4453,12 @@ body:has(#page-audit.active) .wrap{max-width:none}
 :is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.tdm){font-size:11px}
 :is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.clbar){font-size:12.5px}
 :is(#page-brands,nav.pagenav,header.topbar,#leadsReady) :is(.clline){font-size:12.5px}
+
+/* b335 (Jack, 17 Nov, his Philips row): "7 written up" ran out of the Last run column into Done?; the lead-sheet count was a loud solid-green pill.
+   The counts line now wraps (each count stays whole), and the lead-sheet count is a quiet tinted chip like "to review". */
+.btbl td.lastc .l2{white-space:normal;line-height:1.75}
+.btbl td.lastc .l2 .tr,.btbl td.lastc .l2 .wup{white-space:nowrap}
+.btbl td.lastc .wkleads{display:inline-block;max-width:100%;margin-top:4px;padding:2px 8px;border-radius:8px;font-weight:650;line-height:1.35;white-space:normal;
+  color:var(--jade);background:color-mix(in srgb,var(--jade) 13%,transparent);border:1px solid color-mix(in srgb,var(--jade) 30%,transparent)}
+#brandTbl .dstate.todo .dsub{max-width:100%;min-width:0;white-space:normal}
+#brandTbl .dstate .dnext.stale2{white-space:normal}

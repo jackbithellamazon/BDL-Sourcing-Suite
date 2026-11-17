@@ -67,6 +67,11 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&awaitDrop
 window.addEventListener('focus',()=>{if(awaitDrop&&Date.now()-awaitDrop.at>1500)setTimeout(dropNudge,250);});   /* back from another window, not just another tab */
 function actStampKeepa(key,m){awaitDrop={slot:m==='UK Viewer'||m==='UK'?'viewer':m,at:Date.now(),key:key||(typeof cur!=='undefined'&&cur?cur.key:'')};   /* b260: the press belongs to a filter */if(!key||typeof srcGet!=='function')return;const s=(typeof cur!=='undefined'&&cur&&cur.key===key)?cur:srcGet(key);if(!s)return;   /* the open run's own object, or leaving the run re-saves a copy without the stamp */
   s.keepa=[{who:me(),at:nowIso(),mk:m}].concat((s.keepa||[]).filter(o=>o&&o.at)).slice(0,30);srcSave(s,false,['keepa']);}   /* b332: a stamp, not the whole filter */
+/* b334: what is IN for this filter's run so far — which countries' files, and the Viewer — so Jack's row can say "2 of 5 in" while she works through
+   a 5-country brand. A stamp on the filter like the Keepa presses (same field-only save, no new table); a saved run covers it. */
+function actStampFiles(key){if(!key||typeof srcGet!=='function'||!me()||typeof files==='undefined')return;const s=(typeof cur!=='undefined'&&cur&&cur.key===key)?cur:srcGet(key);if(!s||s.drop)return;
+  const mk=s.rule===1?['UK','DE','FR','IT','ES'].filter(m=>files[m]):(files.one?['UK']:[]);
+  s.filesIn={who:me(),at:nowIso(),mk,viewer:!!(s.rule===1&&files.viewer)};srcSave(s,false,['filesIn']);}
 /* the newest Keepa press that no run has caught up with */
 function keepaSinceRun(s){const o=(s&&s.keepa||[])[0];if(!o)return null;const last=runLast(s.key);
   if(last&&new Date(last.at).toDateString()===new Date(o.at).toDateString())return null;   /* b250: a run saved that day covers the press — the file did come back */

@@ -875,7 +875,7 @@ window.SourcingChecks=(function(){
       {const runsWas=lsRaw(RUN_KEY);
         try{const at=n=>{const d=new Date();d.setDate(d.getDate()-n);d.setHours(9,40,0,0);return d.toISOString();};
           lsSet(RUN_KEY,[{source:'zz-late',at:at(10),day:at(10).slice(0,10),asins:[]},{source:'zz-today',at:at(1),day:at(1).slice(0,10),asins:[]}]);
-          const L=dueState({key:'zz-late',cadence:'daily',status:'active'}),T=dueState({key:'zz-today',cadence:'daily',status:'active'}),F=dueState({key:'zz-never',cadence:'daily',status:'active'});
+          const L=dueState({key:'zz-late',cadence:'daily',status:'active',owner:'Jack'}),T=dueState({key:'zz-today',cadence:'daily',status:'active',owner:'Jack'}),F=dueState({key:'zz-never',cadence:'daily',status:'active',owner:'Jack'});   /* b334: Jack's own rows keep the calendar */
           ok('Due · plain words — "9 days late", "Due today", "First run" — and the latest sort first',[L.label,L.kind,L.rank,T.label,T.kind,F.label,F.kind,L.rank<T.rank&&T.rank<F.rank],['9 days late','late',-9,'Due today','today','First run','first',true]);
         }finally{runsWas==null?lsRemove(RUN_KEY):lsRawSet(RUN_KEY,runsWas);}}
       {const tb=document.createElement('table');tb.className='btbl';tb.style.cssText='position:absolute;left:-9999px';tb.innerHTML='<tbody><tr><td class="nextc"><span class="nx due late"><i></i>9 days late</span></td></tr></tbody>';document.body.appendChild(tb);
@@ -1445,18 +1445,23 @@ window.SourcingChecks=(function(){
           got,[true,true,true,true,true,true]);}
       /* b276 — Jack, 6 Oct: "any way to improve it at all". A Y / N / M press swaps in only the row it changed; the table it leaves is the
          same table a full redraw makes. */
-      {const meWas=me(),keep={p:lsRaw(PRIME_KEY),r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),v:lsRaw(VERD_KEY),f:lsRaw(FACT_KEY)};let got=[];
+      {const meWas=me(),keep={p:lsRaw(PRIME_KEY),r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),v:lsRaw(VERD_KEY),f:lsRaw(FACT_KEY)};let got=[],got335=[];
         try{lsSet(ME_KEY,'Jack');lsSet(PRIME_KEY,true);clearRun();backToList();await openRun('prime-uk');clearRun();
           const txt=await(await fetch('../fixtures/prime-uk-1005.csv?t='+Date.now())).text();
           await handleFiles([new File([txt],'KeepaExport-2026-10-05-ProductFinder (2).csv')]);view.status='ALL';renderTable();
           const lt=$('#leads'),n0=lt.tBodies[0].rows.length;renderTable();const again=lt._paint&&lt._paint.swapped;
+          {const P=lt._paint||{},rw=P.rows||[];got335=[!/RH\.push\(\s*h\.slice/.test(String(renderTable)),rw.length===n0,rw.every(x=>typeof x==='string'&&x.startsWith('<tr')&&x.endsWith('</tr>')),typeof P.head==='string'&&typeof P.tail==='string'];}
           const first=lt.querySelector('tbody tr[data-asin]'),A=first.dataset.asin,other=lt.querySelectorAll('tbody tr[data-asin]')[5];
           verdSet(A,{v:'y'});renderTable();const one=lt._paint&&lt._paint.swapped,keptOther=lt.querySelectorAll('tbody tr[data-asin]')[5]===other;
           const patched=lt.innerHTML;lt._paint=null;renderTable();const whole=lt.innerHTML;
           got=[n0>300,again,one,keptOther,patched===whole,lt.querySelector(`tbody tr[data-asin="${A}"]`).classList.contains('y')];}
         finally{lsSet(ME_KEY,meWas||'Jack');[['p',PRIME_KEY],['r',RUN_KEY],['l',LEAD_KEY],['o',OUTBOX_KEY],['v',VERD_KEY],['f',FACT_KEY]].forEach(([k,K])=>{if(keep[k]==null)lsRemove(K);else lsRawSet(K,keep[k]);});view.status='REVIEW';clearRun();backToList();}
         ok('Speed · a Y press on a 328-lead run swaps in 1 row, not 328; a redraw with nothing changed swaps 0; the table is identical to a full redraw',
-          got,[true,0,1,true,true,true]);}
+          got,[true,0,1,true,true,true]);
+        /* b335 — Mera, 17 Nov: "Aw, Snap! Out of Memory" every time she dropped her 3,985-row 7-Day export (644 leads). The row cache kept each row
+           as a slice of the growing table text, and Chrome keeps a slice as a pointer into a full copy of that text: 644 copies, about 2.4 GB. */
+        ok('b335 · the row cache holds each row as its OWN text (never a slice of the growing table), one per lead, and the fast redraw still has its head and tail',
+          got335,[true,true,true,true]);}
       /* b275 — Jack, 6 Oct: "super buggy and laggy — dropping and it loading to the leads". The ~600 KB facts store was unpacked 1,300 times
          per table draw (and every Y/N/M redraws it): 1.8 s a click. Now it is unpacked once and reused until it changes. */
       {const keepF=lsRaw(FACT_KEY);let got=[];const LG=window.lsGet;let parses=0;
@@ -1749,7 +1754,7 @@ window.SourcingChecks=(function(){
           runSave(Object.assign({},rl,{done:null}));verdDelMany(result.out.map(o=>o.ASIN));touched.clear();MINE=null;localStorage.removeItem(MINE_KEY);renderTable();const leftBefore=runDoneLeft();
           finishRun();const rl2=runLast('mera-highticket'),leftAfter=runDoneLeft();
           ok('Done · ONE button, next to Open in Keepa (b248; b250 label "✓ Done — marks all N as looked at", or "the N left of T") marks the leads looked at AND finishes the filter — her name and time on it, the row goes green "DONE TODAY by Mera"; with every lead already looked at it still says "✓ Done" (Jack\'s amber row) and one press finishes; the right-hand button is only "Next due"; until Done the row is amber and leaving says so',
-            [rowPart,hid0,lab0==='✓ Done — marks all '+nRev+' as looked at',c0&&c0.first,[lab1,dis1],rl.done&&rl.done.who,rl.needDone,[/^✓ Done by Mera · \d\d:\d\d$/.test(lab2),dis2],/Done/.test(nav),rowDone,leftBefore===nRev,leftAfter,rl2.done&&rl2.done.who,($('#doneSel').previousElementSibling||{}).id],
+            [rowPart,hid0,lab0==='✓ Done — marks all '+nRev+' as looked at',c0&&c0.first,[lab1,dis1],rl.done&&rl.done.who,rl.needDone,[/^✓ Done by you · \d\d:\d\d$/.test(lab2),dis2],/Done/.test(nav),rowDone,leftBefore===nRev,leftAfter,rl2.done&&rl2.done.who,($('#doneSel').previousElementSibling||{}).id],
             [[true,'◐ NOT FINISHED'],false,true,'done',['✓ Done',false],'Mera',true,[true,true],false,[true,true],true,0,'Mera','openSel']);
           /* b284 (Jack, 7 Oct: Buy from UK on, Done → "0 marked looked at — 19 more … hidden by your ticks or filters" and the row stayed NOT FINISHED):
              one press finishes the whole filter, leads hidden by a chip / the search included */
@@ -1767,9 +1772,9 @@ window.SourcingChecks=(function(){
           lsSet(SRC_KEY,S);lsSet(RUN_KEY,runsAll().filter(r=>r.source!=='lenovo'&&r.source!=='acer'));
           const u=unfinishedMine('gtech').map(x=>x.s.key),uSelf=unfinishedMine('lenovo').length;oneAtATimeAsk(unfinishedMine('gtech'),srcGet('gtech'),null);const p2=($('#leavePop')||{}).textContent||'';leaveClose();
           lsSet(ME_KEY,'Jack');const uJack=unfinishedMine('gtech').length;lsSet(ME_KEY,'Mera');renderList();
-          const chipFresh=(document.querySelector('#brandTbl tr[data-key="lenovo"] .opened.kp')||{}).textContent||'',chipStale=(document.querySelector('#brandTbl tr[data-key="acer"] .opened.kp.stale')||{}).textContent||'';
+          const chipFresh=(document.querySelector('#brandTbl tr[data-key="lenovo"] .pulse.live')||{}).textContent||'',chipStale=(document.querySelector('#brandTbl tr[data-key="acer"] .pulse.bad')||{}).textContent||'';   /* b334: one status line */
           ok('One at a time · a filter she opened in Keepa TODAY with no file back blocks starting another (popup names it, "Go to Lenovo" first); an old press does not block but the row says "opened Keepa … no file came back" instead of "In Keepa"; Jack is never blocked',
-            [u,uSelf,/One filter at a time, Mera/.test(p2)&&/Go to Lenovo/.test(p2)&&/Start Gtech anyway/.test(p2),uJack,/pressed Open in Keepa/.test(chipFresh)&&/file not back yet/.test(chipFresh),/opened Keepa/.test(chipStale)&&/no file came back/.test(chipStale)],
+            [u,uSelf,/One filter at a time, Mera/.test(p2)&&/Go to Lenovo/.test(p2)&&/Start Gtech anyway/.test(p2),uJack,/opened Keepa/.test(chipFresh)&&/file not back yet| of \d in/.test(chipFresh),/opened Keepa/.test(chipStale)&&/no file came back/.test(chipStale)],
             [['lenovo'],0,true,0,true,true]);}
         finally{leaveClose();awaitDrop=ad0;clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');[[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o],[SRC_KEY,keep.s],[VERD_KEY,keep.v],[PRIME_EVENT_KEY,keep.pe]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});
           if(keep.mine==null)localStorage.removeItem(MINE_KEY);else localStorage.setItem(MINE_KEY,keep.mine);MINE=null;renderList();}}
@@ -1808,8 +1813,8 @@ window.SourcingChecks=(function(){
           ok('Leads · products that sell well but Amazon is not selling are rows at the END of All leads (not in To review, not counted, never opened by Open all), each with "buy under £x" and the note (b251: who else has it and what it makes — still-profitable ones first); the old table above the leads is gone; its CSV is in More',
             [nOa>0,inRev,rows.length===nOa,rows.every(r=>{const t=r.textContent.replace(/\s+/g,' ');return/STILL PROFITABLE|THIN|NOT AMAZON|NO PRICE/.test(t)&&/buy under £[\d.]+/.test(t)&&/Not Amazon —|Amazon isn’t selling this anywhere/.test(t);})&&(()=>{const k=result.oa.map(o=>o.else&&o.else.ok?1:0);return k.join('')===k.slice().sort((a,b)=>b-a).join('');})(),document.querySelectorAll('#leads tbody tr[data-asin]').length===visible().length,$('#openSel').textContent==='Open all '+visible().length+' in Keepa',!$('#oaTargets')||$('#oaTargets').hidden,!$('#oaCsv2').hidden,rows[rows.length-1]===document.querySelector('#leads tbody').lastElementChild],
             [true,0,true,true,true,true,true,true,true]);
-          const o0=result.out[0];const fake=Object.assign({},o0,{QUEUE:'better',sinceVerdict:'buy £359.00→£304.99 (−£54.01); profit £20.00→£71.50',verdict:{v:'Seen',who:'Jack',at:'2026-09-22T10:00:00Z'}});const sc=statusCell(fake);
-          ok('Leads · "↑ since seen · Jack" now says what it means: better since Jack looked (22 Sep), and what moved',[/↑ better since Jack looked \(22 Sept?\)/.test(sc),/buy £359\.00→£304\.99/.test(sc),/since seen/.test(sc)],[true,true,false]);}
+          const o0=result.out[0];const fake=Object.assign({},o0,{QUEUE:'better',sinceVerdict:'buy £359.00→£304.99 (−£54.01); profit £20.00→£71.50',verdict:{v:'Seen',who:'Jack',at:'2026-09-22T10:00:00Z'}});const sc=sinceNote(fake),scOld=statusCell(fake),vc=verdCell(fake);
+          ok('Leads · "↑ since seen · Jack" now says what it means: better since Jack looked (22 Sep), and what moved — b335: it sits in the Verdict column, not under the score',[/↑ better since Jack looked \(22 Sept?\)/.test(sc),/buy £359\.00→£304\.99/.test(sc),/since seen/.test(sc+scOld),/better since/.test(scOld),/↑ better since Jack looked/.test(vc)],[true,true,false,false,true]);}
         finally{clearRun();backToList();lsSet(ME_KEY,meWas||'Jack');[[RUN_KEY,keep.r],[LEAD_KEY,keep.l],[OUTBOX_KEY,keep.o],[SRC_KEY,keep.s],[VERD_KEY,keep.v],[PRIME_KEY,keep.p]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});}}
       /* b249 — Replen from the storefront's Product Finder export: mini filter → UK file → EU Viewer buttons */
       {const meWas=me(),keep={r:lsRaw(RUN_KEY),l:lsRaw(LEAD_KEY),o:lsRaw(OUTBOX_KEY),s:lsRaw(SRC_KEY),v:lsRaw(VERD_KEY),p:lsRaw(PRIME_KEY)};
@@ -2653,7 +2658,17 @@ window.SourcingChecks=(function(){
       /* b326 — Jack, 7 Nov: S&S UK tightened ("maybe 15% then if it loses no bangers" · "change sub and save to this now") */
       {const f=l=>{const j=JSON.parse(decodeURIComponent(String(l).split('#!finder/')[1]));return[j.f.AMAZON_deltaPercent90.filter,j.f.srAvgMonth.filter,Object.keys(j.f).length,j.f.monthlySold.filter,j.f.BUY_BOX_SHIPPING_avg90.filter,j.f.couponSNSPercent.filter];};const s=srcGet('suz-sns-uk');
         ok('b326 · Suz · Subscribe & Save UK: Amazon down 15%+ (was 1%) and rank month October, everything else as before — the seed and the saved filter (once); the note says 15%',
-          [f(LINKS['suz-sns']),f(s.link),s.migSns15,/Amazon down 15%\+/.test(s.note||'')],[[15,'202610',10,50,6,1],[15,'202610',10,50,6,1],1,true]);}
+          [f(LINKS['suz-sns']),f(s.link),s.migSns15,/Amazon down 15%\+/.test(s.note||'')],[[15,'202610',11,50,6,1],[15,'202610',11,50,6,1],1,true]);}
+      /* b335 — Jack, 17 Nov: "no filter should be having fashion and or shoes in" · "block fashion on all but brands obvs" */
+      {const F='11961407031',dj=l=>JSON.parse(decodeURIComponent(String(l).split('#!finder/')[1])).f,has=l=>{try{const r=dj(l).rootCategory;return!!(r&&r.type==='isNoneOf'&&String(r.filter).split('###').includes(F));}catch(e){return false;}};
+        const uk=SRC_SEED.filter(x=>x.type==='filter'&&x.link&&(x.markets||[]).length===1&&x.markets[0]==='UK'&&!dj(x.link).categories&&!dj(x.link).sellerIds&&!(dj(x.link).rootCategory&&dj(x.link).rootCategory.type==='isOneOf'));
+        const miss=uk.filter(x=>!has(x.link)||(x.link2&&!has(x.link2))).map(x=>x.key);
+        const m=dj(srcGet('mera-7day-20-all').link),bare='https://keepa.com/#!finder/'+encodeURIComponent(JSON.stringify({f:{brand:{filterType:'autocomplete',filter:"l'oreal",type:'isNoneOf'}}})).replace(/'/g,'%27');
+        const once=linkNoFashion(bare),inc='https://keepa.com/#!finder/'+encodeURIComponent(JSON.stringify({f:{categories:{filter:'1'}}}));
+        ok('b335 · Fashion is blocked as a whole department on every UK filter (never a brand run): the seeds, the saved 7-Day / S&S / Business links (once), Mera\'s 7-Day is Jack\'s re-made link at £20 with 3+ offers; adding it twice changes nothing, and an include list is left alone',
+          [uk.length>=8,miss,has(srcGet('suz-sns-uk').link),has(srcGet('suz-business-uk').link),[m.AMAZON_avg90.filter,m.BUY_BOX_SHIPPING_avg180.filter,m.totalOfferCount.filter,m.productType.values[0],has(srcGet('mera-7day-20-all').link)],
+           has(once),linkNoFashion(once)===once,once.includes('%27'),linkNoFashion(inc)===inc,srcGet('suz-sns-uk').migNoFash],
+          [true,[],true,true,[20,20,3,'0',true],true,true,true,true,1]);}
       /* b323 — Jack, 6 Nov: "remove bose as blocked please" (Mera · anything £95+) */
       {const dec=l=>{const b=JSON.parse(decodeURIComponent(String(l).split('#!finder/')[1])).f.brand;return b.type+':'+String(b.filter).split('###').length+':'+String(b.filter).split('###').includes('bose')+':'+String(b.filter).split('###').includes('panasonic');};
         const old=LINKS['mera-150'].replace('%23%23%23cozyla','%23%23%23bose%23%23%23cozyla');
@@ -2960,6 +2975,68 @@ window.SourcingChecks=(function(){
           const sizes=new Set([...document.querySelectorAll('#page-brands *')].filter(el=>el.offsetParent&&!el.closest('td')&&[...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())).map(el=>getComputedStyle(el).fontSize));
           got=[small.length,sizes.size<=6];}catch(e){got=[String(e)];}
         ok('b333 Q · Brands / Filters: no visible text under 11 px outside the table cells, and no more than six text sizes',got,[0,true]);}
+      /* b334 · the row's one status line (Jack's ASUS row, 16 Nov) */
+      {let got=[];const tb=document.createElement('table');try{tb.className='btbl';tb.style.cssText='position:absolute;left:-9999px;top:0;width:1200px';
+          tb.innerHTML='<tbody><tr><td class="lastc" style="width:215px"><span class="pulse bad"><span class="p1"><em>✕</em><span class="t">x</span></span><span class="p2"><span class="t">y</span></span></span><span class="kp">old class</span></td></tr></tbody><div class="kp">pic</div>';document.body.appendChild(tb);
+          const pc=getComputedStyle(tb.querySelector('.pulse')),sp=getComputedStyle(tb.querySelector('span.kp')),dv=getComputedStyle(tb.querySelector('div.kp'));
+          got=[pc.backgroundColor,pc.overflow,parseFloat(pc.fontSize)>=11,sp.backgroundColor,dv.backgroundColor,/tabular-nums/.test(pc.fontVariantNumeric)];}catch(e){got=[String(e)];}finally{tb.remove();}
+        ok('b334 A · the Keepa drawings (.kp, b305) no longer paint the list: the status line has no light box, nothing clipped, 11 px+, tabular numbers; the drawings keep their grey',got,['rgba(0, 0, 0, 0)','visible',true,'rgba(0, 0, 0, 0)','rgb(243, 243, 243)',true]);}
+      {let got=[];try{const H=h=>new Date(Date.now()-h*3600e3).toISOString(),MK=['UK','DE','FR','IT','ES'],oa=new Date();oa.setDate(oa.getDate()-8);oa.setHours(9,0,0,0);const old={at:oa.toISOString(),who:'Mera'},due={due:true},nd={due:false},oh=(h)=>{const x=new Date(oa);x.setHours(h);return x.toISOString();},ob=new Date(oa);ob.setDate(ob.getDate()-1);   /* the checks pin the clock: everything is relative to it */
+          const S=o=>Object.assign({key:'zz-p334-none',rule:1,markets:['UK'],status:'active',cadence:'daily',owner:'Mera'},o);
+          const sum=p=>p?[p.fresh,p.multi,p.inn.length,p.pressed.join('')]:null;
+          const html=(s,d)=>{const x=document.createElement('div');x.innerHTML=rowPulse(s,old,d,false);const p=x.querySelector('.pulse');return p?[p.className.replace('pulse ',''),p.textContent]:null;};
+          const a=html(S({keepa:[{who:'Mera',at:H(1),mk:'UK'}]}),due),b=html(S({keepa:[{who:'Mera',at:H(3),mk:'UK'}]}),due),
+            c=html(S({markets:MK,keepa:[{who:'Mera',at:H(3),mk:'UK'}]}),due),d=html(S({markets:MK,keepa:[{who:'Mera',at:H(5),mk:'UK'}]}),due),
+            e=rowPulseData(S({markets:MK,keepa:[{who:'Mera',at:H(1),mk:'DE'},{who:'Mera',at:H(5),mk:'UK Viewer'}],filesIn:{who:'Mera',at:H(0.5),mk:['UK','DE']}}),old,due),
+            f=html(S({keepa:[{who:'Mera',at:H(3),mk:'UK'}]}),nd),g=rowPulseData(S({markets:MK,keepa:[{who:'Mera',at:H(5),mk:'UK'}],inProgress:{who:'Mera',at:H(1),id:'z'}}),old,due),
+            h=rowPulseData(S({keepa:[{who:'Mera',at:oh(15),mk:'UK'}]}),old,due),i=rowPulseData(S({keepa:[{who:'Mera',at:ob.toISOString(),mk:'UK'}]}),old,due);
+          const x=document.createElement('div');x.innerHTML=rowPulse(S({}),Object.assign({},old,{needDone:true,done:null}),due,true);
+          const segs=(()=>{const y=document.createElement('div');y.innerHTML=rowPulse(S({markets:MK,keepa:[{who:'Mera',at:H(1),mk:'DE'}],filesIn:{who:'Mera',at:H(0.5),mk:['UK']}}),old,due,false);return[...y.querySelectorAll('.cm u')].map(u=>u.className||'-').join(',');})();
+          got=[a[0],/opened Keepa/.test(a[1])&&/UK · file not back yet/.test(a[1]),b[0],/UK · no file came back/.test(b[1])&&/✕/.test(b[1]),c[0],/0 of 5 in/.test(c[1]),d[0],/0 of 5 in · no file back/.test(d[1]),sum(e),f[0],/✕/.test(f[1]),g&&g.fresh,h,i,/Done never pressed/.test(x.textContent),segs];}catch(e){got=[String(e)];}
+        ok('b334 B · one status line: single country fresh under 2 h / "no file came back" after; a 5-country brand gets 4 h and says "N of 5 in" from the files dropped (green = in, blue = Keepa opened); red ✕ only on a due row; her own open lock keeps it live; a run saved that day, or a press before the run, clears it; an unfinished run says ✓ Done never pressed',
+          got,['live',true,'bad',true,'live',true,'bad',true,[true,true,2,'UKDE'],'calm',false,true,null,null,true,'in,kp,-,-,-']);}
+      {let got=[];try{const wd=(s)=>dueRoll(new Date(s),true).toDateString(),cal=(s)=>dueRoll(new Date(s),false).toDateString();
+          const runsWas=lsRaw(RUN_KEY);try{const at=new Date();at.setDate(at.getDate()-10);at.setHours(9,40,0,0);lsSet(RUN_KEY,[{source:'zz-wk',at:at.toISOString(),day:stamp(at).slice(0,10),asins:[]}]);
+            const J=dueState({key:'zz-wk',cadence:'daily',status:'active',owner:'Jack'}),M=dueState({key:'zz-wk',cadence:'daily',status:'active',owner:'Mera'});
+            const nx=new Date(at);nx.setDate(nx.getDate()+1);nx.setHours(7,0,0,0);dueRoll(nx,true);const want=dueWorkDays(stamp(nx).slice(0,10),today(),true);
+            got=[wd('2026-11-14T07:00:00'),wd('2026-11-15T07:00:00'),wd('2026-11-17T07:00:00'),cal('2026-11-14T07:00:00'),dueWorkDays('2026-11-10','2026-11-16',true),dueWorkDays('2026-11-10','2026-11-16',false),J.label,M.label===want+' work day'+(want===1?'':'s')+' late',M.kind,nextRun({key:'zz-wk',cadence:'daily',owner:'Mera'}).getDay()%6!==0];}
+          finally{runsWas==null?lsRemove(RUN_KEY):lsRawSet(RUN_KEY,runsWas);}}catch(e){got=[String(e)];}
+        ok('b334 C · lateness for the VAs\' rows skips Saturday and Sunday (a Daily done on Friday is due Monday, not "2 days late"; Mon 9 Nov → today = 4 work days, not 6); Jack\'s own rows keep the calendar',
+          got,['Mon Nov 16 2026','Mon Nov 16 2026','Tue Nov 17 2026','Sat Nov 14 2026',4,6,'9 days late',true,'late',true]);}
+      {let got=[];const keep={s:lsRaw(SRC_KEY),r:lsRaw(RUN_KEY),o:lsRaw(OUTBOX_KEY)},meWas=me(),curWas=cur;try{
+          const K='zz-chk334',MK=['UK','DE','FR','IT','ES'];lsSet(SRC_KEY,srcAll().filter(x=>x.key!==K).concat([{key:K,name:'ZZ check 334',type:'brand',rule:1,markets:MK,status:'active',cadence:'daily',owner:'Mera',note:'',keepa:[{who:'Mera',at:new Date(Date.now()-2.4*3600e3).toISOString(),mk:'UK'}]}]));
+          const ra=new Date();ra.setDate(ra.getDate()-7);ra.setHours(16,17,0,0);const rat=ra.toISOString();lsSet(RUN_KEY,runsAll().filter(r=>r.source!==K).concat([{at:rat,day:stamp(ra).slice(0,10),source:K,name:'ZZ',rule:1,files:['x'],leads:41,new:0,better:0,worse:0,gone:0,asins:[],queue:[],who:'Mera',needDone:true,done:{who:'Mera',at:rat}}]));
+          lsSet(ME_KEY,'Mera');cur=null;files.UK={name:'u.csv',rows:[]};files.DE={name:'d.csv',rows:[]};actStampFiles(K);files.UK=null;files.DE=null;const fi=srcGet(K).filesIn;
+          lsSet(ME_KEY,'Jack');document.querySelector('.pagebtn[data-page="page-brands"]').click();backToList();renderList();const tr=document.querySelector('#brandTbl tr[data-key="'+K+'"]');
+          const p=tr&&tr.querySelector('td.lastc .pulse'),lines=p?[...p.querySelectorAll('.p1,.p2')]:[];
+          got=[fi&&fi.who,fi&&fi.mk.join(','),!!p,lines.length,lines.every(l=>l.getBoundingClientRect().height<24),p?[...p.querySelectorAll('.t')].every(t=>t.scrollWidth<=t.clientWidth+1):null,p&&/2 of 5 in/.test(p.textContent),tr&&!tr.querySelector('td.nextc .dbusy'),tr&&tr.querySelectorAll('td.lastc .pulse, td.lastc .opened').length,/actStampFiles\(cur\.key\)/.test(String(handleFilesRaw))];}
+        catch(e){got=[String(e)];}finally{cur=curWas;files.UK=null;files.DE=null;lsSet(ME_KEY,meWas||'Jack');[[SRC_KEY,keep.s],[RUN_KEY,keep.r],[OUTBOX_KEY,keep.o]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});renderList();}
+        ok('b334 D · a dropped country file stamps the filter (who + which countries); Jack\'s row then shows ONE status line, two clean lines, nothing cut off, "2 of 5 in", and no copy of it under NOT DONE',
+          got,['Mera','UK,DE',true,2,true,true,true,true,1,true]);}
+      /* b335 — Jack, 17 Nov, at his Philips row: the unfinished-run story was on the row three times and "· 7 written up" ran out of Last run into Done?. */
+      {let got=[];const keep={s:lsRaw(SRC_KEY),r:lsRaw(RUN_KEY),o:lsRaw(OUTBOX_KEY)},meWas=me(),curWas=cur;try{
+          const K='zz-chk335';lsSet(SRC_KEY,srcAll().filter(x=>x.key!==K).concat([{key:K,name:'ZZ check 335',type:'brand',rule:1,markets:['UK'],status:'active',cadence:'daily',owner:'Mera',note:''}]));
+          const ra=new Date(Date.now()-20*3600e3),rat=ra.toISOString(),q=[];for(let i=0;i<211;i++)q.push('B0ZZ'+String(100000+i));
+          lsSet(RUN_KEY,runsAll().filter(r=>r.source!==K).concat([{at:rat,day:stamp(ra).slice(0,10),source:K,name:'ZZ',rule:1,files:['x'],leads:296,new:0,better:0,worse:0,gone:0,asins:q,queue:q,who:'Jack',needDone:true,done:null}]));
+          lsSet(ME_KEY,'Jack');cur=null;document.querySelector('.pagebtn[data-page="page-brands"]').click();backToList();renderList();const tr=document.querySelector('#brandTbl tr[data-key="'+K+'"]');
+          const inside=sel=>{const td=tr.querySelector(sel),c=td.getBoundingClientRect();return[...td.querySelectorAll('*')].every(e=>{const b=e.getBoundingClientRect();return !b.width||b.right<=c.right+1;});};
+          const txt=tr.querySelector('td.lastc').textContent+' '+tr.querySelector('td.nextc').textContent,ds=tr.querySelector('td.nextc .dstate');
+          got=[!!dueState(srcGet(K)).stale,inside('td.lastc'),inside('td.nextc'),(txt.match(/run it again/g)||[]).length,(txt.match(/Done never pressed/g)||[]).length,/not finished within/.test(txt),/not finished within 12 hours/.test(ds.getAttribute('title')||'')];}
+        catch(e){got=[String(e)];}finally{cur=curWas;lsSet(ME_KEY,meWas||'Jack');[[SRC_KEY,keep.s],[RUN_KEY,keep.r],[OUTBOX_KEY,keep.o]].forEach(([k,v])=>{if(v==null)lsRemove(k);else lsRawSet(k,v);});renderList();}
+        ok('b335 · an unfinished run is said ONCE on the row ("✓ Done never pressed … run it again"), the full story is on hover, and nothing in Last run or Done? runs out of its column',
+          got,[true,true,true,1,1,false,true]);}
+      {let got=[];const meWas=me();try{const see=w=>{lsSet(ME_KEY,w);return[whoSee('Mera'),whoSee('Suz'),whoSee('Jack'),whoSee('VAs'),/another VA/.test(whoChip('Mera')),/Jack/.test(whoChip('Jack'))].join('|');};
+          got=[see('Mera'),see('Suz'),see('Jack')];}catch(e){got=[String(e)];}finally{lsSet(ME_KEY,meWas||'Jack');}
+        ok('b335 · a VA reads her own name and Jack\'s; the other VA is "another VA" (Jack, 17 Nov: "yes jack or whatever va did it"); Jack sees everyone; the shared "VAs" label stays',
+          got,['Mera|another VA|Jack|VAs|false|true','another VA|Suz|Jack|VAs|true|true','Mera|Suz|Jack|VAs|false|true']);}
+      {let got=[];const meWas=me();try{const see=w=>{lsSet(ME_KEY,w);return['Suz','Mera','Jack','?',''].map(whoYou).join('|');};
+          got=[see('Suz'),see('Mera'),see('Jack')];}catch(e){got=[String(e)];}finally{lsSet(ME_KEY,meWas||'Jack');}
+        ok('b335 · on the leads (N done, seen by, Done by, runs today) a VA reads "you" for her own work, "another VA" for the other VA and "Jack" for Jack; Jack reads the names',
+          got,['you|another VA|Jack|?|','another VA|you|Jack|?|','Suz|Mera|Jack|?|']);}
+      {let got=[];try{const css=[...document.styleSheets].flatMap(x=>{try{return[...x.cssRules]}catch(e){return[]}}).map(r=>r.cssText).join('\n');
+          got=[typeof sinceNote==='function',/bsecs/.test(String(busyOpen)),/Refresh the page/.test(String(busyOpen)),/Finished in/.test(String(busyDone)),/@keyframes bsecs/.test(css),/\.bslow[^{]*\{[^}]*opacity:\s*0/.test(css)];}catch(e){got=[String(e)];}
+        ok('b335 · the working card counts seconds with a transform (it keeps moving while the page is busy), says "Finished in N seconds", and shows the "stuck — refresh" help after 2 minutes; the better-since note has its own function',
+          got,[true,true,true,true,true,true]);}
     }catch(e){R.push({name:'checks crashed: '+e.message,pass:false,got:String(e.stack||e),want:''});}
     finally{unpin();}
     render(performance.now()-t0);return R;}

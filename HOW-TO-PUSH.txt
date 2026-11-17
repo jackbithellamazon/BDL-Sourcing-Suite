@@ -1,39 +1,17 @@
-BUILD b333 — 16 Nov 2026 — push THIS one NOW (it replaces b332 — it has everything since b322)
+BUILD b335 — 17 Nov 2026 — push THIS one NOW (it fixes Mera's "Aw, Snap! Out of Memory" crash)
 
-Live is b322 (your push of 6 Nov). b323–b332 were never uploaded — they are all inside this one.
-You push it NOW, before keepa Worker v5. The page works without v5. Only step 7 waits for v5.
-Do these in order, top to bottom.
+Live is b333 (your push of 16 Nov). b334 was never uploaded — it is inside this one.
+One step. Nothing to paste into Supabase or the Keepa Discord chat: b333's setup steps were done with b333,
+and nothing the Keepa chat or the Worker copies changed in b334 or b335.
 
-1. KEEPA DISCORD — paste this md into the Keepa Discord chat and wait for its "ok, copied":
-     ~/Downloads/FOR KEEPA DISCORD - SOURCING SUITE rule change b333 - 16 Nov 2026.md
-   (It tells them you are pushing before v5, and that the 🌙 Automate presses wait for v5.)
+1. GITHUB — BDL-Sourcing-Suite → Add file → Upload files → drag EVERYTHING inside this folder →
+   wait until every file has finished uploading → green "Commit changes". 1–2 minutes later the header says b335.
+   Then tell Mera: refresh the page (the header must say b335), and drop today's 7-Day export again.
 
-2. SUPABASE — SQL Editor → New query → paste ALL of it → Run:
-     ~/Downloads/PASTE INTO SUPABASE - shared Keepa cache FINAL - 8 Nov 2026.sql
-   It ends with "rows_in_keepa_cache". (If the Keepa chat already had you run it, running it again is harmless.)
-
-3. SUPABASE — New query → paste ALL of it → Run:
-     ~/Downloads/2026-10-13-BDL-SOURCING-PRICE-LOG-SUPABASE.sql
-   It ends with three lines: hist, mk, sell. (Every day a product is in a filter's export, its buy / sell / country / ROI is kept,
-   so "why was this cut?" on your storefront audit shows the price on each day.)
-
-4. SUPABASE — New query → paste ALL of it → Run:
-     ~/Downloads/PASTE INTO SUPABASE - src_autopull for automated filters - 10 Nov 2026.sql
-   It ends with "rows_in_src_autopull 0".
-
-5. GITHUB — BDL-Sourcing-Suite → Add file → Upload files → drag EVERYTHING inside this folder →
-   wait until every file has finished uploading → green "Commit changes". 1–2 minutes later the header says b333.
-   NEW files: js/autocut.js, js/autorun.js, js/today.js, js/claudeoa.js.
-
-6. THE SUITE — Storefront audits → at the top press "Put back the N Missed-its the page marked for you" ONCE.
-   (Those are the ones the page marked Missed it by itself. They go back to "left to judge", each with the suggested answer
-   and its reason. Undo is right there if you want them back. Your own answers are not touched.)
-
-7. LATER, NOT NOW — when the Keepa chat says v5 is in: switch MERA'S two filters to Automated (two clicks, in this order):
+2. LATER, NOT NOW (unchanged from b333) — when the Keepa chat says v5 is in: switch MERA'S two filters to Automated (two clicks, in this order):
      Brands / Filters → Filter check → in the Manual list find "Mera · 7-Day Drops £20+ all lines 20%" → press 🌙 Automate
      then find "Mera · chosen categories £60+" → press 🌙 Automate
-   (7-Day first, so it is order 1; £60+ is order 2.) Both now sit in the 🌙 Automated list at the top, saying "not pulled yet".
-   Leave "Suz · A2A £7–60" on Manual for now (your call, 14 Nov: Mera first) — Suz exports it from Keepa exactly as she does now.
+   (7-Day first, so it is order 1; £60+ is order 2.) Leave "Suz · A2A £7–60" on Manual for now.
 
 That's it — nothing else to set up.
 
@@ -51,39 +29,55 @@ WHAT HAPPENS NEXT (once v5 is in — the keepa Worker's side, the Keepa chat run
 • Not automatable (decided): Business UK (the Business % isn't in Keepa's API answer), Prime-event filters, brand lists.
 • Until v5 is in, nothing is pulled overnight: every filter is exported from Keepa as now, and Today's "Last night's lists" says so.
 
-WHAT'S IN IT
-• b323: Bose is no longer blocked in Mera's "anything £95+" filter (45 brands blocked instead of 46 — Panasonic stays).
-• b324: the GRAPH CHECK idea is built but SWITCHED OFF — nothing changes for Mera or Suz, nothing to set up.
-• b326: Suz · Subscribe & Save UK is now YOUR link — Amazon down 15%+ (was 1%), rank month October. About 820 products
-         instead of ~3,100; all 4 bangers on your 7 Nov export kept. Suz's saved filter changes by itself on her next load.
-• b327: every Keepa call the Suite makes says it's the Suite (app=sourcing), so the token audit can tell who spent what.
-• b328: the Suite talks to Keepa through the keepa Worker (its /src address) instead of bdl-sourcing, which is being deleted.
-• b329: the shared Keepa cache's "no such product" rows are skipped correctly.
-• b330: AUTOMATED FILTERS — above (switched on at step 7, once v5 is in).
-• b331: BUSINESS % CHECK (your call, 14 Nov: "keep it scored high tho and let va's check manually"). Since 12 Nov Keepa shows a
-        Business discount on hundreds of products, nearly all exactly 40% — Wellman Max's isn't real. Scores DON'T change. Any lead
-        with a Keepa Business % now says, in amber: "BUSINESS 40% FROM KEEPA · CHECK THE BUSINESS ACCOUNT · WITHOUT IT 91 · £2.97"
-        (or "… WITHOUT IT LOSES £3.98"), so Mera and Suz check the listing on the Business account before buying.
-• b332: THE 12 BUGS FROM THE 16 NOV AUDIT, FIXED (your "d - ok"): VAs only see runs of filters they can see; a VA's save can't
-        undo your filter edits; a Supabase wobble doesn't sign anyone out; audit answers are never dropped quietly; files dropped
-        one after another don't turn yesterday's leads NEW; "Run via Keepa" works again and never overspends; refused saves show in red.
+WHAT'S IN IT (since live b333)
+• b335: MERA'S CRASH ("everytime I put the keepa export" → Aw, Snap! Out of Memory).
+        – The bug: since 6 Oct the leads table keeps a copy of each row so a Y / N / M press only redraws one row. The way it kept
+          them made Chrome hold a copy of the WHOLE table for every row — so memory grew with the square of the leads.
+          At 80–330 leads nobody noticed. Mera's 7-Day export on 17 Nov was 3,985 rows = 644 leads = about 2.4 GB → the tab died.
+        – The fix: each row is kept as its own small piece of text. Same table, same speed-up.
+        – Measured in the sandbox on a 3,973-row file (641 leads): before 2,485 MB then crash; now 126 MB, list up in 1.3 seconds.
+          Also run as Mera on £60+ (203 leads) and as Suz on A2A £7–60 and Subscribe & Save (641 leads each): all fine, under 190 MB.
+        – Nothing changes for how Mera or Suz work. No sourcing rule moved.
 
-• b333: YOUR 16 NOV YES LIST, THE AUDIT FIXES, AND CLAUDE IN AND OUT. What you and the VAs will notice:
-        – Brands / Filters is much shorter: the guide and the eight "This week" tiles are one thin line each — click to open
-          (it remembers, per person). Each filter row has one status, the Prime note is once at the top, nothing is cut off.
-        – The run screen: the Run summary is one line ("170 in · 80 leads · 24 to review" — click for the numbers), and the leads
-          table sits straight under the drop box. Long product titles wrap; hover for the full title.
-        – Fewer, clearer text sizes (five), nothing tiny.
-        – Lead tools: a "Today" panel under the five tool cards — due today, done today, last night's lists, waiting to review.
-          Click a line to open that filter. You see everyone's; Mera and Suz see only their own.
-        – Storefront audits: the page NEVER presses Missed it for you any more (your call: "I click missed it only"). It only does
-          Joint by itself, and suggests the answer with its reason on the row — who found it, which filter of ours should have
-          shown it. Step 6 puts back the ones it marked before.
-        – Baby feeding bottles are now worked at 0% VAT ("assumed — confirm on the row"); bottle warmers, sterilisers, water bottles
-          and spare teats stay 20%. Your saved 0% word list no longer hides the words added since September.
-        – Storefront audits, your page only: "⬇ Export for Claude" saves what is left to judge as a CSV for me to source from
-          (0 tokens). "⬆ Drop Claude's results" takes my results file back: each product gets a "CLAUDE · …" line (OA lead / too
-          dear / not found / check) and an OA lead turns the SUGGESTED answer to Missed it — you still press. Tick "Leave out ones
-          Claude already checked" so the next export doesn't repeat work. The results follow you to another browser.
+• b334: YOUR ASUS ROW ("wanna know the bug and fix it and improve it").
+        – The bug: the little Keepa pictures in the help popups (b305) used the same name as the row's "opened Keepa" line, so that
+          line got the pictures' light-grey box: squashed, cut off at the right, and the copy of it under NOT DONE turned into what
+          looked like an empty progress bar with a dot (it was white text on light grey). Fixed — the pictures keep their look.
+        – One status line per row, two short lines, nothing cut off, the full story when you hover:
+            "Mera · opened Keepa 16:38 / UK · file not back yet"    (under 2 hours)
+            "✕ Mera · opened Keepa 16:38 / UK · no file came back"   (red only when the row is due)
+          It's no longer shown twice (it was in Last run AND under NOT DONE).
+        – 5-country brands (ASUS, Bosch…): a small block per country — green = file in, blue = Keepa opened — and "2 of 5 in".
+          They get 4 hours, not 2, counted from her LAST press or file, before it says "no file back" — and if she still has the
+          filter open it never says nobody is on it.
+        – Late days for Mera's and Suz's rows skip Saturday and Sunday: a Daily done on Friday is due Monday (it said "2 days late"
+          on Monday morning), and ASUS from Mon 9 Nov now says "4 work days late", not 6. Your own rows still count every day.
+        – Nothing changes for how Mera or Suz work.
+        Not built (ideas only): a "Remind Mera" button on a stale row — the Suite has no note-to-VA box to reuse; it would need one.
 
-• Checks: 525 of 525 green (the sandbox, cloud off).
+• b335 also: THE BRANDS / FILTERS ROW (your Philips screenshot, 17 Nov).
+   - "· 7 written up" no longer runs out of Last run into Done?.
+   - The bright green "7 on the lead sheet this week" pill is now a quiet chip.
+   - An unfinished run is said once ("✓ Done never pressed · run it again"), not three times.
+     Done? just says how late it is; hover it for the full story.
+   - The white unreadable box is gone (that was the b334 fix, never live until now).
+• b335 also: WHO DID IT (17 Nov). Mera and Suz read "you" for their own work, "another VA"
+  for the other VA's, and "Jack" for yours — never each other's name. You still see every name.
+  On the leads: "3 done (you 3)", "seen another VA · Fri 13 Nov", "✓ Done by you · 10:22".
+  On the Brands / Filters rows: their own name, "Jack", or "another VA".
+• b335 also: THE "WORKING" CARD TELLS THE TRUTH (17 Nov, from Suz's video — it looked frozen).
+   - It counts the seconds, and the count keeps moving even while the page is busy.
+   - It ends with "Finished in N seconds".
+   - Still there after 2 minutes: an amber note says it is stuck — refresh, press the filter,
+     drop the file again. Nothing is lost.
+   - A big file (1,500+ products) is told the step can take up to a minute.
+• b335 also: SHORTER LEAD ROWS (17 Nov). Product names are 2 lines (hover for the full name),
+  and the "better since you looked" note sits in the Verdict column. More leads per screen.
+• b335 also: NO FASHION ON ANY UK FILTER (17 Nov). Fashion is now blocked as a whole
+  department on Mera's 7-Day and £200+, Suz's Subscribe & Save UK and Suz's Business discount UK.
+  Every other filter already had it; brand runs are left alone.
+   - Mera's 7-Day link is your re-made link: £20+, 3+ offers, physical products only.
+   - The saved links switch by themselves the first time each person loads b335.
+   - 7-Day is automated, so its overnight search re-saves itself when YOU next load the
+     Suite. Nothing to press.
+• Checks: 535 of 535 green (test mode in your Chrome, cloud off).
